@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import UptimeDisplay from './components/UptimeDisplay';
+import ThemeToggle from './components/ThemeToggle';
 import ExamCard from './components/ExamCard';
 import ReminderSettings from './components/ReminderSettings';
 import { generateICSContent } from './utils/icsGenerator';
@@ -27,7 +28,7 @@ function App() {
 
         Promise.all([
             fetch('data/all_exams.json', fetchOptions).then(r => r.json()),
-            fetch('manifest.json', fetchOptions).then(r => r.json()).catch(() => null)
+            fetch('data/data_summary.json', fetchOptions).then(r => r.json()).catch(() => null)
         ])
             .then(([examsData, manifestData]) => {
                 examsData.sort((a, b) => {
@@ -138,7 +139,7 @@ function App() {
     };
 
     if (loading) return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500">
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400">
             <div className="flex flex-col items-center gap-3 animate-pulse">
                 <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                 <span className="text-sm font-medium">数据同步中...</span>
@@ -156,22 +157,25 @@ function App() {
     );
 
     return (
-        <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
-            <nav className="bg-white border-b border-slate-200 px-4 py-3">
+        <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-200">
+            <nav className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
                 <div className="max-w-2xl mx-auto flex justify-between items-center">
-                    <span className="font-bold text-slate-800 tracking-tight flex items-center gap-2">
+                    <span className="font-bold text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-2">
                         <span>📅</span> NJUPT Exam Sync
                     </span>
-                    <a href="https://hicancan.top" target="_blank" className="text-xs font-medium text-indigo-600 hover:text-indigo-800 transition-colors bg-indigo-50 px-3 py-1.5 rounded-full">
-                        ← 回到 hicancan.top
-                    </a>
+                    <div className="flex items-center gap-3">
+                        <ThemeToggle />
+                        <a href="https://hicancan.top" target="_blank" className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-full">
+                            ← 回到 hicancan.top
+                        </a>
+                    </div>
                 </div>
             </nav>
 
             <div className="flex-1 w-full max-w-2xl mx-auto px-4 py-10 flex flex-col">
                 <header className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">考试日程助手</h1>
-                    <p className="text-slate-500 text-sm">南邮学子专属 · 班级号极速查询 · hicancan 强力驱动</p>
+                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight mb-2">考试日程助手</h1>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">南邮学子专属 · 班级号极速查询 · hicancan 强力驱动</p>
                 </header>
 
                 <div className="relative mb-6 z-20 shadow-sm">
@@ -180,7 +184,7 @@ function App() {
                     </div>
                     <input
                         type="text"
-                        className="w-full pl-11 pr-4 py-4 bg-white border border-slate-200 rounded-xl text-lg outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all placeholder:text-slate-300 text-slate-900"
+                        className="w-full pl-11 pr-4 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-lg outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all placeholder:text-slate-300 dark:placeholder:text-slate-500 text-slate-900 dark:text-white"
                         placeholder="输入班级号 (例如 B240402)..."
                         value={inputValue}
                         onChange={(e) => handleInput(e.target.value)}
@@ -190,15 +194,15 @@ function App() {
 
                 <div className="flex-1">
                     {searchResult.mode === 'EMPTY' && (
-                        <div className="text-center py-16 border-2 border-dashed border-slate-200 rounded-xl bg-white/50">
-                            <div className="text-4xl mb-4 opacity-20">📅</div>
-                            <p className="text-slate-400 font-medium">请输入班级号开始查找</p>
+                        <div className="text-center py-16 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-white/50 dark:bg-slate-800/50">
+                            <div className="text-4xl mb-4 opacity-20 dark:opacity-40">📅</div>
+                            <p className="text-slate-400 dark:text-slate-500 font-medium">请输入班级号开始查找</p>
                         </div>
                     )}
 
                     {searchResult.mode === 'NOT_FOUND' && (
                         <div className="text-center py-12">
-                            <p className="text-slate-400">未找到相关班级 "{inputValue}"</p>
+                            <p className="text-slate-400 dark:text-slate-500">未找到相关班级 "{inputValue}"</p>
                         </div>
                     )}
 
@@ -214,7 +218,7 @@ function App() {
                                     <button
                                         key={cls}
                                         onClick={() => handleClassClick(cls)}
-                                        className="px-4 py-3 bg-white border border-slate-200 rounded-lg text-left hover:border-indigo-500 hover:text-indigo-600 hover:shadow-md transition-all text-sm font-medium font-mono text-slate-600"
+                                        className="px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-left hover:border-indigo-500 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:shadow-md transition-all text-sm font-medium font-mono text-slate-600 dark:text-slate-300"
                                     >
                                         {cls}
                                     </button>
@@ -233,14 +237,14 @@ function App() {
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                                 <div>
                                     <div className="flex items-center gap-3">
-                                        <h2 className="text-2xl font-bold text-slate-800 font-mono tracking-tight">
+                                        <h2 className="text-2xl font-bold text-slate-800 dark:text-white font-mono tracking-tight">
                                             {searchResult.classes[0]}
                                         </h2>
                                         <button
                                             onClick={copyShareLink}
                                             className={`text-xs px-2 py-1 rounded border transition-all ${copyState
-                                                    ? 'bg-green-50 text-green-600 border-green-200'
-                                                    : 'bg-white text-slate-400 border-slate-200 hover:text-indigo-500 hover:border-indigo-200'
+                                                ? 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800'
+                                                : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:text-indigo-500 dark:hover:text-indigo-400 hover:border-indigo-200 dark:hover:border-indigo-800'
                                                 }`}
                                         >
                                             {copyState ? '✅ 已复制' : '🔗 分享链接'}
@@ -288,10 +292,10 @@ function App() {
                 </div>
             </div>
 
-            <footer className="py-8 border-t border-slate-200 bg-white text-center">
-                <div className="text-xs text-slate-400 space-y-4">
+            <footer className="py-8 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-center">
+                <div className="text-xs text-slate-400 dark:text-slate-500 space-y-4">
                     <div className="flex justify-center gap-6">
-                        <a href="https://github.com/hicancan/njupt-exam-sync" target="_blank" className="group flex items-center gap-1.5 transition-colors hover:text-slate-800" title="GitHub Code Repository">
+                        <a href="https://github.com/hicancan/njupt-exam-sync" target="_blank" className="group flex items-center gap-1.5 transition-colors hover:text-slate-800 dark:hover:text-slate-300" title="GitHub Code Repository">
                             <svg className="w-4 h-4 fill-current opacity-80 group-hover:opacity-100" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" /></svg>
                             <span>github仓库</span>
                         </a>

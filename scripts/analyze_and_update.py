@@ -329,8 +329,8 @@ def main():
         "total_records": len(all_rows)
     }
     try:
-        with open(MANIFEST_PATH, 'w', encoding='utf-8') as f:
-            json.dump(manifest, f, indent=2)
+        with open(os.path.join(DATA_DIR, 'data_summary.json'), 'w', encoding='utf-8') as f:
+            json.dump(manifest, f, indent=2, ensure_ascii=False)
     except Exception as e:
          logger.error(f"Failed to write Manifest: {e}")
 

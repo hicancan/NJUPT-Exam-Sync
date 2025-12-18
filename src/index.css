@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@config "../tailwind.config.js";
 
 /* 自定义滚动条样式 */
 ::-webkit-scrollbar { width: 6px; }

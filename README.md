@@ -13,6 +13,7 @@
 ![GitHub license](https://img.shields.io/github/license/hicancan/njupt-exam-sync?style=flat-square)
 ![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg?style=flat-square)
 ![React Version](https://img.shields.io/badge/react-19.x-61dafb.svg?style=flat-square)
+![TailwindCSS Version](https://img.shields.io/badge/tailwindcss-v4.0+-38bdf8.svg?style=flat-square)
 
 </div>
 
@@ -29,6 +30,7 @@
 ## ✨ 核心亮点 (Features)
 
 - ⚡ **极速体验**：基于 React 19 + Vite 构建，秒开无白屏。
+- 🌗 **深色模式**：自动跟随系统切换深色模式，深夜查分不刺眼。
 - 🔍 **智能搜索**：输入班级号（支持模糊匹配）自动联想，毫秒级响应。
 - 📅 **按需导出**：支持**手动勾选/反选**考试科目，一键生成标准 iCalendar (.ics) 文件，包含**时区修正**。
 - 🔗 **社交分享**：支持生成带有班级参数的链接，复制发给同学，点开即看。
@@ -54,9 +56,9 @@
 
 直接访问部署好的地址（推荐）：**[https://njupt.hicancan.top](https://njupt.hicancan.top)**
 
-### 💻 本地开发运行
+### 💻 本地开发运行 (对于开发者)
 
-如果你是开发者，想在本地运行或修改代码：
+> **注意**：本项目使用最新的 **React 19** 和 **Tailwind CSS v4**。请确保你的 Node.js 版本 >= 20。
 
 1. **克隆仓库**
 
@@ -89,12 +91,14 @@ NJUPT-Exam-Sync/
 │   └── ...
 ├── src/                   # ⚛️ React 源码
 │   ├── components/        # 🧩 UI 组件
+│   │   ├── ThemeToggle.jsx       # 🌗 深色模式切换
 │   │   ├── ExamCard.jsx          # 考试卡片
 │   │   ├── ReminderSettings.jsx  # 提醒设置
 │   │   └── UptimeDisplay.jsx     # 运行监控
 │   ├── utils/             # 🛠️ 工具函数
 │   │   └── icsGenerator.js       # ICS 生成算法
 │   ├── App.jsx            # 📱 主应用逻辑
+│   ├── index.css          # 🎨 全局样式 (含 Tailwind v4配置)
 │   └── ...
 ├── scripts/               # ⚙️ 工具脚本
 │   ├── analyze_and_update.py  # Python ETL (基于 Pydantic 清洗数据)
@@ -103,6 +107,7 @@ NJUPT-Exam-Sync/
 │   └── deploy.yml         # 自动部署到 GitHub Pages
 ├── package.json           # 📦 依赖管理
 ├── vite.config.js         # ⚡ Vite 配置
+├── tailwind.config.js     # 🎨 Tailwind 配置 (被 index.css 引用)
 └── README.md              # 📄 项目说明文档
 ```
 
