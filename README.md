@@ -2,7 +2,8 @@
 
 <div align="center">
 
-<img src="assets/icon-192.png" width="100" height="100" alt="Logo" />
+<img src="public/assets/icon-192.png" width="100" height="100" alt="Logo" />
+
 
 ### ✨ 为南邮学子打造的极简考试日程同步工具
 
@@ -40,7 +41,7 @@
 
 | **桌面端搜索页** | **移动端详情页** |
 |:---:|:---:|
-| <img src="assets/desktop_demo.png" alt="Desktop Demo" width="400"/> | <img src="assets/mobile_demo.png" alt="Mobile Demo" width="200"/> |
+| <img src="public/assets/desktop_demo.png" alt="Desktop Demo" width="400"/> | <img src="public/assets/mobile_demo.png" alt="Mobile Demo" width="200"/> |
 | *输入班级号即可自动匹配* | *支持反选科目与一键导出* |
 
 </div>
