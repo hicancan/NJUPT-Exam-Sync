@@ -12,8 +12,7 @@ export interface Exam {
     notes?: string;
     campus?: string;
     course_code?: string;
-    count?: string | number;
-    course?: string; // Alias: Python script outputs 'course', mapped to course_name
+    count?: number;
     raw_time?: string;
 }
 

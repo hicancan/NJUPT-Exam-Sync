@@ -35,7 +35,7 @@ os.makedirs(DATA_DIR, exist_ok=True)
 # Field Mapping: Excel Column Names -> Model Fields
 FIELD_MAPPING = {
     "campus": ["校区", "校区名称"],
-    "course": ["课程名称", "课程", "考试课程"],
+    "course_name": ["课程名称", "课程", "考试课程"],
     "course_code": ["课程代码", "选课课号"],
     "class_name": ["班级名称", "班级", "班级代码", "行政班级"],
     "teacher": ["任课教师", "教师", "监考教师"],
@@ -61,7 +61,7 @@ class ExamRecord(BaseModel):
 
     # Raw Data Fields
     campus: str = ""
-    course: str = ""
+    course_name: str = ""
     course_code: str = ""
     class_name: str = ""
     teacher: str = ""
@@ -82,7 +82,7 @@ class ExamRecord(BaseModel):
     parse_error: Optional[str] = None
 
     @field_validator(
-        'campus', 'course', 'course_code', 'class_name', 'teacher', 
+        'campus', 'course_name', 'course_code', 'class_name', 'teacher', 
         'location', 'raw_time', 'school', 'student_school', 
         'major', 'grade', 'notes', 
         mode='before'
@@ -259,7 +259,7 @@ def generate_markdown_report(analyses: List[Dict], total_records: int) -> str:
             # Filter internal keys for cleaner table
             keys = [k for k in analysis['samples'][0].keys() if not k.startswith('_') and k != 'id']
             # Prioritize some keys
-            priority_keys = ['campus', 'course', 'class_name', 'teacher', 'raw_time', 'start_timestamp']
+            priority_keys = ['campus', 'course_name', 'class_name', 'teacher', 'raw_time', 'start_timestamp']
             sorted_keys = [k for k in priority_keys if k in keys] + [k for k in keys if k not in priority_keys]
             
             # Header
