@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Exam } from '@/types';
 import { generateICSContent } from '@/utils/icsGenerator';
-import ExamCard from './ExamCard';
-import ReminderSettings from './ReminderSettings';
+import { ExamCard } from './ExamCard';
+import { ReminderSettings } from './ReminderSettings';
 
 interface ExamDetailProps {
     className: string;

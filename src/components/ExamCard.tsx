@@ -22,6 +22,8 @@ function ExamCard({ exam, isSelected, onToggle }: ExamCardProps) {
             onClick={onToggle}
             role="button"
             tabIndex={0}
+            aria-pressed={isSelected}
+            aria-label={`${exam.course || exam.course_name}，${isSelected ? '已选中' : '未选中'}`}
             onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
@@ -100,4 +102,4 @@ function ExamCard({ exam, isSelected, onToggle }: ExamCardProps) {
     );
 }
 
-export default ExamCard;
+export { ExamCard };

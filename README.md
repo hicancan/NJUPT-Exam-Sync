@@ -96,8 +96,7 @@
 NJUPT-Exam-Sync/
 ├── public/                # 🌐 公共静态资源
 │   ├── data/              # 🗄️ 数据产物 (自动生成)
-│   ├── manifest.json      # 📝 PWA与数据清单
-│   └── ...
+│   └── assets/            # 🖼️ 图标与示例图片
 ├── src/                   # ⚛️ 源代码 (TypeScript)
 │   ├── components/        # 🧩 UI 组件
 │   │   ├── ExamCard.tsx          # 考试卡片
@@ -126,7 +125,7 @@ NJUPT-Exam-Sync/
 
 当教务处发布新的 Excel 考表时，管理员只需执行以下步骤：
 
-1. 将新的 `.xlsx` 文件放入 `data/` 目录（建议删除旧文件以防混淆，或按学期归档）。
+1. 将新的 `.xlsx` 文件放入 `public/data/` 目录（建议删除旧文件以防混淆，或按学期归档）。
 
 2. 安装 Python 依赖（仅首次需要）：
 

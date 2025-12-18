@@ -29,3 +29,12 @@ __pycache__/
 *$py.class
 venv/
 .venv/
+
+# Test coverage
+coverage/
+
+# Temp files
+*.tmp
+
+# Generated files
+project_structure.txt

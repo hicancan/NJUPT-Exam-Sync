@@ -43,4 +43,4 @@ function UptimeDisplay({ lastUpdate, startTime = APP_CONFIG.START_TIME_DEFAULT }
     );
 }
 
-export default UptimeDisplay;
+export { UptimeDisplay };

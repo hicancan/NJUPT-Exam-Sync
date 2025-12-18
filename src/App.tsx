@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import UptimeDisplay from './components/UptimeDisplay';
-import ThemeToggle from './components/ThemeToggle';
+import { UptimeDisplay } from './components/UptimeDisplay';
+import { ThemeToggle } from './components/ThemeToggle';
 import { SearchInput } from './components/SearchInput';
 import { ExamList } from './components/ExamList';
 import { ExamDetail } from './components/ExamDetail';
@@ -82,6 +82,7 @@ function App() {
 
     useEffect(() => {
         if (searchResult.mode === 'DETAIL' && searchResult.exams.length > 0) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync selection when search finds a unique class
             setSelectedIds(new Set(searchResult.exams.map(e => e.id)));
             const newUrl = `${window.location.pathname}?class=${searchResult.classes[0]}`;
             window.history.replaceState(null, '', newUrl);

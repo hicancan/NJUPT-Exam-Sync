@@ -49,4 +49,4 @@ function ReminderSettings({ selected, onChange }: ReminderSettingsProps) {
     );
 }
 
-export default ReminderSettings;
+export { ReminderSettings };
