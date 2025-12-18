@@ -1,3 +1,5 @@
+import { Exam } from '../types';
+
 // 辅助函数：安全地格式化 ICS 时间 (UTC -> Local String for ICS with TZID)
 const formatICSDate = (isoString?: string): string | null => {
     if (!isoString) return null;
@@ -16,25 +18,8 @@ const foldLine = (line: string): string => {
     return folded;
 };
 
-// Define a local interface for the exam object structure expected by this generator
-// ensuring it covers all fields accessed.
-interface IcsExam {
-    id: string;
-    start_timestamp?: string;
-    end_timestamp?: string;
-    course_code?: string;
-    teacher?: string;
-    class_name: string;
-    count?: string | number;
-    notes?: string;
-    campus?: string;
-    location: string;
-    course?: string; // Used in line 56
-    course_name?: string; // Likely the same as course
-}
-
 // 核心修复：增加 Timezone 支持
-export const generateICSContent = (exams: IcsExam[], className: string, reminders: number[]): string => {
+export const generateICSContent = (exams: Exam[], className: string, reminders: number[]): string => {
     const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
 
     const lines = [
