@@ -6,7 +6,7 @@ interface UptimeDisplayProps {
     startTime?: string;
 }
 
-function UptimeDisplay({ lastUpdate, startTime = APP_CONFIG.START_TIME_DEFAULT }: UptimeDisplayProps) {
+export function UptimeDisplay({ lastUpdate, startTime = APP_CONFIG.START_TIME_DEFAULT }: UptimeDisplayProps) {
     const [uptime, setUptime] = useState<string>('');
 
     useEffect(() => {
@@ -42,5 +42,3 @@ function UptimeDisplay({ lastUpdate, startTime = APP_CONFIG.START_TIME_DEFAULT }
         </div>
     );
 }
-
-export { UptimeDisplay };

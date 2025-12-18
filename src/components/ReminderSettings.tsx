@@ -5,7 +5,7 @@ interface ReminderSettingsProps {
     onChange: (reminders: number[]) => void;
 }
 
-function ReminderSettings({ selected, onChange }: ReminderSettingsProps) {
+export function ReminderSettings({ selected, onChange }: ReminderSettingsProps) {
     const options = [
         { value: 15, label: '15分钟前' },
         { value: 30, label: '30分钟前' },
@@ -49,4 +49,3 @@ function ReminderSettings({ selected, onChange }: ReminderSettingsProps) {
     );
 }
 
-export { ReminderSettings };

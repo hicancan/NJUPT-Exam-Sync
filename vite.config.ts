@@ -19,7 +19,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: [],
+      includeAssets: ['assets/icon-192.png', 'assets/icon-512.png'],
       manifest: {
         name: 'NJUPT Exam Sync',
         short_name: 'ExamSync',

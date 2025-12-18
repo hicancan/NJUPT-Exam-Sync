@@ -14,7 +14,7 @@ const formatDisplayDate = (isoString?: string): string => {
     });
 };
 
-function ExamCard({ exam, isSelected, onToggle }: ExamCardProps) {
+export function ExamCard({ exam, isSelected, onToggle }: ExamCardProps) {
     const isValidTime = !!exam.start_timestamp;
 
     return (
@@ -102,4 +102,3 @@ function ExamCard({ exam, isSelected, onToggle }: ExamCardProps) {
     );
 }
 
-export { ExamCard };

@@ -22,6 +22,9 @@ const foldLine = (line: string): string => {
 
 // 核心修复：增加 Timezone 支持
 export const generateICSContent = (exams: Exam[], className: string, reminders: number[]): string => {
+    if (!exams || exams.length === 0) {
+        throw new Error('无法生成日历：未提供有效的考试数据');
+    }
     const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
 
     const lines = [
