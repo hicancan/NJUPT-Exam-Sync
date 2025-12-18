@@ -20,8 +20,16 @@ function ExamCard({ exam, isSelected, onToggle }: ExamCardProps) {
     return (
         <div
             onClick={onToggle}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onToggle();
+                }
+            }}
             className={`
-                bg-white dark:bg-slate-800 rounded-xl border shadow-sm transition-all duration-200 relative overflow-hidden cursor-pointer select-none group
+                bg-white dark:bg-slate-800 rounded-xl border shadow-sm transition-all duration-200 relative overflow-hidden cursor-pointer select-none group focus:outline-none focus:ring-2 focus:ring-indigo-500
                 ${isSelected ? 'border-slate-200 dark:border-slate-600 hover:shadow-md' : 'border-slate-100 dark:border-slate-800 opacity-60 grayscale-[0.8] hover:opacity-80'}
             `}
         >

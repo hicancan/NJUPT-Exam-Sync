@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { APP_CONFIG } from '@/constants';
 
 interface UptimeDisplayProps {
     lastUpdate: string | null;
     startTime?: string;
 }
 
-function UptimeDisplay({ lastUpdate, startTime = '2025-12-15T00:00:00' }: UptimeDisplayProps) {
+function UptimeDisplay({ lastUpdate, startTime = APP_CONFIG.START_TIME_DEFAULT }: UptimeDisplayProps) {
     const [uptime, setUptime] = useState<string>('');
 
     useEffect(() => {
@@ -29,7 +30,7 @@ function UptimeDisplay({ lastUpdate, startTime = '2025-12-15T00:00:00' }: Uptime
                 已稳定运行: <span className="font-mono text-indigo-500 font-medium">{uptime}</span>
                 <span className="mx-2 text-slate-300">|</span>
                 <img
-                    src="https://visitor-badge.laobi.icu/badge?page_id=njupt.hicancan.top&left_text=%20%E8%AE%BF%E9%97%AE%E9%87%8F%20&right_color=%234F46E5"
+                    src={APP_CONFIG.VISITOR_BADGE_URL}
                     className="inline-block h-5 w-auto ml-1 align-middle"
                     alt="visitor count"
                     loading="lazy"
