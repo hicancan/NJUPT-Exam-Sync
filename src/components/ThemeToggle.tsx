@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 
-const ThemeToggle: React.FC = () => {
+function ThemeToggle() {
     const [isDark, setIsDark] = useState<boolean>(() => {
         // Initialize state from local storage or system preference
         if (typeof window === 'undefined') return false;
@@ -34,6 +34,6 @@ const ThemeToggle: React.FC = () => {
             {isDark ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
         </button>
     );
-};
+}
 
 export default ThemeToggle;

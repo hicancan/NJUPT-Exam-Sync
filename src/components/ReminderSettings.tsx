@@ -5,7 +5,7 @@ interface ReminderSettingsProps {
     onChange: (reminders: number[]) => void;
 }
 
-const ReminderSettings: React.FC<ReminderSettingsProps> = ({ selected, onChange }) => {
+function ReminderSettings({ selected, onChange }: ReminderSettingsProps) {
     const options = [
         { value: 15, label: '15分钟前' },
         { value: 30, label: '30分钟前' },
@@ -47,6 +47,6 @@ const ReminderSettings: React.FC<ReminderSettingsProps> = ({ selected, onChange 
             </div>
         </div>
     );
-};
+}
 
 export default ReminderSettings;

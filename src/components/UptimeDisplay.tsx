@@ -5,7 +5,7 @@ interface UptimeDisplayProps {
     startTime?: string;
 }
 
-const UptimeDisplay: React.FC<UptimeDisplayProps> = ({ lastUpdate, startTime = '2025-12-15T00:00:00' }) => {
+function UptimeDisplay({ lastUpdate, startTime = '2025-12-15T00:00:00' }: UptimeDisplayProps) {
     const [uptime, setUptime] = useState<string>('');
 
     useEffect(() => {
@@ -40,6 +40,6 @@ const UptimeDisplay: React.FC<UptimeDisplayProps> = ({ lastUpdate, startTime = '
             </p>
         </div>
     );
-};
+}
 
 export default UptimeDisplay;

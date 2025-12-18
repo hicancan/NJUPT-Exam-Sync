@@ -14,7 +14,7 @@ const formatDisplayDate = (isoString?: string): string => {
     });
 };
 
-const ExamCard: React.FC<ExamCardProps> = ({ exam, isSelected, onToggle }) => {
+function ExamCard({ exam, isSelected, onToggle }: ExamCardProps) {
     const isValidTime = !!exam.start_timestamp;
 
     return (
@@ -90,6 +90,6 @@ const ExamCard: React.FC<ExamCardProps> = ({ exam, isSelected, onToggle }) => {
             </div>
         </div>
     );
-};
+}
 
 export default ExamCard;

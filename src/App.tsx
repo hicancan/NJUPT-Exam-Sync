@@ -82,7 +82,7 @@ function App() {
 
     useEffect(() => {
         if (searchResult.mode === 'DETAIL' && searchResult.exams.length > 0) {
-            // eslint-disable-next-line
+            // eslint-disable-next-line react-hooks/rules-of-hooks -- Intentional: initialize selection when entering DETAIL mode
             setSelectedIds(new Set(searchResult.exams.map(e => e.id)));
             const newUrl = `${window.location.pathname}?class=${searchResult.classes[0]}`;
             window.history.replaceState(null, '', newUrl);

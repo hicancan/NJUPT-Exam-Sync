@@ -27,7 +27,6 @@ except ImportError as e:
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PUBLIC_DIR = os.path.join(BASE_DIR, 'public')
 DATA_DIR = os.path.join(PUBLIC_DIR, 'data')
-MANIFEST_PATH = os.path.join(PUBLIC_DIR, 'manifest.json')
 OUTPUT_DOC_PATH = os.path.join(DATA_DIR, 'DATA_INVENTORY.md')
 MERGED_JSON_PATH = os.path.join(DATA_DIR, 'all_exams.json')
 

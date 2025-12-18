@@ -4,7 +4,8 @@ import { Exam } from '../types';
 const formatICSDate = (isoString?: string): string | null => {
     if (!isoString) return null;
     // 移除毫秒、破折号和冒号，保留 YYYYMMDDTHHMMSS 格式
-    return isoString.replace(/[-:]/g, '').split('.')[0];
+    const parts = isoString.replace(/[-:]/g, '').split('.');
+    return parts[0] ?? null;
 };
 
 const foldLine = (line: string): string => {
@@ -28,7 +29,18 @@ export const generateICSContent = (exams: Exam[], className: string, reminders: 
         'PRODID:-//hicancan//NJUPT Exam Sync//CN',
         'X-WR-CALNAME:南邮考试-' + className,
         'CALSCALE:GREGORIAN',
-        'METHOD:PUBLISH'
+        'METHOD:PUBLISH',
+        // VTIMEZONE for Asia/Shanghai (China Standard Time, UTC+8, no DST)
+        'BEGIN:VTIMEZONE',
+        'TZID:Asia/Shanghai',
+        'X-LIC-LOCATION:Asia/Shanghai',
+        'BEGIN:STANDARD',
+        'TZOFFSETFROM:+0800',
+        'TZOFFSETTO:+0800',
+        'TZNAME:CST',
+        'DTSTART:19700101T000000',
+        'END:STANDARD',
+        'END:VTIMEZONE'
     ];
 
     exams.forEach((exam, index) => {
