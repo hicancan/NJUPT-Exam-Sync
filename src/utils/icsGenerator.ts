@@ -1,11 +1,11 @@
 // 辅助函数：安全地格式化 ICS 时间 (UTC -> Local String for ICS with TZID)
-const formatICSDate = (isoString) => {
+const formatICSDate = (isoString?: string): string | null => {
     if (!isoString) return null;
     // 移除毫秒、破折号和冒号，保留 YYYYMMDDTHHMMSS 格式
     return isoString.replace(/[-:]/g, '').split('.')[0];
 };
 
-const foldLine = (line) => {
+const foldLine = (line: string): string => {
     if (line.length <= 75) return line;
     let folded = line.substring(0, 75);
     let remainder = line.substring(75);
@@ -16,11 +16,28 @@ const foldLine = (line) => {
     return folded;
 };
 
+// Define a local interface for the exam object structure expected by this generator
+// ensuring it covers all fields accessed.
+interface IcsExam {
+    id: string;
+    start_timestamp?: string;
+    end_timestamp?: string;
+    course_code?: string;
+    teacher?: string;
+    class_name: string;
+    count?: string | number;
+    notes?: string;
+    campus?: string;
+    location: string;
+    course?: string; // Used in line 56
+    course_name?: string; // Likely the same as course
+}
+
 // 核心修复：增加 Timezone 支持
-export const generateICSContent = (exams, className, reminders) => {
+export const generateICSContent = (exams: IcsExam[], className: string, reminders: number[]): string => {
     const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
 
-    let lines = [
+    const lines = [
         'BEGIN:VCALENDAR',
         'VERSION:2.0',
         'PRODID:-//hicancan//NJUPT Exam Sync//CN',
@@ -46,6 +63,7 @@ export const generateICSContent = (exams, className, reminders) => {
         ].filter(Boolean).join('\\n');
 
         const location = `${exam.campus ? `[${exam.campus}] ` : ''}${exam.location}`;
+        const summary = exam.course || exam.course_name || '未知课程';
 
         lines.push('BEGIN:VEVENT');
         lines.push(`UID:${exam.id}-${index}@hicancan.top`);
@@ -53,7 +71,7 @@ export const generateICSContent = (exams, className, reminders) => {
         // 修复：强制指定亚洲/上海时区，避免浮动时间问题
         lines.push(`DTSTART;TZID=Asia/Shanghai:${start}`);
         lines.push(`DTEND;TZID=Asia/Shanghai:${end}`);
-        lines.push(`SUMMARY:考试: ${exam.course}`);
+        lines.push(`SUMMARY:考试: ${summary}`);
         lines.push(`LOCATION:${location}`);
         lines.push(`DESCRIPTION:${descText}`);
         lines.push('STATUS:CONFIRMED');

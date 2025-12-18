@@ -2,13 +2,13 @@
 import { useState, useEffect } from 'react';
 import { SunIcon, MoonIcon } from '@heroicons/react/24/outline'; // Need to install @heroicons/react
 
-const ThemeToggle = () => {
-    const [isDark, setIsDark] = useState(false);
+const ThemeToggle: React.FC = () => {
+    const [isDark, setIsDark] = useState<boolean>(false);
 
     useEffect(() => {
         // Init theme from logic
-        const saved = localStorage.getItem('theme');
-        const preferDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const saved: string | null = localStorage.getItem('theme');
+        const preferDark: boolean = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
         if (saved === 'dark' || (!saved && preferDark)) {
             setIsDark(true);

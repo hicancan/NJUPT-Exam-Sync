@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
 
-const UptimeDisplay = ({ lastUpdate, startTime = '2025-12-15T00:00:00' }) => {
-    const [uptime, setUptime] = useState('');
+interface UptimeDisplayProps {
+    lastUpdate: string | null;
+    startTime?: string;
+}
+
+const UptimeDisplay: React.FC<UptimeDisplayProps> = ({ lastUpdate, startTime = '2025-12-15T00:00:00' }) => {
+    const [uptime, setUptime] = useState<string>('');
 
     useEffect(() => {
         const start = new Date(startTime);
         const updateTimer = () => {
-            const diff = new Date() - start;
+            const diff = new Date().getTime() - start.getTime();
             const days = Math.floor(diff / (1000 * 60 * 60 * 24));
             const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));

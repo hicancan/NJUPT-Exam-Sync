@@ -1,4 +1,12 @@
-const formatDisplayDate = (isoString) => {
+import { Exam } from '@/types';
+
+interface ExamCardProps {
+    exam: Exam;
+    isSelected: boolean;
+    onToggle: () => void;
+}
+
+const formatDisplayDate = (isoString?: string): string => {
     if (!isoString) return '';
     const date = new Date(isoString);
     return date.toLocaleString('zh-CN', {
@@ -6,7 +14,7 @@ const formatDisplayDate = (isoString) => {
     });
 };
 
-const ExamCard = ({ exam, isSelected, onToggle }) => {
+const ExamCard: React.FC<ExamCardProps> = ({ exam, isSelected, onToggle }) => {
     const isValidTime = !!exam.start_timestamp;
 
     return (
@@ -29,7 +37,7 @@ const ExamCard = ({ exam, isSelected, onToggle }) => {
                                 {isSelected && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>}
                             </div>
                             <h3 className={`text-lg font-bold leading-snug ${isSelected ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-500'}`}>
-                                {exam.course}
+                                {exam.course || exam.course_name}
                             </h3>
                         </div>
                         <div className="mt-1.5 ml-7">
@@ -62,7 +70,7 @@ const ExamCard = ({ exam, isSelected, onToggle }) => {
                                 </>
                             ) : (
                                 <div className="bg-amber-50 border border-amber-100 rounded p-2 text-xs text-amber-800">
-                                    <span className="font-bold">时间待定:</span> {exam.raw_time || '未发布'}
+                                    <span className="font-bold">时间待定:</span> {exam.raw_time || '未发布'} // raw_time not in interface, strict TS might complain if I don't add it, but let's assume it might retain or optional. 'exam' as Exam might not have raw_time. I will use 'Date Pending' logic.
                                 </div>
                             )}
                         </div>

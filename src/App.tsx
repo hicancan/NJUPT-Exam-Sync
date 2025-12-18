@@ -4,17 +4,18 @@ import ThemeToggle from './components/ThemeToggle';
 import ExamCard from './components/ExamCard';
 import ReminderSettings from './components/ReminderSettings';
 import { generateICSContent } from './utils/icsGenerator';
+import { Exam, Manifest, SearchResult } from '@/types';
 
 function App() {
-    const [allExams, setAllExams] = useState([]);
-    const [updateTime, setUpdateTime] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [inputValue, setInputValue] = useState('');
-    const [manualSelection, setManualSelection] = useState(null);
-    const [reminders, setReminders] = useState([30, 60]);
-    const [selectedIds, setSelectedIds] = useState(new Set());
-    const [copyState, setCopyState] = useState(false);
+    const [allExams, setAllExams] = useState<Exam[]>([]);
+    const [updateTime, setUpdateTime] = useState<string | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    const [inputValue, setInputValue] = useState<string>('');
+    const [manualSelection, setManualSelection] = useState<string | null>(null);
+    const [reminders, setReminders] = useState<number[]>([30, 60]);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [copyState, setCopyState] = useState<boolean>(false);
 
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -24,11 +25,11 @@ function App() {
             setManualSelection(classFromUrl);
         }
 
-        const fetchOptions = { cache: 'no-cache' };
+        const fetchOptions: RequestInit = { cache: 'no-cache' };
 
         Promise.all([
-            fetch('data/all_exams.json', fetchOptions).then(r => r.json()),
-            fetch('data/data_summary.json', fetchOptions).then(r => r.json()).catch(() => null)
+            fetch('data/all_exams.json', fetchOptions).then(r => r.json() as Promise<Exam[]>),
+            fetch('data/data_summary.json', fetchOptions).then(r => r.json() as Promise<Manifest>).catch(() => null)
         ])
             .then(([examsData, manifestData]) => {
                 examsData.sort((a, b) => {
@@ -57,7 +58,7 @@ function App() {
             });
     }, []);
 
-    const searchResult = useMemo(() => {
+    const searchResult = useMemo<SearchResult>(() => {
         if (!inputValue || inputValue.length < 2) {
             return { mode: 'EMPTY', classes: [], exams: [] };
         }
@@ -90,19 +91,19 @@ function App() {
         }
     }, [searchResult.exams, searchResult.mode, searchResult.classes]);
 
-    const handleInput = (val) => {
+    const handleInput = (val: string) => {
         setInputValue(val);
         if (manualSelection && val !== manualSelection) {
             setManualSelection(null);
         }
     };
 
-    const handleClassClick = (cls) => {
+    const handleClassClick = (cls: string) => {
         setInputValue(cls);
         setManualSelection(cls);
     };
 
-    const toggleExamSelection = (id) => {
+    const toggleExamSelection = (id: string) => {
         const newSet = new Set(selectedIds);
         if (newSet.has(id)) newSet.delete(id);
         else newSet.add(id);
@@ -121,6 +122,19 @@ function App() {
         const { exams, classes } = searchResult;
         const selectedExams = exams.filter(e => selectedIds.has(e.id));
         const validExams = selectedExams.filter(e => e.start_timestamp);
+
+        // We need to match the Shape required by generateICSContent
+        // The generator expects implicit shape which is loosely compatible with Exam
+        // but let's strictly check or map if needed.
+        // Actually since we updated Exam interface, it should be fine.
+        // Wait, generateICSContent in utils/icsGenerator.ts uses a local interface `IcsExam`
+        // which matches our new `Exam` interface properties. So we can just cast or pass it.
+        // However, IcsExam expects `course` or `course_name`. `Exam` has `course_name`.
+        // Let's ensure compatibility.
+        // We will just pass validExams as any or specific type if needed.
+        // Since `generateICSContent` was updated to accept `IcsExam[]`, and `Exam` has the same fields...
+        // Wait, `IcsExam` has `course_code` optional, `Exam` has it optional.
+        // It should be compatible.
 
         if (validExams.length === 0) {
             alert('请至少勾选一门包含有效时间的考试');
