@@ -4,7 +4,7 @@ import glob
 import re
 import logging
 import sys
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Any
 
 logging.basicConfig(
@@ -51,6 +51,13 @@ FIELD_MAPPING = {
 
 REGEX_CHINESE = re.compile(r'(\d{4})年(\d{1,2})月(\d{1,2})日.*?(\d{1,2}:\d{2})\s*[-~至]\s*(\d{1,2}:\d{2})')
 REGEX_ISO = re.compile(r'\(?(\d{4}-\d{1,2}-\d{1,2})\)?.*?(\d{1,2}:\d{2})\s*[-~至]\s*(\d{1,2}:\d{2})')
+
+def get_beijing_time() -> datetime:
+    """Get current time in Beijing Timezone (UTC+8)"""
+    utc_dt = datetime.now(timezone.utc)
+    beijing_tz = timezone(timedelta(hours=8))
+    return utc_dt.astimezone(beijing_tz)
+
 
 
 # --- Pydantic Model ---
@@ -322,7 +329,7 @@ def generate_markdown_report(analyses: List[Dict], total_records: int) -> str:
     # ========== Header ==========
     lines.append("# 📊 Data Inventory & Quality Report")
     lines.append("")
-    lines.append(f"> **Generated on:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    lines.append(f"> **Generated on:** {get_beijing_time().strftime('%Y-%m-%d %H:%M:%S')} (Beijing Time)")
     lines.append(">")
     lines.append("> This report provides complete visibility into raw Excel data and processing results.")
     lines.append("> You do NOT need to open the original Excel files - all information is captured here.")
@@ -579,7 +586,7 @@ def main():
          logger.error(f"Failed to write Report: {e}")
 
     manifest = {
-        "generated_at": datetime.now().isoformat(),
+        "generated_at": get_beijing_time().isoformat(),
         "files_processed": [a['filename'] for a in analyses],
         "total_records": len(all_rows)
     }

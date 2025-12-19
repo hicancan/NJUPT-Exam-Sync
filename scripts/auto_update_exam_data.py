@@ -177,13 +177,17 @@ def process_detail_page(url, title):
         
         if count > 0:
             import json
-            from datetime import datetime
+            from datetime import datetime, timezone, timedelta
             
+            # Beijing Time Helper
+            beijing_tz = timezone(timedelta(hours=8))
+            now_beijing = datetime.now(timezone.utc).astimezone(beijing_tz)
+
             metadata = {
                 "source_url": url,
                 "source_title": title,
                 "downloaded_files": downloaded_files,
-                "updated_at": datetime.now().isoformat()
+                "updated_at": now_beijing.isoformat()
             }
             meta_path = os.path.join(SAVE_DIR, "source_metadata.json")
             with open(meta_path, 'w', encoding='utf-8') as f:

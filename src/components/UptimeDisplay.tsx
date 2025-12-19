@@ -32,24 +32,28 @@ export function UptimeDisplay({
     }, [startTime]);
 
     return (
-        <div className="space-y-1">
-            <p>
-                已稳定运行: <span className="font-mono text-indigo-500 font-medium">{uptime}</span>
-                <span className="mx-2 text-slate-300">|</span>
+        <div className="space-y-2">
+            <div className="flex items-center justify-center gap-3 text-slate-400">
+                <span>
+                    已稳定运行 <span className="font-mono text-indigo-500 font-medium px-1">{uptime}</span>
+                </span>
+                <span className="opacity-30">|</span>
                 <img
                     src={APP_CONFIG.VISITOR_BADGE_URL}
-                    className="inline-block h-5 w-auto ml-1 align-middle"
+                    className="h-4 w-auto opacity-80 hover:opacity-100 transition-opacity"
                     alt="visitor count"
                     loading="lazy"
                 />
+            </div>
+
+            <p className="text-slate-500">
+                自动同步于 <span className="font-mono font-medium">{lastUpdate || '获取中...'}</span>
             </p>
-            <p>
-                数据最后更新: <span className="font-mono text-slate-500">{lastUpdate || '获取中...'}</span>
-            </p>
+
             {sourceUrl && (
-                <p className="text-xs text-slate-400">
-                    数据来源: <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-indigo-500 underline decoration-dotted underline-offset-2" title={sourceTitle || '点击查看教务通知'}>
-                        {sourceTitle ? (sourceTitle.length > 20 ? sourceTitle.substring(0, 20) + '...' : sourceTitle) : '教务处通知'}
+                <p className="text-slate-400 max-w-md mx-auto leading-relaxed">
+                    官方数据源: <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-indigo-500 hover:underline transition-colors" title={sourceTitle || '点击查看教务通知'}>
+                        {sourceTitle || '教务处通知'}
                     </a>
                 </p>
             )}
