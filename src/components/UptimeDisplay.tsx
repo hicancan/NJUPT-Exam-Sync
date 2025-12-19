@@ -52,7 +52,7 @@ export function UptimeDisplay({
 
             {sourceUrl && (
                 <p className="text-slate-400 max-w-md mx-auto leading-relaxed">
-                    官方数据源: <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-indigo-500 hover:underline transition-colors" title={sourceTitle || '点击查看教务通知'}>
+                    当前爬取的官方数据源: <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-indigo-500 hover:underline transition-colors" title={sourceTitle || '点击查看教务通知'}>
                         {sourceTitle || '教务处通知'}
                     </a>
                 </p>
