@@ -40,14 +40,19 @@ export function ExamDetail({
             return;
         }
 
-        const content = generateICSContent(validExams, className, reminders);
-        const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `NJUPT_Exams_${className}.ics`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        try {
+            const content = generateICSContent(validExams, className, reminders);
+            const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `NJUPT_Exams_${className}.ics`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (err) {
+            console.error('ICS generation failed:', err);
+            alert('日历文件生成失败，请稍后重试或联系开发者');
+        }
     };
 
     return (

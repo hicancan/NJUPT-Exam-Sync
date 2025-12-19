@@ -24,6 +24,7 @@ export interface Exam {
     major?: string; // 专业名称
     grade?: string; // 年级
     date?: string; // Parsed date string (YYYY-MM-DD)
+    parse_error?: string | null; // Time parsing error message (if any)
 }
 
 export interface Manifest {

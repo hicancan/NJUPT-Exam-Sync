@@ -4,6 +4,7 @@ from urllib.parse import urljoin
 import os
 import re
 import urllib3
+from typing import Optional
 
 # 禁用 SSL 警告
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -28,7 +29,7 @@ HEADERS = {
     "Referer": "https://jwc.njupt.edu.cn/"
 }
 
-def is_valid_title(title):
+def is_valid_title(title: str) -> bool:
     """
     判断标题是否为正规期末考试安排
     """
@@ -48,16 +49,16 @@ def is_valid_title(title):
         
     return True
 
-def is_student_file(filename):
+def is_student_file(filename: str) -> bool:
     """判断是否为学生用表"""
     return "学生" in filename
 
-def is_teacher_file(filename):
+def is_teacher_file(filename: str) -> bool:
     """判断是否为教师/监考表"""
     keywords = ["监考", "教师", "巡考", "教务员"]
     return any(kw in filename for kw in keywords)
 
-def download_file(url, save_path):
+def download_file(url: str, save_path: str) -> bool:
     try:
         print(f"  ⬇️  下载中: {os.path.basename(save_path)} ...", end="", flush=True)
         response = requests.get(url, headers=HEADERS, verify=False, timeout=30)
@@ -70,7 +71,7 @@ def download_file(url, save_path):
         print(f" [失败] {e}")
         return False
 
-def find_latest_schedule_notification():
+def find_latest_schedule_notification() -> Optional[tuple[str, str]]:
     """遍历列表页，寻找最新的、符合逻辑的通知"""
     print(f"🔍 访问通知列表: {LIST_URL}")
     try:
@@ -112,7 +113,7 @@ def find_latest_schedule_notification():
         print(f"❌ 列表获取失败: {e}")
         return None
 
-def process_detail_page(url, title):
+def process_detail_page(url: str, title: str) -> None:
     """解析详情页并智能下载附件"""
     print(f"🔍 解析详情页附件...")
     try:
