@@ -1,7 +1,7 @@
 export const APP_CONFIG = {
     APP_NAME: 'NJUPT Exam Sync',
     PAGE_TITLE: '考试日程助手',
-    PAGE_SUBTITLE: '南邮学子专属 · 班级号极速查询 · hicancan 强力驱动',
+    PAGE_SUBTITLE: '南邮学子专属 · 班级号极速查询 · 自动同步',
     DOMAIN: 'hicancan.top',
     GITHUB_REPO: 'https://github.com/hicancan/njupt-exam-sync',
     BILIBILI_PAGE: 'https://space.bilibili.com/1144561698',
