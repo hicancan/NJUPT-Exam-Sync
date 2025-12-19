@@ -7,6 +7,10 @@ on:
       - 'README.md'
       - 'scripts/**'
       - '.gitignore'
+  workflow_run:
+    workflows: ["Auto Update Exam Data"]
+    types:
+      - completed
   workflow_dispatch:
 
 permissions:
