@@ -2,14 +2,12 @@ import { useState, useEffect } from 'react';
 import { APP_CONFIG } from '@/constants';
 
 interface UptimeDisplayProps {
-    lastUpdate: string | null;
     startTime?: string;
     sourceUrl?: string | null;
     sourceTitle?: string | null;
 }
 
 export function UptimeDisplay({
-    lastUpdate,
     startTime = APP_CONFIG.START_TIME_DEFAULT,
     sourceUrl,
     sourceTitle
@@ -32,10 +30,31 @@ export function UptimeDisplay({
     }, [startTime]);
 
     return (
-        <div className="space-y-2">
-            <div className="flex items-center justify-center gap-3 text-slate-400">
-                <span>
-                    已稳定运行 <span className="font-mono text-indigo-500 font-medium px-1">{uptime}</span>
+        <div className="space-y-3">
+            {/* 数据来源 - 最重要的信息放在最上面 */}
+            {sourceUrl && (
+                <p className="text-slate-500">
+                    数据来源: <a
+                        href={sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-500 hover:text-indigo-600 hover:underline transition-colors font-medium"
+                        title="点击查看教务处原始通知"
+                    >
+                        {sourceTitle || '教务处通知'} ↗
+                    </a>
+                </p>
+            )}
+
+            {/* 同步机制说明 - 强调持续运行而不是显示可能过时的时间 */}
+            <p className="text-slate-400">
+                与官方数据保持同步 · <span className="font-medium">每6小时自动核对</span>
+            </p>
+
+            {/* 运行状态和访问量 */}
+            <div className="flex items-center justify-center gap-3 text-slate-400 pt-1">
+                <span className="text-xs">
+                    已稳定运行 <span className="font-mono text-indigo-500 font-medium">{uptime}</span>
                 </span>
                 <span className="opacity-30">|</span>
                 <img
@@ -45,18 +64,6 @@ export function UptimeDisplay({
                     loading="lazy"
                 />
             </div>
-
-            <p className="text-slate-500">
-                自动同步于 <span className="font-mono font-medium">{lastUpdate || '获取中...'}</span>
-            </p>
-
-            {sourceUrl && (
-                <p className="text-slate-400 max-w-md mx-auto leading-relaxed">
-                    当前爬取的官方数据源: <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-indigo-500 hover:underline transition-colors" title={sourceTitle || '点击查看教务通知'}>
-                        {sourceTitle || '教务处通知'}
-                    </a>
-                </p>
-            )}
         </div>
     );
 }

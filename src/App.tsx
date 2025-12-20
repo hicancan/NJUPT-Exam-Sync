@@ -9,7 +9,7 @@ import { APP_CONFIG } from '@/constants';
 import { useExamData } from '@/hooks/useExamData';
 
 function App() {
-    const { exams: allExams, loading, error, updateTime, sourceUrl, sourceTitle } = useExamData();
+    const { exams: allExams, loading, error, sourceUrl, sourceTitle } = useExamData();
 
     // UI State
     const [inputValue, setInputValue] = useState<string>(() => {
@@ -166,7 +166,6 @@ function App() {
                     </div>
 
                     <UptimeDisplay
-                        lastUpdate={updateTime}
                         sourceUrl={sourceUrl}
                         sourceTitle={sourceTitle}
                     />
