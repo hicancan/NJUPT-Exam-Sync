@@ -1,12 +1,34 @@
 import { Exam } from '../types';
 import { APP_CONFIG } from '../constants';
 
-// 辅助函数：安全地格式化 ICS 时间 (UTC -> Local String for ICS with TZID)
+/**
+ * 格式化 ISO 时间字符串为 ICS 本地时间格式
+ * RFC 5545: 使用 TZID 时，时间值必须是本地时间格式，不含 UTC 偏移量
+ * 输入: "2025-11-18T13:30:00+08:00"
+ * 输出: "20251118T133000"
+ */
 const formatICSDate = (isoString?: string): string | null => {
     if (!isoString) return null;
-    // 移除毫秒、破折号和冒号，保留 YYYYMMDDTHHMMSS 格式
-    const parts = isoString.replace(/[-:]/g, '').split('.');
-    return parts[0] ?? null;
+    // 先移除时区偏移量 (+08:00 或 Z)，然后移除破折号和冒号
+    const withoutTz = isoString.replace(/[+-]\d{2}:\d{2}$|Z$/, '');
+    const cleaned = withoutTz.replace(/[-:]/g, '').split('.')[0];
+    return cleaned ?? null;
+};
+
+/**
+ * 生成 ASCII 安全的 UID
+ * RFC 5545 建议 UID 使用 ASCII 字符以确保兼容性
+ */
+const generateUID = (examId: string, index: number): string => {
+    // 将中文文件名转换为 hash
+    let hash = 0;
+    for (let i = 0; i < examId.length; i++) {
+        const char = examId.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    const hashStr = Math.abs(hash).toString(36);
+    return `exam-${hashStr}-${index}@${APP_CONFIG.DOMAIN}`;
 };
 
 // RFC 5545 标准要求转义特殊字符
@@ -18,15 +40,41 @@ const escapeICSValue = (str: string): string => {
         .replace(/\n/g, '\\n');
 };
 
+/**
+ * RFC 5545 行折叠：每行最多 75 字节
+ * 注意：必须在 UTF-8 字符边界处折叠，不能截断多字节字符
+ */
 const foldLine = (line: string): string => {
-    if (line.length <= 75) return line;
-    let folded = line.substring(0, 75);
-    let remainder = line.substring(75);
-    while (remainder.length > 0) {
-        folded += '\r\n ' + remainder.substring(0, 74);
-        remainder = remainder.substring(74);
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(line);
+
+    if (bytes.length <= 75) return line;
+
+    const result: string[] = [];
+    let currentLine = '';
+    let currentBytes = 0;
+    const maxBytes = 75;
+    const continuationMaxBytes = 74; // 续行前有一个空格占用 1 字节
+
+    for (const char of line) {
+        const charBytes = encoder.encode(char).length;
+        const limit = result.length === 0 ? maxBytes : continuationMaxBytes;
+
+        if (currentBytes + charBytes > limit) {
+            result.push(currentLine);
+            currentLine = char;
+            currentBytes = charBytes;
+        } else {
+            currentLine += char;
+            currentBytes += charBytes;
+        }
     }
-    return folded;
+
+    if (currentLine) {
+        result.push(currentLine);
+    }
+
+    return result.join('\r\n ');
 };
 
 // 核心修复：增加 Timezone 支持
@@ -76,7 +124,7 @@ export const generateICSContent = (exams: Exam[], className: string, reminders: 
         const summary = exam.course_name;
 
         lines.push('BEGIN:VEVENT');
-        lines.push(`UID:${exam.id}-${index}@${APP_CONFIG.DOMAIN}`);
+        lines.push(`UID:${generateUID(exam.id, index)}`);
         lines.push(`DTSTAMP:${now}`);
         // 修复：强制指定亚洲/上海时区，避免浮动时间问题
         lines.push(`DTSTART;TZID=Asia/Shanghai:${start}`);

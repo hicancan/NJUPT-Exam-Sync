@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { UptimeDisplay } from './components/UptimeDisplay';
 import { ThemeToggle } from './components/ThemeToggle';
 import { SearchInput } from './components/SearchInput';
@@ -23,6 +23,9 @@ function App() {
     const [reminders, setReminders] = useState<number[]>([30, 60]);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+    // 追踪已同步选中状态的班级，避免重复设置
+    const prevSyncedClassRef = useRef<string | null>(null);
+
     const searchResult = useMemo<SearchResult>(() => {
         if (!inputValue || inputValue.length < 2) {
             return { mode: 'EMPTY', classes: [], exams: [] };
@@ -46,16 +49,39 @@ function App() {
         return { mode: 'LIST', classes: uniqueClasses, exams: [] };
     }, [allExams, inputValue, manualSelection]);
 
+    /**
+     * 处理选中状态同步和 URL 同步
+     * 
+     * 注意：此处故意在 useEffect 中调用 setSelectedIds。
+     * React 19 的 react-hooks/set-state-in-effect 规则禁止这样做，
+     * 但这是"响应外部变化自动同步状态"的合法需求：
+     * - 不能使用 useMemo（因为用户可以手动修改选中状态）
+     * - 不能在渲染期间访问 ref（react-hooks/refs 规则）
+     * - 不能用 key 重置（会丢失用户的其他交互状态）
+     * 
+     * 使用 prevSyncedClassRef 确保只在班级实际变化时才更新选中状态，
+     * 避免用户手动取消勾选后被重新全选。
+     */
     useEffect(() => {
-        if (searchResult.mode === 'DETAIL' && searchResult.exams.length > 0) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync selection when search finds a unique class
-            setSelectedIds(new Set(searchResult.exams.map(e => e.id)));
-            const newUrl = `${window.location.pathname}?class=${searchResult.classes[0]}`;
+        const currentClass = searchResult.mode === 'DETAIL' ? searchResult.classes[0] : null;
+
+        if (searchResult.mode === 'DETAIL' && currentClass && searchResult.exams.length > 0) {
+            // 只在班级变化时更新选中状态
+            if (currentClass !== prevSyncedClassRef.current) {
+                prevSyncedClassRef.current = currentClass;
+                // eslint-disable-next-line react-hooks/set-state-in-effect -- 合法场景：响应班级变化自动同步初始选中状态
+                setSelectedIds(new Set(searchResult.exams.map(e => e.id)));
+            }
+            // 同步 URL
+            const newUrl = `${window.location.pathname}?class=${currentClass}`;
             window.history.replaceState(null, '', newUrl);
         } else if (searchResult.mode === 'EMPTY') {
+            prevSyncedClassRef.current = null;
             window.history.replaceState(null, '', window.location.pathname);
+        } else {
+            prevSyncedClassRef.current = null;
         }
-    }, [searchResult.exams, searchResult.mode, searchResult.classes]);
+    }, [searchResult.mode, searchResult.classes, searchResult.exams]);
 
     const handleInput = (val: string) => {
         setInputValue(val);
