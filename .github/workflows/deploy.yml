@@ -26,10 +26,22 @@ concurrency:
   group: "pages"
   cancel-in-progress: false
 
+
 jobs:
   # Build job
   build:
     runs-on: ubuntu-latest
+    # Refined Trigger Logic:
+    # 1. Always run on Push
+    # 2. On 'workflow_run' (Auto Update), ONLY run if:
+    #    - The update workflow Succeeded
+    #    - The update workflow ran on 'main' branch
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_run' && 
+       github.event.workflow_run.conclusion == 'success' && 
+       github.event.workflow_run.head_branch == 'main')
+    
     outputs:
       skip_deploy: ${{ steps.check_updates.outputs.skip_deploy }}
     steps:
