@@ -1,6 +1,6 @@
 # 📊 Data Inventory & Quality Report
 
-> **Generated on:** 2025-12-24 18:48:46 (Beijing Time)
+> **Generated on:** 2025-12-29 20:30:31 (Beijing Time)
 >
 > This report provides complete visibility into raw Excel data and processing results.
 > You do NOT need to open the original Excel files - all information is captured here.
@@ -10,12 +10,12 @@
 | Metric | Value |
 |--------|-------|
 | Total Files Processed | 3 |
-| Total Records Extracted | 9,564 |
-| Parse Success Rate | 9564/9564 (100.0%) |
+| Total Records Extracted | 9,567 |
+| Parse Success Rate | 9567/9567 (100.0%) |
 | Date Range (All Files) | 2025-11-05 ~ 2026-01-23 |
 | Unique Classes | ~1,775 |
 | Unique Courses | ~526 |
-| Campus Distribution | 仙林 (8,665), 三牌楼 (837), 锁金 (62) |
+| Campus Distribution | 仙林 (8,668), 三牌楼 (837), 锁金 (62) |
 
 ---
 
@@ -168,7 +168,7 @@
 
 ## ✅ File: `2025-2026学年第一学期考试安排表（学校组织19-20周）-学生用表.xlsx`
 
-**Rows:** 6,220 | **Columns:** 12 | **Parse Success:** 6220/6220 | **Date Range:** 2026-01-07 ~ 2026-01-22
+**Rows:** 6,223 | **Columns:** 12 | **Parse Success:** 6223/6223 | **Date Range:** 2026-01-07 ~ 2026-01-22
 
 ### 🔹 Part A: Raw Excel Analysis
 
@@ -184,7 +184,7 @@
 | 6 | `任课教师` | object | 100.0% | 508 | 李娟, 侯佳, 孙蔚 |
 | 7 | `人数` | int64 | 100.0% | 39 | 1, 3, 2 |
 | 8 | `考试时间` | object | 100.0% | 33 | 2026年01月21日(18:30-20:20), 2026年01月16日(08:00-09:50) |
-| 9 | `教室名称` | object | 100.0% | 88 | 无1, 教2－305, 教2－304 |
+| 9 | `教室名称` | object | 100.0% | 89 | 无1, 教2－305, 教2－304 |
 | 10 | `学生所在学院` | object | 100.0% | 22 | 通信与信息工程学院, 电子与光学工程学院, 集成电路科学与工程学院 |
 | 11 | `年级` | int64 | 100.0% | 6 | 2020, 2022, 2023 |
 | 12 | `专业名称` | object | 100.0% | 90 | 通信工程, 柔性电子学, 电子科学与技术 |
@@ -221,13 +221,13 @@
 
 | Metric | Value |
 |--------|-------|
-| Records Processed | 6,220 |
-| Time Parse Success | 6,220 |
+| Records Processed | 6,223 |
+| Time Parse Success | 6,223 |
 | Time Parse Failed | 0 |
 | Unique Classes | 829 |
 | Unique Courses | 116 |
 | Avg Exam Duration | 111.7 min |
-| Campus Distribution | 三牌楼 (502), 仙林 (5657), 锁金 (61) |
+| Campus Distribution | 三牌楼 (502), 仙林 (5660), 锁金 (61) |
 
 #### ✅ Validation: All Passed
 
