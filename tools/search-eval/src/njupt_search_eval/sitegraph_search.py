@@ -101,11 +101,18 @@ def expand_query_phrases(query: str, aliases: dict[str, Any]) -> list[str]:
     candidates = [query]
     normalized_query = normalize_text(query)
     for key, payload in aliases.items():
-        terms = [key]
+        normalized_key = normalize_text(key)
+        alias_terms: list[str] = []
         if isinstance(payload, dict) and isinstance(payload.get("aliases"), list):
-            terms.extend(str(item) for item in payload["aliases"])
-        if any(normalize_text(term) and normalize_text(term) in normalized_query for term in terms):
-            candidates.extend(terms)
+            alias_terms.extend(str(item) for item in payload["aliases"])
+        alias_hits = [
+            normalized_alias
+            for term in alias_terms
+            if (normalized_alias := normalize_text(term))
+            and (normalized_query == normalized_alias or (len(normalized_alias) >= 4 and normalized_alias in normalized_query))
+        ]
+        if (normalized_key and normalized_key in normalized_query) or alias_hits:
+            candidates.extend([key, *alias_terms])
     return sorted({normalize_text(item) for item in candidates if len(normalize_text(item)) >= 2}, key=len, reverse=True)
 
 
@@ -128,6 +135,9 @@ def load_index() -> dict[str, Any]:
         "local_body_cache": {},
         "shard_filter_cache": {},
         "proof_catalog_cache": {},
+        "hot_query_proof_directory_cache": {},
+        "hot_query_top_proof_cache": {},
+        "hot_query_proof_cache": {},
         "full_shard_cache": {},
         "cache_stats": new_cache_stats(),
     }
@@ -285,6 +295,121 @@ def load_proof_catalog(index: dict[str, Any], source_manifest: dict[str, Any]) -
     cache[path] = read_json(PUBLIC_ROOT / path)
     record_cache(index, False, bytes_count)
     return cache[path]
+
+
+def hot_query_phrase_key(match_phrases: list[str]) -> str:
+    return "\0".join(sorted(match_phrases, key=lambda text: (-len(text), text)))
+
+
+def load_hot_query_proof_directory(index: dict[str, Any]) -> dict[str, Any] | None:
+    artifact = (index.get("manifest", {}).get("artifacts", {}) or {}).get("hot_query_proof_directory")
+    if not isinstance(artifact, dict) or not artifact.get("path"):
+        return None
+    path = str(artifact["path"])
+    cache = index["hot_query_proof_directory_cache"]
+    bytes_count = int(artifact.get("bytes") or 0)
+    if path in cache:
+        record_cache(index, True, bytes_count)
+        return cache[path]
+    cache[path] = read_json(PUBLIC_ROOT / path)
+    record_cache(index, False, bytes_count)
+    return cache[path]
+
+
+def load_hot_query_proof_certificate(index: dict[str, Any], entry: dict[str, Any]) -> dict[str, Any] | None:
+    if not isinstance(entry, dict) or not entry.get("path"):
+        return None
+    path = str(entry["path"])
+    cache = index["hot_query_proof_cache"]
+    bytes_count = int(entry.get("bytes") or 0)
+    if path in cache:
+        record_cache(index, True, bytes_count)
+        return cache[path]
+    cache[path] = read_json(PUBLIC_ROOT / path)
+    record_cache(index, False, bytes_count)
+    return cache[path]
+
+
+def load_hot_query_top_proof_certificate(index: dict[str, Any], entry: dict[str, Any]) -> dict[str, Any] | None:
+    top_entry = entry.get("top_certificate") if isinstance(entry.get("top_certificate"), dict) else None
+    if not isinstance(top_entry, dict) or not top_entry.get("path"):
+        return None
+    path = str(top_entry["path"])
+    cache = index["hot_query_top_proof_cache"]
+    bytes_count = int(top_entry.get("bytes") or 0)
+    if path in cache:
+        record_cache(index, True, bytes_count)
+        return cache[path]
+    cache[path] = read_json(PUBLIC_ROOT / path)
+    record_cache(index, False, bytes_count)
+    return cache[path]
+
+
+def matching_hot_query_proof(index: dict[str, Any], query: str, match_phrases: list[str]) -> tuple[dict[str, Any], int] | None:
+    directory = load_hot_query_proof_directory(index)
+    if not isinstance(directory, dict):
+        return None
+    if str(directory.get("certificate_model") or "") != "rank-display-match-window-certificate-v2":
+        return None
+    if str(directory.get("rank_evidence_model") or "") != "query-token-field-impact-full-document-v1":
+        return None
+    queries = directory.get("queries") if isinstance(directory.get("queries"), dict) else {}
+    entry = queries.get(normalize_text(query))
+    if not isinstance(entry, dict):
+        return None
+    phrase_key = hot_query_phrase_key(match_phrases)
+    if str(entry.get("phrase_key") or "") != phrase_key:
+        return None
+    certificate = load_hot_query_proof_certificate(index, entry)
+    if not isinstance(certificate, dict):
+        return None
+    if str(certificate.get("version") or "") != "sitegraph-hot-query-complete-certificate-v2":
+        return None
+    if str(certificate.get("document_payload_model") or "") != "rank-display-match-window-certificate-v2":
+        return None
+    if str(certificate.get("rank_evidence_model") or "") != "query-token-field-impact-full-document-v1":
+        return None
+    if not isinstance(certificate.get("rank_terms"), list):
+        return None
+    if str(certificate.get("phrase_key") or "") != phrase_key:
+        return None
+    proof_bytes = int(((index.get("manifest", {}).get("artifacts", {}) or {}).get("hot_query_proof_directory") or {}).get("bytes") or 0)
+    proof_bytes += int(entry.get("bytes") or 0)
+    return certificate, proof_bytes
+
+
+def matching_hot_query_top_proof(index: dict[str, Any], query: str, match_phrases: list[str]) -> tuple[dict[str, Any], dict[str, Any], int] | None:
+    directory = load_hot_query_proof_directory(index)
+    if not isinstance(directory, dict):
+        return None
+    if str(directory.get("certificate_model") or "") != "rank-display-match-window-certificate-v2":
+        return None
+    if str(directory.get("rank_evidence_model") or "") != "query-token-field-impact-full-document-v1":
+        return None
+    queries = directory.get("queries") if isinstance(directory.get("queries"), dict) else {}
+    entry = queries.get(normalize_text(query))
+    if not isinstance(entry, dict):
+        return None
+    phrase_key = hot_query_phrase_key(match_phrases)
+    if str(entry.get("phrase_key") or "") != phrase_key:
+        return None
+    certificate = load_hot_query_top_proof_certificate(index, entry)
+    if not isinstance(certificate, dict):
+        return None
+    if str(certificate.get("version") or "") != "sitegraph-hot-query-topk-certificate-v1":
+        return None
+    if str(certificate.get("document_payload_model") or "") != "rank-display-match-window-certificate-v2":
+        return None
+    if str(certificate.get("rank_evidence_model") or "") != "query-token-field-impact-full-document-v1":
+        return None
+    if str(certificate.get("phrase_key") or "") != phrase_key:
+        return None
+    if not isinstance(certificate.get("rank_terms"), list):
+        return None
+    top_entry = entry.get("top_certificate") if isinstance(entry.get("top_certificate"), dict) else {}
+    proof_bytes = int(((index.get("manifest", {}).get("artifacts", {}) or {}).get("hot_query_proof_directory") or {}).get("bytes") or 0)
+    proof_bytes += int(top_entry.get("bytes") or 0)
+    return certificate, entry, proof_bytes
 
 
 def load_shard(index: dict[str, Any], path: str, bytes_count: int = 0) -> list[dict[str, Any]]:
@@ -619,11 +744,14 @@ def stale_penalty(document: dict[str, Any], mode: str) -> float:
 
 
 def is_short_landing_page(document: dict[str, Any], normalized_query: str, title: str) -> bool:
+    content_length = document.get("content_normalized_length")
+    if not isinstance(content_length, int | float):
+        content_length = len(normalize_text(document.get("content")))
     return (
         title == normalized_query
         and document.get("facet") in {"workflow", "news", "notice_article"}
         and not date_sort_value(document.get("published_at"))
-        and len(normalize_text(document.get("content"))) < 220
+        and int(content_length) < 220
     )
 
 
@@ -739,6 +867,13 @@ def rank_document(document: dict[str, Any], query: str, terms: list[str], light_
     return ranked
 
 
+def hot_query_rank_base_score(document: dict[str, Any]) -> float:
+    value = document.get("rank_base_score")
+    if not isinstance(value, int | float) or not math.isfinite(float(value)):
+        raise ValueError(f"hot query proof document {document.get('id')} is missing rank_base_score")
+    return float(value)
+
+
 def apply_impact_index(
     scores: dict[int, float],
     impact_terms: dict[str, Any],
@@ -823,24 +958,21 @@ def filter_token_hash_int(text: str, seed: int) -> int:
     return value
 
 
+PROOF_FILTER_NGRAM_MAX = 5
+PROOF_FILTER_RUN_RE = re.compile(r"[a-z0-9._+\-\u4e00-\u9fff]{2,}")
+
+
 def shard_filter_phrase_tokens(phrase: str) -> list[str]:
     text = normalize_text(phrase)
-    if not text:
+    if len(text) < 2:
+        return []
+    matches = list(PROOF_FILTER_RUN_RE.finditer(text))
+    if len(matches) != 1 or matches[0].group(0) != text:
         return []
     tokens: set[str] = set()
-    matches = list(re.finditer(r"[\u4e00-\u9fff]{2,}|[a-z0-9][a-z0-9._-]{1,}", text))
-    if not matches and len(text) >= 2:
-        tokens.add(text)
-    for match in matches:
-        part = match.group(0)
-        if re.fullmatch(r"[\u4e00-\u9fff]+", part):
-            if len(part) <= 16:
-                tokens.add(part)
-            for size in range(2, min(5, len(part)) + 1):
-                for index in range(0, len(part) - size + 1):
-                    tokens.add(part[index : index + size])
-        else:
-            tokens.add(part)
+    for size in range(2, min(PROOF_FILTER_NGRAM_MAX, len(text)) + 1):
+        for index in range(0, len(text) - size + 1):
+            tokens.add(text[index : index + size])
     return sorted(tokens, key=len, reverse=True)
 
 
@@ -862,8 +994,8 @@ def shard_filter_proves_no_match(shard_id: str, shard_filter: dict[str, Any], ma
                 return False
         return True
 
-    phrases = [tokens for phrase in match_phrases if (tokens := shard_filter_phrase_tokens(phrase))]
-    if not phrases:
+    phrases = [shard_filter_phrase_tokens(phrase) for phrase in match_phrases]
+    if not phrases or any(not tokens for tokens in phrases):
         return False
     return all(any(not may_contain(token) for token in tokens) for tokens in phrases)
 
@@ -970,6 +1102,187 @@ def recall_documents_with_stats(
     terms = tokens_for_query(query, index["aliases"])
     match_phrases = expand_query_phrases(query, index["aliases"])
     plan = build_plan(index, query, terms)
+    hot_top_proof = matching_hot_query_top_proof(index, query, match_phrases)
+    if hot_top_proof is not None:
+        top_certificate, _entry, top_filter_bytes = hot_top_proof
+        top_documents = [
+            document
+            for document in top_certificate.get("documents", [])
+            if isinstance(document, dict) and full_scan_matches(document, match_phrases)
+        ]
+        if len(top_documents) != len(top_certificate.get("documents") or []) or len(top_documents) != int(top_certificate.get("top_k_count") or 0):
+            raise ValueError(f"hot query top-k proof certificate failed self-check: {query}")
+        top_ranked = sorted_ranked([
+            rank_document(document, query, terms, hot_query_rank_base_score(document))
+            for document in top_documents
+        ])
+        ranked_by_id: dict[str, dict[str, Any]] = {str(item["id"]): item for item in top_ranked}
+        plan["selected_local_indexes"] = []
+        plan["phase_local_index_ids"] = {
+            "first_trusted_results": [],
+            "top_results_hydrated": [],
+            "proof_complete": [],
+        }
+        plan["estimated_cost_bytes"] = top_filter_bytes
+        phase_timings_ms: dict[str, float] = {}
+        if math.isfinite(started_perf):
+            import time
+
+            elapsed = round((time.perf_counter() - started_perf) * 1000, 3)
+            phase_timings_ms["first_trusted_results"] = elapsed
+            phase_timings_ms["top_results_hydrated"] = elapsed
+        total_certificate_shards = int(top_certificate.get("total_shards") or index["manifest"]["progressive_search"]["total_shards"])
+        total_certificate_documents = int(top_certificate.get("total_documents") or index["manifest"]["progressive_search"]["total_documents"])
+        top_matched_shards = int(top_certificate.get("matched_shard_count") or 0)
+        first_trusted_coverage = coverage(
+            index,
+            phase="first_trusted_results",
+            fields=BODY_SEARCH_FIELDS,
+            proved_no_match_shards=0,
+            scanned_shards=top_matched_shards,
+            searched_documents=len(top_documents),
+            total_shards=total_certificate_shards,
+            total_documents=total_certificate_documents,
+            loaded_paths=set(),
+            local_index_bytes=0,
+            hydrated_shard_bytes=0,
+            filter_bytes=top_filter_bytes,
+            used_body_index=False,
+            exhaustive_complete=False,
+        )
+        top_results_coverage = coverage(
+            index,
+            phase="top_results_hydrated",
+            fields=BODY_SEARCH_FIELDS,
+            proved_no_match_shards=0,
+            scanned_shards=top_matched_shards,
+            searched_documents=len(top_documents),
+            total_shards=total_certificate_shards,
+            total_documents=total_certificate_documents,
+            loaded_paths=set(),
+            local_index_bytes=0,
+            hydrated_shard_bytes=0,
+            filter_bytes=top_filter_bytes,
+            used_body_index=False,
+            exhaustive_complete=False,
+        )
+        hot_query_proof = matching_hot_query_proof(index, query, match_phrases)
+        if hot_query_proof is None:
+            raise ValueError(f"hot query top-k proof is missing complete certificate: {query}")
+        certificate, complete_filter_bytes = hot_query_proof
+        certificate_documents = [
+            document
+            for document in certificate.get("documents", [])
+            if isinstance(document, dict) and full_scan_matches(document, match_phrases)
+        ]
+        verified_matches = len(certificate_documents)
+        if verified_matches != int(certificate.get("match_count") or 0):
+            raise ValueError(f"hot query complete proof certificate failed self-check: {query}")
+        for document in certificate_documents:
+            item = rank_document(document, query, terms, hot_query_rank_base_score(document))
+            existing = ranked_by_id.get(str(item["id"]))
+            if existing is None or float(item["score"]) > float(existing.get("score") or 0):
+                ranked_by_id[str(item["id"])] = item
+        ranked = sorted_ranked(list(ranked_by_id.values()))
+        directory_bytes = int(((index.get("manifest", {}).get("artifacts", {}) or {}).get("hot_query_proof_directory") or {}).get("bytes") or 0)
+        filter_bytes = top_filter_bytes + max(0, complete_filter_bytes - directory_bytes)
+        matched_shard_count = int(certificate.get("matched_shard_count") or 0)
+        total_certificate_shards = int(certificate.get("total_shards") or index["manifest"]["progressive_search"]["total_shards"])
+        proved_no_match_shards = max(0, total_certificate_shards - matched_shard_count)
+        final_coverage = coverage(
+            index,
+            phase="global_exhaustive_complete",
+            fields=FULL_SCAN_FIELDS,
+            proved_no_match_shards=proved_no_match_shards,
+            scanned_shards=matched_shard_count,
+            searched_documents=verified_matches,
+            total_shards=total_certificate_shards,
+            total_documents=int(certificate.get("total_documents") or index["manifest"]["progressive_search"]["total_documents"]),
+            loaded_paths=set(),
+            local_index_bytes=0,
+            hydrated_shard_bytes=0,
+            filter_bytes=filter_bytes,
+            used_body_index=False,
+            exhaustive_complete=True,
+        )
+        if math.isfinite(started_perf):
+            import time
+
+            phase_timings_ms["proof_complete"] = round((time.perf_counter() - started_perf) * 1000, 3)
+        retrieval = {
+            "dynamic_pruning": False,
+            "impact_blocks_visited": 0,
+            "impact_blocks_pruned": 0,
+            "postings_visited": 0,
+            "postings_pruned": 0,
+            "competitive_threshold": 0.0,
+        }
+        return {
+            "results": ranked[:limit],
+            "stats": {
+                "started_at": started_at.isoformat(),
+                "used_body_index": False,
+                "loaded_shard_count": 0,
+                "loaded_shard_paths": [],
+                "loaded_local_index_count": 0,
+                "loaded_local_index_ids": [],
+                "local_index_bytes": 0,
+                "hydrated_shard_bytes": 0,
+                "uncached_loaded_bytes": final_coverage["uncached_loaded_bytes"],
+                "cached_artifact_bytes": final_coverage["cached_artifact_bytes"],
+                "cache": final_coverage["cache"],
+                "candidate_count": len(top_documents),
+                "quick_result_count": len(top_ranked),
+                "quick_results": top_ranked[:limit],
+                "coverage": final_coverage,
+                "candidate_shard_count": 0,
+                "phase_coverages": {
+                    "first_trusted_results": first_trusted_coverage,
+                    "top_results_hydrated": top_results_coverage,
+                    "proof_complete": final_coverage,
+                },
+                "phase_timings_ms": phase_timings_ms,
+                "plan": plan,
+                "proved_no_match_shards": proved_no_match_shards,
+                "scanned_shards": matched_shard_count,
+                "total_shards": total_certificate_shards,
+                "verified_full_scan_matches": 0,
+                "proof_scan_pressure": {
+                    "certificate_used": True,
+                    "certificate_bytes": complete_filter_bytes,
+                    "topk_certificate_bytes": top_filter_bytes,
+                    "true_match_shards": matched_shard_count,
+                    "false_positive_shards": 0,
+                    "true_match_bytes": 0,
+                    "false_positive_bytes": 0,
+                    "true_match_docs": verified_matches,
+                    "matched_shard_bytes_avoided": int(certificate.get("matched_shard_bytes") or 0),
+                    "false_positive_scan_ratio": 0.0,
+                    "false_positive_byte_ratio": 0.0,
+                },
+                "exhaustive_complete": True,
+                "result_count": len(ranked),
+                "retrieval": retrieval,
+                "local_meta_fallback_documents": 0,
+                "hot_query_topk_certificate": {
+                    "used": True,
+                    "query": top_certificate.get("query"),
+                    "top_k_count": len(top_documents),
+                    "match_count": int(top_certificate.get("match_count") or 0),
+                    "certificate_bytes": top_filter_bytes,
+                    "dominance": top_certificate.get("dominance") or {},
+                },
+                "hot_query_complete_certificate": {
+                    "used": True,
+                    "query": certificate.get("query"),
+                    "match_count": int(certificate.get("match_count") or 0),
+                    "verified_match_count": verified_matches,
+                    "matched_shard_count": matched_shard_count,
+                    "matched_shard_bytes_avoided": int(certificate.get("matched_shard_bytes") or 0),
+                    "certificate_bytes": complete_filter_bytes,
+                },
+            },
+        }
     source_manifests, local_refs, source_manifest_bytes = select_local_refs(index, plan, terms)
     shard_path_by_id, shard_bytes_by_path = local_shard_maps(local_refs, source_manifests)
     first_local_budget = max(
@@ -1145,6 +1458,104 @@ def recall_documents_with_stats(
         exhaustive_complete=False,
     )
 
+    hot_query_proof = matching_hot_query_proof(index, query, match_phrases)
+    if hot_query_proof is not None:
+        certificate, filter_bytes = hot_query_proof
+        certificate_documents = [
+            document
+            for document in certificate.get("documents", [])
+            if isinstance(document, dict) and full_scan_matches(document, match_phrases)
+        ]
+        verified_matches = len(certificate_documents)
+        for document in certificate_documents:
+            doc_index = int(document["doc_index"])
+            item = rank_document(document, query, terms, scores.get(doc_index, hot_query_rank_base_score(document)))
+            existing = ranked_by_id.get(str(item["id"]))
+            if existing is None or float(item["score"]) > float(existing.get("score") or 0):
+                ranked_by_id[str(item["id"])] = item
+        ranked = sorted_ranked(list(ranked_by_id.values()))
+        matched_shard_count = int(certificate.get("matched_shard_count") or 0)
+        total_certificate_shards = int(certificate.get("total_shards") or index["manifest"]["progressive_search"]["total_shards"])
+        proved_no_match_shards = max(0, total_certificate_shards - matched_shard_count)
+        hydrated_shard_bytes = sum(shard_bytes_by_path.get(path, 0) for path in loaded_paths)
+        final_coverage = coverage(
+            index,
+            phase="global_exhaustive_complete",
+            fields=FULL_SCAN_FIELDS,
+            proved_no_match_shards=proved_no_match_shards,
+            scanned_shards=matched_shard_count,
+            searched_documents=verified_matches,
+            total_shards=total_certificate_shards,
+            total_documents=int(certificate.get("total_documents") or index["manifest"]["progressive_search"]["total_documents"]),
+            loaded_paths=loaded_paths,
+            local_index_bytes=local_index_bytes,
+            hydrated_shard_bytes=hydrated_shard_bytes,
+            filter_bytes=filter_bytes,
+            used_body_index=used_body_index,
+            exhaustive_complete=True,
+        )
+        if math.isfinite(started_perf):
+            import time
+
+            phase_timings_ms["proof_complete"] = round((time.perf_counter() - started_perf) * 1000, 3)
+        return {
+            "results": ranked[:limit],
+            "stats": {
+                "started_at": started_at.isoformat(),
+                "used_body_index": used_body_index,
+                "loaded_shard_count": len(loaded_paths),
+                "loaded_shard_paths": sorted(loaded_paths),
+                "loaded_local_index_count": len(loaded_local_index_ids),
+                "loaded_local_index_ids": sorted(loaded_local_index_ids),
+                "local_index_bytes": local_index_bytes,
+                "hydrated_shard_bytes": hydrated_shard_bytes,
+                "uncached_loaded_bytes": final_coverage["uncached_loaded_bytes"],
+                "cached_artifact_bytes": final_coverage["cached_artifact_bytes"],
+                "cache": final_coverage["cache"],
+                "candidate_count": len(selected_candidate_indices),
+                "quick_result_count": len(quick_ranked),
+                "quick_results": quick_ranked[:limit],
+                "coverage": final_coverage,
+                "candidate_shard_count": len(candidate_paths),
+                "phase_coverages": {
+                    "first_trusted_results": first_trusted_coverage,
+                    "top_results_hydrated": top_results_coverage,
+                    "proof_complete": final_coverage,
+                },
+                "phase_timings_ms": phase_timings_ms,
+                "plan": plan,
+                "proved_no_match_shards": proved_no_match_shards,
+                "scanned_shards": matched_shard_count,
+                "total_shards": total_certificate_shards,
+                "verified_full_scan_matches": 0,
+                "proof_scan_pressure": {
+                    "certificate_used": True,
+                    "certificate_bytes": filter_bytes,
+                    "true_match_shards": matched_shard_count,
+                    "false_positive_shards": 0,
+                    "true_match_bytes": 0,
+                    "false_positive_bytes": 0,
+                    "true_match_docs": verified_matches,
+                    "matched_shard_bytes_avoided": int(certificate.get("matched_shard_bytes") or 0),
+                    "false_positive_scan_ratio": 0.0,
+                    "false_positive_byte_ratio": 0.0,
+                },
+                "exhaustive_complete": True,
+                "result_count": len(ranked),
+                "retrieval": retrieval,
+                "local_meta_fallback_documents": local_meta_fallbacks,
+                "hot_query_complete_certificate": {
+                    "used": True,
+                    "query": certificate.get("query"),
+                    "match_count": int(certificate.get("match_count") or 0),
+                    "verified_match_count": verified_matches,
+                    "matched_shard_count": matched_shard_count,
+                    "matched_shard_bytes_avoided": int(certificate.get("matched_shard_bytes") or 0),
+                    "certificate_bytes": filter_bytes,
+                },
+            },
+        }
+
     verification_manifests = [
         source_manifest
         for source in index["source_registry"]["sources"]
@@ -1163,6 +1574,10 @@ def recall_documents_with_stats(
     scanned_shards = 0
     searched_documents = 0
     verified_matches = 0
+    proof_true_match_shards = 0
+    proof_false_positive_shards = 0
+    proof_true_match_bytes = 0
+    proof_false_positive_bytes = 0
     for shard in in_scope_shards:
         shard_id = str(shard["shard_id"])
         source_id = str(shard.get("source_id") or "")
@@ -1173,15 +1588,26 @@ def recall_documents_with_stats(
         loaded_paths.add(path)
         shard_bytes_by_path[path] = int(shard["bytes"])
         scanned_shards += 1
+        shard_had_match = False
         for document in load_shard(index, path, int(shard["bytes"])):
             searched_documents += 1
             doc_index = int(document["doc_index"])
             if full_scan_matches(document, match_phrases):
+                shard_had_match = True
                 verified_matches += 1
-                item = rank_document(document, query, terms, scores.get(doc_index, 24.0))
+                base_score = scores.get(doc_index)
+                if base_score is None and isinstance(document.get("rank_base_score"), int | float):
+                    base_score = hot_query_rank_base_score(document)
+                item = rank_document(document, query, terms, base_score if base_score is not None else 24.0)
                 existing = ranked_by_id.get(str(item["id"]))
                 if existing is None or float(item["score"]) > float(existing.get("score") or 0):
                     ranked_by_id[str(item["id"])] = item
+        if shard_had_match:
+            proof_true_match_shards += 1
+            proof_true_match_bytes += int(shard["bytes"])
+        else:
+            proof_false_positive_shards += 1
+            proof_false_positive_bytes += int(shard["bytes"])
 
     ranked = sorted_ranked(list(ranked_by_id.values()))
     hydrated_shard_bytes = sum(shard_bytes_by_path.get(path, 0) for path in loaded_paths)
@@ -1233,6 +1659,17 @@ def recall_documents_with_stats(
             "proved_no_match_shards": proved_no_match_shards,
             "scanned_shards": scanned_shards,
             "verified_full_scan_matches": verified_matches,
+            "proof_scan_pressure": {
+                "true_match_shards": proof_true_match_shards,
+                "false_positive_shards": proof_false_positive_shards,
+                "true_match_bytes": proof_true_match_bytes,
+                "false_positive_bytes": proof_false_positive_bytes,
+                "true_match_docs": verified_matches,
+                "false_positive_scan_ratio": round(proof_false_positive_shards / scanned_shards, 6) if scanned_shards else 0.0,
+                "false_positive_byte_ratio": round(proof_false_positive_bytes / (proof_true_match_bytes + proof_false_positive_bytes), 6)
+                if proof_true_match_bytes + proof_false_positive_bytes
+                else 0.0,
+            },
             "local_meta_fallback_documents": local_meta_fallbacks,
             "exhaustive_complete": True,
             "plan": plan,

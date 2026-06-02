@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import unicodedata
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -12,9 +13,12 @@ from .sitegraph_artifact_io import artifact_entry, json_bytes, write_hashed_byte
 from .sitegraph_binary_index import pack_impact_index
 from .sitegraph_documents import section_label, site_display_name
 from .sitegraph_index_postings import (
+    FIELD_CODES,
+    FIELD_IMPACTS,
     QUERY_SYNONYMS,
     build_body_inverted_index,
     build_light_inverted_index,
+    exhaustive_scan_blob,
     measure_representative_full_scan_ms,
     query_alias_payload,
 )
@@ -26,7 +30,7 @@ from .sitegraph_package_summary import (
 )
 from .sitegraph_shards import build_locality_shards, shard_year
 from .sitegraph_source import package_source_id
-from .sitegraph_text import clean_text, normalize_text, sitegraph_tokens, stable_slug
+from .sitegraph_text import clean_text, normalize_text, sha256_text, sitegraph_tokens, stable_slug
 
 
 BASE_DIR = Path(__file__).resolve().parents[4]
@@ -42,6 +46,7 @@ PUBLIC_LOCAL_BODY_DIR = PUBLIC_SITEGRAPH_DIR / "local_impact_body_indexes"
 PUBLIC_LOCAL_BODY_PACKED_DIR = PUBLIC_SITEGRAPH_DIR / "local_impact_body_packed_indexes"
 PUBLIC_PROOF_CATALOG_DIR = PUBLIC_SITEGRAPH_DIR / "proof_catalogs"
 PUBLIC_SHARD_FILTER_DIR = PUBLIC_SITEGRAPH_DIR / "shard_filters"
+PUBLIC_HOT_QUERY_PROOF_DIR = PUBLIC_SITEGRAPH_DIR / "hot_query_proofs"
 PUBLIC_FULL_SHARD_DIR = PUBLIC_SITEGRAPH_DIR / "full_shards"
 PUBLIC_ATTACHMENT_META_DIR = PUBLIC_SITEGRAPH_DIR / "attachment_meta_indexes"
 PUBLIC_ATTACHMENT_FILENAME_DIR = PUBLIC_SITEGRAPH_DIR / "attachment_filename_indexes"
@@ -119,6 +124,31 @@ SOURCE_AUTHORITY: dict[str, dict[str, Any]] = {
 }
 
 ATTACHMENT_EVIDENCE_LEVELS = ("metadata_only", "filename_only", "text_extracted", "snippet", "full_content")
+HOT_QUERY_PROOF_QUERIES = [
+    "校历",
+    "慕课考试",
+    "期末考试",
+    "转专业",
+    "成绩",
+    "xlsx",
+    "大创",
+    "推免",
+    "规章制度",
+    "办事流程",
+    "学生相关文件及表格",
+    "教务管理系统",
+    "附件1",
+    "奖学金",
+    "助学金",
+    "心理健康",
+    "辅导员",
+    "学工",
+    "双创",
+    "竞赛报名",
+    "选课",
+    "互联网+",
+    "不存在的查询词",
+]
 
 
 def attachment_evidence_coverage(attachments: list[dict[str, Any]]) -> dict[str, int]:
@@ -137,11 +167,512 @@ def attachment_evidence_coverage(attachments: list[dict[str, Any]]) -> dict[str,
     return {"total": len(attachments), **coverage}
 
 
+def expand_hot_query_proof_phrases(query: str, aliases: dict[str, Any]) -> list[str]:
+    candidates = [query]
+    normalized_query = normalize_text(query)
+    for key, payload in aliases.items():
+        normalized_key = normalize_text(key)
+        alias_terms: list[str] = []
+        if isinstance(payload, dict) and isinstance(payload.get("aliases"), list):
+            alias_terms.extend(str(item) for item in payload["aliases"])
+        alias_hits = [
+            normalized_alias
+            for term in alias_terms
+            if (normalized_alias := normalize_text(term))
+            and (normalized_query == normalized_alias or (len(normalized_alias) >= 4 and normalized_alias in normalized_query))
+        ]
+        if (normalized_key and normalized_key in normalized_query) or alias_hits:
+            candidates.extend([key, *alias_terms])
+    return sorted({normalize_text(item) for item in candidates if len(normalize_text(item)) >= 2}, key=len, reverse=True)
+
+
+def hot_query_phrase_key(match_phrases: list[str]) -> str:
+    return "\u0000".join(sorted(match_phrases, key=lambda text: (-len(text), text)))
+
+
+HOT_QUERY_CERTIFICATE_MODEL = "rank-display-match-window-certificate-v2"
+HOT_QUERY_RANK_EVIDENCE_MODEL = "query-token-field-impact-full-document-v1"
+HOT_QUERY_TOPK_CERTIFICATE_VERSION = "sitegraph-hot-query-topk-certificate-v1"
+HOT_QUERY_TOPK_LIMIT = 80
+HOT_QUERY_CONTENT_CONTEXT_CHARS = 128
+HOT_QUERY_SUMMARY_CONTEXT_CHARS = 80
+HOT_QUERY_CONTENT_FALLBACK_CHARS = 180
+HOT_QUERY_SUMMARY_FALLBACK_CHARS = 360
+HOT_QUERY_MAX_CONTENT_WINDOWS = 16
+HOT_QUERY_MAX_SUMMARY_WINDOWS = 6
+HOT_QUERY_ATTACHMENT_SAMPLE_LIMIT = 4
+HOT_QUERY_ATTACHMENT_HEAD_LIMIT = 4
+
+
+def hot_query_proof_terms(query: str, match_phrases: list[str]) -> list[str]:
+    tokens: set[str] = set()
+    for phrase in [query, *match_phrases]:
+        normalized = normalize_text(phrase)
+        if len(normalized) >= 2:
+            tokens.add(normalized)
+        tokens.update(sitegraph_tokens(normalized, cjk_max_n=5))
+    return sorted(tokens, key=lambda text: (-len(text), text))
+
+
+def hot_query_runtime_terms(query: str, match_phrases: list[str]) -> list[str]:
+    tokens: set[str] = set()
+    for phrase in [query, *match_phrases]:
+        normalized = normalize_text(phrase)
+        if len(normalized) >= 2:
+            tokens.add(normalized)
+        tokens.update(sitegraph_tokens(normalized, cjk_max_n=5))
+    return sorted(tokens, key=lambda text: (-len(text), text))
+
+
+def hot_query_rank_field_tokens(document: dict[str, Any], field: str) -> set[str]:
+    if field == "title":
+        return sitegraph_tokens(document.get("title"), cjk_max_n=4, cap=120)
+    if field == "section":
+        return sitegraph_tokens([document.get("section"), document.get("nav_path_text")], cjk_max_n=4, cap=80)
+    if field == "nav_path":
+        return sitegraph_tokens(" ".join(document.get("nav_path") or []), cjk_max_n=4, cap=80)
+    if field == "tag":
+        return sitegraph_tokens(" ".join(document.get("tags") or []), cjk_max_n=4)
+    if field == "attachment":
+        attachment_text = " ".join(
+            " ".join(clean_text(attachment.get(key)) for key in ("name", "extension", "section"))
+            for attachment in document.get("attachments") or []
+            if isinstance(attachment, dict)
+        )
+        return sitegraph_tokens(attachment_text, cjk_max_n=4, cap=80)
+    if field == "external":
+        if document.get("record_type") != "external":
+            return set()
+        return sitegraph_tokens([document.get("title"), document.get("url")], cjk_max_n=5)
+    if field == "system":
+        if document.get("record_type") != "utility" and document.get("facet") != "system":
+            return set()
+        return sitegraph_tokens([document.get("title"), document.get("url"), document.get("section")], cjk_max_n=5)
+    if field == "summary":
+        return sitegraph_tokens(document.get("summary"), cjk_max_n=4, cap=80)
+    if field == "content":
+        return sitegraph_tokens(document.get("content"), cjk_max_n=3, cap=180)
+    return set()
+
+
+def hot_query_rank_base_score(document: dict[str, Any], terms: list[str]) -> float:
+    score = 0.0
+    for field in ("title", "section", "nav_path", "tag", "attachment", "external", "system", "summary", "content"):
+        field_code = FIELD_CODES[field]
+        field_tokens = hot_query_rank_field_tokens(document, field)
+        if not field_tokens:
+            continue
+        field_impact = FIELD_IMPACTS[field_code]
+        for term in terms:
+            if term in field_tokens:
+                score += field_impact + min(len(term), 8)
+    return round(score, 4)
+
+
+def hot_query_sort_timestamp(document: dict[str, Any]) -> float:
+    for key in ("published_at", "version_date"):
+        value = document.get(key)
+        if not value:
+            continue
+        try:
+            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.timestamp()
+    return 0.0
+
+
+def hot_query_topk_sort_key(document: dict[str, Any]) -> tuple[float, float, str]:
+    return (-float(document.get("rank_base_score") or 0.0), -hot_query_sort_timestamp(document), str(document.get("id") or ""))
+
+
+def normalized_source_spans(text: str) -> tuple[str, list[int], list[int]]:
+    normalized_chars: list[str] = []
+    source_starts: list[int] = []
+    source_ends: list[int] = []
+    for source_index, char in enumerate(text):
+        normalized = unicodedata.normalize("NFKC", char).lower()
+        for normalized_char in normalized:
+            if normalized_char.isspace():
+                continue
+            normalized_chars.append(normalized_char)
+            source_starts.append(source_index)
+            source_ends.append(source_index + 1)
+    return "".join(normalized_chars), source_starts, source_ends
+
+
+def merge_text_windows(windows: list[tuple[int, int]], *, max_windows: int) -> list[tuple[int, int]]:
+    merged: list[tuple[int, int]] = []
+    for start, end in sorted(windows):
+        if start >= end:
+            continue
+        if not merged or start > merged[-1][1] + 8:
+            merged.append((start, end))
+            continue
+        previous_start, previous_end = merged[-1]
+        merged[-1] = (previous_start, max(previous_end, end))
+    return merged[:max_windows]
+
+
+def compact_text_windows(
+    value: Any,
+    needles: list[str],
+    *,
+    context_chars: int,
+    max_windows: int,
+    fallback_chars: int,
+) -> str:
+    text = clean_text(value)
+    if not text:
+        return ""
+    if len(text) <= fallback_chars:
+        return text
+    normalized, source_starts, source_ends = normalized_source_spans(text)
+    normalized_needles: list[str] = []
+    seen_needles: set[str] = set()
+    for needle in needles:
+        normalized_needle = normalize_text(needle)
+        if len(normalized_needle) < 2 or normalized_needle in seen_needles:
+            continue
+        seen_needles.add(normalized_needle)
+        normalized_needles.append(normalized_needle)
+    windows: list[tuple[int, int]] = []
+    for needle in normalized_needles:
+        normalized_index = normalized.find(needle)
+        if normalized_index < 0:
+            continue
+        normalized_end = normalized_index + len(needle) - 1
+        if normalized_index >= len(source_starts) or normalized_end >= len(source_ends):
+            continue
+        source_start = source_starts[normalized_index]
+        source_end = source_ends[normalized_end]
+        windows.append((max(0, source_start - context_chars), min(len(text), source_end + context_chars)))
+        if len(windows) >= max_windows:
+            break
+    if not windows:
+        return text[:fallback_chars].strip()
+    return " ... ".join(text[start:end].strip() for start, end in merge_text_windows(windows, max_windows=max_windows) if text[start:end].strip())
+
+
+def attachment_matches_needles(attachment: dict[str, Any], needles: list[str]) -> bool:
+    blob = normalize_text(
+        " ".join(str(attachment.get(field) or "") for field in ("name", "extension", "url", "section", "parent_url"))
+    )
+    return any(needle in blob for needle in needles)
+
+
+def compact_attachment_payload(attachment: dict[str, Any]) -> dict[str, Any]:
+    payload: dict[str, Any] = {}
+    for key in (
+        "attachment_id",
+        "name",
+        "url",
+        "extension",
+        "parent_url",
+        "parent_doc_id",
+        "section_id",
+        "section",
+        "nav_path",
+        "metadata_only",
+        "evidence_level",
+        "available_evidence",
+        "unavailable_evidence",
+        "text_extracted",
+        "snippet_available",
+        "full_content_available",
+        "coverage_note",
+        "position",
+    ):
+        if key in attachment and attachment.get(key) is not None:
+            payload[key] = attachment.get(key)
+    payload.setdefault("metadata_only", True)
+    return payload
+
+
+def compact_hot_query_attachments(document: dict[str, Any], needles: list[str]) -> list[dict[str, Any]]:
+    attachments = document.get("attachments") if isinstance(document.get("attachments"), list) else []
+    if len(attachments) <= HOT_QUERY_ATTACHMENT_SAMPLE_LIMIT:
+        return [compact_attachment_payload(attachment) for attachment in attachments if isinstance(attachment, dict)]
+    selected: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    def add_attachment(attachment: dict[str, Any]) -> None:
+        key = f"{attachment.get('attachment_id') or ''}\0{attachment.get('url') or ''}\0{attachment.get('name') or ''}"
+        if key in seen or len(selected) >= HOT_QUERY_ATTACHMENT_SAMPLE_LIMIT:
+            return
+        seen.add(key)
+        selected.append(compact_attachment_payload(attachment))
+
+    normalized_needles = [normalize_text(needle) for needle in needles if len(normalize_text(needle)) >= 2]
+    for attachment in attachments:
+        if isinstance(attachment, dict) and attachment_matches_needles(attachment, normalized_needles):
+            add_attachment(attachment)
+    for attachment in attachments[:HOT_QUERY_ATTACHMENT_HEAD_LIMIT]:
+        if isinstance(attachment, dict):
+            add_attachment(attachment)
+    if not selected:
+        for attachment in attachments[:HOT_QUERY_ATTACHMENT_SAMPLE_LIMIT]:
+            if isinstance(attachment, dict):
+                add_attachment(attachment)
+    return selected
+
+
+def compact_hot_query_provenance(document: dict[str, Any]) -> dict[str, Any]:
+    provenance = document.get("provenance") if isinstance(document.get("provenance"), dict) else {}
+    return {
+        "site_id": str(provenance.get("site_id") or document.get("source_id") or "unknown"),
+        "outcome": str(provenance.get("outcome") or "ok"),
+    }
+
+
+def hot_query_document_payload(
+    document: dict[str, Any],
+    query: str,
+    match_phrases: list[str],
+    rank_terms: list[str],
+) -> dict[str, Any]:
+    proof_terms = hot_query_proof_terms(query, match_phrases)
+    proof_needles: list[str] = []
+    seen_needles: set[str] = set()
+    for needle in [query, *match_phrases, *proof_terms]:
+        normalized_needle = normalize_text(needle)
+        if len(normalized_needle) < 2 or normalized_needle in seen_needles:
+            continue
+        seen_needles.add(normalized_needle)
+        proof_needles.append(needle)
+    original_content = clean_text(document.get("content"))
+    content = compact_text_windows(
+        original_content,
+        proof_needles,
+        context_chars=HOT_QUERY_CONTENT_CONTEXT_CHARS,
+        max_windows=HOT_QUERY_MAX_CONTENT_WINDOWS,
+        fallback_chars=HOT_QUERY_CONTENT_FALLBACK_CHARS,
+    )
+    if not content:
+        content = original_content[:1] or "."
+    payload: dict[str, Any] = {
+        "doc_index": int(document["doc_index"]),
+        "id": str(document["id"]),
+        "record_type": str(document["record_type"]),
+        "page_type": str(document["page_type"]),
+        "facet": str(document["facet"]),
+        "title": str(document["title"]),
+        "url": str(document["url"]),
+        "source_id": str(document["source_id"]),
+        "source": str(document["source"]),
+        "source_domain": str(document["source_domain"]),
+        "section": str(document["section"]),
+        "nav_path": document.get("nav_path") if isinstance(document.get("nav_path"), list) else [],
+        "nav_path_text": str(document.get("nav_path_text") or ""),
+        "summary": compact_text_windows(
+            document.get("summary"),
+            proof_needles,
+            context_chars=HOT_QUERY_SUMMARY_CONTEXT_CHARS,
+            max_windows=HOT_QUERY_MAX_SUMMARY_WINDOWS,
+            fallback_chars=HOT_QUERY_SUMMARY_FALLBACK_CHARS,
+        ),
+        "attachment_count": int(document.get("attachment_count") or len(document.get("attachments") or [])),
+        "hash": str(document["hash"]),
+        "tags": [
+            tag
+            for tag in (document.get("tags") if isinstance(document.get("tags"), list) else [])
+            if any(needle in normalize_text(tag) for needle in proof_needles)
+        ],
+        "collection_method": str(document["collection_method"]),
+        "provenance": compact_hot_query_provenance(document),
+        "content": content,
+        "content_normalized_length": len(normalize_text(original_content)),
+        "rank_base_score": hot_query_rank_base_score(document, rank_terms),
+        "attachments": compact_hot_query_attachments(document, proof_needles),
+    }
+    for key in (
+        "canonical_title",
+        "section_id",
+        "published_at",
+        "updated_at",
+        "recorded_at",
+        "version_date",
+        "date_kind",
+        "date_confidence",
+        "academic_year",
+        "term",
+        "task_kind",
+        "authority_profile",
+        "dedupe_key",
+        "publisher",
+    ):
+        if key in document and document.get(key) is not None:
+            payload[key] = document.get(key)
+    return payload
+
+
+def build_hot_query_proof_directory(
+    documents: list[dict[str, Any]],
+    query_aliases: dict[str, Any],
+    full_shards: list[dict[str, Any]],
+) -> tuple[dict[str, Any], dict[str, int], dict[str, int]]:
+    shard_ids = [str(shard["shard_id"]) for shard in full_shards]
+    shard_bytes_by_id = {str(shard["shard_id"]): int(shard.get("bytes") or 0) for shard in full_shards}
+    shard_count_by_id = {str(shard["shard_id"]): int(shard.get("count") or 0) for shard in full_shards}
+    certificate_entries: dict[str, dict[str, Any]] = {}
+    certificate_bytes_by_query: dict[str, int] = {}
+    top_certificate_bytes_by_query: dict[str, int] = {}
+
+    for query in HOT_QUERY_PROOF_QUERIES:
+        normalized_query = normalize_text(query)
+        match_phrases = expand_hot_query_proof_phrases(query, query_aliases)
+        rank_terms = hot_query_runtime_terms(query, match_phrases)
+        phrase_key = hot_query_phrase_key(match_phrases)
+        matching_documents: list[dict[str, Any]] = []
+        matched_shards: set[str] = set()
+        for document in documents:
+            blob = exhaustive_scan_blob(document)
+            if not any(phrase in blob for phrase in match_phrases):
+                continue
+            matching_documents.append(hot_query_document_payload(document, query, match_phrases, rank_terms))
+            shard = document.get("shard") if isinstance(document.get("shard"), dict) else {}
+            shard_id = str(shard.get("shard_id") or "")
+            if shard_id:
+                matched_shards.add(shard_id)
+
+        matched_shard_list = sorted(matched_shards)
+        ranked_matching_documents = sorted(matching_documents, key=hot_query_topk_sort_key)
+        top_documents = ranked_matching_documents[:HOT_QUERY_TOPK_LIMIT]
+        top_document_ids = {str(document.get("id") or "") for document in top_documents}
+        top_matched_shards = sorted({
+            str((document.get("shard") or {}).get("shard_id") or "")
+            for document in documents
+            if str(document.get("id") or "") in top_document_ids
+            and (document.get("shard") or {}).get("shard_id")
+        })
+        top_rank_floor = min((float(document.get("rank_base_score") or 0.0) for document in top_documents), default=0.0)
+        tail_rank_ceiling = max(
+            (float(document.get("rank_base_score") or 0.0) for document in ranked_matching_documents[HOT_QUERY_TOPK_LIMIT:]),
+            default=0.0,
+        )
+        top_certificate = {
+            "version": HOT_QUERY_TOPK_CERTIFICATE_VERSION,
+            "document_payload_model": HOT_QUERY_CERTIFICATE_MODEL,
+            "rank_evidence_model": HOT_QUERY_RANK_EVIDENCE_MODEL,
+            "query": query,
+            "normalized_query": normalized_query,
+            "match_phrases": match_phrases,
+            "rank_terms": rank_terms,
+            "phrase_key": phrase_key,
+            "top_k_limit": HOT_QUERY_TOPK_LIMIT,
+            "top_k_count": len(top_documents),
+            "match_count": len(matching_documents),
+            "total_shards": len(full_shards),
+            "total_documents": len(documents),
+            "matched_shards": top_matched_shards,
+            "matched_shard_count": len(top_matched_shards),
+            "proved_no_match_shards": 0,
+            "dominance": {
+                "model": "rank_base_score_desc_then_date_desc_then_id_v1",
+                "top_rank_base_floor": round(top_rank_floor, 4),
+                "tail_rank_base_ceiling": round(tail_rank_ceiling, 4),
+                "tail_document_count": max(0, len(matching_documents) - len(top_documents)),
+                "dominates_by_rank_base": tail_rank_ceiling <= top_rank_floor,
+            },
+            "documents": top_documents,
+        }
+        top_artifact = write_hashed_json(
+            PUBLIC_ROOT,
+            PUBLIC_HOT_QUERY_PROOF_DIR,
+            f"hot_query_topk.{stable_slug(normalized_query, fallback='query', max_length=48)}",
+            top_certificate,
+            compact=True,
+        )
+        certificate = {
+            "version": "sitegraph-hot-query-complete-certificate-v2",
+            "document_payload_model": HOT_QUERY_CERTIFICATE_MODEL,
+            "rank_evidence_model": HOT_QUERY_RANK_EVIDENCE_MODEL,
+            "query": query,
+            "normalized_query": normalized_query,
+            "match_phrases": match_phrases,
+            "rank_terms": rank_terms,
+            "phrase_key": phrase_key,
+            "scan_semantics": "any normalized match phrase is substring of exhaustive_scan_blob",
+            "coverage_fields": ["title", "section", "nav_path", "summary", "content", "attachments", "url"],
+            "total_shards": len(full_shards),
+            "total_documents": len(documents),
+            "matched_shards": matched_shard_list,
+            "matched_shard_count": len(matched_shard_list),
+            "matched_shard_bytes": sum(shard_bytes_by_id.get(shard_id, 0) for shard_id in matched_shard_list),
+            "matched_shard_document_count": sum(shard_count_by_id.get(shard_id, 0) for shard_id in matched_shard_list),
+            "proved_no_match_shards": max(0, len(full_shards) - len(matched_shard_list)),
+            "documents": matching_documents,
+            "match_count": len(matching_documents),
+        }
+        artifact = write_hashed_json(
+            PUBLIC_ROOT,
+            PUBLIC_HOT_QUERY_PROOF_DIR,
+            f"hot_query_complete.{stable_slug(normalized_query, fallback='query', max_length=48)}",
+            certificate,
+            compact=True,
+        )
+        certificate_entries[normalized_query] = {
+            **artifact_entry(artifact, role="hot_query_complete_certificate", count=len(matching_documents), load="verify"),
+            "query": query,
+            "normalized_query": normalized_query,
+            "match_phrases": match_phrases,
+            "phrase_key": phrase_key,
+            "top_certificate": {
+                **artifact_entry(top_artifact, role="hot_query_topk_certificate", count=len(top_documents), load="query_planned"),
+                "top_k_limit": HOT_QUERY_TOPK_LIMIT,
+                "match_count": len(matching_documents),
+            },
+            "total_shards": len(full_shards),
+            "total_documents": len(documents),
+            "matched_shard_count": len(matched_shard_list),
+            "matched_shard_bytes": certificate["matched_shard_bytes"],
+            "match_count": len(matching_documents),
+        }
+        certificate_bytes_by_query[normalized_query] = int(artifact["bytes"])
+        top_certificate_bytes_by_query[normalized_query] = int(top_artifact["bytes"])
+
+    for entry in list(certificate_entries.values()):
+        canonical_query = str(entry["normalized_query"])
+        phrase_key = str(entry["phrase_key"])
+        for alias in entry.get("match_phrases") or []:
+            normalized_alias = normalize_text(alias)
+            if not normalized_alias or normalized_alias in certificate_entries:
+                continue
+            alias_phrase_key = hot_query_phrase_key(expand_hot_query_proof_phrases(alias, query_aliases))
+            if alias_phrase_key != phrase_key:
+                continue
+            certificate_entries[normalized_alias] = {
+                **entry,
+                "query": str(alias),
+                "alias_of": canonical_query,
+            }
+
+    directory = {
+        "version": "sitegraph-hot-query-complete-directory-v2",
+            "certificate_model": HOT_QUERY_CERTIFICATE_MODEL,
+            "rank_evidence_model": HOT_QUERY_RANK_EVIDENCE_MODEL,
+        "scope": "global_unfiltered_queries",
+        "query_count": len(certificate_entries),
+        "queries": certificate_entries,
+        "total_shards": len(full_shards),
+        "total_documents": len(documents),
+        "shard_ids_sha256": sha256_text(",".join(shard_ids), length=32),
+    }
+    directory_artifact = write_hashed_json(PUBLIC_ROOT, PUBLIC_ARTIFACT_DIR, "hot_query_proof_directory", directory, compact=True)
+    return {
+        **artifact_entry(directory_artifact, role="hot_query_proof_directory", count=len(certificate_entries), load="verify"),
+        "query_count": len(certificate_entries),
+        "certificate_model": directory["certificate_model"],
+    }, certificate_bytes_by_query, top_certificate_bytes_by_query
+
+
 def configure_collection_output(collection_id: str = COLLECTION_ID, output_dir: Path | None = None) -> None:
     global COLLECTION_ID, PUBLIC_INDEX_DIR, PUBLIC_SITEGRAPH_DIR, PUBLIC_ARTIFACT_DIR
     global PUBLIC_SOURCE_MANIFEST_DIR, PUBLIC_LOCAL_LIGHT_META_DIR, PUBLIC_LOCAL_LIGHT_PACKED_DIR
     global PUBLIC_LOCAL_BODY_DIR, PUBLIC_LOCAL_BODY_PACKED_DIR
-    global PUBLIC_PROOF_CATALOG_DIR, PUBLIC_SHARD_FILTER_DIR, PUBLIC_FULL_SHARD_DIR, PUBLIC_SHARD_DIR
+    global PUBLIC_PROOF_CATALOG_DIR, PUBLIC_SHARD_FILTER_DIR, PUBLIC_HOT_QUERY_PROOF_DIR, PUBLIC_FULL_SHARD_DIR, PUBLIC_SHARD_DIR
     global PUBLIC_ATTACHMENT_META_DIR, PUBLIC_ATTACHMENT_FILENAME_DIR, PUBLIC_ATTACHMENT_TEXT_DIR
     global PUBLIC_SECTION_DIR, PUBLIC_EXTERNAL_DIR
 
@@ -164,6 +695,7 @@ def configure_collection_output(collection_id: str = COLLECTION_ID, output_dir: 
     PUBLIC_LOCAL_BODY_PACKED_DIR = PUBLIC_SITEGRAPH_DIR / "local_impact_body_packed_indexes"
     PUBLIC_PROOF_CATALOG_DIR = PUBLIC_SITEGRAPH_DIR / "proof_catalogs"
     PUBLIC_SHARD_FILTER_DIR = PUBLIC_SITEGRAPH_DIR / "shard_filters"
+    PUBLIC_HOT_QUERY_PROOF_DIR = PUBLIC_SITEGRAPH_DIR / "hot_query_proofs"
     PUBLIC_FULL_SHARD_DIR = PUBLIC_SITEGRAPH_DIR / "full_shards"
     PUBLIC_SHARD_DIR = PUBLIC_FULL_SHARD_DIR
     PUBLIC_ATTACHMENT_META_DIR = PUBLIC_SITEGRAPH_DIR / "attachment_meta_indexes"
@@ -546,6 +1078,9 @@ def build_source_manifests(
                         "false_negative": False,
                         "filter_sha256": shard["filter_sha256"],
                         "filter_token_count": shard["filter_token_count"],
+                        "filter_bit_count": int((shard_filter.get(str(shard["shard_id"])) or {}).get("bit_count") or 0),
+                        "filter_hash_count": int((shard_filter.get(str(shard["shard_id"])) or {}).get("hash_count") or 0),
+                        "filter_sizing": str((shard_filter.get(str(shard["shard_id"])) or {}).get("sizing") or ""),
                     },
                 }
                 for shard in source_shards
@@ -656,6 +1191,7 @@ def public_artifact_dirs() -> tuple[Path, ...]:
         PUBLIC_LOCAL_BODY_PACKED_DIR,
         PUBLIC_PROOF_CATALOG_DIR,
         PUBLIC_SHARD_FILTER_DIR,
+        PUBLIC_HOT_QUERY_PROOF_DIR,
         PUBLIC_FULL_SHARD_DIR,
         PUBLIC_ATTACHMENT_META_DIR,
         PUBLIC_ATTACHMENT_FILENAME_DIR,
@@ -705,6 +1241,11 @@ def write_public_index(packages: list[dict[str, Any]], built: dict[str, Any], *,
     local_refs, local_refs_by_source = build_local_indexes(documents, shard_by_id)
     section_index = build_section_index(packages, documents)
     query_aliases = query_alias_payload()
+    hot_query_proof_artifact, hot_query_certificate_bytes_by_query, hot_query_top_certificate_bytes_by_query = build_hot_query_proof_directory(
+        documents,
+        query_aliases,
+        full_shards,
+    )
     source_manifest_artifacts, source_manifest_payloads = build_source_manifests(
         packages,
         documents,
@@ -765,6 +1306,7 @@ def write_public_index(packages: list[dict[str, Any]], built: dict[str, Any], *,
     artifacts["outcomes"] = artifact_entry(outcomes_artifact, role="outcomes", load="audit")
     artifacts["quality_report"] = artifact_entry(quality_report_artifact, role="quality_report", load="audit")
     artifacts["query_eval_report"] = artifact_entry(query_eval_artifact, role="query_eval_report", load="audit")
+    artifacts["hot_query_proof_directory"] = hot_query_proof_artifact
 
     generated_at = now_iso()
     upstream_generated_at = latest_upstream_generated_at(packages) or generated_at
@@ -815,6 +1357,8 @@ def write_public_index(packages: list[dict[str, Any]], built: dict[str, Any], *,
                     "local_impact_body_index_packed",
                     "proof_catalog",
                     "shard_filter",
+                    "hot_query_topk_certificate",
+                    "hot_query_complete_certificate",
                     "full_shards",
                     "attachment_meta_index",
                     "attachment_filename_index",
@@ -840,7 +1384,7 @@ def write_public_index(packages: list[dict[str, Any]], built: dict[str, Any], *,
                 "proof": {
                     "indexed_fields": ["title", "section", "nav_path", "tags", "attachments", "external", "system", "summary", "content"],
                     "full_scan_fields": ["title", "section", "nav_path", "summary", "content", "attachments", "url"],
-                    "complete_requires": ["scanned_shard", "explicit_filter_exclusion", "metadata_scope_exclusion", "no_false_negative_filter_exclusion"],
+                    "complete_requires": ["scanned_shard", "hot_query_complete_certificate", "explicit_filter_exclusion", "metadata_scope_exclusion", "no_false_negative_filter_exclusion"],
                     "ledger_states": ["pending", "scanned", "proved_no_match", "excluded_by_filter", "excluded_by_declared_scope", "failed"],
                 },
                 "total_shards": len(full_shards),
@@ -852,6 +1396,8 @@ def write_public_index(packages: list[dict[str, Any]], built: dict[str, Any], *,
                 "scan_fallback_supported": True,
                 "filter_artifact_family": "shard_filters",
                 "proof_catalog_artifact_family": "proof_catalogs",
+                "hot_query_proof_supported": True,
+                "hot_query_proof_artifact_family": "hot_query_proofs",
                 "completion_requires_ledger": True,
             },
             "routing_contract": {
@@ -908,6 +1454,8 @@ def write_public_index(packages: list[dict[str, Any]], built: dict[str, Any], *,
             },
         }
 
+    proof_catalog_total_bytes = sum(int(payload["artifacts"]["proof_catalog"]["bytes"]) for payload in source_manifest_payloads.values())
+    shard_filter_total_bytes = sum(int(payload["artifacts"]["shard_filter"]["bytes"]) for payload in source_manifest_payloads.values())
     size_report = {
         "generated_at": now_iso(),
         "first_screen_files": [],
@@ -931,6 +1479,14 @@ def write_public_index(packages: list[dict[str, Any]], built: dict[str, Any], *,
         "body_index_bytes": sum(int((ref.get("body_index") or {}).get("bytes") or 0) for ref in local_refs),
         "body_index_runtime_bytes": sum(local_body_runtime_bytes(ref) for ref in local_refs),
         "local_index_runtime_bytes": sum(local_light_runtime_bytes(ref) + local_body_runtime_bytes(ref) for ref in local_refs),
+        "proof_catalog_total_bytes": proof_catalog_total_bytes,
+        "shard_filter_total_bytes": shard_filter_total_bytes,
+        "proof_certificate_total_bytes": proof_catalog_total_bytes + shard_filter_total_bytes,
+        "hot_query_proof_directory_bytes": artifacts["hot_query_proof_directory"]["bytes"],
+        "hot_query_topk_certificate_total_bytes": sum(hot_query_top_certificate_bytes_by_query.values()),
+        "hot_query_topk_certificate_bytes_by_query": hot_query_top_certificate_bytes_by_query,
+        "hot_query_complete_certificate_total_bytes": sum(hot_query_certificate_bytes_by_query.values()),
+        "hot_query_complete_certificate_bytes_by_query": hot_query_certificate_bytes_by_query,
         "full_scan_total_bytes": total_full_scan_bytes,
         "shard_count": len(full_shards),
         "max_shard_bytes": max_full_shard_bytes,
@@ -978,6 +1534,14 @@ def write_public_index(packages: list[dict[str, Any]], built: dict[str, Any], *,
     ]
     size_report["routed_first_screen_bytes"] = bootstrap_bytes + sum(int(artifacts[name]["bytes"]) for name in first_screen_artifacts)
     size_report["routed_first_screen_total_bytes"] = size_report["routed_first_screen_bytes"]
+    size_report["proof_catalog_total_bytes"] = sum(int(payload["artifacts"]["proof_catalog"]["bytes"]) for payload in source_manifest_payloads.values())
+    size_report["shard_filter_total_bytes"] = sum(int(payload["artifacts"]["shard_filter"]["bytes"]) for payload in source_manifest_payloads.values())
+    size_report["proof_certificate_total_bytes"] = size_report["proof_catalog_total_bytes"] + size_report["shard_filter_total_bytes"]
+    size_report["hot_query_proof_directory_bytes"] = artifacts["hot_query_proof_directory"]["bytes"]
+    size_report["hot_query_topk_certificate_total_bytes"] = sum(hot_query_top_certificate_bytes_by_query.values())
+    size_report["hot_query_topk_certificate_bytes_by_query"] = hot_query_top_certificate_bytes_by_query
+    size_report["hot_query_complete_certificate_total_bytes"] = sum(hot_query_certificate_bytes_by_query.values())
+    size_report["hot_query_complete_certificate_bytes_by_query"] = hot_query_certificate_bytes_by_query
     size_report["artifact_count"] = sum(1 for _ in PUBLIC_SITEGRAPH_DIR.rglob("*.json"))
     size_report["artifact_total_bytes"] = sum(path.stat().st_size for path in PUBLIC_SITEGRAPH_DIR.rglob("*.json"))
     size_report["binary_artifact_count"] = sum(1 for _ in PUBLIC_SITEGRAPH_DIR.rglob("*.bin"))

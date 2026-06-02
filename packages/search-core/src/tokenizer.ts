@@ -10,9 +10,15 @@ export const expandSitegraphQueryPhrases = (query: string, queryAliases: Record<
     const normalizedQuery = normalize(query);
     for (const [key, rawPayload] of Object.entries(queryAliases)) {
         const payload = rawPayload && typeof rawPayload === 'object' ? rawPayload as { aliases?: unknown[] } : {};
-        const terms = [key, ...(Array.isArray(payload.aliases) ? payload.aliases.map(String) : [])];
-        if (terms.some(term => normalize(term) && normalizedQuery.includes(normalize(term)))) {
-            candidates.push(...terms);
+        const normalizedKey = normalize(key);
+        const aliasTerms = Array.isArray(payload.aliases) ? payload.aliases.map(String) : [];
+        const aliasHit = aliasTerms.some(term => {
+            const normalizedAlias = normalize(term);
+            return normalizedAlias.length > 0
+                && (normalizedQuery === normalizedAlias || (normalizedAlias.length >= 4 && normalizedQuery.includes(normalizedAlias)));
+        });
+        if ((normalizedKey.length > 0 && normalizedQuery.includes(normalizedKey)) || aliasHit) {
+            candidates.push(key, ...aliasTerms);
         }
     }
 

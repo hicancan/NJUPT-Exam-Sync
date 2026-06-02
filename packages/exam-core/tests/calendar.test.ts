@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Exam } from '@njupt-search/contracts/exam';
-import { generateICSContent } from '../src/calendar';
+import { generateICSContent, getExamCalendarIdentity } from '../src/calendar';
 
 const baseExam: Exam = {
     id: '2025-2026学年第二学期考试安排表.xlsx-497',
@@ -57,5 +57,23 @@ describe('exam-core calendar export', () => {
         expect(uidForCourse(single, baseExam.course_name)).toBe(
             uidForCourse(reordered, baseExam.course_name)
         );
+    });
+
+    it('keeps calendar identity stable when source row ids change', () => {
+        const sameExamFromDifferentRow = {
+            ...baseExam,
+            id: '2025-2026学年第二学期考试安排表.xlsx-2182'
+        };
+
+        expect(getExamCalendarIdentity(sameExamFromDifferentRow)).toBe(getExamCalendarIdentity(baseExam));
+    });
+
+    it('changes calendar identity when a material exam field changes', () => {
+        const movedExam = {
+            ...baseExam,
+            location: '教3－308'
+        };
+
+        expect(getExamCalendarIdentity(movedExam)).not.toBe(getExamCalendarIdentity(baseExam));
     });
 });

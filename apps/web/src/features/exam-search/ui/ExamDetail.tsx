@@ -15,6 +15,9 @@ interface ExamDetailProps {
     exams: Exam[];
     selectedIds: Set<string>;
     onToggleSelection: (id: string) => void;
+    onSelectAll: () => void;
+    onClearSelection: () => void;
+    onExportComplete: (exams: Exam[]) => void;
     reminders: number[];
     onRemindersChange: (reminders: number[]) => void;
     sourceUrl?: string | null;
@@ -28,6 +31,9 @@ export function ExamDetail({
     exams,
     selectedIds,
     onToggleSelection,
+    onSelectAll,
+    onClearSelection,
+    onExportComplete,
     reminders,
     onRemindersChange,
     sourceUrl,
@@ -37,6 +43,8 @@ export function ExamDetail({
 }: ExamDetailProps) {
     const [copyState, setCopyState] = useState<boolean>(false);
     const [notice, setNotice] = useState<Notice>(null);
+    const allSelected = exams.length > 0 && selectedIds.size === exams.length;
+    const noneSelected = selectedIds.size === 0;
 
     const showErrorNotice = (nextNotice: NonNullable<Notice>) => {
         setNotice(nextNotice);
@@ -64,7 +72,7 @@ export function ExamDetail({
 
     const downloadICS = () => {
         const selectedExams = exams.filter(e => selectedIds.has(e.id));
-        const validExams = selectedExams.filter(e => e.start_timestamp);
+        const validExams = selectedExams.filter(e => e.start_timestamp && e.end_timestamp);
 
         if (validExams.length === 0) {
             showErrorNotice({ message: '请至少勾选一门包含有效时间的考试' });
@@ -82,6 +90,7 @@ export function ExamDetail({
             link.click();
             document.body.removeChild(link);
             window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+            onExportComplete(validExams);
         } catch (err) {
             console.error('ICS generation failed:', err);
             showErrorNotice({ message: '日历文件生成失败，请稍后重试或联系开发者' });
@@ -95,8 +104,25 @@ export function ExamDetail({
                     <h2 className="text-[28px] font-normal text-[#202124] dark:text-[#e8eaed] leading-tight mb-2">
                         {className} 期末考试安排
                     </h2>
-                    <div className="flex items-center gap-3 text-[14px] text-[#70757a] dark:text-[#9aa0a6]">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-[#70757a] dark:text-[#9aa0a6]">
                         <span>已选 {selectedIds.size} / {exams.length} 门考试</span>
+                        <span>•</span>
+                        <button
+                            onClick={onSelectAll}
+                            type="button"
+                            disabled={allSelected}
+                            className={`hover:underline transition-colors ${allSelected ? 'text-[#9aa0a6] cursor-not-allowed no-underline' : 'text-[var(--color-google-blue)] dark:text-[var(--color-google-blue-dark)]'}`}
+                        >
+                            全选
+                        </button>
+                        <button
+                            onClick={onClearSelection}
+                            type="button"
+                            disabled={noneSelected}
+                            className={`hover:underline transition-colors ${noneSelected ? 'text-[#9aa0a6] cursor-not-allowed no-underline' : 'text-[var(--color-google-blue)] dark:text-[var(--color-google-blue-dark)]'}`}
+                        >
+                            全不选
+                        </button>
                         <span>•</span>
                         <button
                             onClick={copyShareLink}

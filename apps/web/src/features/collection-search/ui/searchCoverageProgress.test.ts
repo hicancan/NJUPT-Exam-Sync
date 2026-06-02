@@ -58,7 +58,7 @@ describe('getSearchCoverageProgress', () => {
             completedShards: 65,
             totalShards: 100,
             percent: 65,
-            label: '证明账本 65%',
+            label: '官网范围核查 65%',
             complete: false,
             showBar: true,
         });
@@ -74,7 +74,7 @@ describe('getSearchCoverageProgress', () => {
             completedShards: 100,
             totalShards: 100,
             percent: 100,
-            label: '全站账本已闭合',
+            label: '全量核查完毕',
             complete: true,
             showBar: false,
         });

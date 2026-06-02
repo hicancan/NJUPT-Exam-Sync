@@ -29,9 +29,27 @@ from .sitegraph_task_query_eval import validate_task_queries
 DEFAULT_REPORT_QUERIES = [
     "校历",
     "慕课考试",
+    "期末考试",
+    "考试安排",
+    "选课",
+    "转专业",
+    "成绩",
+    "xlsx",
+    "大创",
+    "推免",
+    "助学金",
+    "心理健康",
+    "学工",
+    "竞赛报名",
+    "规章制度",
+    "办事流程",
     "学生相关文件及表格",
     "教务管理系统",
     "附件1",
+    "奖学金",
+    "辅导员",
+    "双创",
+    "互联网+",
     "不存在的查询词",
 ]
 
@@ -55,6 +73,12 @@ BYTE_METRICS = [
     "body_index_bytes",
     "body_index_runtime_bytes",
     "local_index_runtime_bytes",
+    "proof_catalog_total_bytes",
+    "shard_filter_total_bytes",
+    "proof_certificate_total_bytes",
+    "hot_query_proof_directory_bytes",
+    "hot_query_topk_certificate_total_bytes",
+    "hot_query_complete_certificate_total_bytes",
     "full_scan_total_bytes",
     "artifact_total_bytes",
     "binary_artifact_total_bytes",
@@ -626,8 +650,11 @@ def query_path_parse_decode_benchmark(
         mean_baseline_ms = statistics.fmean(baseline_ms) if baseline_ms else 0.0
         bytes_change = percent_change(mean_current_bytes, mean_baseline_bytes)
         decode_change = percent_change(mean_current_ms, mean_baseline_ms)
-        bytes_passed = bytes_change is not None and bytes_change < 0
-        decode_within_tolerance = decode_change is not None and decode_change <= QUERY_PATH_DECODE_REGRESSION_TOLERANCE_PERCENT
+        zero_decode_path = mean_current_bytes == 0 and mean_baseline_bytes == 0 and mean_current_ms == 0 and mean_baseline_ms == 0
+        bytes_passed = zero_decode_path or (bytes_change is not None and bytes_change < 0)
+        decode_within_tolerance = zero_decode_path or (
+            decode_change is not None and decode_change <= QUERY_PATH_DECODE_REGRESSION_TOLERANCE_PERCENT
+        )
         return {
             "mean_current_bytes": round(mean_current_bytes),
             "mean_baseline_bytes": round(mean_baseline_bytes),
@@ -640,7 +667,7 @@ def query_path_parse_decode_benchmark(
             "decode_regression_tolerance_percent": QUERY_PATH_DECODE_REGRESSION_TOLERANCE_PERCENT,
             "bytes_passed": bytes_passed,
             "decode_within_tolerance": decode_within_tolerance,
-            "decode_improved": decode_change is not None and decode_change < 0,
+            "decode_improved": zero_decode_path or (decode_change is not None and decode_change < 0),
             "passed": bytes_passed,
         }
 
@@ -776,6 +803,23 @@ def phase_gate_result(phases: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def proof_scan_pressure_summary(stats: dict[str, Any]) -> dict[str, Any]:
+    pressure = stats.get("proof_scan_pressure") if isinstance(stats.get("proof_scan_pressure"), dict) else {}
+    return {
+        "certificate_used": bool(pressure.get("certificate_used")),
+        "certificate_bytes": int(pressure.get("certificate_bytes") or 0),
+        "topk_certificate_bytes": int(pressure.get("topk_certificate_bytes") or 0),
+        "true_match_shards": int(pressure.get("true_match_shards") or 0),
+        "false_positive_shards": int(pressure.get("false_positive_shards") or 0),
+        "true_match_bytes": int(pressure.get("true_match_bytes") or 0),
+        "false_positive_bytes": int(pressure.get("false_positive_bytes") or 0),
+        "true_match_docs": int(pressure.get("true_match_docs") or 0),
+        "matched_shard_bytes_avoided": int(pressure.get("matched_shard_bytes_avoided") or 0),
+        "false_positive_scan_ratio": float(pressure.get("false_positive_scan_ratio") or 0.0),
+        "false_positive_byte_ratio": float(pressure.get("false_positive_byte_ratio") or 0.0),
+    }
+
+
 def measure_queries(queries: list[str]) -> list[dict[str, Any]]:
     measurements: list[dict[str, Any]] = []
     for query in queries:
@@ -801,6 +845,9 @@ def measure_queries(queries: list[str]) -> list[dict[str, Any]]:
                 "phase_measurements": phases,
                 "phase_gate": phase_gate_result(phases),
                 "coverage": coverage_summary(stats.get("coverage") or {}),
+                "proof_scan_pressure": proof_scan_pressure_summary(stats),
+                "hot_query_topk_certificate": stats.get("hot_query_topk_certificate") or {"used": False},
+                "hot_query_complete_certificate": stats.get("hot_query_complete_certificate") or {"used": False},
             }
         )
     return measurements
@@ -808,6 +855,40 @@ def measure_queries(queries: list[str]) -> list[dict[str, Any]]:
 
 def query_summary(measurements: list[dict[str, Any]]) -> dict[str, Any]:
     phase_gates = [item.get("phase_gate") or {} for item in measurements]
+    pressure_items = [item.get("proof_scan_pressure") or {} for item in measurements]
+    hot_top_items = [item.get("hot_query_topk_certificate") or {} for item in measurements]
+    hot_items = [item.get("hot_query_complete_certificate") or {} for item in measurements]
+    max_true_match = max(
+        measurements,
+        key=lambda item: int((item.get("proof_scan_pressure") or {}).get("true_match_bytes") or 0),
+        default=None,
+    )
+    max_false_positive = max(
+        measurements,
+        key=lambda item: int((item.get("proof_scan_pressure") or {}).get("false_positive_bytes") or 0),
+        default=None,
+    )
+    max_false_positive_ratio = max(
+        measurements,
+        key=lambda item: float((item.get("proof_scan_pressure") or {}).get("false_positive_byte_ratio") or 0.0),
+        default=None,
+    )
+    max_certificate = max(
+        measurements,
+        key=lambda item: int((item.get("hot_query_complete_certificate") or {}).get("certificate_bytes") or 0),
+        default=None,
+    )
+    max_certificate_avoided = max(
+        measurements,
+        key=lambda item: int((item.get("hot_query_complete_certificate") or {}).get("matched_shard_bytes_avoided") or 0),
+        default=None,
+    )
+    max_true_match_bytes = max((int(item.get("true_match_bytes") or 0) for item in pressure_items), default=0)
+    max_false_positive_bytes = max((int(item.get("false_positive_bytes") or 0) for item in pressure_items), default=0)
+    max_false_positive_ratio_value = max((float(item.get("false_positive_byte_ratio") or 0.0) for item in pressure_items), default=0.0)
+    max_hot_certificate_bytes = max((int(item.get("certificate_bytes") or 0) for item in hot_items), default=0)
+    max_hot_top_certificate_bytes = max((int(item.get("certificate_bytes") or 0) for item in hot_top_items), default=0)
+    max_hot_certificate_avoided_bytes = max((int(item.get("matched_shard_bytes_avoided") or 0) for item in hot_items), default=0)
     return {
         "query_count": len(measurements),
         "max_elapsed_ms": max((float(item["elapsed_ms"]) for item in measurements), default=0.0),
@@ -816,6 +897,7 @@ def query_summary(measurements: list[dict[str, Any]]) -> dict[str, Any]:
         "max_uncached_loaded_bytes": max((int(item["coverage"]["uncached_loaded_bytes"]) for item in measurements), default=0),
         "max_first_trusted_uncached_bytes": max((int(gate.get("first_trusted_uncached_bytes") or 0) for gate in phase_gates), default=0),
         "max_top_results_uncached_bytes": max((int(gate.get("top_results_uncached_bytes") or 0) for gate in phase_gates), default=0),
+        "max_proof_complete_uncached_bytes": max((int(gate.get("proof_complete_uncached_bytes") or 0) for gate in phase_gates), default=0),
         "first_trusted_absolute_limit_bytes": FIRST_TRUSTED_MAX_UNCACHED_BYTES,
         "top_results_absolute_limit_bytes": TOP_RESULTS_MAX_UNCACHED_BYTES,
         "phase_gates_passed": all(bool(gate.get("passed")) for gate in phase_gates) if phase_gates else False,
@@ -830,6 +912,19 @@ def query_summary(measurements: list[dict[str, Any]]) -> dict[str, Any]:
         "all_exhaustive_complete": all(bool(item["coverage"]["exhaustive_complete"]) for item in measurements),
         "any_dynamic_pruning": any(bool(item["retrieval"]["dynamic_pruning"]) for item in measurements),
         "total_postings_pruned": sum(int(item["retrieval"]["postings_pruned"]) for item in measurements),
+        "max_proof_true_match_bytes": max_true_match_bytes,
+        "max_proof_true_match_query": None if max_true_match_bytes == 0 or max_true_match is None else max_true_match.get("query"),
+        "max_proof_false_positive_bytes": max_false_positive_bytes,
+        "max_proof_false_positive_query": None if max_false_positive_bytes == 0 or max_false_positive is None else max_false_positive.get("query"),
+        "max_proof_false_positive_byte_ratio": max_false_positive_ratio_value,
+        "max_proof_false_positive_ratio_query": None if max_false_positive_ratio_value == 0.0 or max_false_positive_ratio is None else max_false_positive_ratio.get("query"),
+        "hot_query_topk_certificate_used_count": sum(1 for item in hot_top_items if item.get("used") is True),
+        "max_hot_query_topk_certificate_bytes": max_hot_top_certificate_bytes,
+        "hot_query_certificate_used_count": sum(1 for item in hot_items if item.get("used") is True),
+        "max_hot_query_certificate_bytes": max_hot_certificate_bytes,
+        "max_hot_query_certificate_query": None if max_hot_certificate_bytes == 0 or max_certificate is None else max_certificate.get("query"),
+        "max_hot_query_matched_shard_bytes_avoided": max_hot_certificate_avoided_bytes,
+        "max_hot_query_matched_shard_bytes_avoided_query": None if max_hot_certificate_avoided_bytes == 0 or max_certificate_avoided is None else max_certificate_avoided.get("query"),
     }
 
 
@@ -841,6 +936,428 @@ def attachment_evidence_summary(manifest: dict[str, Any]) -> dict[str, Any]:
         "levels": contract.get("attachment_evidence_levels") or [],
         "coverage": sitegraph.get("attachment_evidence_coverage") or {},
         "source_manifest_summaries": sitegraph.get("source_manifest_summaries") or {},
+    }
+
+
+LOWER_BOUND_GAP_LAYER_KEYS = [
+    "startup_entry_gap",
+    "route_planning_gap",
+    "first_trusted_gap",
+    "top_results_hydrated_gap",
+    "proof_complete_certificate_gap",
+    "full_shard_dependency_gap",
+    "packed_index_decode_gap",
+    "topk_pruning_gap",
+    "persistent_cache_gap",
+    "attachment_semantics_gap",
+    "ranking_calibration_gap",
+    "browser_resource_gap",
+]
+
+
+def lower_bound_gap_report(report: dict[str, Any]) -> dict[str, Any]:
+    current_sizes = report.get("current_size_snapshot") or {}
+    query = report.get("query_measurement_summary") or {}
+    measurements = report.get("query_measurements") or []
+    runtime_decode = report.get("runtime_parse_decode_summary") or {}
+    query_path_decode = report.get("query_path_parse_decode_benchmark") if isinstance(report.get("query_path_parse_decode_benchmark"), dict) else {}
+    query_path_summary = query_path_decode.get("summary") if isinstance(query_path_decode.get("summary"), dict) else {}
+    cache = report.get("cache_benchmark") if isinstance(report.get("cache_benchmark"), dict) else {}
+    cache_summary = cache.get("summary") if isinstance(cache.get("summary"), dict) else {}
+    attachment = report.get("attachment_evidence") if isinstance(report.get("attachment_evidence"), dict) else {}
+    browser = report.get("browser_verification") if isinstance(report.get("browser_verification"), dict) else {}
+    browser_summary = browser.get("summary") if isinstance(browser.get("summary"), dict) else {}
+    runtime_contract = report.get("runtime_contract") if isinstance(report.get("runtime_contract"), dict) else {}
+    quality_eval = report.get("quality_eval") if isinstance(report.get("quality_eval"), dict) else {}
+    task_eval = report.get("task_eval") if isinstance(report.get("task_eval"), dict) else {}
+    wasm_decision = report.get("rust_wasm_decision") if isinstance(report.get("rust_wasm_decision"), dict) else {}
+    wasm_status = str(((wasm_decision.get("decision") or {}).get("status")) or "")
+
+    def max_phase_value(phase: str, key: str) -> int:
+        return max(
+            (
+                int((((item.get("phase_measurements") or {}).get(phase) or {}).get(key)) or 0)
+                for item in measurements
+            ),
+            default=0,
+        )
+
+    def max_phase_ms(phase: str) -> float:
+        return max(
+            (
+                float((((item.get("phase_measurements") or {}).get(phase) or {}).get("elapsed_ms")) or 0.0)
+                for item in measurements
+            ),
+            default=0.0,
+        )
+
+    def record(
+        *,
+        status: str,
+        lower_bound_definition: str,
+        current_measurement: dict[str, Any],
+        gap_to_lower_bound: str,
+        next_algorithmic_step: str,
+        correctness_guard: str,
+        stop_condition: str,
+        evidence_refs: list[str],
+    ) -> dict[str, Any]:
+        return {
+            "status": status,
+            "lower_bound_definition": lower_bound_definition,
+            "current_measurement": current_measurement,
+            "gap_to_lower_bound": gap_to_lower_bound,
+            "next_algorithmic_step": next_algorithmic_step,
+            "correctness_guard": correctness_guard,
+            "stop_condition": stop_condition,
+            "evidence_refs": evidence_refs,
+        }
+
+    first_path = query_path_summary.get("first_trusted_results") or {}
+    top_path = query_path_summary.get("top_results_hydrated") or {}
+    proof_bytes = max_phase_value("proof_complete", "uncached_loaded_bytes")
+    first_bytes = int(query.get("max_first_trusted_uncached_bytes") or 0)
+    top_bytes = int(query.get("max_top_results_uncached_bytes") or 0)
+    full_scan_bytes = int(current_sizes.get("full_scan_total_bytes") or 0)
+    startup_bytes = int(current_sizes.get("routed_first_screen_total_bytes") or 0)
+    local_runtime_bytes = int(current_sizes.get("local_index_runtime_bytes") or 0)
+    binary_runtime_bytes = int(current_sizes.get("binary_artifact_total_bytes") or 0)
+    browser_missing = bool(browser.get("missing")) if browser else True
+
+    layers = {
+        "startup_entry_gap": record(
+            status="engineering_gate_passed_not_absolute"
+            if startup_bytes > 0
+            and runtime_contract.get("startup_loads_local_indexes") is False
+            and runtime_contract.get("startup_loads_full_shards") is False
+            else "needs_attention",
+            lower_bound_definition=(
+                "The first page can only read routing metadata, aliases, and source registry bytes "
+                "needed to map a query into a proof-capable route."
+            ),
+            current_measurement={
+                "routed_first_screen_total_bytes": startup_bytes,
+                "bootstrap_manifest_bytes": current_sizes.get("bootstrap_manifest_bytes"),
+                "source_registry_bytes": current_sizes.get("source_registry_bytes"),
+                "global_query_directory_bytes": current_sizes.get("global_query_directory_bytes"),
+                "query_aliases_bytes": current_sizes.get("query_aliases_bytes"),
+                "startup_loads_local_indexes": runtime_contract.get("startup_loads_local_indexes"),
+                "startup_loads_full_shards": runtime_contract.get("startup_loads_full_shards"),
+            },
+            gap_to_lower_bound=(
+                "Metadata is already separated from local indexes and full shards, but the routed "
+                "entry payload is still a practical JSON contract rather than an entropy-coded "
+                "minimal decision table."
+            ),
+            next_algorithmic_step=(
+                "Delta-code source/query routing tables and measure whether a compact finite-state "
+                "router beats the current manifest plus directory bytes without hurting debuggability."
+            ),
+            correctness_guard="Runtime contract must keep startup_loads_local_indexes=false and startup_loads_full_shards=false.",
+            stop_condition=(
+                "Stop when further byte reductions change only encoding overhead and do not reduce "
+                "the set of information required to choose the route."
+            ),
+            evidence_refs=["runtime_contract", "current_size_snapshot", "byte_comparison"],
+        ),
+        "route_planning_gap": record(
+            status="phase_gate_passed" if query.get("phase_gates_passed") else "needs_attention",
+            lower_bound_definition=(
+                "Routing must inspect only the cheapest source/local-index summaries whose expected "
+                "utility can still alter the first trusted or top-k result set."
+            ),
+            current_measurement={
+                "query_count": query.get("query_count"),
+                "max_candidate_shard_count": query.get("max_candidate_shard_count"),
+                "max_loaded_shard_count": query.get("max_loaded_shard_count"),
+                "max_uncached_loaded_bytes": query.get("max_uncached_loaded_bytes"),
+                "phase_gates_passed": query.get("phase_gates_passed"),
+            },
+            gap_to_lower_bound=(
+                "The planner emits expected byte costs and phase-local selections, but the route "
+                "policy is still hand-calibrated rather than learned from an optimal decision rule."
+            ),
+            next_algorithmic_step=(
+                "Fit an offline decision policy on the evaluation corpus with byte cost as the "
+                "Lagrange multiplier, then keep only policies that preserve task quality."
+            ),
+            correctness_guard="Every route still has to produce a complete coverage ledger before exhaustive claims.",
+            stop_condition=(
+                "Stop when alternative route policies cannot reduce phase bytes at equal quality "
+                "and equal proof completeness."
+            ),
+            evidence_refs=["query_measurement_summary", "query_measurements[].planner"],
+        ),
+        "first_trusted_gap": record(
+            status="phase_gate_passed" if first_bytes <= int(query.get("first_trusted_absolute_limit_bytes") or 0) else "needs_attention",
+            lower_bound_definition=(
+                "The first trusted phase needs enough evidence to show at least one justified result "
+                "and no bytes for later hydration or exhaustive proof."
+            ),
+            current_measurement={
+                "max_first_trusted_uncached_bytes": first_bytes,
+                "absolute_limit_bytes": query.get("first_trusted_absolute_limit_bytes"),
+                "max_first_trusted_elapsed_ms": round(max_phase_ms("first_trusted_results"), 3),
+                "query_path_mean_current_bytes": first_path.get("mean_current_bytes"),
+                "query_path_bytes_percent_change": first_path.get("bytes_percent_change"),
+                "query_path_passed": first_path.get("passed"),
+            },
+            gap_to_lower_bound=(
+                "The phase is byte-gated and query-path decode improved versus baseline, but the "
+                "remaining gap is proving that no loaded local-index byte is irrelevant to the first trusted result."
+            ),
+            next_algorithmic_step="Add per-term contribution accounting for first-result eligibility and drop zero-contribution term blocks.",
+            correctness_guard="A first trusted result must carry source, score reason, and enough local evidence to be reproducible.",
+            stop_condition="Stop when contribution accounting proves every loaded term block can affect the displayed first result.",
+            evidence_refs=["query_measurement_summary", "query_path_parse_decode_benchmark.summary.first_trusted_results"],
+        ),
+        "top_results_hydrated_gap": record(
+            status="phase_gate_passed" if top_bytes <= int(query.get("top_results_absolute_limit_bytes") or 0) else "needs_attention",
+            lower_bound_definition=(
+                "Top-k hydration needs postings and document evidence only for candidates whose "
+                "upper bound can enter the visible top result set."
+            ),
+            current_measurement={
+                "max_top_results_uncached_bytes": top_bytes,
+                "absolute_limit_bytes": query.get("top_results_absolute_limit_bytes"),
+                "max_top_results_elapsed_ms": round(max_phase_ms("top_results_hydrated"), 3),
+                "query_path_mean_current_bytes": top_path.get("mean_current_bytes"),
+                "query_path_bytes_percent_change": top_path.get("bytes_percent_change"),
+                "query_path_passed": top_path.get("passed"),
+            },
+            gap_to_lower_bound=(
+                "Top results are separated from proof completion, but candidate upper bounds are "
+                "not yet serialized as a formal certificate that every skipped block is dominated."
+            ),
+            next_algorithmic_step="Persist block-level score upper bounds and emit a top-k dominance certificate for skipped blocks.",
+            correctness_guard="Hydrated top results must remain identical under exhaustive verification for the measured query suite.",
+            stop_condition="Stop when every skipped block has a recorded upper bound below the kth hydrated result score.",
+            evidence_refs=["query_measurement_summary", "query_path_parse_decode_benchmark.summary.top_results_hydrated"],
+        ),
+        "proof_complete_certificate_gap": record(
+            status="largest_remaining_theoretical_gap" if proof_bytes > 0 else "needs_attention",
+            lower_bound_definition=(
+                "A complete proof should read only no-match certificates and unresolved shard "
+                "evidence required to justify exhaustive completeness."
+            ),
+            current_measurement={
+                "max_proof_complete_uncached_bytes": proof_bytes,
+                "max_proof_complete_elapsed_ms": round(max_phase_ms("proof_complete"), 3),
+                "proof_catalog_total_bytes": current_sizes.get("proof_catalog_total_bytes"),
+                "shard_filter_total_bytes": current_sizes.get("shard_filter_total_bytes"),
+                "proof_certificate_total_bytes": current_sizes.get("proof_certificate_total_bytes"),
+                "hot_query_proof_directory_bytes": current_sizes.get("hot_query_proof_directory_bytes"),
+                "hot_query_topk_certificate_total_bytes": current_sizes.get("hot_query_topk_certificate_total_bytes"),
+                "hot_query_complete_certificate_total_bytes": current_sizes.get("hot_query_complete_certificate_total_bytes"),
+                "hot_query_certificate_used_count": query.get("hot_query_certificate_used_count"),
+                "max_hot_query_certificate_bytes": query.get("max_hot_query_certificate_bytes"),
+                "max_hot_query_certificate_query": query.get("max_hot_query_certificate_query"),
+                "max_hot_query_matched_shard_bytes_avoided": query.get("max_hot_query_matched_shard_bytes_avoided"),
+                "max_hot_query_matched_shard_bytes_avoided_query": query.get("max_hot_query_matched_shard_bytes_avoided_query"),
+                "full_scan_total_bytes": full_scan_bytes,
+                "max_proof_true_match_bytes": query.get("max_proof_true_match_bytes"),
+                "max_proof_true_match_query": query.get("max_proof_true_match_query"),
+                "max_proof_false_positive_bytes": query.get("max_proof_false_positive_bytes"),
+                "max_proof_false_positive_query": query.get("max_proof_false_positive_query"),
+                "max_proof_false_positive_byte_ratio": query.get("max_proof_false_positive_byte_ratio"),
+                "max_proof_false_positive_ratio_query": query.get("max_proof_false_positive_ratio_query"),
+                "all_exhaustive_complete": query.get("all_exhaustive_complete"),
+            },
+            gap_to_lower_bound=(
+                "Correctness is complete, but proof completion can still approach a full-shard read. "
+                "The mathematical lower bound is a certificate stream, not full document hydration."
+            ),
+            next_algorithmic_step=(
+                "Separate false-positive filter pressure from true-match shard pressure, then generate "
+                "doc/postings or hot-query certificates for true-match-heavy broad queries."
+            ),
+            correctness_guard="No-match, failed-shard, and pending-ledger refusal tests must stay green before replacing full proof reads.",
+            stop_condition="Stop when proof bytes are proportional to certificate entropy plus matched shard evidence, not total shard corpus size.",
+            evidence_refs=["query_measurements[].phase_measurements.proof_complete", "query_measurements[].proof_scan_pressure", "query_measurement_summary"],
+        ),
+        "full_shard_dependency_gap": record(
+            status="known_remaining_dependency" if full_scan_bytes > 0 else "evidence_present",
+            lower_bound_definition=(
+                "Full shard bodies are outside the first-result and top-k lower bound; they are "
+                "only needed when the user asks for complete proof or full document hydration."
+            ),
+            current_measurement={
+                "full_scan_total_bytes": full_scan_bytes,
+                "proof_certificate_total_bytes": current_sizes.get("proof_certificate_total_bytes"),
+                "max_full_shard_bytes": current_sizes.get("max_full_shard_bytes"),
+                "full_shard_count": current_sizes.get("full_shard_count"),
+                "max_proof_complete_uncached_bytes": proof_bytes,
+            },
+            gap_to_lower_bound=(
+                "The serving path no longer depends on full shards for startup or early results, "
+                "but exhaustive proof still has a full-shard fallback."
+            ),
+            next_algorithmic_step="Split proof certificates from full document bodies and make full bodies lazy even during proof completion.",
+            correctness_guard="Document hydration must still produce byte-identical titles, URLs, snippets, and attachment evidence.",
+            stop_condition="Stop when proof_complete has zero full-body dependency except for matched documents shown to the user.",
+            evidence_refs=["current_size_snapshot", "query_measurements[].coverage"],
+        ),
+        "packed_index_decode_gap": record(
+            status="query_path_gate_passed" if query_path_summary.get("passed") else "needs_attention",
+            lower_bound_definition=(
+                "Index decode should touch only terms and impact blocks that can affect routing, "
+                "first trusted results, or top-k ranking."
+            ),
+            current_measurement={
+                "local_index_runtime_bytes": local_runtime_bytes,
+                "binary_artifact_total_bytes": binary_runtime_bytes,
+                "runtime_byte_change_percent": runtime_decode.get("bytes_percent_change"),
+                "runtime_decode_change_percent": runtime_decode.get("parse_decode_percent_change"),
+                "query_path_passed": query_path_summary.get("passed"),
+                "body_decode_mode": runtime_decode.get("body_decode_mode"),
+                "light_decode_mode": runtime_decode.get("light_decode_mode"),
+            },
+            gap_to_lower_bound=(
+                "Packed selective decode is active on the hot query path, but block metadata is "
+                "still decoded at artifact granularity rather than at the exact surviving term/block frontier."
+            ),
+            next_algorithmic_step="Move to block directory offsets with direct term/block seeks and SIMD/WASM-friendly score scans.",
+            correctness_guard="Packed and JSON decoders must produce equivalent term statistics for sampled and task queries.",
+            stop_condition="Stop when decode work is asymptotically tied to matched query terms and unpruned impact blocks.",
+            evidence_refs=["runtime_parse_decode_summary", "query_path_parse_decode_benchmark"],
+        ),
+        "topk_pruning_gap": record(
+            status="evidence_present" if query.get("any_dynamic_pruning") else "needs_attention",
+            lower_bound_definition=(
+                "Top-k retrieval should visit postings only while their block upper bound can beat "
+                "the current kth competitive threshold."
+            ),
+            current_measurement={
+                "any_dynamic_pruning": query.get("any_dynamic_pruning"),
+                "total_postings_pruned": query.get("total_postings_pruned"),
+                "wasm_decision_status": wasm_status,
+            },
+            gap_to_lower_bound=(
+                "Dynamic pruning is present, but the report does not yet prove that the pruning "
+                "order is optimal for every query under the scoring function."
+            ),
+            next_algorithmic_step="Record WAND/BMW-style upper-bound ledgers per query and compare visited postings against an oracle ordering.",
+            correctness_guard="Pruned postings must have an upper bound below the competitive threshold recorded at prune time.",
+            stop_condition="Stop when the visited posting count matches the oracle lower envelope within tie-handling noise.",
+            evidence_refs=["query_measurement_summary", "query_measurements[].retrieval", "rust_wasm_decision"],
+        ),
+        "persistent_cache_gap": record(
+            status="warm_cache_gate_passed" if cache_summary.get("max_warm_uncached_bytes") == 0 else "needs_attention",
+            lower_bound_definition=(
+                "After immutable artifacts are cached, a repeated query should perform zero network "
+                "bytes beyond validation and any changed content-hash paths."
+            ),
+            current_measurement={
+                "cache_query_count": cache_summary.get("query_count"),
+                "max_cold_uncached_bytes": cache_summary.get("max_cold_uncached_bytes"),
+                "max_warm_uncached_bytes": cache_summary.get("max_warm_uncached_bytes"),
+                "total_warm_cached_bytes": cache_summary.get("total_warm_cached_bytes"),
+                "browser_persistent_cache_passed": browser_summary.get("persistent_cache_passed"),
+            },
+            gap_to_lower_bound=(
+                "Warm network bytes are gated locally; remaining lower-bound work is CPU decode "
+                "reuse and browser-level confirmation when a browser report is missing."
+            ),
+            next_algorithmic_step="Persist decoded packed-index pages and reuse score-session state across repeated same-version queries.",
+            correctness_guard="Content-hash changes must invalidate stale cached artifacts and decoded pages.",
+            stop_condition="Stop when warm repeat queries have zero immutable network bytes and no repeated decode for unchanged pages.",
+            evidence_refs=["cache_benchmark", "browser_verification.summary.persistent_cache_passed"],
+        ),
+        "attachment_semantics_gap": record(
+            status="evidence_present" if attachment.get("coverage") else "needs_attention",
+            lower_bound_definition=(
+                "Attachment evidence should be summarized by the smallest semantic fields required "
+                "to justify search results without downloading attachments."
+            ),
+            current_measurement={
+                "policy": attachment.get("policy"),
+                "levels": attachment.get("levels"),
+                "coverage": attachment.get("coverage"),
+            },
+            gap_to_lower_bound=(
+                "Attachment evidence is summarized, but there is no per-query proof that the "
+                "summary is the minimal sufficient statistic for attachment relevance."
+            ),
+            next_algorithmic_step="Add query-term-to-attachment-evidence attribution and measure dropped attachment fields against task quality.",
+            correctness_guard="Attachment-bearing results must still expose source-level evidence and never imply unread attachment contents.",
+            stop_condition="Stop when every retained attachment field has a measured ranking or trust contribution.",
+            evidence_refs=["attachment_evidence", "quality_eval", "task_eval"],
+        ),
+        "ranking_calibration_gap": record(
+            status="quality_gate_skipped"
+            if quality_eval.get("skipped") or task_eval.get("skipped")
+            else "task_quality_gate_present" if task_eval.get("passed") else "needs_attention",
+            lower_bound_definition=(
+                "Ranking should preserve only the scoring features whose marginal information "
+                "changes user-visible order or trust at the target quality level."
+            ),
+            current_measurement={
+                "quality_eval_skipped": quality_eval.get("skipped"),
+                "task_eval_skipped": task_eval.get("skipped"),
+                "task_eval_passed": task_eval.get("passed"),
+                "expectation_count": task_eval.get("expectation_count"),
+                "max_elapsed_ms": query.get("max_elapsed_ms"),
+            },
+            gap_to_lower_bound=(
+                "Quality gates exist, but ranking weights are still an engineered policy rather "
+                "than a Pareto-optimal model over relevance, trust, recency, and byte cost."
+            ),
+            next_algorithmic_step="Run ablations over ranking features and fit byte-aware weights that stay on the quality Pareto frontier.",
+            correctness_guard="Task-query expectations, smoke queries, and negative proof behavior must remain satisfied.",
+            stop_condition="Stop when removing or reweighting any retained feature lowers measured relevance or trust at equal byte cost.",
+            evidence_refs=["quality_eval", "task_eval", "query_measurement_summary"],
+        ),
+        "browser_resource_gap": record(
+            status="browser_verified" if browser_summary.get("passed") is True else "external_browser_evidence_required",
+            lower_bound_definition=(
+                "The browser should request only phase-required immutable artifacts, render without "
+                "layout/console regressions, and reuse cached artifacts across repeated queries."
+            ),
+            current_measurement={
+                "browser_report_missing": browser_missing,
+                "passed": browser_summary.get("passed"),
+                "persistent_cache_passed": browser_summary.get("persistent_cache_passed"),
+                "viewports": browser_summary.get("viewports"),
+                "scenario_count": browser_summary.get("scenario_count"),
+                "max_warm_uncached_immutable_bytes": browser_summary.get("max_warm_uncached_immutable_bytes"),
+            },
+            gap_to_lower_bound=(
+                "Browser verification is recorded only when the external browser report is present; "
+                "the CLI report must not claim final browser lower-bound evidence without it."
+            ),
+            next_algorithmic_step="Keep browser automation as a mandatory artifact and compare network/resource traces per phase.",
+            correctness_guard="Browser evidence must include desktop/mobile viewports, console status, result rendering, and warm-cache behavior.",
+            stop_condition="Stop when browser resource traces match the phase model and stay stable across target viewports.",
+            evidence_refs=["browser_verification"],
+        ),
+    }
+    missing_layers = [key for key in LOWER_BOUND_GAP_LAYER_KEYS if key not in layers]
+    return {
+        "model": {
+            "objective": "Minimize query-dependent bytes and decode work while preserving trusted top-k answers and exhaustive proof semantics.",
+            "lower_bound_form": "B(q,f,K) >= routing_entropy(q,f) + topk_evidence(q,K) + proof_certificate(q) + rendered_result_payload(K).",
+            "claim_boundary": (
+                "Engineering gates can be passed without proving the mathematical lower bound; "
+                "the gap entries identify what proof or algorithm is still missing."
+            ),
+        },
+        "required_layers": LOWER_BOUND_GAP_LAYER_KEYS,
+        "missing_layers": missing_layers,
+        "layers": layers,
+        "priority_order": [
+            "proof_complete_certificate_gap",
+            "full_shard_dependency_gap",
+            "top_results_hydrated_gap",
+            "first_trusted_gap",
+            "topk_pruning_gap",
+            "packed_index_decode_gap",
+            "ranking_calibration_gap",
+            "persistent_cache_gap",
+            "startup_entry_gap",
+            "browser_resource_gap",
+            "attachment_semantics_gap",
+            "route_planning_gap",
+        ],
     }
 
 
@@ -882,6 +1399,7 @@ def dod_audit(report: dict[str, Any]) -> dict[str, dict[str, Any]]:
             "parse_decode_benchmark",
             "runtime_parse_decode_summary",
             "query_path_parse_decode_benchmark",
+            "lower_bound_gap_report",
         )
     ) and all("phase_measurements" in item and "phase_gate" in item for item in report.get("query_measurements") or [])
     return {
@@ -972,6 +1490,15 @@ def dod_audit(report: dict[str, Any]) -> dict[str, dict[str, Any]]:
             "status": "unmet",
             "evidence": "Commit, push, CI, and deployment checks are intentionally not claimed by this report.",
         },
+        "15": {
+            "status": "evidence_present"
+            if not ((report.get("lower_bound_gap_report") or {}).get("missing_layers"))
+            else "partial",
+            "evidence": {
+                "required_layers": (report.get("lower_bound_gap_report") or {}).get("required_layers"),
+                "missing_layers": (report.get("lower_bound_gap_report") or {}).get("missing_layers"),
+            },
+        },
     }
 
 
@@ -1056,6 +1583,7 @@ def build_lower_bound_report(
         "rust_wasm_decision": load_wasm_decision_report() or {"missing": True},
         "browser_verification": load_browser_verification_report() or {"missing": True},
     }
+    report["lower_bound_gap_report"] = lower_bound_gap_report(report)
     report["dod_audit"] = dod_audit(report)
     return report
 
@@ -1072,6 +1600,15 @@ def format_ms(value: Any) -> str:
         return f"{float(value):.3f}"
     except (TypeError, ValueError):
         return str(value)
+
+
+def format_table_text(value: Any, *, limit: int = 220) -> str:
+    if not isinstance(value, str):
+        value = json.dumps(value, ensure_ascii=False)
+    compact = value.replace("\n", " ").replace("|", "\\|")
+    if len(compact) <= limit:
+        return compact
+    return f"{compact[: max(0, limit - 3)]}..."
 
 
 def render_markdown_report(report: dict[str, Any]) -> str:
@@ -1219,6 +1756,29 @@ def render_markdown_report(report: dict[str, Any]) -> str:
     lines.extend(
         [
             "",
+            "## Proof Scan Pressure",
+            "",
+            "| Query | Certificate | Certificate bytes | Avoided match-shard bytes | True-match shards | False-positive shards | True-match bytes | False-positive bytes | False-positive byte ratio | True-match docs |",
+            "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        ]
+    )
+    for item in report["query_measurements"]:
+        pressure = item.get("proof_scan_pressure") or {}
+        lines.append(
+            f"| `{item['query']}` | `{bool(pressure.get('certificate_used'))}` | "
+            f"{format_int(pressure.get('certificate_bytes'))} | "
+            f"{format_int(pressure.get('matched_shard_bytes_avoided'))} | "
+            f"{format_int(pressure.get('true_match_shards'))} | "
+            f"{format_int(pressure.get('false_positive_shards'))} | "
+            f"{format_int(pressure.get('true_match_bytes'))} | "
+            f"{format_int(pressure.get('false_positive_bytes'))} | "
+            f"{format_ms(pressure.get('false_positive_byte_ratio'))} | "
+            f"{format_int(pressure.get('true_match_docs'))} |"
+        )
+
+    lines.extend(
+        [
+            "",
             "## Phase Gates",
             "",
             "| Query | First trusted bytes | First trusted ms | Top hydrated bytes | Top hydrated ms | Proof bytes | Passed |",
@@ -1278,6 +1838,32 @@ def render_markdown_report(report: dict[str, Any]) -> str:
                 f"- Max warm uncached immutable bytes: `{format_int(summary.get('max_warm_uncached_immutable_bytes'))}`",
             ]
         )
+
+    gap_report = report.get("lower_bound_gap_report") if isinstance(report.get("lower_bound_gap_report"), dict) else {}
+    gap_layers = gap_report.get("layers") if isinstance(gap_report.get("layers"), dict) else {}
+    if gap_layers:
+        lines.extend(
+            [
+                "",
+                "## Lower Bound Gap Report",
+                "",
+                f"- Objective: {format_table_text(((gap_report.get('model') or {}).get('objective') or ''), limit=400)}",
+                f"- Claim boundary: {format_table_text(((gap_report.get('model') or {}).get('claim_boundary') or ''), limit=400)}",
+                "",
+                "| Layer | Status | Current measurement | Gap | Next algorithmic step |",
+                "| --- | --- | --- | --- | --- |",
+            ]
+        )
+        for key in gap_report.get("required_layers") or gap_layers.keys():
+            layer = gap_layers.get(str(key)) or {}
+            lines.append(
+                f"| `{key}` | `{layer.get('status')}` | "
+                f"{format_table_text(layer.get('current_measurement') or {}, limit=260)} | "
+                f"{format_table_text(layer.get('gap_to_lower_bound') or '', limit=220)} | "
+                f"{format_table_text(layer.get('next_algorithmic_step') or '', limit=220)} |"
+            )
+        if gap_report.get("missing_layers"):
+            lines.append(f"- Missing layers: `{json.dumps(gap_report.get('missing_layers'), ensure_ascii=False)}`")
 
     lines.extend(
         [

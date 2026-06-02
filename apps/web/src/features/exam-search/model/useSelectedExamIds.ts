@@ -1,5 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Exam } from '@/shared/lib/contracts';
+import {
+    buildDefaultSelectedExamIds,
+    buildExamSelectionScope,
+    mergeExportedExamKeys,
+    readExportedExamKeys,
+} from './examSelection';
 
 interface SelectionState {
     scope: string | null;
@@ -11,9 +17,14 @@ export const useSelectedExamIds = (className: string | null, exams: Exam[]) => {
         scope: null,
         selectedIds: new Set()
     });
+    const [, refreshExportHistory] = useState(0);
     const examIds = useMemo(() => exams.map(exam => exam.id), [exams]);
-    const scope = className ? `${className}\u001f${examIds.join('\u001f')}` : null;
-    const defaultSelectedIds = useMemo(() => new Set(examIds), [examIds]);
+    const scope = useMemo(() => buildExamSelectionScope(className, exams), [className, exams]);
+    const exportedKeys = className ? readExportedExamKeys(className) : null;
+    const defaultSelectedIds = useMemo(
+        () => buildDefaultSelectedExamIds(exams, exportedKeys),
+        [exams, exportedKeys]
+    );
 
     const selectedIds = selection.scope === scope
         ? selection.selectedIds
@@ -34,5 +45,27 @@ export const useSelectedExamIds = (className: string | null, exams: Exam[]) => {
         });
     }, [defaultSelectedIds, scope]);
 
-    return { selectedIds, toggleExamSelection };
+    const selectAllExamIds = useCallback(() => {
+        if (!scope) return;
+        setSelection({ scope, selectedIds: new Set(examIds) });
+    }, [examIds, scope]);
+
+    const clearExamSelection = useCallback(() => {
+        if (!scope) return;
+        setSelection({ scope, selectedIds: new Set() });
+    }, [scope]);
+
+    const markExamsExported = useCallback((exportedExams: Exam[]) => {
+        if (!className) return;
+        mergeExportedExamKeys(className, exportedExams, exportedKeys);
+        refreshExportHistory(version => version + 1);
+    }, [className, exportedKeys]);
+
+    return {
+        selectedIds,
+        toggleExamSelection,
+        selectAllExamIds,
+        clearExamSelection,
+        markExamsExported,
+    };
 };

@@ -1,39 +1,39 @@
 {
-  "generated_at": "2026-06-02T10:32:32.615548+00:00",
+  "generated_at": "2026-06-02T12:57:12.478511+00:00",
   "strategy": "routed-verifiable-static-search",
   "producer_repo": "hicancan/njupt-search",
-  "producer_ref": "47c5e1ef55d4a177569e792f3605e0ec500f00f8",
+  "producer_ref": "bbbf6d9a1e36",
   "site_id": "njupt-public",
   "collection_id": "njupt-public",
   "artifact_path": "generated/collections/njupt-public",
-  "upstream_generated_at": "2026-06-02T09:58:52.527783+00:00",
+  "upstream_generated_at": "2026-05-30T01:53:30.555186+00:00",
   "truth_counts": {
     "sections": 212,
     "nav_nodes": 178,
     "homepage_modules": 23,
     "list_pages": 976,
-    "detail_pages": 9146,
+    "detail_pages": 9143,
     "low_content_detail_pages": 1005,
-    "attachments": 8100,
-    "external_links": 876,
-    "edges": 19284,
-    "url_outcomes": 26857
+    "attachments": 8094,
+    "external_links": 875,
+    "edges": 19278,
+    "url_outcomes": 26844
   },
-  "total_documents": 10264,
+  "total_documents": 10260,
   "record_counts": {
-    "detail": 9146,
+    "detail": 9143,
     "attachment": 241,
-    "external": 876,
+    "external": 875,
     "utility": 1
   },
   "facet_counts": {
     "policy": 765,
-    "exam": 2855,
-    "workflow": 1000,
+    "exam": 2853,
+    "workflow": 999,
     "download": 910,
     "notice_article": 2320,
     "news": 1538,
-    "external": 861,
+    "external": 860,
     "system": 15
   },
   "exam_vertical_preserved": true,
@@ -56,7 +56,7 @@
   },
   "progressive_search": {
     "total_shards": 942,
-    "total_documents": 10264,
+    "total_documents": 10260,
     "full_scan_supported": true,
     "progressive_events": true,
     "artifact_roles": [
@@ -70,6 +70,8 @@
       "local_impact_body_index_packed",
       "proof_catalog",
       "shard_filter",
+      "hot_query_topk_certificate",
+      "hot_query_complete_certificate",
       "full_shards",
       "attachment_meta_index",
       "attachment_filename_index",
@@ -129,6 +131,7 @@
       ],
       "complete_requires": [
         "scanned_shard",
+        "hot_query_complete_certificate",
         "explicit_filter_exclusion",
         "metadata_scope_exclusion",
         "no_false_negative_filter_exclusion"
@@ -143,7 +146,7 @@
       ]
     },
     "total_shards": 942,
-    "total_documents": 10264
+    "total_documents": 10260
   },
   "verification_contract": {
     "shard_filter_supported": true,
@@ -151,6 +154,8 @@
     "scan_fallback_supported": true,
     "filter_artifact_family": "shard_filters",
     "proof_catalog_artifact_family": "proof_catalogs",
+    "hot_query_proof_supported": true,
+    "hot_query_proof_artifact_family": "hot_query_proofs",
     "completion_requires_ledger": true
   },
   "routing_contract": {
@@ -170,54 +175,64 @@
   },
   "artifacts": {
     "source_registry": {
-      "path": "generated/collections/njupt-public/sitegraph/artifacts/source_registry.d548c683301db213.json",
-      "sha256": "d548c683301db213aeeea1fcafc57c5125999ab7f4950b5f651f643922d75487",
-      "bytes": 4805,
+      "path": "generated/collections/njupt-public/sitegraph/artifacts/source_registry.25eef6231b117e24.json",
+      "sha256": "25eef6231b117e2472cadf29165795bad09db40cf8111e9c38a38b965480b443",
+      "bytes": 4804,
       "role": "source_registry",
       "load": "bootstrap",
       "count": 3
     },
     "global_query_directory": {
-      "path": "generated/collections/njupt-public/sitegraph/artifacts/global_query_directory.d55da926fbbccfd6.json",
-      "sha256": "d55da926fbbccfd6efccce6e8bed9c19f8fc69558b070f7b4a79b270efe60a1a",
-      "bytes": 197615,
+      "path": "generated/collections/njupt-public/sitegraph/artifacts/global_query_directory.693309e7fbea8595.json",
+      "sha256": "693309e7fbea85959e2f2b2789869413a2d841607a1448aa36b6ce7806b798a9",
+      "bytes": 193936,
       "role": "global_query_directory",
       "load": "bootstrap",
-      "count": 111
+      "count": 109
     },
     "query_aliases": {
-      "path": "generated/collections/njupt-public/sitegraph/artifacts/query_aliases.ae74816af9127d91.json",
-      "sha256": "ae74816af9127d91bc60582d33193f7dc775d974ae526118580d530d1edf679e",
-      "bytes": 2901,
+      "path": "generated/collections/njupt-public/sitegraph/artifacts/query_aliases.640c78682b5e9f7f.json",
+      "sha256": "640c78682b5e9f7f6557be8b87309d048696ffa61c9ca38f9714d9d289b95181",
+      "bytes": 2869,
       "role": "query_aliases",
       "load": "bootstrap",
       "count": 24
     },
     "outcomes": {
-      "path": "generated/collections/njupt-public/sitegraph/artifacts/outcomes.df12a4694b7cbfd2.json",
-      "sha256": "df12a4694b7cbfd21231948a84c153a10e06205e2a527637b7ddede9343eb6c6",
-      "bytes": 4487656,
+      "path": "generated/collections/njupt-public/sitegraph/artifacts/outcomes.69d16987a861962e.json",
+      "sha256": "69d16987a861962ef18f96f01a6569bc6a637c4ec8496b54033b4678263e62b5",
+      "bytes": 4484585,
       "role": "outcomes",
       "load": "audit"
     },
     "quality_report": {
-      "path": "generated/collections/njupt-public/sitegraph/artifacts/quality_report.d0159c10aabc6c5a.json",
-      "sha256": "d0159c10aabc6c5a6d8e33a16aec796e5959bf28089be7e429c8e6a79b317b56",
+      "path": "generated/collections/njupt-public/sitegraph/artifacts/quality_report.697a37e4d94cfecd.json",
+      "sha256": "697a37e4d94cfecd14a039db710e5b9ea7f6454db0017a1ffa00b3991bfb3789",
       "bytes": 2119,
       "role": "quality_report",
       "load": "audit"
     },
     "query_eval_report": {
-      "path": "generated/collections/njupt-public/sitegraph/artifacts/query_eval_report.08c5f49a5ae933c3.json",
-      "sha256": "08c5f49a5ae933c39dc92e4b8158f16f01ea9d5f44ae6aa228aad61fad090245",
+      "path": "generated/collections/njupt-public/sitegraph/artifacts/query_eval_report.cbd215652718e84d.json",
+      "sha256": "cbd215652718e84d0aa4cc56f0e2b0c0c0ef09f25120a86f7b2175d828f469bc",
       "bytes": 739,
       "role": "query_eval_report",
       "load": "audit"
     },
+    "hot_query_proof_directory": {
+      "path": "generated/collections/njupt-public/sitegraph/artifacts/hot_query_proof_directory.27346baac52c93e9.json",
+      "sha256": "27346baac52c93e97f18c54f5cc1f116e8841b46d5f266047f005dc4eea8ac16",
+      "bytes": 78006,
+      "role": "hot_query_proof_directory",
+      "load": "verify",
+      "count": 78,
+      "query_count": 78,
+      "certificate_model": "rank-display-match-window-certificate-v2"
+    },
     "size_report": {
-      "path": "generated/collections/njupt-public/sitegraph/artifacts/size_report.f4f3cd8599d1cd43.json",
-      "sha256": "f4f3cd8599d1cd4355c4669a501069d54e76a8d96f2e7fdfa8cd82ae80899e38",
-      "bytes": 2377,
+      "path": "generated/collections/njupt-public/sitegraph/artifacts/size_report.ba067f805a029786.json",
+      "sha256": "ba067f805a0297861a68dc5594c91a0011fdca02914b4191e24138d24ae3f3ab",
+      "bytes": 3985,
       "role": "size_report",
       "load": "audit"
     }
@@ -228,12 +243,12 @@
       "nav_nodes": 178,
       "homepage_modules": 23,
       "list_pages": 976,
-      "detail_pages": 9146,
+      "detail_pages": 9143,
       "low_content_detail_pages": 1005,
-      "attachments": 8100,
-      "external_links": 876,
-      "edges": 19284,
-      "url_outcomes": 26857
+      "attachments": 8094,
+      "external_links": 875,
+      "edges": 19278,
+      "url_outcomes": 26844
     },
     "source_truth_counts": {
       "jwc": {
@@ -241,12 +256,12 @@
         "nav_nodes": 119,
         "homepage_modules": 8,
         "list_pages": 661,
-        "detail_pages": 6945,
+        "detail_pages": 6942,
         "low_content_detail_pages": 811,
-        "attachments": 7879,
-        "external_links": 741,
-        "edges": 16321,
-        "url_outcomes": 19132
+        "attachments": 7873,
+        "external_links": 740,
+        "edges": 16315,
+        "url_outcomes": 19119
       },
       "xsc": {
         "sections": 34,
@@ -299,44 +314,44 @@
         }
       }
     },
-    "upstream_generated_at": "2026-06-02T09:58:52.527783+00:00",
-    "detail_page_records": 9146,
-    "attachment_metadata_records": 8100,
+    "upstream_generated_at": "2026-05-30T01:53:30.555186+00:00",
+    "detail_page_records": 9143,
+    "attachment_metadata_records": 8094,
     "attachment_evidence_policy": "metadata_and_filename_only_no_extracted_attachment_content",
     "attachment_evidence_coverage": {
-      "total": 8100,
-      "metadata_only": 8100,
-      "filename_only": 8100,
+      "total": 8094,
+      "metadata_only": 8094,
+      "filename_only": 8094,
       "text_extracted": 0,
       "snippet": 0,
       "full_content": 0
     },
     "direct_attachment_records": 241,
-    "external_link_records": 876,
-    "external_document_records": 876,
+    "external_link_records": 875,
+    "external_document_records": 875,
     "utility_link_records": 1,
     "attachment_policy": "metadata_only",
     "external_link_policy": "record_only",
     "source_manifests": {
       "jwc": {
-        "path": "generated/collections/njupt-public/sitegraph/source_manifests/source_manifest.jwc.304a7e21a4803059.json",
-        "sha256": "304a7e21a4803059b41662064518cbebb34ab00244908d1623acb814a59b6c5d",
-        "bytes": 397232,
+        "path": "generated/collections/njupt-public/sitegraph/source_manifests/source_manifest.jwc.2a680938cb464433.json",
+        "sha256": "2a680938cb46443386aa2211a530a8da9231924b7e5c8fd480086f24922ec0c1",
+        "bytes": 397231,
         "role": "source_manifest",
         "load": "query_planned",
-        "count": 7910
+        "count": 7906
       },
       "xsc": {
-        "path": "generated/collections/njupt-public/sitegraph/source_manifests/source_manifest.xsc.88b9535dde6f4bea.json",
-        "sha256": "88b9535dde6f4beaab6a2996b4e7a3840e9dc0b201720f566db506fcfba643c8",
+        "path": "generated/collections/njupt-public/sitegraph/source_manifests/source_manifest.xsc.fb251304f6120608.json",
+        "sha256": "fb251304f61206087ca8adb9be0d6ca2a0fc4f96adf571bf634263aacbe7203d",
         "bytes": 141915,
         "role": "source_manifest",
         "load": "query_planned",
         "count": 1669
       },
       "cxcy": {
-        "path": "generated/collections/njupt-public/sitegraph/source_manifests/source_manifest.cxcy.1aaad9ef09fb460c.json",
-        "sha256": "1aaad9ef09fb460cb011e0d924c4793125318ba25c9e98b8b21ff23d2cdfb225",
+        "path": "generated/collections/njupt-public/sitegraph/source_manifests/source_manifest.cxcy.c7612e6f74d8b6fe.json",
+        "sha256": "c7612e6f74d8b6fe235f8136299b639ef2b68f9af9559177ae0d5e433e7759ad",
         "bytes": 147079,
         "role": "source_manifest",
         "load": "query_planned",
@@ -345,9 +360,9 @@
     },
     "source_manifest_summaries": {
       "jwc": {
-        "doc_count": 7910,
-        "attachment_count": 7879,
-        "attachment_filename_only": 7879,
+        "doc_count": 7906,
+        "attachment_count": 7873,
+        "attachment_filename_only": 7873,
         "attachment_text_extracted": 0,
         "attachment_full_content": 0,
         "shard_count": 590,
@@ -387,54 +402,64 @@
     },
     "indexes": {
       "source_registry": {
-        "path": "generated/collections/njupt-public/sitegraph/artifacts/source_registry.d548c683301db213.json",
-        "sha256": "d548c683301db213aeeea1fcafc57c5125999ab7f4950b5f651f643922d75487",
-        "bytes": 4805,
+        "path": "generated/collections/njupt-public/sitegraph/artifacts/source_registry.25eef6231b117e24.json",
+        "sha256": "25eef6231b117e2472cadf29165795bad09db40cf8111e9c38a38b965480b443",
+        "bytes": 4804,
         "role": "source_registry",
         "load": "bootstrap",
         "count": 3
       },
       "global_query_directory": {
-        "path": "generated/collections/njupt-public/sitegraph/artifacts/global_query_directory.d55da926fbbccfd6.json",
-        "sha256": "d55da926fbbccfd6efccce6e8bed9c19f8fc69558b070f7b4a79b270efe60a1a",
-        "bytes": 197615,
+        "path": "generated/collections/njupt-public/sitegraph/artifacts/global_query_directory.693309e7fbea8595.json",
+        "sha256": "693309e7fbea85959e2f2b2789869413a2d841607a1448aa36b6ce7806b798a9",
+        "bytes": 193936,
         "role": "global_query_directory",
         "load": "bootstrap",
-        "count": 111
+        "count": 109
       },
       "query_aliases": {
-        "path": "generated/collections/njupt-public/sitegraph/artifacts/query_aliases.ae74816af9127d91.json",
-        "sha256": "ae74816af9127d91bc60582d33193f7dc775d974ae526118580d530d1edf679e",
-        "bytes": 2901,
+        "path": "generated/collections/njupt-public/sitegraph/artifacts/query_aliases.640c78682b5e9f7f.json",
+        "sha256": "640c78682b5e9f7f6557be8b87309d048696ffa61c9ca38f9714d9d289b95181",
+        "bytes": 2869,
         "role": "query_aliases",
         "load": "bootstrap",
         "count": 24
       },
       "outcomes": {
-        "path": "generated/collections/njupt-public/sitegraph/artifacts/outcomes.df12a4694b7cbfd2.json",
-        "sha256": "df12a4694b7cbfd21231948a84c153a10e06205e2a527637b7ddede9343eb6c6",
-        "bytes": 4487656,
+        "path": "generated/collections/njupt-public/sitegraph/artifacts/outcomes.69d16987a861962e.json",
+        "sha256": "69d16987a861962ef18f96f01a6569bc6a637c4ec8496b54033b4678263e62b5",
+        "bytes": 4484585,
         "role": "outcomes",
         "load": "audit"
       },
       "quality_report": {
-        "path": "generated/collections/njupt-public/sitegraph/artifacts/quality_report.d0159c10aabc6c5a.json",
-        "sha256": "d0159c10aabc6c5a6d8e33a16aec796e5959bf28089be7e429c8e6a79b317b56",
+        "path": "generated/collections/njupt-public/sitegraph/artifacts/quality_report.697a37e4d94cfecd.json",
+        "sha256": "697a37e4d94cfecd14a039db710e5b9ea7f6454db0017a1ffa00b3991bfb3789",
         "bytes": 2119,
         "role": "quality_report",
         "load": "audit"
       },
       "query_eval_report": {
-        "path": "generated/collections/njupt-public/sitegraph/artifacts/query_eval_report.08c5f49a5ae933c3.json",
-        "sha256": "08c5f49a5ae933c39dc92e4b8158f16f01ea9d5f44ae6aa228aad61fad090245",
+        "path": "generated/collections/njupt-public/sitegraph/artifacts/query_eval_report.cbd215652718e84d.json",
+        "sha256": "cbd215652718e84d0aa4cc56f0e2b0c0c0ef09f25120a86f7b2175d828f469bc",
         "bytes": 739,
         "role": "query_eval_report",
         "load": "audit"
       },
+      "hot_query_proof_directory": {
+        "path": "generated/collections/njupt-public/sitegraph/artifacts/hot_query_proof_directory.27346baac52c93e9.json",
+        "sha256": "27346baac52c93e97f18c54f5cc1f116e8841b46d5f266047f005dc4eea8ac16",
+        "bytes": 78006,
+        "role": "hot_query_proof_directory",
+        "load": "verify",
+        "count": 78,
+        "query_count": 78,
+        "certificate_model": "rank-display-match-window-certificate-v2"
+      },
       "size_report": {
-        "path": "generated/collections/njupt-public/sitegraph/artifacts/size_report.f4f3cd8599d1cd43.json",
-        "sha256": "f4f3cd8599d1cd4355c4669a501069d54e76a8d96f2e7fdfa8cd82ae80899e38",
-        "bytes": 2377,
+        "path": "generated/collections/njupt-public/sitegraph/artifacts/size_report.ba067f805a029786.json",
+        "sha256": "ba067f805a0297861a68dc5594c91a0011fdca02914b4191e24138d24ae3f3ab",
+        "bytes": 3985,
         "role": "size_report",
         "load": "audit"
       }

@@ -3,6 +3,7 @@ from pathlib import Path
 
 from njupt_search_eval.sitegraph_search import recall_documents
 from njupt_search_indexer.sitegraph_binary_index import unpack_impact_index
+from njupt_search_indexer.sitegraph_shards import FILTER_SIZING_VERSION, filter_bit_count_for_tokens
 from njupt_search_indexer.sitegraph_source import (
     COUNT_FIELDS,
     load_collection_source_packages,
@@ -294,6 +295,7 @@ def test_light_index_and_shards_have_no_obsolete_fields():
                 assert item.get("task_kind")
 
         proof_catalog = read_artifact(source_manifest["artifacts"]["proof_catalog"])
+        shard_filter = read_artifact(source_manifest["artifacts"]["shard_filter"])
         for shard in proof_catalog["shards"]:
             documents = read_json(PUBLIC_ROOT / shard["path"])
             assert len(documents) == shard["document_count"]
@@ -303,6 +305,12 @@ def test_light_index_and_shards_have_no_obsolete_fields():
             assert shard["source_id"] == source_manifest["source_id"]
             assert shard["filter_contract"]["filter_token_count"] > 0
             assert shard["filter_contract"]["filter_sha256"]
+            filter_payload = shard_filter[shard["shard_id"]]
+            expected_bit_count = filter_bit_count_for_tokens([""] * shard["filter_contract"]["filter_token_count"])
+            assert filter_payload["sizing"] == FILTER_SIZING_VERSION
+            assert filter_payload["bit_count"] == expected_bit_count
+            assert shard["filter_contract"]["filter_bit_count"] == expected_bit_count
+            assert shard["filter_contract"]["filter_hash_count"] == filter_payload["hash_count"]
             for document in documents:
                 assert set(["title", "url", "section", "nav_path", "summary", "content", "attachments", "record_type", "facet", "published_at", "provenance", "source_id", "canonical_title", "date_kind", "date_confidence", "task_kind", "authority_profile", "dedupe_key"]) <= set(document)
                 assert document["source_id"] == document["provenance"]["site_id"]

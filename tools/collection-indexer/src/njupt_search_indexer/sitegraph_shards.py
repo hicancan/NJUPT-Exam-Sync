@@ -9,7 +9,22 @@ from typing import Any
 
 from .sitegraph_artifact_io import write_hashed_json
 from .sitegraph_index_postings import exhaustive_scan_blob
-from .sitegraph_text import clean_text, sha256_text, sitegraph_tokens, stable_slug
+from .sitegraph_text import clean_text, normalize_text, sha256_text, stable_slug
+
+
+PROOF_FILTER_NGRAM_MAX = 5
+PROOF_FILTER_RUN_RE = re.compile(r"[a-z0-9._+\-\u4e00-\u9fff]{2,}")
+FILTER_SIZING_VERSION = "proof-ngram-symbol-plus-v1"
+DEFAULT_FILTER_BIT_COUNT = 1024
+SMALL_FILTER_TOKEN_THRESHOLD = 256
+SMALL_FILTER_BIT_COUNT = 2048
+MEDIUM_FILTER_TOKEN_THRESHOLD = 1024
+MEDIUM_FILTER_BIT_COUNT = 8192
+LARGE_FILTER_TOKEN_THRESHOLD = 4096
+LARGE_FILTER_BIT_COUNT = 32768
+VERY_LARGE_FILTER_TOKEN_THRESHOLD = 12000
+VERY_LARGE_FILTER_BIT_COUNT = 65536
+FILTER_HASH_COUNT = 3
 
 
 def filter_token_hash_int(text: str, seed: int) -> int:
@@ -20,7 +35,32 @@ def filter_token_hash_int(text: str, seed: int) -> int:
     return value
 
 
-def build_filter_bitset(tokens: list[str], *, bit_count: int = 16384, hash_count: int = 3) -> dict[str, Any]:
+def proof_filter_tokens(value: Any, *, ngram_max: int = PROOF_FILTER_NGRAM_MAX) -> set[str]:
+    text = normalize_text(value)
+    tokens: set[str] = set()
+    for match in PROOF_FILTER_RUN_RE.finditer(text):
+        part = match.group(0)
+        for size in range(2, min(ngram_max, len(part)) + 1):
+            for index in range(0, len(part) - size + 1):
+                tokens.add(part[index : index + size])
+    return tokens
+
+
+def filter_bit_count_for_tokens(tokens: list[str]) -> int:
+    count = len(tokens)
+    if count < SMALL_FILTER_TOKEN_THRESHOLD:
+        return DEFAULT_FILTER_BIT_COUNT
+    if count < MEDIUM_FILTER_TOKEN_THRESHOLD:
+        return SMALL_FILTER_BIT_COUNT
+    if count < LARGE_FILTER_TOKEN_THRESHOLD:
+        return MEDIUM_FILTER_BIT_COUNT
+    if count < VERY_LARGE_FILTER_TOKEN_THRESHOLD:
+        return LARGE_FILTER_BIT_COUNT
+    return VERY_LARGE_FILTER_BIT_COUNT
+
+
+def build_filter_bitset(tokens: list[str], *, bit_count: int | None = None, hash_count: int = FILTER_HASH_COUNT) -> dict[str, Any]:
+    bit_count = bit_count if bit_count is not None else filter_bit_count_for_tokens(tokens)
     data = bytearray(bit_count // 8)
     for token in tokens:
         for seed in range(hash_count):
@@ -89,7 +129,7 @@ def build_locality_shards(
         filter_tokens = sorted({
             token
             for document in payload_docs
-            for token in sitegraph_tokens(exhaustive_scan_blob(document), cjk_max_n=5)
+            for token in proof_filter_tokens(exhaustive_scan_blob(document))
         })
         filter_bitset = build_filter_bitset(filter_tokens)
         filter_hash = sha256_text(filter_bitset["bitset_base64"], length=32)
@@ -115,6 +155,7 @@ def build_locality_shards(
             "token_count": len(filter_tokens),
             "sha256": filter_hash,
             "hash_algorithm": "bloom-fnv1a32-utf8",
+            "sizing": FILTER_SIZING_VERSION,
             "coverage_fields": ["title", "section", "nav_path", "summary", "content", "attachments", "url"],
         }
         shard_refs.append(shard_ref)

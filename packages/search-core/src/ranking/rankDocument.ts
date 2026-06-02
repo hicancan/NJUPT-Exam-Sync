@@ -64,11 +64,17 @@ const stalePenalty = (document: SitegraphFullDocument, freshnessMode: ReturnType
     return 0;
 };
 
+const normalizedContentLength = (document: SitegraphFullDocument): number => {
+    const certifiedLength = (document as SitegraphFullDocument & { content_normalized_length?: unknown }).content_normalized_length;
+    if (typeof certifiedLength === 'number' && Number.isFinite(certifiedLength)) return certifiedLength;
+    return normalize(document.content).length;
+};
+
 const isShortLandingPage = (document: SitegraphFullDocument, normalizedQuery: string, title: string): boolean => {
     return title === normalizedQuery
         && ['workflow', 'news', 'notice_article'].includes(document.facet)
         && !dateSortValue(document.published_at)
-        && normalize(document.content).length < 220;
+        && normalizedContentLength(document) < 220;
 };
 
 export const rankSitegraphDocument = (

@@ -17,9 +17,34 @@ const formatICSDate = (isoString?: string): string | null => {
     return cleaned ?? null;
 };
 
-const generateUID = (examId: string, domain: string): string => {
-    const safeId = encodeURIComponent(examId).replace(/%/g, '_');
-    return `exam-${safeId}@${domain}`;
+const normalizeIdentityPart = (value: unknown): string => {
+    return String(value ?? '').trim().replace(/\s+/g, ' ');
+};
+
+const hashIdentity = (identity: string): string => {
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < identity.length; i += 1) {
+        hash ^= identity.charCodeAt(i);
+        hash = Math.imul(hash, 0x01000193);
+    }
+    return (hash >>> 0).toString(16).padStart(8, '0');
+};
+
+export const getExamCalendarIdentity = (exam: Exam): string => {
+    return [
+        exam.class_name,
+        exam.course_code,
+        exam.course_name,
+        exam.start_timestamp,
+        exam.end_timestamp,
+        exam.campus,
+        exam.location,
+        exam.teacher,
+    ].map(normalizeIdentityPart).join('\u001f');
+};
+
+const generateUID = (exam: Exam, domain: string): string => {
+    return `exam-${hashIdentity(getExamCalendarIdentity(exam))}@${domain}`;
 };
 
 const escapeICSValue = (str: string): string => {
@@ -119,7 +144,7 @@ export const generateICSContent = (
         const summary = exam.course_name;
 
         lines.push('BEGIN:VEVENT');
-        lines.push(`UID:${generateUID(exam.id, domain)}`);
+        lines.push(`UID:${generateUID(exam, domain)}`);
         lines.push(`DTSTAMP:${now}`);
         lines.push(`DTSTART;TZID=Asia/Shanghai:${start}`);
         lines.push(`DTEND;TZID=Asia/Shanghai:${end}`);

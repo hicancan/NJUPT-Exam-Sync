@@ -22,13 +22,10 @@ export function getSearchCoverageProgress(coverage: SitegraphSearchCoverage): Se
         : 0;
 
     const failed = Math.max(0, coverage.failed_shards);
-    const pending = Math.max(0, coverage.pending_shards);
-    const completeLabel = coverage.scope === 'scoped' ? '筛选范围账本已闭合' : '全站账本已闭合';
+    const completeLabel = coverage.scope === 'scoped' ? '筛选范围核查完毕' : '全量核查完毕';
     const activeLabel = failed > 0
-        ? `账本异常 ${failed} 个分片`
-        : pending > 0
-            ? `证明账本 ${percent}%`
-            : `证明账本 ${percent}%`;
+        ? `核查异常 ${failed} 个分片`
+        : `官网范围核查 ${percent}%`;
 
     return {
         completedShards,

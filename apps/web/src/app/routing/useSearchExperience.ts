@@ -55,7 +55,13 @@ export function useSearchExperience() {
     });
     const classSearchResult = useClassSearch(allExams, initialQuery, manualSelection);
     const currentClass = classSearchResult.mode === 'DETAIL' ? classSearchResult.classes[0] || null : null;
-    const { selectedIds, toggleExamSelection } = useSelectedExamIds(currentClass, classSearchResult.exams);
+    const {
+        selectedIds,
+        toggleExamSelection,
+        selectAllExamIds,
+        clearExamSelection,
+        markExamsExported,
+    } = useSelectedExamIds(currentClass, classSearchResult.exams);
 
     useEffect(() => {
         // URL navigation is the external source of truth here; keep the controlled search box in sync.
@@ -158,6 +164,9 @@ export function useSearchExperience() {
             reminders,
             onOpenClass: handleOpenClass,
             onToggleSelection: toggleExamSelection,
+            onSelectAllExams: selectAllExamIds,
+            onClearExamSelection: clearExamSelection,
+            onExamExportComplete: markExamsExported,
             onRemindersChange: setReminders,
             sourceUrl,
             sourceTitle,

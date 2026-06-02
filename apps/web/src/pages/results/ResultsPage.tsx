@@ -14,6 +14,7 @@ import {
     SitegraphSearchCoverage,
     SitegraphSearchPhase,
     SitegraphSortMode,
+    Exam,
 } from '@/shared/lib/contracts';
 
 type ResultsLoadingKind = 'collection' | 'exam-list' | 'exam-detail';
@@ -37,6 +38,9 @@ interface ResultsPageProps {
     reminders: number[];
     onOpenClass: (className: string) => void;
     onToggleSelection: (id: string) => void;
+    onSelectAllExams: () => void;
+    onClearExamSelection: () => void;
+    onExamExportComplete: (exams: Exam[]) => void;
     onRemindersChange: (reminders: number[]) => void;
     sourceUrl: string | null;
     sourceTitle: string | null;
@@ -63,6 +67,9 @@ export function ResultsPage({
     reminders,
     onOpenClass,
     onToggleSelection,
+    onSelectAllExams,
+    onClearExamSelection,
+    onExamExportComplete,
     onRemindersChange,
     sourceUrl,
     sourceTitle,
@@ -103,6 +110,9 @@ export function ResultsPage({
                                 exams={classMode.exams}
                                 selectedIds={selectedIds}
                                 onToggleSelection={onToggleSelection}
+                                onSelectAll={onSelectAllExams}
+                                onClearSelection={onClearExamSelection}
+                                onExportComplete={onExamExportComplete}
                                 reminders={reminders}
                                 onRemindersChange={onRemindersChange}
                                 sourceUrl={sourceUrl}

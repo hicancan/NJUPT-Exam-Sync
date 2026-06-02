@@ -9,6 +9,7 @@ import {
     parseSitegraphManifest,
     recallSitegraphDocuments,
     searchSitegraphProgressively,
+    expandSitegraphQueryPhrases,
     tokenizeSitegraphQuery
 } from '../src';
 import type {
@@ -596,7 +597,7 @@ const makeRoutedFixture = (
 const withMockFetch = async (
     fixture: RoutedFixture,
     callback: () => Promise<void>,
-    options: { failPaths?: string[] } = {}
+    options: { failPaths?: string[]; extraResponses?: Record<string, unknown>; requestedPaths?: string[] } = {}
 ): Promise<void> => {
     const originalFetch = globalThis.fetch;
     const manifestArtifact = required(fixture.session.sourceRegistry.sources[0], 'expected source registry entry').artifact_manifest;
@@ -614,11 +615,15 @@ const withMockFetch = async (
         [shardFilterArtifact.path, fixture.shardFilter],
         [shard.path, fixture.documents]
     ]);
+    for (const [path, payload] of Object.entries(options.extraResponses || {})) {
+        responses.set(path, payload);
+    }
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
         if (init?.signal?.aborted) {
             throw new DOMException('Search cancelled', 'AbortError');
         }
         const url = String(input).replace(/^\//, '');
+        options.requestedPaths?.push(url);
         if ((options.failPaths || []).some(path => url.endsWith(path))) {
             return new Response('fixture failure', { status: 503 });
         }
@@ -692,6 +697,32 @@ describe('sitegraph search contract', () => {
 
         expect(tokens).toEqual(expect.arrayContaining(['转专业', '专业变更', 'b250403.xlsx']));
         expect(tokens[0]?.length).toBeGreaterThanOrEqual(tokens[tokens.length - 1]?.length ?? 0);
+    });
+
+    it('does not trigger broad reverse aliases from short generic terms inside longer queries', () => {
+        const aliases = {
+            学生相关文件及表格: { aliases: ['学生表格', '常用下载', '表格下载', '学生相关文件'] },
+            xlsx: { aliases: ['xls', 'Excel', '表格'] },
+            附件1: { aliases: ['附件 1', '附件一'] },
+            成绩: { aliases: ['成绩查询', '成绩单', '成绩复核'] }
+        };
+
+        const studentFormPhrases = expandSitegraphQueryPhrases('学生相关文件及表格', aliases);
+        expect(studentFormPhrases).toEqual(expect.arrayContaining([
+            '学生相关文件及表格',
+            '学生相关文件',
+            '学生表格',
+            '表格下载',
+            '常用下载'
+        ]));
+        expect(studentFormPhrases).not.toEqual(expect.arrayContaining(['excel', 'xlsx', 'xls', '表格']));
+        expect(expandSitegraphQueryPhrases('表格', aliases)).toEqual(['excel', 'xlsx', 'xls', '表格']);
+        expect(new Set(expandSitegraphQueryPhrases('附件1', aliases))).toEqual(new Set(['附件1', '附件一']));
+        expect(expandSitegraphQueryPhrases('附件1', aliases)).not.toContain('附件');
+        expect(expandSitegraphQueryPhrases('附件', aliases)).toEqual(['附件']);
+        expect(new Set(expandSitegraphQueryPhrases('成绩', aliases))).toEqual(new Set(['成绩', '成绩查询', '成绩单', '成绩复核']));
+        expect(expandSitegraphQueryPhrases('成绩', aliases)).not.toContain('绩点');
+        expect(expandSitegraphQueryPhrases('绩点', aliases)).toEqual(['绩点']);
     });
 
     it('keeps the primary body hit visible near the start of mobile-safe snippets', () => {
@@ -928,6 +959,376 @@ describe('sitegraph search contract', () => {
         });
     });
 
+    it('uses hot query complete certificates instead of proof full-shard fallback', async () => {
+        const calendarDocument = makeDocument({
+            id: 'calendar-hot-proof',
+            title: '2025-2026学年校历',
+            canonical_title: '2025-2026学年校历',
+            summary: '学校发布2025-2026学年校历。',
+            content: '2025-2026学年校历安排。',
+            attachments: [],
+            attachment_count: 0
+        });
+        const fixture = makeRoutedFixture('hot-query-proof', [calendarDocument], {
+            queryTerms: ['校历'],
+            lightTerms: {},
+            bodyTerms: {}
+        });
+        const directoryArtifact = artifact('hot-query-proof/hot-query-proof-directory.json', 'hot_query_proof_directory', 'verify', 1);
+        const topCertificateArtifact = artifact('hot-query-proof/hot-query-topk-calendar.json', 'hot_query_topk_certificate', 'query_planned', 1);
+        const certificateArtifact = artifact('hot-query-proof/hot-query-complete-calendar.json', 'hot_query_complete_certificate', 'verify', 1);
+        fixture.session.manifest.artifacts.hot_query_proof_directory = directoryArtifact;
+
+        const shard = required(fixture.sourceManifest.full_shards[0], 'expected full shard');
+        const directory = {
+            version: 'sitegraph-hot-query-complete-directory-v2',
+            certificate_model: 'rank-display-match-window-certificate-v2',
+            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            scope: 'global_unfiltered_queries',
+            total_shards: 1,
+            total_documents: 1,
+            queries: {
+                校历: {
+                    ...certificateArtifact,
+                    query: '校历',
+                    normalized_query: '校历',
+                    match_phrases: ['校历'],
+                    phrase_key: '校历',
+                    top_certificate: {
+                        ...topCertificateArtifact,
+                        top_k_limit: 80,
+                        match_count: 1
+                    },
+                    total_shards: 1,
+                    total_documents: 1,
+                    matched_shard_count: 1,
+                    matched_shard_bytes: shard.bytes,
+                    match_count: 1
+                }
+            }
+        };
+        const certificateDocument = {
+            ...required(fixture.documents[0], 'expected certificate document'),
+            content: '校历安排。',
+            content_normalized_length: 1280,
+            rank_base_score: 128,
+            attachments: []
+        };
+        const topCertificate = {
+            version: 'sitegraph-hot-query-topk-certificate-v1',
+            document_payload_model: 'rank-display-match-window-certificate-v2',
+            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            query: '校历',
+            normalized_query: '校历',
+            match_phrases: ['校历'],
+            rank_terms: ['校历'],
+            phrase_key: '校历',
+            top_k_limit: 80,
+            top_k_count: 1,
+            match_count: 1,
+            total_shards: 1,
+            total_documents: 1,
+            matched_shards: [shard.shard_id],
+            matched_shard_count: 1,
+            documents: [certificateDocument]
+        };
+        const certificate = {
+            version: 'sitegraph-hot-query-complete-certificate-v2',
+            document_payload_model: 'rank-display-match-window-certificate-v2',
+            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            query: '校历',
+            normalized_query: '校历',
+            match_phrases: ['校历'],
+            rank_terms: ['校历'],
+            phrase_key: '校历',
+            total_shards: 1,
+            total_documents: 1,
+            matched_shards: [shard.shard_id],
+            matched_shard_count: 1,
+            matched_shard_bytes: shard.bytes,
+            proved_no_match_shards: 0,
+            documents: [certificateDocument],
+            match_count: 1
+        };
+        const requestedPaths: string[] = [];
+
+        await withMockFetch(fixture, async () => {
+            const events: SitegraphSearchEvent[] = [];
+            await searchSitegraphProgressively(fixture.session, '校历', new AbortController().signal, event => events.push(event), { limit: 5 });
+            const complete = events.at(-1);
+            expect(events.map(event => event.type)).toEqual([
+                'plan_started',
+                'first_trusted_results',
+                'top_results_hydrated',
+                'global_exhaustive_complete'
+            ]);
+            expect(complete?.type).toBe('global_exhaustive_complete');
+            expect(complete?.coverage.scanned_shards).toBe(1);
+            expect(complete?.coverage.proved_no_match_shards).toBe(0);
+            expect(complete?.coverage.searched_documents).toBe(1);
+            expect(complete?.coverage.hydrated_shard_bytes).toBe(0);
+            expect(complete?.stats?.loadedLocalIndexCount).toBe(0);
+            expect(complete?.stats?.loadedShardCount).toBe(0);
+            expect(complete?.results?.[0]?.id).toBe('calendar-hot-proof');
+            expect(events.some(event => event.type === 'verification_started')).toBe(false);
+            expect(requestedPaths.filter(path => path.endsWith(shard.path))).toHaveLength(0);
+            expect(requestedPaths.some(path => path.endsWith(required(fixture.sourceManifest.artifacts.proof_catalog, 'expected proof catalog').path))).toBe(false);
+            expect(requestedPaths.some(path => path.endsWith(required(fixture.sourceManifest.artifacts.shard_filter, 'expected shard filter').path))).toBe(false);
+            expect(requestedPaths.some(path => path.endsWith(directoryArtifact.path))).toBe(true);
+            expect(requestedPaths.some(path => path.endsWith(topCertificateArtifact.path))).toBe(true);
+            expect(requestedPaths.some(path => path.endsWith(certificateArtifact.path))).toBe(true);
+        }, {
+            extraResponses: {
+                [directoryArtifact.path]: directory,
+                [topCertificateArtifact.path]: topCertificate,
+                [certificateArtifact.path]: certificate
+            },
+            requestedPaths
+        });
+    });
+
+    it('reuses hot query certificates for equivalent aliases with the same phrase key', async () => {
+        const calendarDocument = makeDocument({
+            id: 'calendar-hot-proof-alias',
+            title: '2025-2026学年教学周历',
+            canonical_title: '2025-2026学年教学周历',
+            summary: '学校发布2025-2026学年教学周历。',
+            content: '2025-2026学年教学周历安排。',
+            attachments: [],
+            attachment_count: 0
+        });
+        const fixture = makeRoutedFixture('hot-query-proof-alias', [calendarDocument], {
+            queryTerms: ['教学周历'],
+            lightTerms: {},
+            bodyTerms: {},
+            queryAliases: { 校历: { aliases: ['教学周历'] } }
+        });
+        const directoryArtifact = artifact('hot-query-proof-alias/hot-query-proof-directory.json', 'hot_query_proof_directory', 'verify', 1);
+        const topCertificateArtifact = artifact('hot-query-proof-alias/hot-query-topk-calendar.json', 'hot_query_topk_certificate', 'query_planned', 1);
+        const certificateArtifact = artifact('hot-query-proof-alias/hot-query-complete-calendar.json', 'hot_query_complete_certificate', 'verify', 1);
+        fixture.session.manifest.artifacts.hot_query_proof_directory = directoryArtifact;
+
+        const shard = required(fixture.sourceManifest.full_shards[0], 'expected full shard');
+        const phraseKey = '教学周历\u0000校历';
+        const directory = {
+            version: 'sitegraph-hot-query-complete-directory-v2',
+            certificate_model: 'rank-display-match-window-certificate-v2',
+            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            scope: 'global_unfiltered_queries',
+            total_shards: 1,
+            total_documents: 1,
+            queries: {
+                教学周历: {
+                    ...certificateArtifact,
+                    query: '教学周历',
+                    normalized_query: '校历',
+                    alias_of: '校历',
+                    match_phrases: ['教学周历', '校历'],
+                    phrase_key: phraseKey,
+                    top_certificate: {
+                        ...topCertificateArtifact,
+                        top_k_limit: 80,
+                        match_count: 1
+                    },
+                    total_shards: 1,
+                    total_documents: 1,
+                    matched_shard_count: 1,
+                    matched_shard_bytes: shard.bytes,
+                    match_count: 1
+                }
+            }
+        };
+        const certificateDocument = {
+            ...required(fixture.documents[0], 'expected certificate document'),
+            content: '教学周历安排。',
+            content_normalized_length: 1280,
+            rank_base_score: 128,
+            attachments: []
+        };
+        const topCertificate = {
+            version: 'sitegraph-hot-query-topk-certificate-v1',
+            document_payload_model: 'rank-display-match-window-certificate-v2',
+            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            query: '校历',
+            normalized_query: '校历',
+            match_phrases: ['教学周历', '校历'],
+            rank_terms: ['教学周历', '校历'],
+            phrase_key: phraseKey,
+            top_k_limit: 80,
+            top_k_count: 1,
+            match_count: 1,
+            total_shards: 1,
+            total_documents: 1,
+            matched_shards: [shard.shard_id],
+            matched_shard_count: 1,
+            documents: [certificateDocument]
+        };
+        const certificate = {
+            version: 'sitegraph-hot-query-complete-certificate-v2',
+            document_payload_model: 'rank-display-match-window-certificate-v2',
+            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            query: '校历',
+            normalized_query: '校历',
+            match_phrases: ['教学周历', '校历'],
+            rank_terms: ['教学周历', '校历'],
+            phrase_key: phraseKey,
+            total_shards: 1,
+            total_documents: 1,
+            matched_shards: [shard.shard_id],
+            matched_shard_count: 1,
+            matched_shard_bytes: shard.bytes,
+            proved_no_match_shards: 0,
+            documents: [certificateDocument],
+            match_count: 1
+        };
+        const requestedPaths: string[] = [];
+
+        await withMockFetch(fixture, async () => {
+            const events: SitegraphSearchEvent[] = [];
+            await searchSitegraphProgressively(fixture.session, '教学周历', new AbortController().signal, event => events.push(event), { limit: 5 });
+            const complete = events.at(-1);
+            expect(events.map(event => event.type)).toEqual([
+                'plan_started',
+                'first_trusted_results',
+                'top_results_hydrated',
+                'global_exhaustive_complete'
+            ]);
+            expect(complete?.type).toBe('global_exhaustive_complete');
+            expect(complete?.coverage.exhaustive_complete).toBe(true);
+            expect(complete?.stats?.loadedLocalIndexCount).toBe(0);
+            expect(complete?.stats?.loadedShardCount).toBe(0);
+            expect(complete?.results?.[0]?.id).toBe('calendar-hot-proof-alias');
+            expect(events.some(event => event.type === 'verification_started')).toBe(false);
+            expect(requestedPaths.some(path => path.endsWith(directoryArtifact.path))).toBe(true);
+            expect(requestedPaths.some(path => path.endsWith(topCertificateArtifact.path))).toBe(true);
+            expect(requestedPaths.some(path => path.endsWith(certificateArtifact.path))).toBe(true);
+            expect(requestedPaths.filter(path => path.endsWith(shard.path))).toHaveLength(0);
+        }, {
+            extraResponses: {
+                [directoryArtifact.path]: directory,
+                [topCertificateArtifact.path]: topCertificate,
+                [certificateArtifact.path]: certificate
+            },
+            requestedPaths
+        });
+    });
+
+    it('uses global hot query complete certificates for scoped source filters', async () => {
+        const calendarDocument = makeDocument({
+            id: 'calendar-hot-proof-scoped',
+            title: '2025-2026学年校历',
+            canonical_title: '2025-2026学年校历',
+            summary: '学校发布2025-2026学年校历。',
+            content: '2025-2026学年校历安排。',
+            attachments: [],
+            attachment_count: 0
+        });
+        const fixture = makeRoutedFixture('hot-query-proof-scoped', [calendarDocument], {
+            queryTerms: ['校历'],
+            lightTerms: {},
+            bodyTerms: {}
+        });
+        const directoryArtifact = artifact('hot-query-proof-scoped/hot-query-proof-directory.json', 'hot_query_proof_directory', 'verify', 1);
+        const certificateArtifact = artifact('hot-query-proof-scoped/hot-query-complete-calendar.json', 'hot_query_complete_certificate', 'verify', 1);
+        const topCertificateArtifact = artifact('hot-query-proof-scoped/hot-query-topk-calendar.json', 'hot_query_topk_certificate', 'query_planned', 1);
+        fixture.session.manifest.artifacts.hot_query_proof_directory = directoryArtifact;
+
+        const shard = required(fixture.sourceManifest.full_shards[0], 'expected full shard');
+        const directory = {
+            version: 'sitegraph-hot-query-complete-directory-v2',
+            certificate_model: 'rank-display-match-window-certificate-v2',
+            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            scope: 'global_unfiltered_queries',
+            total_shards: 1,
+            total_documents: 1,
+            queries: {
+                校历: {
+                    ...certificateArtifact,
+                    query: '校历',
+                    normalized_query: '校历',
+                    match_phrases: ['校历'],
+                    phrase_key: '校历',
+                    top_certificate: {
+                        ...topCertificateArtifact,
+                        top_k_limit: 80,
+                        match_count: 1
+                    },
+                    total_shards: 1,
+                    total_documents: 1,
+                    matched_shard_count: 1,
+                    matched_shard_bytes: shard.bytes,
+                    match_count: 1
+                }
+            }
+        };
+        const certificateDocument = {
+            ...required(fixture.documents[0], 'expected certificate document'),
+            content: '校历安排。',
+            content_normalized_length: 1280,
+            rank_base_score: 128,
+            attachments: []
+        };
+        const certificate = {
+            version: 'sitegraph-hot-query-complete-certificate-v2',
+            document_payload_model: 'rank-display-match-window-certificate-v2',
+            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            query: '校历',
+            normalized_query: '校历',
+            match_phrases: ['校历'],
+            rank_terms: ['校历'],
+            phrase_key: '校历',
+            total_shards: 1,
+            total_documents: 1,
+            matched_shards: [shard.shard_id],
+            matched_shard_count: 1,
+            matched_shard_bytes: shard.bytes,
+            proved_no_match_shards: 0,
+            documents: [certificateDocument],
+            match_count: 1
+        };
+        const requestedPaths: string[] = [];
+
+        await withMockFetch(fixture, async () => {
+            const events: SitegraphSearchEvent[] = [];
+            await searchSitegraphProgressively(
+                fixture.session,
+                '校历',
+                new AbortController().signal,
+                event => events.push(event),
+                { limit: 5, filters: { sourceId: 'jwc' } }
+            );
+            const complete = events.at(-1);
+            expect(events.map(event => event.type)).toEqual([
+                'plan_started',
+                'first_trusted_results',
+                'top_results_hydrated',
+                'scoped_exhaustive_complete'
+            ]);
+            expect(complete?.type).toBe('scoped_exhaustive_complete');
+            expect(complete?.coverage.scope).toBe('scoped');
+            expect(complete?.coverage.exhaustive_complete).toBe(true);
+            expect(complete?.coverage.scanned_shards).toBe(1);
+            expect(complete?.coverage.proved_no_match_shards).toBe(0);
+            expect(complete?.coverage.searched_documents).toBe(1);
+            expect(complete?.coverage.hydrated_shard_bytes).toBe(0);
+            expect(complete?.stats?.loadedLocalIndexCount).toBe(0);
+            expect(complete?.stats?.loadedShardCount).toBe(0);
+            expect(complete?.results?.[0]?.id).toBe('calendar-hot-proof-scoped');
+            expect(events.some(event => event.type === 'verification_started')).toBe(false);
+            expect(requestedPaths.some(path => path.endsWith(required(fixture.sourceManifest.artifacts.shard_filter, 'expected shard filter').path))).toBe(false);
+            expect(requestedPaths.some(path => path.endsWith(shard.path))).toBe(false);
+            expect(requestedPaths.some(path => path.endsWith(directoryArtifact.path))).toBe(true);
+            expect(requestedPaths.some(path => path.endsWith(certificateArtifact.path))).toBe(true);
+            expect(requestedPaths.some(path => path.endsWith(topCertificateArtifact.path))).toBe(false);
+        }, {
+            extraResponses: {
+                [directoryArtifact.path]: directory,
+                [certificateArtifact.path]: certificate
+            },
+            requestedPaths
+        });
+    });
+
     it('reports warm immutable artifact cache hits and cache-aware local index cost', async () => {
         const fixture = makeRoutedFixture('cache-warm', [makeDocument()], {
             queryTerms: ['转专业申请'],
@@ -1070,6 +1471,51 @@ describe('sitegraph search contract', () => {
         await withMockFetch(fixture, async () => {
             const events: SitegraphSearchEvent[] = [];
             await searchSitegraphProgressively(fixture.session, '材料提交', new AbortController().signal, event => events.push(event), { limit: 5 });
+            const complete = events.at(-1);
+            expect(complete?.type).toBe('global_exhaustive_complete');
+            expect(complete?.coverage.proved_no_match_shards).toBe(1);
+            expect(complete?.coverage.scanned_shards).toBe(0);
+            expect(complete?.coverage.hydrated_shard_bytes).toBe(0);
+            expect(complete?.results).toEqual([]);
+        });
+    });
+
+    it('supports plus operator phrases in shard proof filters without false negatives', async () => {
+        const document = makeDocument({
+            title: '中国国际 “互联网 + ”大学生创新创业大赛',
+            content: '学校组织互联网 + 大赛。',
+        });
+        const fixture = makeRoutedFixture('filter-plus-phrase-match', [document], {
+            queryTerms: ['互联网+'],
+            lightTerms: {},
+            bodyTerms: {},
+            filterBase64: shardFilterBase64For(['互联网+', '联网+', '互联网', '互联', '联网', '网+']),
+            filterBitCount: 2048
+        });
+
+        await withMockFetch(fixture, async () => {
+            const events: SitegraphSearchEvent[] = [];
+            await searchSitegraphProgressively(fixture.session, '互联网+', new AbortController().signal, event => events.push(event), { limit: 5 });
+            const complete = events.at(-1);
+            expect(complete?.type).toBe('global_exhaustive_complete');
+            expect(complete?.coverage.proved_no_match_shards).toBe(0);
+            expect(complete?.coverage.scanned_shards).toBe(1);
+            expect(complete?.results?.[0]?.title).toContain('互联网');
+        });
+    });
+
+    it('uses missing plus proof tokens to skip shards that only contain the base phrase', async () => {
+        const fixture = makeRoutedFixture('filter-plus-phrase-skip', [makeDocument({ title: '互联网大学生创新创业大赛' })], {
+            queryTerms: ['互联网+'],
+            lightTerms: {},
+            bodyTerms: {},
+            filterBase64: shardFilterBase64For(['互联网', '联网', '互联']),
+            filterBitCount: 2048
+        });
+
+        await withMockFetch(fixture, async () => {
+            const events: SitegraphSearchEvent[] = [];
+            await searchSitegraphProgressively(fixture.session, '互联网+', new AbortController().signal, event => events.push(event), { limit: 5 });
             const complete = events.at(-1);
             expect(complete?.type).toBe('global_exhaustive_complete');
             expect(complete?.coverage.proved_no_match_shards).toBe(1);
