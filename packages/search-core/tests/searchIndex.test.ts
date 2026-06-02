@@ -30,6 +30,7 @@ import type {
     SitegraphSourceRegistry
 } from '@njupt-search/contracts';
 import type { ArtifactContentCache } from '../src';
+import { resolveHotQueryProofEntry, type HotQueryProofDirectory } from '../src/sitegraphHotQuery';
 
 const artifact = (path: string, role: string, load = 'on_demand', count?: number) => ({
     path,
@@ -659,6 +660,50 @@ const createPersistentFixtureCache = (): ArtifactContentCache => {
 };
 
 describe('sitegraph search contract', () => {
+    it('resolves hot query command forms without unsafe substring matching', () => {
+        const scoreEntry = {
+            ...artifact('hot-query-entry-score.json', 'hot_query_complete_certificate'),
+            query: '成绩',
+            normalized_query: '成绩',
+            match_phrases: ['成绩查询', '成绩复核', '成绩单', '成绩'],
+            phrase_key: '成绩复核\u0000成绩查询\u0000成绩单\u0000成绩',
+            total_shards: 1,
+            total_documents: 2,
+            matched_shard_count: 1,
+            matched_shard_bytes: 128,
+            match_count: 2
+        };
+        const calendarEntry = {
+            ...artifact('hot-query-entry-calendar.json', 'hot_query_complete_certificate'),
+            query: '校历',
+            normalized_query: '校历',
+            match_phrases: ['教学周历', '教学日历', '校历'],
+            phrase_key: '教学周历\u0000教学日历\u0000校历',
+            total_shards: 1,
+            total_documents: 2,
+            matched_shard_count: 1,
+            matched_shard_bytes: 128,
+            match_count: 2
+        };
+        const directory = {
+            version: 'sitegraph-hot-query-complete-directory-v2',
+            certificate_model: 'rank-display-match-window-certificate-v2',
+            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            scope: 'global_unfiltered_queries',
+            queries: {
+                成绩: scoreEntry,
+                校历: calendarEntry
+            },
+            total_shards: 1,
+            total_documents: 2
+        } as HotQueryProofDirectory;
+
+        expect(resolveHotQueryProofEntry(directory, '查成绩')?.entry).toBe(scoreEntry);
+        expect(resolveHotQueryProofEntry(directory, '成绩查询')?.entry).toBe(scoreEntry);
+        expect(resolveHotQueryProofEntry(directory, '搜校历')?.entry).toBe(calendarEntry);
+        expect(resolveHotQueryProofEntry(directory, '成绩造假')).toBeNull();
+    });
+
     it('decodes packed local body impact indexes', () => {
         const payload: SitegraphLocalBodyIndex = {
             version: 'sitegraph-local-body-impact-v2',
@@ -1208,6 +1253,198 @@ describe('sitegraph search contract', () => {
                 [directoryArtifact.path]: directory,
                 [topCertificateArtifact.path]: topCertificate,
                 [certificateArtifact.path]: certificate
+            },
+            requestedPaths
+        });
+    });
+
+    it('uses hot query certificates for command-normalized common student queries', async () => {
+        const scoreDocument = makeDocument({
+            id: 'score-hot-proof-command',
+            title: '南京邮电大学学生成绩复核申请表',
+            canonical_title: '南京邮电大学学生成绩复核申请表',
+            summary: '学生成绩复核申请表下载。',
+            content: '学生可查询成绩并提交成绩复核申请。',
+            attachments: [],
+            attachment_count: 0
+        });
+        const fixture = makeRoutedFixture('hot-query-proof-command', [scoreDocument], {
+            queryTerms: ['成绩'],
+            lightTerms: {},
+            bodyTerms: {},
+            queryAliases: { 成绩: { aliases: ['成绩查询', '成绩单', '成绩复核'] } }
+        });
+        const directoryArtifact = artifact('hot-query-proof-command/hot-query-proof-directory.json', 'hot_query_proof_directory', 'verify', 1);
+        const topCertificateArtifact = artifact('hot-query-proof-command/hot-query-topk-score.json', 'hot_query_topk_certificate', 'query_planned', 1);
+        const certificateArtifact = artifact('hot-query-proof-command/hot-query-complete-score.json', 'hot_query_complete_certificate', 'verify', 1);
+        fixture.session.manifest.artifacts.hot_query_proof_directory = directoryArtifact;
+
+        const shard = required(fixture.sourceManifest.full_shards[0], 'expected full shard');
+        const phraseKey = '成绩复核\u0000成绩查询\u0000成绩单\u0000成绩';
+        const directory = {
+            version: 'sitegraph-hot-query-complete-directory-v2',
+            certificate_model: 'rank-display-match-window-certificate-v2',
+            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            scope: 'global_unfiltered_queries',
+            total_shards: 1,
+            total_documents: 1,
+            queries: {
+                成绩: {
+                    ...certificateArtifact,
+                    query: '成绩',
+                    normalized_query: '成绩',
+                    match_phrases: ['成绩查询', '成绩复核', '成绩单', '成绩'],
+                    phrase_key: phraseKey,
+                    top_certificate: {
+                        ...topCertificateArtifact,
+                        top_k_limit: 80,
+                        match_count: 1
+                    },
+                    total_shards: 1,
+                    total_documents: 1,
+                    matched_shard_count: 1,
+                    matched_shard_bytes: shard.bytes,
+                    match_count: 1
+                }
+            }
+        };
+        const certificateDocument = {
+            ...required(fixture.documents[0], 'expected certificate document'),
+            content: '学生可查询成绩并提交成绩复核申请。',
+            content_normalized_length: 1280,
+            rank_base_score: 128,
+            attachments: []
+        };
+        const topCertificate = {
+            version: 'sitegraph-hot-query-topk-certificate-v1',
+            document_payload_model: 'rank-display-match-window-certificate-v2',
+            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            query: '成绩',
+            normalized_query: '成绩',
+            match_phrases: ['成绩查询', '成绩复核', '成绩单', '成绩'],
+            rank_terms: ['成绩查询', '成绩复核', '成绩单', '成绩'],
+            phrase_key: phraseKey,
+            top_k_limit: 80,
+            top_k_count: 1,
+            match_count: 1,
+            total_shards: 1,
+            total_documents: 1,
+            matched_shards: [shard.shard_id],
+            matched_shard_count: 1,
+            documents: [certificateDocument]
+        };
+        const certificate = {
+            version: 'sitegraph-hot-query-complete-certificate-v2',
+            document_payload_model: 'rank-display-match-window-certificate-v2',
+            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            query: '成绩',
+            normalized_query: '成绩',
+            match_phrases: ['成绩查询', '成绩复核', '成绩单', '成绩'],
+            rank_terms: ['成绩查询', '成绩复核', '成绩单', '成绩'],
+            phrase_key: phraseKey,
+            total_shards: 1,
+            total_documents: 1,
+            matched_shards: [shard.shard_id],
+            matched_shard_count: 1,
+            matched_shard_bytes: shard.bytes,
+            proved_no_match_shards: 0,
+            documents: [certificateDocument],
+            match_count: 1
+        };
+        const requestedPaths: string[] = [];
+
+        await withMockFetch(fixture, async () => {
+            const events: SitegraphSearchEvent[] = [];
+            await searchSitegraphProgressively(fixture.session, '查成绩', new AbortController().signal, event => events.push(event), { limit: 5 });
+            const complete = events.at(-1);
+            expect(events.map(event => event.type)).toEqual([
+                'plan_started',
+                'first_trusted_results',
+                'top_results_hydrated',
+                'global_exhaustive_complete'
+            ]);
+            expect(complete?.type).toBe('global_exhaustive_complete');
+            expect(complete?.coverage.exhaustive_complete).toBe(true);
+            expect(complete?.stats?.loadedLocalIndexCount).toBe(0);
+            expect(complete?.stats?.loadedShardCount).toBe(0);
+            expect(complete?.results?.[0]?.id).toBe('score-hot-proof-command');
+            expect(requestedPaths.some(path => path.endsWith(directoryArtifact.path))).toBe(true);
+            expect(requestedPaths.some(path => path.endsWith(topCertificateArtifact.path))).toBe(true);
+            expect(requestedPaths.some(path => path.endsWith(certificateArtifact.path))).toBe(true);
+            expect(requestedPaths.filter(path => path.endsWith(shard.path))).toHaveLength(0);
+        }, {
+            extraResponses: {
+                [directoryArtifact.path]: directory,
+                [topCertificateArtifact.path]: topCertificate,
+                [certificateArtifact.path]: certificate
+            },
+            requestedPaths
+        });
+    });
+
+    it('does not reuse hot query certificates for unsafe substring-only queries', async () => {
+        const scoreDocument = makeDocument({
+            id: 'score-hot-proof-unsafe',
+            title: '南京邮电大学学生成绩复核申请表',
+            canonical_title: '南京邮电大学学生成绩复核申请表',
+            summary: '学生成绩复核申请表下载。',
+            content: '学生可查询成绩并提交成绩复核申请。',
+            attachments: [],
+            attachment_count: 0
+        });
+        const fixture = makeRoutedFixture('hot-query-proof-unsafe', [scoreDocument], {
+            queryTerms: ['成绩'],
+            lightTerms: impactTerms({ 成绩: { t: [0] } }),
+            bodyTerms: impactTerms({ 成绩: { c: [0] } }),
+            queryAliases: { 成绩: { aliases: ['成绩查询', '成绩单', '成绩复核'] } }
+        });
+        const directoryArtifact = artifact('hot-query-proof-unsafe/hot-query-proof-directory.json', 'hot_query_proof_directory', 'verify', 1);
+        const topCertificateArtifact = artifact('hot-query-proof-unsafe/hot-query-topk-score.json', 'hot_query_topk_certificate', 'query_planned', 1);
+        const certificateArtifact = artifact('hot-query-proof-unsafe/hot-query-complete-score.json', 'hot_query_complete_certificate', 'verify', 1);
+        fixture.session.manifest.artifacts.hot_query_proof_directory = directoryArtifact;
+
+        const shard = required(fixture.sourceManifest.full_shards[0], 'expected full shard');
+        const directory = {
+            version: 'sitegraph-hot-query-complete-directory-v2',
+            certificate_model: 'rank-display-match-window-certificate-v2',
+            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            scope: 'global_unfiltered_queries',
+            total_shards: 1,
+            total_documents: 1,
+            queries: {
+                成绩: {
+                    ...certificateArtifact,
+                    query: '成绩',
+                    normalized_query: '成绩',
+                    match_phrases: ['成绩查询', '成绩复核', '成绩单', '成绩'],
+                    phrase_key: '成绩复核\u0000成绩查询\u0000成绩单\u0000成绩',
+                    top_certificate: {
+                        ...topCertificateArtifact,
+                        top_k_limit: 80,
+                        match_count: 1
+                    },
+                    total_shards: 1,
+                    total_documents: 1,
+                    matched_shard_count: 1,
+                    matched_shard_bytes: shard.bytes,
+                    match_count: 1
+                }
+            }
+        };
+        const requestedPaths: string[] = [];
+
+        await withMockFetch(fixture, async () => {
+            const events: SitegraphSearchEvent[] = [];
+            await searchSitegraphProgressively(fixture.session, '成绩造假', new AbortController().signal, event => events.push(event), { limit: 5 });
+            expect(events.map(event => event.type)).toContain('verification_started');
+            expect(events.at(-1)?.type).toBe('global_exhaustive_complete');
+            expect(requestedPaths.some(path => path.endsWith(directoryArtifact.path))).toBe(true);
+            expect(requestedPaths.some(path => path.endsWith(topCertificateArtifact.path))).toBe(false);
+            expect(requestedPaths.some(path => path.endsWith(certificateArtifact.path))).toBe(false);
+            expect(requestedPaths.some(path => path.endsWith(shard.path))).toBe(true);
+        }, {
+            extraResponses: {
+                [directoryArtifact.path]: directory
             },
             requestedPaths
         });

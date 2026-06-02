@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from njupt_search_eval.sitegraph_search import expand_query_phrases, shard_filter_proves_no_match
+from njupt_search_eval.sitegraph_search import expand_query_phrases, resolve_hot_query_entry, shard_filter_proves_no_match
 from njupt_search_eval.sitegraph_lower_bound_report import (
     DEFAULT_REPORT_QUERIES,
     LOWER_BOUND_GAP_LAYER_KEYS,
@@ -41,6 +41,28 @@ def test_alias_expansion_does_not_trigger_broad_reverse_alias_inside_long_query(
 
     gpa_phrases = expand_query_phrases("绩点", aliases)
     assert gpa_phrases == ["绩点"]
+
+
+def test_hot_query_entry_resolution_accepts_query_commands_but_not_unsafe_substrings() -> None:
+    directory = {
+        "queries": {
+            "成绩": {
+                "query": "成绩",
+                "normalized_query": "成绩",
+                "phrase_key": "成绩复核\0成绩查询\0成绩单\0成绩",
+            },
+            "校历": {
+                "query": "校历",
+                "normalized_query": "校历",
+                "phrase_key": "教学周历\0教学日历\0校历",
+            },
+        }
+    }
+
+    assert resolve_hot_query_entry(directory, "查成绩") == directory["queries"]["成绩"]
+    assert resolve_hot_query_entry(directory, "成绩查询") == directory["queries"]["成绩"]
+    assert resolve_hot_query_entry(directory, "搜校历") == directory["queries"]["校历"]
+    assert resolve_hot_query_entry(directory, "成绩造假") is None
 
 
 def test_shard_filter_proves_no_match_when_phrase_token_is_absent() -> None:
@@ -178,6 +200,6 @@ def test_lower_bound_report_contains_rerunnable_evidence() -> None:
 
 
 def test_default_lower_bound_queries_include_broad_goal_queries() -> None:
-    required_queries = {"成绩", "xlsx", "大创", "规章制度", "办事流程", "附件1", "互联网+"}
+    required_queries = {"成绩", "查成绩", "成绩查询", "搜校历", "xlsx", "大创", "规章制度", "办事流程", "附件1", "互联网+"}
 
     assert required_queries.issubset(set(DEFAULT_REPORT_QUERIES))

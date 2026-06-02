@@ -46,6 +46,19 @@ import { sitegraphDocumentMatchesFilters } from './sitegraphFilters';
 import { rankingDateSortValue, rankSitegraphDocument, SITEGRAPH_FIELD_WEIGHTS } from './ranking/rankDocument';
 import { detectQueryIntent } from './intent/queryIntent';
 import { expandSitegraphQueryPhrases, normalizeSearchText as normalize, tokenizeSitegraphQuery } from './tokenizer';
+import {
+    HOT_QUERY_CERTIFICATE_MODEL,
+    HOT_QUERY_CERTIFICATE_VERSION,
+    HOT_QUERY_DIRECTORY_VERSION,
+    HOT_QUERY_RANK_EVIDENCE_MODEL,
+    HOT_QUERY_TOPK_CERTIFICATE_VERSION,
+    HotQueryProofCertificate,
+    HotQueryProofDirectory,
+    HotQueryProofDirectoryEntry,
+    HotQueryRankedDocumentPayload,
+    HotQueryTopCertificate,
+    resolveHotQueryProofEntry
+} from './sitegraphHotQuery';
 
 const DEFAULT_CANDIDATE_LIMIT = 160;
 const DEFAULT_MAX_SHARD_LOADS = 40;
@@ -109,74 +122,6 @@ type ShardFilterMap = Record<string, {
     sha256: string;
     hash_algorithm: string;
 }>;
-
-interface HotQueryProofDirectoryEntry extends SitegraphArtifact {
-    query: string;
-    normalized_query: string;
-    match_phrases: string[];
-    phrase_key: string;
-    total_shards: number;
-    total_documents: number;
-    matched_shard_count: number;
-    matched_shard_bytes: number;
-    match_count: number;
-    top_certificate?: SitegraphArtifact & {
-        top_k_limit?: number;
-        match_count?: number;
-    };
-}
-
-interface HotQueryProofDirectory {
-    version: 'sitegraph-hot-query-complete-directory-v2';
-    certificate_model: string;
-    rank_evidence_model?: string;
-    scope: 'global_unfiltered_queries';
-    queries: Record<string, HotQueryProofDirectoryEntry>;
-    total_shards: number;
-    total_documents: number;
-}
-
-interface HotQueryProofCertificate {
-    version: 'sitegraph-hot-query-complete-certificate-v2';
-    document_payload_model: string;
-    rank_evidence_model?: string;
-    query: string;
-    normalized_query: string;
-    match_phrases: string[];
-    rank_terms?: string[];
-    phrase_key: string;
-    total_shards: number;
-    total_documents: number;
-    matched_shards: string[];
-    matched_shard_count: number;
-    matched_shard_bytes: number;
-    proved_no_match_shards: number;
-    documents: SitegraphFullDocument[];
-    match_count: number;
-}
-
-interface HotQueryTopCertificate {
-    version: 'sitegraph-hot-query-topk-certificate-v1';
-    document_payload_model: string;
-    rank_evidence_model?: string;
-    query: string;
-    normalized_query: string;
-    match_phrases: string[];
-    rank_terms?: string[];
-    phrase_key: string;
-    top_k_limit: number;
-    top_k_count: number;
-    match_count: number;
-    total_shards: number;
-    total_documents: number;
-    matched_shards: string[];
-    matched_shard_count: number;
-    documents: SitegraphFullDocument[];
-}
-
-type HotQueryRankedDocumentPayload = SitegraphFullDocument & {
-    rank_base_score?: unknown;
-};
 
 interface LoadedPlanningScope {
     sourceManifests: SitegraphSourceManifest[];
@@ -545,11 +490,6 @@ const loadProofCatalog = async (
     return parsed;
 };
 
-const hotQueryPhraseKey = (matchPhrases: string[]): string => matchPhrases
-    .slice()
-    .sort((a, b) => b.length - a.length || a.localeCompare(b))
-    .join('\u0000');
-
 const hotQueryProofDirectoryArtifact = (session: SitegraphRoutedSession): SitegraphArtifact | undefined => {
     const artifacts = session.manifest.artifacts as Record<string, SitegraphArtifact | undefined>;
     return artifacts.hot_query_proof_directory;
@@ -578,10 +518,10 @@ const loadHotQueryProofDirectory = async (
     );
     if (
         !payload
-        || payload.version !== 'sitegraph-hot-query-complete-directory-v2'
+        || payload.version !== HOT_QUERY_DIRECTORY_VERSION
         || payload.scope !== 'global_unfiltered_queries'
-        || payload.certificate_model !== 'rank-display-match-window-certificate-v2'
-        || payload.rank_evidence_model !== 'query-token-field-impact-full-document-v1'
+        || payload.certificate_model !== HOT_QUERY_CERTIFICATE_MODEL
+        || payload.rank_evidence_model !== HOT_QUERY_RANK_EVIDENCE_MODEL
         || !payload.queries
     ) {
         throw new SearchContractError(`Validation failed for ${artifact.path}: invalid hot query proof directory`);
@@ -611,9 +551,9 @@ const loadHotQueryProofCertificate = async (
     );
     if (
         !payload
-        || payload.version !== 'sitegraph-hot-query-complete-certificate-v2'
-        || payload.document_payload_model !== 'rank-display-match-window-certificate-v2'
-        || payload.rank_evidence_model !== 'query-token-field-impact-full-document-v1'
+        || payload.version !== HOT_QUERY_CERTIFICATE_VERSION
+        || payload.document_payload_model !== HOT_QUERY_CERTIFICATE_MODEL
+        || payload.rank_evidence_model !== HOT_QUERY_RANK_EVIDENCE_MODEL
         || payload.normalized_query !== entry.normalized_query
         || payload.phrase_key !== entry.phrase_key
         || !Array.isArray(payload.rank_terms)
@@ -649,9 +589,9 @@ const loadHotQueryTopProofCertificate = async (
     );
     if (
         !payload
-        || payload.version !== 'sitegraph-hot-query-topk-certificate-v1'
-        || payload.document_payload_model !== 'rank-display-match-window-certificate-v2'
-        || payload.rank_evidence_model !== 'query-token-field-impact-full-document-v1'
+        || payload.version !== HOT_QUERY_TOPK_CERTIFICATE_VERSION
+        || payload.document_payload_model !== HOT_QUERY_CERTIFICATE_MODEL
+        || payload.rank_evidence_model !== HOT_QUERY_RANK_EVIDENCE_MODEL
         || payload.normalized_query !== entry.normalized_query
         || payload.phrase_key !== entry.phrase_key
         || !Array.isArray(payload.rank_terms)
@@ -667,17 +607,16 @@ const loadHotQueryTopProofCertificate = async (
 const loadMatchingHotQueryProof = async (
     session: RoutedSessionWithArtifactCache,
     normalizedQuery: string,
-    matchPhrases: string[],
     signal: AbortSignal,
     cacheStats: SitegraphArtifactCacheStats
 ): Promise<{ certificate: HotQueryProofCertificate; bytes: number } | null> => {
     const directory = await loadHotQueryProofDirectory(session, signal, cacheStats, session.artifactCache);
     if (!directory) return null;
-    const entry = directory.queries[normalizedQuery];
-    const phraseKey = hotQueryPhraseKey(matchPhrases);
-    if (!entry || entry.phrase_key !== phraseKey) return null;
+    const match = resolveHotQueryProofEntry(directory, normalizedQuery);
+    if (!match) return null;
+    const entry = match.entry;
     const certificate = await loadHotQueryProofCertificate(entry, signal, cacheStats, session.artifactCache);
-    if (certificate.phrase_key !== phraseKey) return null;
+    if (certificate.phrase_key !== entry.phrase_key) return null;
     const directoryBytes = hotQueryProofDirectoryArtifact(session)?.bytes ?? 0;
     return { certificate, bytes: directoryBytes + entry.bytes };
 };
@@ -685,17 +624,16 @@ const loadMatchingHotQueryProof = async (
 const loadMatchingHotQueryTopProof = async (
     session: RoutedSessionWithArtifactCache,
     normalizedQuery: string,
-    matchPhrases: string[],
     signal: AbortSignal,
     cacheStats: SitegraphArtifactCacheStats
 ): Promise<{ certificate: HotQueryTopCertificate; completeEntry: HotQueryProofDirectoryEntry; bytes: number } | null> => {
     const directory = await loadHotQueryProofDirectory(session, signal, cacheStats, session.artifactCache);
     if (!directory) return null;
-    const entry = directory.queries[normalizedQuery];
-    const phraseKey = hotQueryPhraseKey(matchPhrases);
-    if (!entry || entry.phrase_key !== phraseKey) return null;
+    const match = resolveHotQueryProofEntry(directory, normalizedQuery);
+    if (!match) return null;
+    const entry = match.entry;
     const certificate = await loadHotQueryTopProofCertificate(entry, signal, cacheStats, session.artifactCache);
-    if (!certificate || certificate.phrase_key !== phraseKey) return null;
+    if (!certificate || certificate.phrase_key !== entry.phrase_key) return null;
     const directoryBytes = hotQueryProofDirectoryArtifact(session)?.bytes ?? 0;
     return { certificate, completeEntry: entry, bytes: directoryBytes + (entry.top_certificate?.bytes ?? 0) };
 };
@@ -1934,13 +1872,12 @@ export const searchSitegraphProgressively = async (
         const hotCompleteProof = await loadMatchingHotQueryProof(
             session as RoutedSessionWithArtifactCache,
             normalizedQuery,
-            matchPhrases,
             signal,
             cacheStats
         );
         if (hotCompleteProof) {
             const { certificate, bytes } = hotCompleteProof;
-            const certificateMatches = certificate.documents.filter(document => documentMatchesFullScan(document, matchPhrases));
+            const certificateMatches = certificate.documents.filter(document => documentMatchesFullScan(document, certificate.match_phrases));
             if (certificateMatches.length !== certificate.match_count) {
                 throw new SearchContractError(`Hot query proof certificate ${certificate.normalized_query} failed full-scan self-check`);
             }
@@ -2044,13 +1981,12 @@ export const searchSitegraphProgressively = async (
         const hotTopProof = await loadMatchingHotQueryTopProof(
             session as RoutedSessionWithArtifactCache,
             normalizedQuery,
-            matchPhrases,
             signal,
             cacheStats
         );
         if (hotTopProof) {
             const topCertificate = hotTopProof.certificate;
-            const topMatches = topCertificate.documents.filter(document => documentMatchesFullScan(document, matchPhrases));
+            const topMatches = topCertificate.documents.filter(document => documentMatchesFullScan(document, topCertificate.match_phrases));
             if (topMatches.length !== topCertificate.documents.length || topMatches.length !== topCertificate.top_k_count) {
                 throw new SearchContractError(`Hot query top-k proof certificate ${topCertificate.normalized_query} failed full-scan self-check`);
             }
@@ -2115,7 +2051,6 @@ export const searchSitegraphProgressively = async (
             const hotCompleteProof = await loadMatchingHotQueryProof(
                 session as RoutedSessionWithArtifactCache,
                 normalizedQuery,
-                matchPhrases,
                 signal,
                 cacheStats
             );
@@ -2123,7 +2058,7 @@ export const searchSitegraphProgressively = async (
                 throw new SearchContractError(`Hot query top-k proof ${topCertificate.normalized_query} is missing its complete certificate`);
             }
             const { certificate } = hotCompleteProof;
-            const certificateMatches = certificate.documents.filter(document => documentMatchesFullScan(document, matchPhrases));
+            const certificateMatches = certificate.documents.filter(document => documentMatchesFullScan(document, certificate.match_phrases));
             if (certificateMatches.length !== certificate.match_count) {
                 throw new SearchContractError(`Hot query proof certificate ${certificate.normalized_query} failed full-scan self-check`);
             }
@@ -2458,13 +2393,12 @@ export const searchSitegraphProgressively = async (
         const hotProof = await loadMatchingHotQueryProof(
             session as RoutedSessionWithArtifactCache,
             normalizedQuery,
-            matchPhrases,
             signal,
             cacheStats
         );
         if (hotProof) {
             const { certificate, bytes } = hotProof;
-            const certificateMatches = certificate.documents.filter(document => documentMatchesFullScan(document, matchPhrases));
+            const certificateMatches = certificate.documents.filter(document => documentMatchesFullScan(document, certificate.match_phrases));
             if (certificateMatches.length !== certificate.match_count) {
                 throw new SearchContractError(`Hot query proof certificate ${certificate.normalized_query} failed full-scan self-check`);
             }

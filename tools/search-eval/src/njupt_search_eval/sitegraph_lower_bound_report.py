@@ -28,12 +28,15 @@ from .sitegraph_task_query_eval import validate_task_queries
 
 DEFAULT_REPORT_QUERIES = [
     "校历",
+    "搜校历",
     "慕课考试",
     "期末考试",
     "考试安排",
     "选课",
     "转专业",
     "成绩",
+    "查成绩",
+    "成绩查询",
     "xlsx",
     "大创",
     "推免",

@@ -301,6 +301,83 @@ def hot_query_phrase_key(match_phrases: list[str]) -> str:
     return "\0".join(sorted(match_phrases, key=lambda text: (-len(text), text)))
 
 
+HOT_QUERY_COMMAND_PREFIXES = (
+    "麻烦查一下",
+    "帮我查一下",
+    "帮我查询",
+    "帮我查",
+    "我要查",
+    "我想查",
+    "请问",
+    "南邮",
+    "南京邮电大学",
+    "查询一下",
+    "查一下",
+    "搜一下",
+    "搜索一下",
+    "查一查",
+    "查询",
+    "搜索",
+    "查",
+    "搜",
+    "找",
+    "看",
+    "关于",
+)
+
+HOT_QUERY_COMMAND_SUFFIXES = (
+    "怎么查询",
+    "如何查询",
+    "在哪里查询",
+    "在哪儿查询",
+    "在哪查询",
+    "查询入口",
+    "查询系统",
+    "查询",
+    "怎么查",
+    "如何查",
+    "在哪里查",
+    "在哪儿查",
+    "在哪查",
+    "在哪里",
+    "在哪儿",
+    "在哪",
+    "入口",
+    "信息",
+)
+
+
+def hot_query_intent_candidates(query: str) -> list[str]:
+    candidates: list[str] = []
+    seen: set[str] = set()
+    queue = [normalize_text(query)]
+    while queue and len(seen) < 48:
+        value = queue.pop(0)
+        if len(value) < 2 or value in seen:
+            continue
+        seen.add(value)
+        candidates.append(value)
+        for prefix in HOT_QUERY_COMMAND_PREFIXES:
+            if value.startswith(prefix) and len(value) > len(prefix) + 1:
+                queue.append(value[len(prefix) :])
+        for suffix in HOT_QUERY_COMMAND_SUFFIXES:
+            if value.endswith(suffix) and len(value) > len(suffix) + 1:
+                queue.append(value[: -len(suffix)])
+    return candidates
+
+
+def resolve_hot_query_entry(directory: dict[str, Any], query: str) -> dict[str, Any] | None:
+    queries = directory.get("queries") if isinstance(directory.get("queries"), dict) else {}
+    for candidate in hot_query_intent_candidates(query):
+        entry = queries.get(candidate)
+        if isinstance(entry, dict):
+            return entry
+        for value in queries.values():
+            if isinstance(value, dict) and normalize_text(value.get("query")) == candidate:
+                return value
+    return None
+
+
 def load_hot_query_proof_directory(index: dict[str, Any]) -> dict[str, Any] | None:
     artifact = (index.get("manifest", {}).get("artifacts", {}) or {}).get("hot_query_proof_directory")
     if not isinstance(artifact, dict) or not artifact.get("path"):
@@ -346,6 +423,7 @@ def load_hot_query_top_proof_certificate(index: dict[str, Any], entry: dict[str,
 
 
 def matching_hot_query_proof(index: dict[str, Any], query: str, match_phrases: list[str]) -> tuple[dict[str, Any], int] | None:
+    del match_phrases
     directory = load_hot_query_proof_directory(index)
     if not isinstance(directory, dict):
         return None
@@ -353,12 +431,11 @@ def matching_hot_query_proof(index: dict[str, Any], query: str, match_phrases: l
         return None
     if str(directory.get("rank_evidence_model") or "") != "query-token-field-impact-full-document-v1":
         return None
-    queries = directory.get("queries") if isinstance(directory.get("queries"), dict) else {}
-    entry = queries.get(normalize_text(query))
+    entry = resolve_hot_query_entry(directory, query)
     if not isinstance(entry, dict):
         return None
-    phrase_key = hot_query_phrase_key(match_phrases)
-    if str(entry.get("phrase_key") or "") != phrase_key:
+    phrase_key = str(entry.get("phrase_key") or "")
+    if not phrase_key:
         return None
     certificate = load_hot_query_proof_certificate(index, entry)
     if not isinstance(certificate, dict):
@@ -379,6 +456,7 @@ def matching_hot_query_proof(index: dict[str, Any], query: str, match_phrases: l
 
 
 def matching_hot_query_top_proof(index: dict[str, Any], query: str, match_phrases: list[str]) -> tuple[dict[str, Any], dict[str, Any], int] | None:
+    del match_phrases
     directory = load_hot_query_proof_directory(index)
     if not isinstance(directory, dict):
         return None
@@ -386,12 +464,11 @@ def matching_hot_query_top_proof(index: dict[str, Any], query: str, match_phrase
         return None
     if str(directory.get("rank_evidence_model") or "") != "query-token-field-impact-full-document-v1":
         return None
-    queries = directory.get("queries") if isinstance(directory.get("queries"), dict) else {}
-    entry = queries.get(normalize_text(query))
+    entry = resolve_hot_query_entry(directory, query)
     if not isinstance(entry, dict):
         return None
-    phrase_key = hot_query_phrase_key(match_phrases)
-    if str(entry.get("phrase_key") or "") != phrase_key:
+    phrase_key = str(entry.get("phrase_key") or "")
+    if not phrase_key:
         return None
     certificate = load_hot_query_top_proof_certificate(index, entry)
     if not isinstance(certificate, dict):
@@ -1105,10 +1182,11 @@ def recall_documents_with_stats(
     hot_top_proof = matching_hot_query_top_proof(index, query, match_phrases)
     if hot_top_proof is not None:
         top_certificate, _entry, top_filter_bytes = hot_top_proof
+        top_match_phrases = [str(item) for item in top_certificate.get("match_phrases") or []]
         top_documents = [
             document
             for document in top_certificate.get("documents", [])
-            if isinstance(document, dict) and full_scan_matches(document, match_phrases)
+            if isinstance(document, dict) and full_scan_matches(document, top_match_phrases)
         ]
         if len(top_documents) != len(top_certificate.get("documents") or []) or len(top_documents) != int(top_certificate.get("top_k_count") or 0):
             raise ValueError(f"hot query top-k proof certificate failed self-check: {query}")
@@ -1170,10 +1248,11 @@ def recall_documents_with_stats(
         if hot_query_proof is None:
             raise ValueError(f"hot query top-k proof is missing complete certificate: {query}")
         certificate, complete_filter_bytes = hot_query_proof
+        certificate_match_phrases = [str(item) for item in certificate.get("match_phrases") or []]
         certificate_documents = [
             document
             for document in certificate.get("documents", [])
-            if isinstance(document, dict) and full_scan_matches(document, match_phrases)
+            if isinstance(document, dict) and full_scan_matches(document, certificate_match_phrases)
         ]
         verified_matches = len(certificate_documents)
         if verified_matches != int(certificate.get("match_count") or 0):
@@ -1461,10 +1540,11 @@ def recall_documents_with_stats(
     hot_query_proof = matching_hot_query_proof(index, query, match_phrases)
     if hot_query_proof is not None:
         certificate, filter_bytes = hot_query_proof
+        certificate_match_phrases = [str(item) for item in certificate.get("match_phrases") or []]
         certificate_documents = [
             document
             for document in certificate.get("documents", [])
-            if isinstance(document, dict) and full_scan_matches(document, match_phrases)
+            if isinstance(document, dict) and full_scan_matches(document, certificate_match_phrases)
         ]
         verified_matches = len(certificate_documents)
         for document in certificate_documents:

@@ -103,6 +103,7 @@ jobs:
 
       - name: Validate generated collection artifacts
         run: |
+          python tools/quality-gates/scripts/check_source_complexity.py
           python tools/quality-gates/scripts/validate_search_index.py
           python tools/quality-gates/scripts/check_public_artifact_sizes.py
           python -m njupt_search_eval run-smoke-queries --collection "$COLLECTION_DIR"
