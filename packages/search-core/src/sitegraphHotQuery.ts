@@ -1,4 +1,5 @@
 import type { SitegraphArtifact, SitegraphFullDocument } from '@njupt-search/contracts';
+import hotQueryNormalization from '../../../config/search/hot-query-normalization.json';
 import { normalizeSearchText as normalize } from './tokenizer';
 
 export const HOT_QUERY_DIRECTORY_VERSION = 'sitegraph-hot-query-complete-directory-v2';
@@ -83,50 +84,8 @@ export interface HotQueryProofEntryMatch {
     matchKind: 'exact' | 'normalized_command';
 }
 
-const HOT_QUERY_COMMAND_PREFIXES = [
-    '麻烦查一下',
-    '帮我查一下',
-    '帮我查询',
-    '帮我查',
-    '我要查',
-    '我想查',
-    '请问',
-    '南邮',
-    '南京邮电大学',
-    '查询一下',
-    '查一下',
-    '搜一下',
-    '搜索一下',
-    '查一查',
-    '查询',
-    '搜索',
-    '查',
-    '搜',
-    '找',
-    '看',
-    '关于',
-];
-
-const HOT_QUERY_COMMAND_SUFFIXES = [
-    '怎么查询',
-    '如何查询',
-    '在哪里查询',
-    '在哪儿查询',
-    '在哪查询',
-    '查询入口',
-    '查询系统',
-    '查询',
-    '怎么查',
-    '如何查',
-    '在哪里查',
-    '在哪儿查',
-    '在哪查',
-    '在哪里',
-    '在哪儿',
-    '在哪',
-    '入口',
-    '信息',
-];
+const HOT_QUERY_COMMAND_PREFIXES = hotQueryNormalization.command_prefixes;
+const HOT_QUERY_COMMAND_SUFFIXES = hotQueryNormalization.command_suffixes;
 
 export const hotQueryPhraseKey = (matchPhrases: string[]): string => matchPhrases
     .slice()

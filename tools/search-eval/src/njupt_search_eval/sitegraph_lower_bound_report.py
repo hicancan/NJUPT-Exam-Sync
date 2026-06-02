@@ -27,33 +27,8 @@ from .sitegraph_task_query_eval import validate_task_queries
 
 
 DEFAULT_REPORT_QUERIES = [
-    "校历",
-    "搜校历",
-    "慕课考试",
-    "期末考试",
-    "考试安排",
-    "选课",
-    "转专业",
-    "成绩",
-    "查成绩",
-    "成绩查询",
-    "xlsx",
-    "大创",
-    "推免",
-    "助学金",
-    "心理健康",
-    "学工",
-    "竞赛报名",
-    "规章制度",
-    "办事流程",
-    "学生相关文件及表格",
-    "教务管理系统",
-    "附件1",
-    "奖学金",
-    "辅导员",
-    "双创",
-    "互联网+",
-    "不存在的查询词",
+    str(query)
+    for query in json.loads((BASE_DIR / "config" / "search" / "lower-bound-report-queries.json").read_text(encoding="utf-8"))
 ]
 
 DEFAULT_WASM_DECISION_REPORT = BASE_DIR / "tools" / "search-eval" / "reports" / "njupt-search-wasm-decision.json"

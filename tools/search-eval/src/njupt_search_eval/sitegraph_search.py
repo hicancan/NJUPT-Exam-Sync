@@ -18,6 +18,9 @@ PUBLIC_INDEX_DIR = PUBLIC_ROOT / "generated" / "collections" / "njupt-public"
 SEARCH_INTENT_CONFIG = json.loads(
     (BASE_DIR / "packages" / "search-core" / "src" / "intent" / "queryIntentProfiles.json").read_text(encoding="utf-8")
 )
+HOT_QUERY_NORMALIZATION_CONFIG = json.loads(
+    (BASE_DIR / "config" / "search" / "hot-query-normalization.json").read_text(encoding="utf-8")
+)
 
 FIELD_WEIGHTS = {key: float(value) for key, value in SEARCH_INTENT_CONFIG["field_weights"].items()}
 DEFAULT_MAX_SHARD_LOADS = 32
@@ -301,50 +304,8 @@ def hot_query_phrase_key(match_phrases: list[str]) -> str:
     return "\0".join(sorted(match_phrases, key=lambda text: (-len(text), text)))
 
 
-HOT_QUERY_COMMAND_PREFIXES = (
-    "麻烦查一下",
-    "帮我查一下",
-    "帮我查询",
-    "帮我查",
-    "我要查",
-    "我想查",
-    "请问",
-    "南邮",
-    "南京邮电大学",
-    "查询一下",
-    "查一下",
-    "搜一下",
-    "搜索一下",
-    "查一查",
-    "查询",
-    "搜索",
-    "查",
-    "搜",
-    "找",
-    "看",
-    "关于",
-)
-
-HOT_QUERY_COMMAND_SUFFIXES = (
-    "怎么查询",
-    "如何查询",
-    "在哪里查询",
-    "在哪儿查询",
-    "在哪查询",
-    "查询入口",
-    "查询系统",
-    "查询",
-    "怎么查",
-    "如何查",
-    "在哪里查",
-    "在哪儿查",
-    "在哪查",
-    "在哪里",
-    "在哪儿",
-    "在哪",
-    "入口",
-    "信息",
-)
+HOT_QUERY_COMMAND_PREFIXES = tuple(str(item) for item in HOT_QUERY_NORMALIZATION_CONFIG["command_prefixes"])
+HOT_QUERY_COMMAND_SUFFIXES = tuple(str(item) for item in HOT_QUERY_NORMALIZATION_CONFIG["command_suffixes"])
 
 
 def hot_query_intent_candidates(query: str) -> list[str]:

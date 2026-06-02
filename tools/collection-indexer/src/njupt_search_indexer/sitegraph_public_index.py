@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import json
 import shutil
 import subprocess
 import unicodedata
@@ -125,29 +126,8 @@ SOURCE_AUTHORITY: dict[str, dict[str, Any]] = {
 
 ATTACHMENT_EVIDENCE_LEVELS = ("metadata_only", "filename_only", "text_extracted", "snippet", "full_content")
 HOT_QUERY_PROOF_QUERIES = [
-    "校历",
-    "慕课考试",
-    "期末考试",
-    "转专业",
-    "成绩",
-    "xlsx",
-    "大创",
-    "推免",
-    "规章制度",
-    "办事流程",
-    "学生相关文件及表格",
-    "教务管理系统",
-    "附件1",
-    "奖学金",
-    "助学金",
-    "心理健康",
-    "辅导员",
-    "学工",
-    "双创",
-    "竞赛报名",
-    "选课",
-    "互联网+",
-    "不存在的查询词",
+    str(query)
+    for query in json.loads((BASE_DIR / "config" / "search" / "hot-query-proof-queries.json").read_text(encoding="utf-8"))
 ]
 
 

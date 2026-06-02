@@ -200,6 +200,25 @@ def test_lower_bound_report_contains_rerunnable_evidence() -> None:
 
 
 def test_default_lower_bound_queries_include_broad_goal_queries() -> None:
-    required_queries = {"成绩", "查成绩", "成绩查询", "搜校历", "xlsx", "大创", "规章制度", "办事流程", "附件1", "互联网+"}
+    required_queries = {
+        "成绩",
+        "查成绩",
+        "成绩查询",
+        "成绩复核申请表",
+        "搜校历",
+        "xlsx",
+        "大创",
+        "学科竞赛",
+        "普通话考试",
+        "挑战杯",
+        "国家奖学金",
+        "困难认定",
+        "缓考申请表",
+        "信息门户",
+        "规章制度",
+        "办事流程",
+        "附件1",
+        "互联网+",
+    }
 
     assert required_queries.issubset(set(DEFAULT_REPORT_QUERIES))
