@@ -65,12 +65,23 @@ export const SitegraphLocalIndexRefSchema = z.object({
     scope: SitegraphLocalIndexScopeSchema,
     doc_count: z.number(),
     shards: z.array(SitegraphLocalShardRefSchema).default([]),
-    light_index: SitegraphArtifactSchema.optional(),
     light_index_meta: SitegraphArtifactSchema.optional(),
     light_index_packed: SitegraphArtifactSchema.optional(),
-    body_index: SitegraphArtifactSchema.optional(),
     body_index_packed: SitegraphArtifactSchema.optional()
 }).passthrough().superRefine((ref, ctx) => {
+    const record = ref as Record<string, unknown>;
+    if ('light_index' in record) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'legacy light_index artifacts are no longer accepted'
+        });
+    }
+    if ('body_index' in record) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'legacy body_index artifacts are no longer accepted'
+        });
+    }
     const hasSplitLight = Boolean(ref.light_index_meta) && Boolean(ref.light_index_packed);
     const hasPartialSplitLight = Boolean(ref.light_index_meta) !== Boolean(ref.light_index_packed);
     if (hasPartialSplitLight) {
@@ -79,16 +90,16 @@ export const SitegraphLocalIndexRefSchema = z.object({
             message: 'light_index_meta and light_index_packed must be published together'
         });
     }
-    if (!ref.light_index && !hasSplitLight) {
+    if (!hasSplitLight) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'local index must publish split light artifacts or a legacy full light_index'
+            message: 'local index must publish split light artifacts'
         });
     }
-    if (!ref.body_index && !ref.body_index_packed) {
+    if (!ref.body_index_packed) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'local index must publish a packed body index or a legacy body_index'
+            message: 'local index must publish a packed body index'
         });
     }
 });

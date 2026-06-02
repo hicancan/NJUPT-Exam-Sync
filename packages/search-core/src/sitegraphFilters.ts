@@ -3,7 +3,6 @@ import type {
     SitegraphFacet,
     SitegraphFilterOption,
     SitegraphFilterOptions,
-    SitegraphFullDocument,
     SitegraphSearchFilters,
 } from '@njupt-search/contracts';
 import { searchDateSortValue } from './sitegraphDate';
@@ -11,7 +10,16 @@ import { searchDateSortValue } from './sitegraphDate';
 const DAY_MS = 86_400_000;
 const ALL_FILTER = 'all';
 
-type FilterableDocument = SitegraphDocMeta | SitegraphFullDocument;
+type FilterableDocument = {
+    source_id?: string;
+    facet?: string;
+    published_at?: string | null;
+    updated_at?: string | null;
+    recorded_at?: string | null;
+    version_date?: string | null;
+    date_kind?: string | null;
+    date_confidence?: string | null;
+};
 
 const normalizeFilterValue = (value: string | null | undefined): string => (value || ALL_FILTER).trim() || ALL_FILTER;
 

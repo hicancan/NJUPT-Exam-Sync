@@ -34,6 +34,12 @@ MIN_TOP_RESULTS_LOCAL_INDEXES = 12
 LIGHT_SEARCH_FIELDS = ["title", "section", "nav_path", "tags", "attachments", "external", "system"]
 BODY_SEARCH_FIELDS = [*LIGHT_SEARCH_FIELDS, "summary", "content"]
 FULL_SCAN_FIELDS = ["title", "section", "nav_path", "summary", "content", "attachments", "url"]
+HOT_QUERY_CERTIFICATE_MODEL = "hot-query-minimal-complete-proof-v3"
+HOT_QUERY_COMPLETE_CERTIFICATE_VERSION = "sitegraph-hot-query-complete-certificate-v3"
+HOT_QUERY_COMPLETE_PROOF_MODEL = "match-proof-minimal-filter-v1"
+HOT_QUERY_TOPK_CERTIFICATE_VERSION = "sitegraph-hot-query-topk-certificate-v2"
+HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL = "rank-display-match-window-certificate-v2"
+HOT_QUERY_RANK_EVIDENCE_MODEL = "query-token-field-impact-full-document-v1"
 
 
 def new_cache_stats() -> dict[str, Any]:
@@ -243,10 +249,7 @@ def body_index_artifact(ref: dict[str, Any]) -> dict[str, Any]:
     packed = ref.get("body_index_packed")
     if isinstance(packed, dict) and packed.get("path"):
         return packed
-    fallback = ref.get("body_index")
-    if isinstance(fallback, dict) and fallback.get("path"):
-        return fallback
-    raise ValueError(f"local index missing body artifacts: {ref.get('index_id')}")
+    raise ValueError(f"local index missing packed body artifact: {ref.get('index_id')}")
 
 
 def light_index_artifact(ref: dict[str, Any]) -> dict[str, Any]:
@@ -259,10 +262,7 @@ def light_index_artifact(ref: dict[str, Any]) -> dict[str, Any]:
             "packed": packed,
             "path": light_index_cache_key(ref),
         }
-    fallback = ref.get("light_index")
-    if isinstance(fallback, dict) and fallback.get("path"):
-        return fallback
-    raise KeyError(f"local index missing light artifacts: {ref.get('index_id')}")
+    raise KeyError(f"local index missing split light artifacts: {ref.get('index_id')}")
 
 
 def light_index_cache_key(ref: dict[str, Any]) -> str:
@@ -270,10 +270,7 @@ def light_index_cache_key(ref: dict[str, Any]) -> str:
     packed = ref.get("light_index_packed")
     if isinstance(meta, dict) and meta.get("path") and isinstance(packed, dict) and packed.get("path"):
         return f"{meta['path']}|{packed['path']}"
-    fallback = ref.get("light_index")
-    if isinstance(fallback, dict) and fallback.get("path"):
-        return str(fallback["path"])
-    raise KeyError(f"local index missing light artifacts: {ref.get('index_id')}")
+    raise KeyError(f"local index missing split light artifacts: {ref.get('index_id')}")
 
 
 def load_shard_filter(index: dict[str, Any], source_manifest: dict[str, Any]) -> dict[str, Any]:
@@ -388,9 +385,13 @@ def matching_hot_query_proof(index: dict[str, Any], query: str, match_phrases: l
     directory = load_hot_query_proof_directory(index)
     if not isinstance(directory, dict):
         return None
-    if str(directory.get("certificate_model") or "") != "rank-display-match-window-certificate-v2":
+    if str(directory.get("certificate_model") or "") != HOT_QUERY_CERTIFICATE_MODEL:
         return None
-    if str(directory.get("rank_evidence_model") or "") != "query-token-field-impact-full-document-v1":
+    if str(directory.get("complete_proof_model") or "") != HOT_QUERY_COMPLETE_PROOF_MODEL:
+        return None
+    if str(directory.get("top_document_payload_model") or "") != HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL:
+        return None
+    if str(directory.get("rank_evidence_model") or "") != HOT_QUERY_RANK_EVIDENCE_MODEL:
         return None
     entry = resolve_hot_query_entry(directory, query)
     if not isinstance(entry, dict):
@@ -401,11 +402,11 @@ def matching_hot_query_proof(index: dict[str, Any], query: str, match_phrases: l
     certificate = load_hot_query_proof_certificate(index, entry)
     if not isinstance(certificate, dict):
         return None
-    if str(certificate.get("version") or "") != "sitegraph-hot-query-complete-certificate-v2":
+    if str(certificate.get("version") or "") != HOT_QUERY_COMPLETE_CERTIFICATE_VERSION:
         return None
-    if str(certificate.get("document_payload_model") or "") != "rank-display-match-window-certificate-v2":
+    if str(certificate.get("proof_payload_model") or "") != HOT_QUERY_COMPLETE_PROOF_MODEL:
         return None
-    if str(certificate.get("rank_evidence_model") or "") != "query-token-field-impact-full-document-v1":
+    if str(certificate.get("rank_evidence_model") or "") != HOT_QUERY_RANK_EVIDENCE_MODEL:
         return None
     if not isinstance(certificate.get("rank_terms"), list):
         return None
@@ -421,9 +422,13 @@ def matching_hot_query_top_proof(index: dict[str, Any], query: str, match_phrase
     directory = load_hot_query_proof_directory(index)
     if not isinstance(directory, dict):
         return None
-    if str(directory.get("certificate_model") or "") != "rank-display-match-window-certificate-v2":
+    if str(directory.get("certificate_model") or "") != HOT_QUERY_CERTIFICATE_MODEL:
         return None
-    if str(directory.get("rank_evidence_model") or "") != "query-token-field-impact-full-document-v1":
+    if str(directory.get("complete_proof_model") or "") != HOT_QUERY_COMPLETE_PROOF_MODEL:
+        return None
+    if str(directory.get("top_document_payload_model") or "") != HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL:
+        return None
+    if str(directory.get("rank_evidence_model") or "") != HOT_QUERY_RANK_EVIDENCE_MODEL:
         return None
     entry = resolve_hot_query_entry(directory, query)
     if not isinstance(entry, dict):
@@ -434,11 +439,11 @@ def matching_hot_query_top_proof(index: dict[str, Any], query: str, match_phrase
     certificate = load_hot_query_top_proof_certificate(index, entry)
     if not isinstance(certificate, dict):
         return None
-    if str(certificate.get("version") or "") != "sitegraph-hot-query-topk-certificate-v1":
+    if str(certificate.get("version") or "") != HOT_QUERY_TOPK_CERTIFICATE_VERSION:
         return None
-    if str(certificate.get("document_payload_model") or "") != "rank-display-match-window-certificate-v2":
+    if str(certificate.get("document_payload_model") or "") != HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL:
         return None
-    if str(certificate.get("rank_evidence_model") or "") != "query-token-field-impact-full-document-v1":
+    if str(certificate.get("rank_evidence_model") or "") != HOT_QUERY_RANK_EVIDENCE_MODEL:
         return None
     if str(certificate.get("phrase_key") or "") != phrase_key:
         return None
@@ -1209,20 +1214,16 @@ def recall_documents_with_stats(
         if hot_query_proof is None:
             raise ValueError(f"hot query top-k proof is missing complete certificate: {query}")
         certificate, complete_filter_bytes = hot_query_proof
-        certificate_match_phrases = [str(item) for item in certificate.get("match_phrases") or []]
         certificate_documents = [
             document
             for document in certificate.get("documents", [])
-            if isinstance(document, dict) and full_scan_matches(document, certificate_match_phrases)
+            if isinstance(document, dict)
+            and isinstance(document.get("match_evidence"), dict)
+            and isinstance(document.get("rank_base_score"), int | float)
         ]
         verified_matches = len(certificate_documents)
         if verified_matches != int(certificate.get("match_count") or 0):
-            raise ValueError(f"hot query complete proof certificate failed self-check: {query}")
-        for document in certificate_documents:
-            item = rank_document(document, query, terms, hot_query_rank_base_score(document))
-            existing = ranked_by_id.get(str(item["id"]))
-            if existing is None or float(item["score"]) > float(existing.get("score") or 0):
-                ranked_by_id[str(item["id"])] = item
+            raise ValueError(f"hot query complete proof certificate match count mismatch: {query}")
         ranked = sorted_ranked(list(ranked_by_id.values()))
         directory_bytes = int(((index.get("manifest", {}).get("artifacts", {}) or {}).get("hot_query_proof_directory") or {}).get("bytes") or 0)
         filter_bytes = top_filter_bytes + max(0, complete_filter_bytes - directory_bytes)
@@ -1301,7 +1302,7 @@ def recall_documents_with_stats(
                     "false_positive_byte_ratio": 0.0,
                 },
                 "exhaustive_complete": True,
-                "result_count": len(ranked),
+                "result_count": int(certificate.get("match_count") or len(ranked)),
                 "retrieval": retrieval,
                 "local_meta_fallback_documents": 0,
                 "hot_query_topk_certificate": {
@@ -1501,19 +1502,16 @@ def recall_documents_with_stats(
     hot_query_proof = matching_hot_query_proof(index, query, match_phrases)
     if hot_query_proof is not None:
         certificate, filter_bytes = hot_query_proof
-        certificate_match_phrases = [str(item) for item in certificate.get("match_phrases") or []]
         certificate_documents = [
             document
             for document in certificate.get("documents", [])
-            if isinstance(document, dict) and full_scan_matches(document, certificate_match_phrases)
+            if isinstance(document, dict)
+            and isinstance(document.get("match_evidence"), dict)
+            and isinstance(document.get("rank_base_score"), int | float)
         ]
         verified_matches = len(certificate_documents)
-        for document in certificate_documents:
-            doc_index = int(document["doc_index"])
-            item = rank_document(document, query, terms, scores.get(doc_index, hot_query_rank_base_score(document)))
-            existing = ranked_by_id.get(str(item["id"]))
-            if existing is None or float(item["score"]) > float(existing.get("score") or 0):
-                ranked_by_id[str(item["id"])] = item
+        if verified_matches != int(certificate.get("match_count") or 0):
+            raise ValueError(f"hot query complete proof certificate match count mismatch: {query}")
         ranked = sorted_ranked(list(ranked_by_id.values()))
         matched_shard_count = int(certificate.get("matched_shard_count") or 0)
         total_certificate_shards = int(certificate.get("total_shards") or index["manifest"]["progressive_search"]["total_shards"])
@@ -1582,7 +1580,7 @@ def recall_documents_with_stats(
                     "false_positive_byte_ratio": 0.0,
                 },
                 "exhaustive_complete": True,
-                "result_count": len(ranked),
+                "result_count": int(certificate.get("match_count") or len(ranked)),
                 "retrieval": retrieval,
                 "local_meta_fallback_documents": local_meta_fallbacks,
                 "hot_query_complete_certificate": {

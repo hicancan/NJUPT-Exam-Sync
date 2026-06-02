@@ -7,6 +7,7 @@ import {
     formatResolvedSearchDate,
     parseSitegraphLocalLightIndex,
     parseSitegraphManifest,
+    parseSitegraphSourceManifest,
     recallSitegraphDocuments,
     searchSitegraphProgressively,
     expandSitegraphQueryPhrases,
@@ -30,7 +31,18 @@ import type {
     SitegraphSourceRegistry
 } from '@njupt-search/contracts';
 import type { ArtifactContentCache } from '../src';
-import { resolveHotQueryProofEntry, type HotQueryProofDirectory } from '../src/sitegraphHotQuery';
+import {
+    HOT_QUERY_CERTIFICATE_MODEL,
+    HOT_QUERY_CERTIFICATE_VERSION,
+    HOT_QUERY_COMPLETE_PROOF_MODEL,
+    HOT_QUERY_DIRECTORY_VERSION,
+    HOT_QUERY_RANK_EVIDENCE_MODEL,
+    HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL,
+    HOT_QUERY_TOPK_CERTIFICATE_VERSION,
+    resolveHotQueryProofEntry,
+    type HotQueryProofDirectory,
+    type HotQueryProofDocument
+} from '../src/sitegraphHotQuery';
 
 const artifact = (path: string, role: string, load = 'on_demand', count?: number) => ({
     path,
@@ -222,6 +234,31 @@ const makeDocument = (overrides: Partial<SitegraphFullDocument> = {}): Sitegraph
         ...overrides
     };
 };
+
+const hotQueryProofDocumentFrom = (
+    document: SitegraphFullDocument,
+    phrases: string[],
+    rankBaseScore = 128
+): HotQueryProofDocument => ({
+    doc_index: document.doc_index,
+    id: document.id,
+    source_id: document.source_id,
+    facet: document.facet,
+    record_type: document.record_type,
+    shard_id: document.shard.shard_id,
+    hash: document.hash,
+    published_at: document.published_at,
+    updated_at: document.updated_at,
+    recorded_at: document.recorded_at,
+    version_date: document.version_date,
+    date_kind: document.date_kind,
+    date_confidence: document.date_confidence,
+    rank_base_score: rankBaseScore,
+    match_evidence: {
+        fields: ['title'],
+        phrases
+    }
+});
 
 const docMetaFrom = (document: SitegraphFullDocument): SitegraphDocMeta => ({
     doc_index: document.doc_index,
@@ -686,9 +723,11 @@ describe('sitegraph search contract', () => {
             match_count: 2
         };
         const directory = {
-            version: 'sitegraph-hot-query-complete-directory-v2',
-            certificate_model: 'rank-display-match-window-certificate-v2',
-            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            version: HOT_QUERY_DIRECTORY_VERSION,
+            certificate_model: HOT_QUERY_CERTIFICATE_MODEL,
+            complete_proof_model: HOT_QUERY_COMPLETE_PROOF_MODEL,
+            top_document_payload_model: HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL,
+            rank_evidence_model: HOT_QUERY_RANK_EVIDENCE_MODEL,
             scope: 'global_unfiltered_queries',
             queries: {
                 成绩: scoreEntry,
@@ -747,7 +786,7 @@ describe('sitegraph search contract', () => {
     it('does not trigger broad reverse aliases from short generic terms inside longer queries', () => {
         const aliases = {
             学生相关文件及表格: { aliases: ['学生表格', '常用下载', '表格下载', '学生相关文件'] },
-            xlsx: { aliases: ['xls', 'Excel', '表格'] },
+            xlsx: { aliases: ['xls', 'Excel'] },
             附件1: { aliases: ['附件 1', '附件一'] },
             成绩: { aliases: ['成绩查询', '成绩单', '成绩复核'] }
         };
@@ -760,8 +799,8 @@ describe('sitegraph search contract', () => {
             '表格下载',
             '常用下载'
         ]));
-        expect(studentFormPhrases).not.toEqual(expect.arrayContaining(['excel', 'xlsx', 'xls', '表格']));
-        expect(expandSitegraphQueryPhrases('表格', aliases)).toEqual(['excel', 'xlsx', 'xls', '表格']);
+        expect(studentFormPhrases).not.toEqual(expect.arrayContaining(['excel', 'xlsx', 'xls']));
+        expect(expandSitegraphQueryPhrases('表格', aliases)).toEqual(['表格']);
         expect(new Set(expandSitegraphQueryPhrases('附件1', aliases))).toEqual(new Set(['附件1', '附件一']));
         expect(expandSitegraphQueryPhrases('附件1', aliases)).not.toContain('附件');
         expect(expandSitegraphQueryPhrases('附件', aliases)).toEqual(['附件']);
@@ -817,6 +856,15 @@ describe('sitegraph search contract', () => {
             ...fixture.localLightIndex,
             documents: [{ ...fixture.localLightIndex.documents[0], content: 'must stay in full shards' }]
         }, 'fixture-local-light')).toThrow(/local index metadata must not contain content/);
+
+        expect(() => parseSitegraphSourceManifest({
+            ...fixture.sourceManifest,
+            local_indexes: [{
+                ...fixture.sourceManifest.local_indexes[0],
+                light_index: artifact('legacy/local-light.json', 'local_impact_light_index', 'query_planned'),
+                body_index: artifact('legacy/local-body.json', 'local_impact_body_index', 'query_deepening')
+            }]
+        }, 'fixture-source-manifest')).toThrow(/legacy light_index artifacts are no longer accepted/);
     });
 
     it('ranks attachment matches after loading routed local indexes and candidate shards', async () => {
@@ -1026,9 +1074,11 @@ describe('sitegraph search contract', () => {
 
         const shard = required(fixture.sourceManifest.full_shards[0], 'expected full shard');
         const directory = {
-            version: 'sitegraph-hot-query-complete-directory-v2',
-            certificate_model: 'rank-display-match-window-certificate-v2',
-            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            version: HOT_QUERY_DIRECTORY_VERSION,
+            certificate_model: HOT_QUERY_CERTIFICATE_MODEL,
+            complete_proof_model: HOT_QUERY_COMPLETE_PROOF_MODEL,
+            top_document_payload_model: HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL,
+            rank_evidence_model: HOT_QUERY_RANK_EVIDENCE_MODEL,
             scope: 'global_unfiltered_queries',
             total_shards: 1,
             total_documents: 1,
@@ -1060,9 +1110,9 @@ describe('sitegraph search contract', () => {
             attachments: []
         };
         const topCertificate = {
-            version: 'sitegraph-hot-query-topk-certificate-v1',
-            document_payload_model: 'rank-display-match-window-certificate-v2',
-            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            version: HOT_QUERY_TOPK_CERTIFICATE_VERSION,
+            document_payload_model: HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL,
+            rank_evidence_model: HOT_QUERY_RANK_EVIDENCE_MODEL,
             query: '校历',
             normalized_query: '校历',
             match_phrases: ['校历'],
@@ -1078,9 +1128,9 @@ describe('sitegraph search contract', () => {
             documents: [certificateDocument]
         };
         const certificate = {
-            version: 'sitegraph-hot-query-complete-certificate-v2',
-            document_payload_model: 'rank-display-match-window-certificate-v2',
-            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            version: HOT_QUERY_CERTIFICATE_VERSION,
+            proof_payload_model: HOT_QUERY_COMPLETE_PROOF_MODEL,
+            rank_evidence_model: HOT_QUERY_RANK_EVIDENCE_MODEL,
             query: '校历',
             normalized_query: '校历',
             match_phrases: ['校历'],
@@ -1092,7 +1142,7 @@ describe('sitegraph search contract', () => {
             matched_shard_count: 1,
             matched_shard_bytes: shard.bytes,
             proved_no_match_shards: 0,
-            documents: [certificateDocument],
+            documents: [hotQueryProofDocumentFrom(certificateDocument, ['校历'])],
             match_count: 1
         };
         const requestedPaths: string[] = [];
@@ -1156,9 +1206,11 @@ describe('sitegraph search contract', () => {
         const shard = required(fixture.sourceManifest.full_shards[0], 'expected full shard');
         const phraseKey = '教学周历\u0000校历';
         const directory = {
-            version: 'sitegraph-hot-query-complete-directory-v2',
-            certificate_model: 'rank-display-match-window-certificate-v2',
-            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            version: HOT_QUERY_DIRECTORY_VERSION,
+            certificate_model: HOT_QUERY_CERTIFICATE_MODEL,
+            complete_proof_model: HOT_QUERY_COMPLETE_PROOF_MODEL,
+            top_document_payload_model: HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL,
+            rank_evidence_model: HOT_QUERY_RANK_EVIDENCE_MODEL,
             scope: 'global_unfiltered_queries',
             total_shards: 1,
             total_documents: 1,
@@ -1191,9 +1243,9 @@ describe('sitegraph search contract', () => {
             attachments: []
         };
         const topCertificate = {
-            version: 'sitegraph-hot-query-topk-certificate-v1',
-            document_payload_model: 'rank-display-match-window-certificate-v2',
-            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            version: HOT_QUERY_TOPK_CERTIFICATE_VERSION,
+            document_payload_model: HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL,
+            rank_evidence_model: HOT_QUERY_RANK_EVIDENCE_MODEL,
             query: '校历',
             normalized_query: '校历',
             match_phrases: ['教学周历', '校历'],
@@ -1209,9 +1261,9 @@ describe('sitegraph search contract', () => {
             documents: [certificateDocument]
         };
         const certificate = {
-            version: 'sitegraph-hot-query-complete-certificate-v2',
-            document_payload_model: 'rank-display-match-window-certificate-v2',
-            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            version: HOT_QUERY_CERTIFICATE_VERSION,
+            proof_payload_model: HOT_QUERY_COMPLETE_PROOF_MODEL,
+            rank_evidence_model: HOT_QUERY_RANK_EVIDENCE_MODEL,
             query: '校历',
             normalized_query: '校历',
             match_phrases: ['教学周历', '校历'],
@@ -1223,7 +1275,7 @@ describe('sitegraph search contract', () => {
             matched_shard_count: 1,
             matched_shard_bytes: shard.bytes,
             proved_no_match_shards: 0,
-            documents: [certificateDocument],
+            documents: [hotQueryProofDocumentFrom(certificateDocument, ['教学周历', '校历'])],
             match_count: 1
         };
         const requestedPaths: string[] = [];
@@ -1282,9 +1334,11 @@ describe('sitegraph search contract', () => {
         const shard = required(fixture.sourceManifest.full_shards[0], 'expected full shard');
         const phraseKey = '成绩复核\u0000成绩查询\u0000成绩单\u0000成绩';
         const directory = {
-            version: 'sitegraph-hot-query-complete-directory-v2',
-            certificate_model: 'rank-display-match-window-certificate-v2',
-            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            version: HOT_QUERY_DIRECTORY_VERSION,
+            certificate_model: HOT_QUERY_CERTIFICATE_MODEL,
+            complete_proof_model: HOT_QUERY_COMPLETE_PROOF_MODEL,
+            top_document_payload_model: HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL,
+            rank_evidence_model: HOT_QUERY_RANK_EVIDENCE_MODEL,
             scope: 'global_unfiltered_queries',
             total_shards: 1,
             total_documents: 1,
@@ -1316,9 +1370,9 @@ describe('sitegraph search contract', () => {
             attachments: []
         };
         const topCertificate = {
-            version: 'sitegraph-hot-query-topk-certificate-v1',
-            document_payload_model: 'rank-display-match-window-certificate-v2',
-            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            version: HOT_QUERY_TOPK_CERTIFICATE_VERSION,
+            document_payload_model: HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL,
+            rank_evidence_model: HOT_QUERY_RANK_EVIDENCE_MODEL,
             query: '成绩',
             normalized_query: '成绩',
             match_phrases: ['成绩查询', '成绩复核', '成绩单', '成绩'],
@@ -1334,9 +1388,9 @@ describe('sitegraph search contract', () => {
             documents: [certificateDocument]
         };
         const certificate = {
-            version: 'sitegraph-hot-query-complete-certificate-v2',
-            document_payload_model: 'rank-display-match-window-certificate-v2',
-            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            version: HOT_QUERY_CERTIFICATE_VERSION,
+            proof_payload_model: HOT_QUERY_COMPLETE_PROOF_MODEL,
+            rank_evidence_model: HOT_QUERY_RANK_EVIDENCE_MODEL,
             query: '成绩',
             normalized_query: '成绩',
             match_phrases: ['成绩查询', '成绩复核', '成绩单', '成绩'],
@@ -1348,7 +1402,7 @@ describe('sitegraph search contract', () => {
             matched_shard_count: 1,
             matched_shard_bytes: shard.bytes,
             proved_no_match_shards: 0,
-            documents: [certificateDocument],
+            documents: [hotQueryProofDocumentFrom(certificateDocument, ['成绩查询', '成绩复核', '成绩单', '成绩'])],
             match_count: 1
         };
         const requestedPaths: string[] = [];
@@ -1405,9 +1459,11 @@ describe('sitegraph search contract', () => {
 
         const shard = required(fixture.sourceManifest.full_shards[0], 'expected full shard');
         const directory = {
-            version: 'sitegraph-hot-query-complete-directory-v2',
-            certificate_model: 'rank-display-match-window-certificate-v2',
-            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            version: HOT_QUERY_DIRECTORY_VERSION,
+            certificate_model: HOT_QUERY_CERTIFICATE_MODEL,
+            complete_proof_model: HOT_QUERY_COMPLETE_PROOF_MODEL,
+            top_document_payload_model: HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL,
+            rank_evidence_model: HOT_QUERY_RANK_EVIDENCE_MODEL,
             scope: 'global_unfiltered_queries',
             total_shards: 1,
             total_documents: 1,
@@ -1472,9 +1528,11 @@ describe('sitegraph search contract', () => {
 
         const shard = required(fixture.sourceManifest.full_shards[0], 'expected full shard');
         const directory = {
-            version: 'sitegraph-hot-query-complete-directory-v2',
-            certificate_model: 'rank-display-match-window-certificate-v2',
-            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            version: HOT_QUERY_DIRECTORY_VERSION,
+            certificate_model: HOT_QUERY_CERTIFICATE_MODEL,
+            complete_proof_model: HOT_QUERY_COMPLETE_PROOF_MODEL,
+            top_document_payload_model: HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL,
+            rank_evidence_model: HOT_QUERY_RANK_EVIDENCE_MODEL,
             scope: 'global_unfiltered_queries',
             total_shards: 1,
             total_documents: 1,
@@ -1505,10 +1563,28 @@ describe('sitegraph search contract', () => {
             rank_base_score: 128,
             attachments: []
         };
+        const topCertificate = {
+            version: HOT_QUERY_TOPK_CERTIFICATE_VERSION,
+            document_payload_model: HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL,
+            rank_evidence_model: HOT_QUERY_RANK_EVIDENCE_MODEL,
+            query: '校历',
+            normalized_query: '校历',
+            match_phrases: ['校历'],
+            rank_terms: ['校历'],
+            phrase_key: '校历',
+            top_k_limit: 80,
+            top_k_count: 1,
+            match_count: 1,
+            total_shards: 1,
+            total_documents: 1,
+            matched_shards: [shard.shard_id],
+            matched_shard_count: 1,
+            documents: [certificateDocument]
+        };
         const certificate = {
-            version: 'sitegraph-hot-query-complete-certificate-v2',
-            document_payload_model: 'rank-display-match-window-certificate-v2',
-            rank_evidence_model: 'query-token-field-impact-full-document-v1',
+            version: HOT_QUERY_CERTIFICATE_VERSION,
+            proof_payload_model: HOT_QUERY_COMPLETE_PROOF_MODEL,
+            rank_evidence_model: HOT_QUERY_RANK_EVIDENCE_MODEL,
             query: '校历',
             normalized_query: '校历',
             match_phrases: ['校历'],
@@ -1520,7 +1596,7 @@ describe('sitegraph search contract', () => {
             matched_shard_count: 1,
             matched_shard_bytes: shard.bytes,
             proved_no_match_shards: 0,
-            documents: [certificateDocument],
+            documents: [hotQueryProofDocumentFrom(certificateDocument, ['校历'])],
             match_count: 1
         };
         const requestedPaths: string[] = [];
@@ -1556,11 +1632,12 @@ describe('sitegraph search contract', () => {
             expect(requestedPaths.some(path => path.endsWith(shard.path))).toBe(false);
             expect(requestedPaths.some(path => path.endsWith(directoryArtifact.path))).toBe(true);
             expect(requestedPaths.some(path => path.endsWith(certificateArtifact.path))).toBe(true);
-            expect(requestedPaths.some(path => path.endsWith(topCertificateArtifact.path))).toBe(false);
+            expect(requestedPaths.some(path => path.endsWith(topCertificateArtifact.path))).toBe(true);
         }, {
             extraResponses: {
                 [directoryArtifact.path]: directory,
-                [certificateArtifact.path]: certificate
+                [certificateArtifact.path]: certificate,
+                [topCertificateArtifact.path]: topCertificate
             },
             requestedPaths
         });

@@ -200,56 +200,32 @@ def validate_local_indexes(source_manifests: list[dict[str, Any]], expected_sour
                     if field not in shard_ref:
                         fail(f"local index shard ref missing {field}: {ref.get('index_id')}")
                 ensure_public_hashed_path(str(shard_ref.get("path") or ""), f"local index {ref.get('index_id')} shard_ref")
-            light_entry = ref.get("light_index") if isinstance(ref.get("light_index"), dict) else None
+            if "light_index" in ref:
+                fail(f"legacy light_index artifact is not allowed: {ref.get('index_id')}")
+            if "body_index" in ref:
+                fail(f"legacy body_index artifact is not allowed: {ref.get('index_id')}")
             light_meta_entry = ref.get("light_index_meta") if isinstance(ref.get("light_index_meta"), dict) else None
             light_packed_entry = ref.get("light_index_packed") if isinstance(ref.get("light_index_packed"), dict) else None
-            if light_meta_entry is not None or light_packed_entry is not None:
-                if light_meta_entry is None or light_packed_entry is None:
-                    fail(f"local light split index must include both meta and packed artifacts: {ref.get('index_id')}")
-                light_meta_payload = read_json(ensure_public_hashed_path(str(light_meta_entry.get("path") or ""), f"local_light_meta.{ref.get('index_id')}"))
-                light_packed_path = ensure_public_hashed_path(str(light_packed_entry.get("path") or ""), f"local_light_packed.{ref.get('index_id')}", extension="bin")
-                light_packed_payload = unpack_impact_index(light_packed_path.read_bytes())
-                if light_meta_payload.get("scope") != scope or light_packed_payload.get("scope") != scope:
-                    fail(f"split local light index scope mismatch: {ref.get('index_id')}")
-                if "terms" in light_meta_payload:
-                    fail(f"local light meta index must not include terms: {ref.get('index_id')}")
-                if "documents" in light_packed_payload:
-                    fail(f"local light packed index must not include document metadata: {ref.get('index_id')}")
-                for field in ("version", "tokenizer", "field_codes", "field_impacts", "block_size", "scoring_model"):
-                    if light_meta_payload.get(field) != light_packed_payload.get(field):
-                        fail(f"split local light index metadata mismatch for {field}: {ref.get('index_id')}")
-                light_payload = {**light_meta_payload, "terms": light_packed_payload.get("terms")}
-                if light_entry is not None:
-                    legacy_light_payload = read_json(ensure_public_hashed_path(str(light_entry.get("path") or ""), f"local_light.{ref.get('index_id')}"))
-                    if legacy_light_payload.get("scope") != scope:
-                        fail(f"legacy local light index scope mismatch: {ref.get('index_id')}")
-                    if light_meta_payload.get("documents") != legacy_light_payload.get("documents"):
-                        fail(f"local light meta document mismatch: {ref.get('index_id')}")
-                    if light_packed_payload.get("terms") != legacy_light_payload.get("terms"):
-                        fail(f"local light packed term mismatch: {ref.get('index_id')}")
-            elif light_entry is not None:
-                light_payload = read_json(ensure_public_hashed_path(str(light_entry.get("path") or ""), f"local_light.{ref.get('index_id')}"))
-            else:
-                fail(f"local index missing light artifacts: {ref.get('index_id')}")
-            body_entry = ref.get("body_index") if isinstance(ref.get("body_index"), dict) else None
+            if light_meta_entry is None or light_packed_entry is None:
+                fail(f"local light split index must include both meta and packed artifacts: {ref.get('index_id')}")
+            light_meta_payload = read_json(ensure_public_hashed_path(str(light_meta_entry.get("path") or ""), f"local_light_meta.{ref.get('index_id')}"))
+            light_packed_path = ensure_public_hashed_path(str(light_packed_entry.get("path") or ""), f"local_light_packed.{ref.get('index_id')}", extension="bin")
+            light_packed_payload = unpack_impact_index(light_packed_path.read_bytes())
+            if light_meta_payload.get("scope") != scope or light_packed_payload.get("scope") != scope:
+                fail(f"split local light index scope mismatch: {ref.get('index_id')}")
+            if "terms" in light_meta_payload:
+                fail(f"local light meta index must not include terms: {ref.get('index_id')}")
+            if "documents" in light_packed_payload:
+                fail(f"local light packed index must not include document metadata: {ref.get('index_id')}")
+            for field in ("version", "tokenizer", "field_codes", "field_impacts", "block_size", "scoring_model"):
+                if light_meta_payload.get(field) != light_packed_payload.get(field):
+                    fail(f"split local light index metadata mismatch for {field}: {ref.get('index_id')}")
+            light_payload = {**light_meta_payload, "terms": light_packed_payload.get("terms")}
             packed_entry = ref.get("body_index_packed") if isinstance(ref.get("body_index_packed"), dict) else None
-            if body_entry is None and packed_entry is None:
-                fail(f"local index missing body artifacts: {ref.get('index_id')}")
-            body_payload: dict[str, Any] | None = None
-            if body_entry is not None:
-                body_payload = read_json(ensure_public_hashed_path(str(body_entry.get("path") or ""), f"local_body.{ref.get('index_id')}"))
-            if packed_entry is not None:
-                packed_path = ensure_public_hashed_path(str(packed_entry.get("path") or ""), f"local_body_packed.{ref.get('index_id')}", extension="bin")
-                packed_payload = unpack_impact_index(packed_path.read_bytes())
-                if body_payload is not None:
-                    if packed_payload.get("scope") != body_payload.get("scope"):
-                        fail(f"packed local body index scope mismatch: {ref.get('index_id')}")
-                    if packed_payload.get("terms") != body_payload.get("terms"):
-                        fail(f"packed local body index terms mismatch: {ref.get('index_id')}")
-                else:
-                    body_payload = packed_payload
-            if body_payload is None:
-                fail(f"local body index could not be loaded: {ref.get('index_id')}")
+            if packed_entry is None:
+                fail(f"local index missing packed body artifact: {ref.get('index_id')}")
+            packed_path = ensure_public_hashed_path(str(packed_entry.get("path") or ""), f"local_body_packed.{ref.get('index_id')}", extension="bin")
+            body_payload = unpack_impact_index(packed_path.read_bytes())
             if set((light_payload.get("field_codes") or {}).values()).difference({"t", "s", "n", "g", "a", "e", "y"}):
                 fail(f"local light index has invalid field codes: {ref.get('index_id')}")
             if set((body_payload.get("field_codes") or {}).values()).difference({"m", "c"}):
