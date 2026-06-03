@@ -12,7 +12,7 @@
 [![Python](https://img.shields.io/badge/Python-3.10+-FFD43B.svg)](https://www.python.org/)
 [![PWA](https://img.shields.io/badge/PWA-Supported-orange.svg)](https://vite-pwa-org.netlify.app/)
 
-[**在线访问**](https://njupt.hicancan.top) • [**设计初衷**](#-项目定位与初衷-the-vision) • [**核心特性**](#-核心特性矩阵-core-features) • [**核心架构剖析**](#-核心架构剖析-architecture) • [**代码架构**](#-monorepo-代码架构-project-structure) • [**本地开发**](#-本地开发与部署-quick-start)
+[**在线访问**](https://njupt.hicancan.top) • [**设计初衷**](#-项目定位与初衷-the-vision) • [**核心特性**](#-核心特性矩阵-core-features) • [**核心架构剖析**](#️-核心架构剖析-architecture) • [**代码架构**](#️-monorepo-代码架构-project-structure) • [**本地开发**](#-本地开发与部署-quick-start)
 
 </div>
 
