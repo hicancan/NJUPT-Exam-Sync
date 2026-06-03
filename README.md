@@ -19,10 +19,10 @@
 ## 📖 项目定位与初衷 (The Vision)
 
 **痛点：严重的信息孤岛与获取门槛**  
-南京邮电大学的各类教务通知、考试排期、竞赛奖助等信息，长期分散在不同的二级学院和管理部门站点中。更加棘手的是，大量关键信息以非结构化文档附件（PDF、DOCX、XLSX）的形式存在。师生在需要跨域检索特定政策或查询自己的考试安排时，面临着极高的“信息差”壁垒。
+南京邮电大学的全域知识（如规章制度、学术讲座、教务通知、考试排期、竞赛奖助等），长期分散在数百个独立运作的学院官网与管理部门站点中。更加棘手的是，大量关键信息以非结构化文档附件（PDF、DOCX、XLSX）的形式存在。师生在需要跨域检索特定政策或查询业务流程时，面临着极高的“信息差”壁垒。
 
 **破局方案：njupt-search**  
-本项目旨在彻底打破这种信息屏障，构建一个**完全去服务端化、静态边缘分发的垂直聚合搜索引擎与教务日历服务**。我们通过离线数据管线（Data Pipeline）提前提取全校非结构化数据，并在用户侧浏览器内（依赖 Web Worker + WebAssembly）闭环完成极速检索。没有中心化数据库，没有高昂的服务器成本，以纯端侧计算重构检索引擎体验。
+本项目旨在彻底打破这种信息屏障，构建一个**完全去服务端化、静态边缘分发的南邮全域聚合知识引擎**。我们不仅包含内置的考试日历服务，更在外部生态（`njupt-site-graph`）的加持下，通过自动化全网爬虫建立庞大的校园知识图谱。在用户侧浏览器内（依赖 Web Worker + WebAssembly）闭环完成毫秒级的极致全文检索。没有中心化数据库，没有高昂的服务器成本，以纯端侧计算重构信息检索体验。
 
 ---
 
@@ -71,10 +71,11 @@ if !has_known_candidate && scores.len() >= target && max_possible_for_unseen_doc
   3. **`global_exhaustive_complete` / `scoped_exhaustive_complete`**：进行全量分片扫描与完备性验证。
 *   **基于 Bloom 过滤器的分片排除证明 (Shard Filter Verification)**：每个数据源的 `proof_catalog` 维护了对每个 Full Shard 生成的 `bloom-fnv1a32-utf8` 签名。在进入全量分片扫描阶段前，Worker 会在本地提取搜索分词，通过 FNV-1a 算法计算多重哈希并在 Shard 签名中检索（`bloomMayContain`）。如果过滤器证明该分片必定不含关键词，则**直接在网络层阻断拉取请求**，实现精准的 0 带宽浪费。
 
-### 4. 数据管道：确定性日历生成与 Zod 契约层
-在 `tools/exam-pipeline` 中，Python 的 `pandas` 与双重正则处理了中国高校极为复杂的混合时间字符串（如 `2025年11月15日(10:25-12:15)`），并输出干净的 JSON 记录：
-*   **防重复幽灵事件 (Deterministic UID)**：前端 `packages/exam-core` 在生成 `.ics` 订阅链接时，抛弃了随机 UUID，采用 FNV-1a 32-bit 哈希算法，对班级名、课程名、课程代码、起止时间戳、校区、考试地点及教师等关键字段计算确定性的唯一 UID，当教务处临时调整考场时，学生日历会自动覆盖更新，而不会出现两场考试的“幽灵叠加”。
-*   **跨语言安全沙箱**：TypeScript 侧采用 `Zod` 定义严格 Schema (`packages/contracts`，包含 `ExamSchema`, `ManifestSchema` 等)。将 Python 爬虫产出的静态文件视为“不可信输入”，强制反序列化校验，形成真正的接口接口安全防护。
+### 4. 数据管道：跨库 Webhook 触发与确定性构建
+本引擎的数据并非凭空产生，而是依赖于极为完善的上游数据管线和确定性的构建逻辑：
+*   **全域知识图谱生态 (`njupt-site-graph`)**：本仓库作为检索引擎的“下游分发器”，通过 Github Actions 的 `repository_dispatch` Webhook，实时接收来自独立的兄弟项目 `hicancan/njupt-site-graph` 爬取并推送的全网静态文档数据包。
+*   **确定性日历生成 (`tools/exam-pipeline`)**：Python `pandas` 与正则化处理了复杂的混合时间字符串，前端在生成 `.ics` 订阅链接时，抛弃随机 UUID，采用 FNV-1a 算法根据课程元数据计算确定性的唯一 UID。当教务处临时调整考场时，日历会自动覆盖更新，杜绝“幽灵叠加”。
+*   **跨语言安全沙箱 (`packages/contracts`)**：TypeScript 侧采用 `Zod` 定义严格的 Schema 契约。将上游 Python 爬虫引擎产出的静态文件视为“不可信输入”，在客户端侧强制进行运行时反序列化校验，形成坚不可摧的接口安全防护。
 
 ---
 
@@ -82,34 +83,41 @@ if !has_known_candidate && scores.len() >= target && max_possible_for_unseen_doc
 
 ```mermaid
 graph TD
-    subgraph 离线管线 ["离线构建管线 (Data Pipeline)"]
-        A["各学院教务通知网"] -->|抓取| B("tools/exam-pipeline<br>Python ETL 清洗")
-        C["全网静态文档数据"] -->|解析| D("tools/collection-indexer<br>Python 倒排构建")
+    subgraph 外部生态 ["外部数据管线生态 (Upstream)"]
+        A["南邮全域信息源<br>(官网/教务处/讲座等)"] -->|结构化抓取| B("hicancan/njupt-site-graph<br>静态网站图谱仓库")
+    end
+
+    subgraph 离线管线 ["njupt-search 离线引擎 (Data Builder)"]
+        B -.->|Webhook: repository_dispatch| C("Github Actions 构建集群")
+        C -->|图谱数据| D("tools/collection-indexer<br>Python 倒排构建")
+        C -->|考试表格| E("tools/exam-pipeline<br>Python 日历清洗")
         
-        B -->|生成| E[("ICS 日历源")]
-        D -->|Delta+VarInt 压缩| F[("SGIXB002 二进制索引包")]
+        E -->|生成| F[("ICS 日历源")]
+        D -->|Delta+VarInt 压缩| G[("SGIXB002 二进制索引包")]
     end
 
     subgraph 边缘分发 ["CDN Edge"]
-        E -.静态缓存.-> G["CDN 边缘节点"]
-        F -.分片缓存.-> G
+        F -.静态缓存.-> H["CDN 边缘节点"]
+        G -.分片缓存.-> H
     end
 
     subgraph 客户端 ["客户端运行时 (PWA)"]
-        G ==>|按需 Hydration| H["Web Worker 编排中心<br>packages/search-core"]
-        H <-->|内存读写| I(("Rust WASM 算分引擎<br>Block-Max WAND"))
-        H -->|异步返回结果| J["React 主线程 UI"]
+        H ==>|按需 Hydration| I["Web Worker 编排中心<br>packages/search-core"]
+        I <-->|内存读写| J(("Rust WASM 算分引擎<br>Block-Max WAND"))
+        I -->|异步返回结果| K["React 主线程 UI"]
     end
 
     classDef python fill:#4B8BBE,stroke:#306998,stroke-width:2px,color:white;
     classDef rust fill:#DEA584,stroke:#A57A5A,stroke-width:2px,color:black;
     classDef ts fill:#3178C6,stroke:#235A97,stroke-width:2px,color:white;
     classDef storage fill:#f9f9f9,stroke:#333,stroke-width:2px;
+    classDef external fill:#eee,stroke:#999,stroke-width:2px,stroke-dasharray: 5 5;
     
-    class B,D python;
-    class I rust;
-    class H,J ts;
-    class E,F storage;
+    class D,E python;
+    class J rust;
+    class I,K ts;
+    class F,G storage;
+    class B external;
 ```
 
 ---
