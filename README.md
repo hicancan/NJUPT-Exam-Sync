@@ -63,17 +63,17 @@ if !has_known_candidate && scores.len() >= target && max_possible_for_unseen_doc
 
 ### 3. Web Worker 编排与多阶段证明检索
 为保证 React UI 绝对流畅（60fps），所有的网络拉取、分片解包、正则比对全部隔离在独立的 Web Worker 中 (`collectionSearch.worker.ts`)：
-*   **热路径前置 (Hot Query Bypass)**：针对高频短词，直接派发预计算的验证证书，免扫倒排直接返回。
+*   **热路径前置 (Hot Query Bypass)**：针对高频短词，引擎直接通过 `hot_query_proof_directory` 获取预先编译的 `HotQueryProofCertificate`，在 $O(1)$ 时间内绕过所有的倒排索引扫描与算分循环，直接下发结构化结果。
 *   **多阶段渐进式注水 (Multi-Stage Progressive Hydration)**：根据 `@njupt-search/search-core` 的路由规划，检索过程分为以下多阶段，按需流式推进：
   1. **`first_trusted_results`**：快速拉取体积极小的轻量倒发索引 (`light_index_packed`)，提取核心文档元数据，提供即时的第一屏结果。
   2. **`top_results_hydrated`**：拉取完整倒排主体 (`body_index_packed`)，调用 Rust WASM 算分引擎，深化候选文档打分与排序。
   3. **`global_exhaustive_complete` / `scoped_exhaustive_complete`**：进行全量分片扫描与完备性验证。
-*   **基于 Bloom 过滤器的分片排除证明 (Shard Filter Verification)**：每个数据源的 `proof_catalog` 维护了对每个 Full Shard 生成的 `bloom-fnv1a32-utf8` 签名。在进入全量分片扫描阶段前，Worker 在本地快速对查询关键词计算多重哈希并在 Shard 签名中检索。如果 Bloom 过滤器证明该分片必定不含任何查询关键词，则**直接在网络层阻断该分片的拉取请求**，实现精准的按需传输与 0 带宽浪费。
+*   **基于 Bloom 过滤器的分片排除证明 (Shard Filter Verification)**：每个数据源的 `proof_catalog` 维护了对每个 Full Shard 生成的 `bloom-fnv1a32-utf8` 签名。在进入全量分片扫描阶段前，Worker 会在本地提取搜索分词，通过 FNV-1a 算法计算多重哈希并在 Shard 签名中检索（`bloomMayContain`）。如果过滤器证明该分片必定不含关键词，则**直接在网络层阻断拉取请求**，实现精准的 0 带宽浪费。
 
 ### 4. 数据管道：确定性日历生成与 Zod 契约层
 在 `tools/exam-pipeline` 中，Python 的 `pandas` 与双重正则处理了中国高校极为复杂的混合时间字符串（如 `2025年11月15日(10:25-12:15)`），并输出干净的 JSON 记录：
 *   **防重复幽灵事件 (Deterministic UID)**：前端 `packages/exam-core` 在生成 `.ics` 订阅链接时，抛弃了随机 UUID，采用 FNV-1a 32-bit 哈希算法，对班级名、课程名、课程代码、起止时间戳、校区、考试地点及教师等关键字段计算确定性的唯一 UID，当教务处临时调整考场时，学生日历会自动覆盖更新，而不会出现两场考试的“幽灵叠加”。
-*   **跨语言安全沙箱**：TypeScript 侧采用 `Zod` 定义严格 Schema (`packages/contracts`，包含 `ExamSchema`, `ManifestSchema` 等)。将 Python 爬虫产出的静态文件视为“不可信输入”，强制反序列化校验，形成真正的接口安全防护。
+*   **跨语言安全沙箱**：TypeScript 侧采用 `Zod` 定义严格 Schema (`packages/contracts`，包含 `ExamSchema`, `ManifestSchema` 等)。将 Python 爬虫产出的静态文件视为“不可信输入”，强制反序列化校验，形成真正的接口接口安全防护。
 
 ---
 
@@ -81,7 +81,10 @@ if !has_known_candidate && scores.len() >= target && max_possible_for_unseen_doc
 
 ```mermaid
 graph TD
-    subgraph 离线管线 ["离线构建管线（Data Pipeline）"]
+    subaxis_offline["离线构建管线 (Github Actions)"]
+    subaxis_client["客户端运行时 (Browser)"]
+
+    subgraph 离线管线 ["离线构建管线 (Data Pipeline)"]
         A["各学院教务通知网"] -->|抓取| B("tools/exam-pipeline<br>Python ETL 清洗")
         C["全网静态文档数据"] -->|解析| D("tools/collection-indexer<br>Python 倒排构建")
         
@@ -94,7 +97,7 @@ graph TD
         F -.分片缓存.-> G
     end
 
-    subgraph 客户端 ["客户端运行时（PWA）"]
+    subgraph 客户端 ["客户端运行时 (PWA)"]
         G ==>|按需 Hydration| H["Web Worker 编排中心<br>packages/search-core"]
         H <-->|内存读写| I(("Rust WASM 算分引擎<br>Block-Max WAND"))
         H -->|异步返回结果| J["React 主线程 UI"]
@@ -122,7 +125,7 @@ njupt-search/
 ├── apps/
 │   └── web/                # React 19 + Tailwind v4 + Vite PWA 核心单页应用
 ├── packages/
-│   ├── contracts/          # Zod 强类型契约层 (数据管道与客户端之间的规范契约)
+│   ├── contracts/          # Zod 强类型契约层 (被前后端共同引用)
 │   ├── exam-core/          # 考试解析、正则匹配与 ICS 标准日历生成引擎
 │   └── search-core/        # 搜索引擎调度核心：Web Worker 状态机、算分器、分词器
 ├── tools/
@@ -159,22 +162,14 @@ npm run dev
 
 ### 数据离线编译与测试
 
-有关详细的源数据索引构建、教务日历爬虫更新以及回归测试跑交流程，您可以直接查阅对应模块的 Python 脚本与工具文档。所有构建管线与质量门禁均已就绪：
+有关详细的源数据索引构建、教务日历爬虫更新以及回归测试跑交流程，您可以直接查阅对应模块的 Python 脚本。所有构建管线均内置了完备的 `--help` 参数供调试：
 
 ```powershell
-# 例如，一键同步并编译教务处最新的考试安排：
-uv run python -m njupt_exam_pipeline run
+# 例如，更新并抓取最新的考试安排：
+uv run python tools/exam-pipeline/src/njupt_exam_pipeline/analyze_and_update.py
 
-# 编译生成静态搜索倒排包（以 njupt-public 集合为例）：
-uv run python -m njupt_search_indexer build --collection-id njupt-public
-
-# 执行回归测试与检索一致性校验：
-uv run python -m njupt_search_eval run-smoke-queries
-
-# 执行静态包体积监控与架构设计门禁校验：
-uv run python tools/quality-gates/scripts/validate_search_index.py
+# 执行静态包体积监控与回归验证：
 uv run python tools/quality-gates/scripts/check_public_artifact_sizes.py
-uv run python tools/quality-gates/scripts/check_source_complexity.py
 ```
 
 ---
