@@ -73,7 +73,7 @@ if !has_known_candidate && scores.len() >= target && max_possible_for_unseen_doc
 ### 4. 数据管道：确定性日历生成与 Zod 契约层
 在 `tools/exam-pipeline` 中，Python 的 `pandas` 与双重正则处理了中国高校极为复杂的混合时间字符串（如 `2025年11月15日(10:25-12:15)`），并输出干净的 JSON 记录：
 *   **防重复幽灵事件 (Deterministic UID)**：前端 `packages/exam-core` 在生成 `.ics` 订阅链接时，抛弃了随机 UUID，采用 FNV-1a 32-bit 哈希算法，对班级名、课程名、课程代码、起止时间戳、校区、考试地点及教师等关键字段计算确定性的唯一 UID，当教务处临时调整考场时，学生日历会自动覆盖更新，而不会出现两场考试的“幽灵叠加”。
-*   **跨语言安全沙箱**：TypeScript 侧采用 `Zod` 定义严格 Schema (`packages/contracts`，包含 `ExamSchema`, `ManifestSchema` 等)。将 Python 爬虫产出的静态文件视为“不可信输入”，强制反序列化校验，形成真正的接口接口安全防护。
+*   **跨语言安全沙箱**：TypeScript 侧采用 `Zod` 定义严格 Schema (`packages/contracts`，包含 `ExamSchema`, `ManifestSchema` 等)。将 Python 爬虫产出的静态文件视为“不可信输入”，强制反序列化校验，形成真正的接口安全防护。
 
 ---
 
@@ -81,10 +81,7 @@ if !has_known_candidate && scores.len() >= target && max_possible_for_unseen_doc
 
 ```mermaid
 graph TD
-    subaxis_offline["离线构建管线 (Github Actions)"]
-    subaxis_client["客户端运行时 (Browser)"]
-
-    subgraph 离线管线 ["离线构建管线 (Data Pipeline)"]
+    subgraph 离线管线 ["离线构建管线（Data Pipeline）"]
         A["各学院教务通知网"] -->|抓取| B("tools/exam-pipeline<br>Python ETL 清洗")
         C["全网静态文档数据"] -->|解析| D("tools/collection-indexer<br>Python 倒排构建")
         
@@ -97,7 +94,7 @@ graph TD
         F -.分片缓存.-> G
     end
 
-    subgraph 客户端 ["客户端运行时 (PWA)"]
+    subgraph 客户端 ["客户端运行时（PWA）"]
         G ==>|按需 Hydration| H["Web Worker 编排中心<br>packages/search-core"]
         H <-->|内存读写| I(("Rust WASM 算分引擎<br>Block-Max WAND"))
         H -->|异步返回结果| J["React 主线程 UI"]
@@ -125,7 +122,7 @@ njupt-search/
 ├── apps/
 │   └── web/                # React 19 + Tailwind v4 + Vite PWA 核心单页应用
 ├── packages/
-│   ├── contracts/          # Zod 强类型契约层 (被前后端共同引用)
+│   ├── contracts/          # Zod 强类型契约层 (数据管道与客户端之间的规范契约)
 │   ├── exam-core/          # 考试解析、正则匹配与 ICS 标准日历生成引擎
 │   └── search-core/        # 搜索引擎调度核心：Web Worker 状态机、算分器、分词器
 ├── tools/
@@ -162,14 +159,22 @@ npm run dev
 
 ### 数据离线编译与测试
 
-有关详细的源数据索引构建、教务日历爬虫更新以及回归测试跑交流程，您可以直接查阅对应模块的 Python 脚本。所有构建管线均内置了完备的 `--help` 参数供调试：
+有关详细的源数据索引构建、教务日历爬虫更新以及回归测试跑交流程，您可以直接查阅对应模块的 Python 脚本与工具文档。所有构建管线与质量门禁均已就绪：
 
 ```powershell
-# 例如，更新并抓取最新的考试安排：
-uv run python tools/exam-pipeline/src/njupt_exam_pipeline/analyze_and_update.py
+# 例如，一键同步并编译教务处最新的考试安排：
+uv run python -m njupt_exam_pipeline run
 
-# 执行静态包体积监控与回归验证：
+# 编译生成静态搜索倒排包（以 njupt-public 集合为例）：
+uv run python -m njupt_search_indexer build --collection-id njupt-public
+
+# 执行回归测试与检索一致性校验：
+uv run python -m njupt_search_eval run-smoke-queries
+
+# 执行静态包体积监控与架构设计门禁校验：
+uv run python tools/quality-gates/scripts/validate_search_index.py
 uv run python tools/quality-gates/scripts/check_public_artifact_sizes.py
+uv run python tools/quality-gates/scripts/check_source_complexity.py
 ```
 
 ---
