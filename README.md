@@ -82,9 +82,6 @@ if !has_known_candidate && scores.len() >= target && max_possible_for_unseen_doc
 
 ```mermaid
 graph TD
-    subaxis_offline["离线构建管线 (Github Actions)"]
-    subaxis_client["客户端运行时 (Browser)"]
-
     subgraph 离线管线 ["离线构建管线 (Data Pipeline)"]
         A["各学院教务通知网"] -->|抓取| B("tools/exam-pipeline<br>Python ETL 清洗")
         C["全网静态文档数据"] -->|解析| D("tools/collection-indexer<br>Python 倒排构建")
