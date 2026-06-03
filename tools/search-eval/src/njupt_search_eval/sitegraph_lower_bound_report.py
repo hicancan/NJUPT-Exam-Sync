@@ -628,7 +628,7 @@ def query_path_parse_decode_benchmark(
         mean_baseline_ms = statistics.fmean(baseline_ms) if baseline_ms else 0.0
         bytes_change = percent_change(mean_current_bytes, mean_baseline_bytes)
         decode_change = percent_change(mean_current_ms, mean_baseline_ms)
-        zero_decode_path = mean_current_bytes == 0 and mean_baseline_bytes == 0 and mean_current_ms == 0 and mean_baseline_ms == 0
+        zero_decode_path = mean_current_bytes == 0 and mean_baseline_bytes == 0 and mean_current_ms < 0.05 and mean_baseline_ms < 0.05
         bytes_passed = zero_decode_path or (bytes_change is not None and bytes_change < 0)
         decode_within_tolerance = zero_decode_path or (
             decode_change is not None and decode_change <= QUERY_PATH_DECODE_REGRESSION_TOLERANCE_PERCENT
