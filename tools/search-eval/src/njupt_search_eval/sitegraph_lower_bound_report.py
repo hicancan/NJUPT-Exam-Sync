@@ -143,10 +143,20 @@ def load_shard_filter_payloads(manifest: dict[str, Any], *, baseline_ref: str | 
         path = str(artifact.get("path") or "")
         if not path:
             continue
-        if baseline_ref is None:
-            payloads.append(current_artifact_bytes(path))
+        manifest_payload = current_artifact_bytes(path) if baseline_ref is None else git_show_bytes(baseline_ref, public_artifact_repo_path(path))
+        try:
+            decoded = json.loads(manifest_payload)
+        except json.JSONDecodeError:
+            payloads.append(manifest_payload)
+            continue
+        if isinstance(decoded, dict) and decoded.get("version") == "sitegraph-shard-filter-parts-v1":
+            for part in decoded.get("parts") or []:
+                part_path = str(part.get("path") if isinstance(part, dict) else "")
+                if not part_path:
+                    continue
+                payloads.append(current_artifact_bytes(part_path) if baseline_ref is None else git_show_bytes(baseline_ref, public_artifact_repo_path(part_path)))
         else:
-            payloads.append(git_show_bytes(baseline_ref, public_artifact_repo_path(path)))
+            payloads.append(manifest_payload)
     return payloads
 
 
@@ -278,7 +288,8 @@ def benchmark_shard_filter_decode(payloads: list[bytes], runs: int) -> dict[str,
         decoded_this_run = 0
         for payload in payloads:
             parsed = json.loads(payload)
-            for item in parsed.values():
+            entries = parsed.get("entries") if isinstance(parsed, dict) and isinstance(parsed.get("entries"), dict) else parsed
+            for item in entries.values():
                 if isinstance(item, dict) and item.get("bitset_base64"):
                     base64.b64decode(str(item["bitset_base64"]))
                     decoded_this_run += 1

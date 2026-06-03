@@ -21,33 +21,48 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
-          cache: 'pip'
+          python-version-file: '.python-version'
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8
 
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
 
       - name: Install dependencies
         run: |
-          python -m pip install -U pip
-          python -m pip install -e .[test]
+          uv sync --frozen --extra test
           npm ci
 
       - name: Python tests
-        run: python -m pytest
+        run: uv run python -m pytest
 
       - name: Source complexity gates
-        run: python tools/quality-gates/scripts/check_source_complexity.py
+        run: uv run python tools/quality-gates/scripts/check_source_complexity.py
 
       - name: Generated artifact gates
         run: |
-          python tools/quality-gates/scripts/validate_search_index.py
-          python tools/quality-gates/scripts/check_public_artifact_sizes.py
-          python -m njupt_search_eval run-smoke-queries
-          python -m njupt_search_eval run-task-queries
+          uv run python tools/quality-gates/scripts/validate_search_index.py
+          uv run python tools/quality-gates/scripts/check_public_artifact_sizes.py
+          uv run python -m njupt_search_eval run-smoke-queries
+          uv run python -m njupt_search_eval run-task-queries
+
+      - name: Verify WASM release artifacts
+        run: |
+          cargo install wasm-pack --locked
+          (cd tools/wasm/packed-impact-decoder && wasm-pack build --target web --release --out-dir pkg)
+          cmp tools/wasm/packed-impact-decoder/pkg/packed_impact_decoder.js apps/web/src/features/collection-search/wasm/packed_impact_decoder.js
+          cmp tools/wasm/packed-impact-decoder/pkg/packed_impact_decoder.d.ts apps/web/src/features/collection-search/wasm/packed_impact_decoder.d.ts
+          cmp tools/wasm/packed-impact-decoder/pkg/packed_impact_decoder_bg.wasm apps/web/src/features/collection-search/wasm/packed_impact_decoder_bg.wasm
+          cmp tools/wasm/packed-impact-decoder/pkg/packed_impact_decoder_bg.wasm.d.ts apps/web/src/features/collection-search/wasm/packed_impact_decoder_bg.wasm.d.ts
 
       - name: Frontend checks
         run: |

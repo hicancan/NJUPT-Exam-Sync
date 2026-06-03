@@ -46,6 +46,8 @@ def main() -> None:
         fail(f"unexpected manifest strategy: {manifest.get('strategy')!r}")
     if manifest.get("core_search", {}).get("first_screen_artifacts") != ["source_registry", "global_query_directory", "query_aliases"]:
         fail("first screen must load only the routed bootstrap artifacts")
+    if manifest.get("core_search", {}).get("fast_start_artifacts") != ["hot_query_fast_start"]:
+        fail("fast-start must load only hot_query_fast_start")
     if any(name in (manifest.get("artifacts") or {}) for name in ("doc_meta_light", "light_inverted_index")):
         fail("legacy global startup artifacts must not be runtime artifacts")
     if manifest.get("routing_contract", {}).get("startup_loads_global_document_metadata") is not False:
@@ -54,7 +56,7 @@ def main() -> None:
         fail("routing planner must be cost_authority_proof_ledger_planner_v2")
     if manifest.get("verification_contract", {}).get("completion_requires_ledger") is not True:
         fail("completion must require a proof ledger")
-    for name in ("source_registry", "global_query_directory", "query_aliases", "size_report"):
+    for name in ("source_registry", "global_query_directory", "query_aliases", "hot_query_fast_start", "size_report"):
         entry = (manifest.get("artifacts") or {}).get(name)
         if not isinstance(entry, dict) or not entry.get("path"):
             fail(f"manifest.artifacts.{name}.path is missing")

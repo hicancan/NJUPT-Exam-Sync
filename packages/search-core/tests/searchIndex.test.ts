@@ -390,6 +390,8 @@ const makeRoutedFixture = (
             readiness: 'routed_bootstrap',
             legacy_global_first_screen: false,
             first_screen_artifacts: ['source_registry', 'global_query_directory', 'query_aliases'],
+            fast_start_artifacts: ['hot_query_fast_start'],
+            hot_query_initial_results: 20,
             local_index_loading: 'query_planned_on_demand',
             body_index_loading: 'query_planned_on_demand',
             full_text_loading: 'lazy_candidate_hydration_then_verified_scope_scan',
@@ -400,7 +402,7 @@ const makeRoutedFixture = (
             total_documents: documents.length,
             full_scan_supported: true,
             progressive_events: true,
-            artifact_roles: ['source_registry', 'global_query_directory', 'local_impact_light_index_meta', 'local_impact_light_index_packed', 'local_impact_body_index_packed', 'proof_catalog', 'full_shards']
+            artifact_roles: ['source_registry', 'global_query_directory', 'hot_query_fast_start', 'hot_query_top_initial', 'local_impact_light_index_meta', 'local_impact_light_index_packed', 'local_impact_body_index_packed', 'proof_catalog', 'full_shards']
         },
         coverage_contract: {
             states: ['plan_started', 'local_index_started', 'first_trusted_results', 'body_index_started', 'top_results_hydrated', 'verification_started', 'partial_verified', 'global_exhaustive_complete'],
@@ -434,6 +436,7 @@ const makeRoutedFixture = (
             source_registry: artifact(`${prefix}/source-registry.json`, 'source_registry', 'bootstrap', 1),
             global_query_directory: artifact(`${prefix}/global-query-directory.json`, 'global_query_directory', 'bootstrap', 1),
             query_aliases: artifact(`${prefix}/query-aliases.json`, 'query_aliases', 'bootstrap', 1),
+            hot_query_fast_start: artifact(`${prefix}/hot-query-fast-start.json`, 'hot_query_fast_start', 'fast_start', 1),
             outcomes: artifact(`${prefix}/outcomes.json`, 'outcomes', 'audit'),
             quality_report: artifact(`${prefix}/quality-report.json`, 'quality_report', 'audit'),
             query_eval_report: artifact(`${prefix}/query-eval-report.json`, 'query_eval_report', 'audit'),

@@ -9,6 +9,12 @@ from typing import Any
 
 from . import sitegraph_public_index as public_index
 from .sitegraph_binary_index import unpack_impact_index
+from .sitegraph_hot_query_proofs import (
+    HOT_QUERY_FAST_START_VERSION,
+    HOT_QUERY_INITIAL_CERTIFICATE_VERSION,
+    HOT_QUERY_INITIAL_LIMIT,
+    HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL,
+)
 from .sitegraph_public_index import aggregate_counts
 from .sitegraph_source import load_collection_source_packages, package_source_id, validate_sitegraph_package
 
@@ -48,6 +54,21 @@ OBSOLETE_FIELDS = {
 }
 LEGACY_RUNTIME_ARTIFACTS = {"doc_meta_light", "light_inverted_index"}
 ATTACHMENT_EVIDENCE_LEVELS = {"metadata_only", "filename_only", "text_extracted", "snippet", "full_content"}
+HOT_QUERY_FIRST_TRUSTED_BYTE_BUDGET = 150 * 1024
+REQUIRED_FAST_START_QUERIES = (
+    "四六级",
+    "成绩",
+    "期末考试",
+    "考试安排",
+    "选课",
+    "校历",
+    "转专业",
+    "奖学金",
+    "大创",
+    "竞赛报名",
+    "教务管理系统",
+    "信息门户",
+)
 
 
 def read_json(path: Path) -> Any:
@@ -89,6 +110,102 @@ def artifact_path(manifest: dict[str, Any], name: str) -> Path:
     if not isinstance(entry, dict) or not entry.get("path"):
         fail(f"manifest.artifacts.{name}.path is missing")
     return ensure_public_hashed_path(str(entry["path"]), f"manifest.artifacts.{name}.path")
+
+
+def validate_hot_query_fast_start(manifest: dict[str, Any]) -> None:
+    fast_start_entry = (manifest.get("artifacts") or {}).get("hot_query_fast_start")
+    if not isinstance(fast_start_entry, dict):
+        fail("manifest.artifacts.hot_query_fast_start is missing")
+    fast_start_path = artifact_path(manifest, "hot_query_fast_start")
+    fast_start = read_json(fast_start_path)
+    if not isinstance(fast_start, dict):
+        fail("hot_query_fast_start must be an object")
+    if fast_start.get("version") != HOT_QUERY_FAST_START_VERSION:
+        fail("hot_query_fast_start has unexpected version")
+    if fast_start.get("scope") != "global_unfiltered_queries":
+        fail("hot_query_fast_start.scope must be global_unfiltered_queries")
+    if fast_start.get("initial_certificate_version") != HOT_QUERY_INITIAL_CERTIFICATE_VERSION:
+        fail("hot_query_fast_start.initial_certificate_version is invalid")
+    if fast_start.get("top_document_payload_model") != HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL:
+        fail("hot_query_fast_start.top_document_payload_model is invalid")
+    queries = fast_start.get("queries")
+    if not isinstance(queries, dict) or not queries:
+        fail("hot_query_fast_start.queries must be non-empty")
+    if int(fast_start.get("query_count") or -1) != len(queries):
+        fail("hot_query_fast_start.query_count must equal queries length")
+
+    max_initial_bytes = 0
+    for normalized_query, entry in queries.items():
+        if not isinstance(entry, dict):
+            fail(f"hot_query_fast_start entry must be object: {normalized_query}")
+        initial = entry.get("initial_certificate")
+        if not isinstance(initial, dict):
+            fail(f"hot_query_fast_start.{normalized_query}.initial_certificate is missing")
+        if initial.get("role") != "hot_query_top_initial":
+            fail(f"hot_query_fast_start.{normalized_query}.initial_certificate role must be hot_query_top_initial")
+        if int(initial.get("count") or 0) > HOT_QUERY_INITIAL_LIMIT:
+            fail(f"hot_query_fast_start.{normalized_query}.initial_certificate count exceeds HOT_QUERY_INITIAL_LIMIT")
+        initial_path = ensure_public_hashed_path(str(initial.get("path") or ""), f"hot_query_fast_start.{normalized_query}.initial_certificate.path")
+        certificate = read_json(initial_path)
+        if not isinstance(certificate, dict):
+            fail(f"hot query initial certificate must be object: {normalized_query}")
+        if certificate.get("version") != HOT_QUERY_INITIAL_CERTIFICATE_VERSION:
+            fail(f"hot query initial certificate has unexpected version: {normalized_query}")
+        if certificate.get("document_payload_model") != HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL:
+            fail(f"hot query initial certificate has invalid document payload model: {normalized_query}")
+        documents = certificate.get("documents")
+        if not isinstance(documents, list):
+            fail(f"hot query initial certificate documents must be a list: {normalized_query}")
+        top_k_count = certificate.get("top_k_count")
+        if not isinstance(top_k_count, int) or len(documents) != top_k_count:
+            fail(f"hot query initial certificate top_k_count mismatch: {normalized_query}")
+        if len(documents) > HOT_QUERY_INITIAL_LIMIT:
+            fail(f"hot query initial certificate exceeds initial limit: {normalized_query}")
+        max_initial_bytes = max(max_initial_bytes, int(initial.get("bytes") or 0))
+
+    missing = [
+        query
+        for query in REQUIRED_FAST_START_QUERIES
+        if public_index.normalize_text(query) not in queries
+    ]
+    if missing:
+        fail(f"hot_query_fast_start missing required hot queries: {missing}")
+    total_first_trusted_bytes = int(fast_start_entry.get("bytes") or 0) + max_initial_bytes
+    if total_first_trusted_bytes > HOT_QUERY_FIRST_TRUSTED_BYTE_BUDGET:
+        fail(
+            "hot_query_fast_start plus largest initial certificate exceeds "
+            f"{HOT_QUERY_FIRST_TRUSTED_BYTE_BUDGET} bytes: {total_first_trusted_bytes}"
+        )
+
+
+def read_outcomes_artifact(manifest: dict[str, Any]) -> dict[str, Any]:
+    payload = read_json(artifact_path(manifest, "outcomes"))
+    if not isinstance(payload, dict):
+        fail("outcomes must be an object")
+    if payload.get("version") != "sitegraph-outcomes-manifest-v1":
+        return payload
+    outcomes: dict[str, Any] = dict(payload.get("scalars") if isinstance(payload.get("scalars"), dict) else {})
+    families = payload.get("families")
+    if not isinstance(families, dict):
+        fail("outcomes manifest families must be an object")
+    for family, family_payload in families.items():
+        if not isinstance(family_payload, dict):
+            fail(f"outcomes family must be an object: {family}")
+        records: list[dict[str, Any]] = []
+        for part in family_payload.get("parts") or []:
+            if not isinstance(part, dict) or not part.get("path"):
+                fail(f"outcomes family has invalid part: {family}")
+            part_payload = read_json(ensure_public_hashed_path(str(part["path"]), f"outcomes.{family}.part"))
+            if not isinstance(part_payload, dict) or part_payload.get("version") != "sitegraph-outcomes-part-v1":
+                fail(f"outcomes part has invalid version: {family}")
+            part_records = part_payload.get("records")
+            if not isinstance(part_records, list):
+                fail(f"outcomes part records must be list: {family}")
+            records.extend(item for item in part_records if isinstance(item, dict))
+        if len(records) != int(family_payload.get("record_count") or -1):
+            fail(f"outcomes family record_count mismatch: {family}")
+        outcomes[str(family)] = records
+    return outcomes
 
 
 def load_source_manifests(manifest: dict[str, Any]) -> list[dict[str, Any]]:
@@ -380,6 +497,10 @@ def validate_generated_index(packages: list[dict[str, Any]] | dict[str, Any]) ->
         fail("legacy global first-screen startup must be disabled")
     if core_search.get("first_screen_artifacts") != ["source_registry", "global_query_directory", "query_aliases"]:
         fail(f"unexpected first_screen_artifacts: {core_search.get('first_screen_artifacts')!r}")
+    if core_search.get("fast_start_artifacts") != ["hot_query_fast_start"]:
+        fail(f"unexpected fast_start_artifacts: {core_search.get('fast_start_artifacts')!r}")
+    if int(core_search.get("hot_query_initial_results") or 0) != HOT_QUERY_INITIAL_LIMIT:
+        fail("core_search.hot_query_initial_results must match HOT_QUERY_INITIAL_LIMIT")
     if any(name in (manifest.get("artifacts") or {}) for name in LEGACY_RUNTIME_ARTIFACTS):
         fail("legacy global runtime artifacts must not be manifest artifacts")
     if "full_shards" in (manifest.get("sitegraph") or {}):
@@ -395,6 +516,9 @@ def validate_generated_index(packages: list[dict[str, Any]] | dict[str, Any]) ->
         fail("manifest.progressive_search.full_scan_supported must be true")
     if progressive_search.get("progressive_events") is not True:
         fail("manifest.progressive_search.progressive_events must be true")
+    for role in ("hot_query_fast_start", "hot_query_top_initial", "hot_query_topk_certificate", "hot_query_complete_certificate"):
+        if role not in set(progressive_search.get("artifact_roles") or []):
+            fail(f"manifest.progressive_search.artifact_roles missing {role}")
     for state in ("first_trusted_results", "top_results_hydrated", "partial_verified", "scoped_exhaustive_complete", "global_exhaustive_complete"):
         if state not in (coverage_contract.get("states") or []):
             fail(f"manifest.coverage_contract.states missing {state}")
@@ -419,6 +543,7 @@ def validate_generated_index(packages: list[dict[str, Any]] | dict[str, Any]) ->
         "source_registry",
         "global_query_directory",
         "query_aliases",
+        "hot_query_fast_start",
         "outcomes",
         "quality_report",
         "query_eval_report",
@@ -426,6 +551,7 @@ def validate_generated_index(packages: list[dict[str, Any]] | dict[str, Any]) ->
     )
     for name in required_artifacts:
         artifact_path(manifest, name)
+    validate_hot_query_fast_start(manifest)
 
     source_registry = read_json(artifact_path(manifest, "source_registry"))
     sources = source_registry.get("sources")
@@ -493,9 +619,7 @@ def validate_generated_index(packages: list[dict[str, Any]] | dict[str, Any]) ->
     if len(detail_docs) != aggregate_truth_counts["detail_pages"]:
         fail(f"detail document count mismatch: {len(detail_docs)} != {aggregate_truth_counts['detail_pages']}")
 
-    outcomes = read_json(artifact_path(manifest, "outcomes"))
-    if not isinstance(outcomes, dict):
-        fail("outcomes must be an object")
+    outcomes = read_outcomes_artifact(manifest)
     if len(outcomes.get("detail_page_records") or []) != aggregate_truth_counts["detail_pages"]:
         fail("outcomes.detail_page_records must cover every detail page")
     if len(outcomes.get("attachment_metadata_records") or []) != aggregate_truth_counts["attachments"]:

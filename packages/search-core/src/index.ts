@@ -6,5 +6,6 @@ export * from './sitegraphFilters';
 export * from './sitegraphSnippet';
 export * from './sitegraphContract';
 export * from './sitegraphBinaryIndex';
+export * from './sitegraphHotQuery';
 export * from './sitegraphSearch';
 export * from './tokenizer';

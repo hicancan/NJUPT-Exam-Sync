@@ -81,6 +81,18 @@ def read_artifact(artifact: dict):
     return read_json(PUBLIC_ROOT / artifact["path"])
 
 
+def read_chunked_mapping_artifact(artifact: dict):
+    payload = read_artifact(artifact)
+    if isinstance(payload, dict) and payload.get("version") == "sitegraph-shard-filter-parts-v1":
+        merged = {}
+        for part in payload["parts"]:
+            part_payload = read_json(PUBLIC_ROOT / part["path"])
+            merged.update(part_payload["entries"])
+        assert len(merged) == payload["entry_count"]
+        return merged
+    return payload
+
+
 def load_source_registry(manifest: dict) -> dict:
     return read_artifact(manifest["artifacts"]["source_registry"])
 
@@ -322,7 +334,7 @@ def test_light_index_and_shards_have_no_obsolete_fields():
                 assert item.get("task_kind")
 
         proof_catalog = read_artifact(source_manifest["artifacts"]["proof_catalog"])
-        shard_filter = read_artifact(source_manifest["artifacts"]["shard_filter"])
+        shard_filter = read_chunked_mapping_artifact(source_manifest["artifacts"]["shard_filter"])
         for shard in proof_catalog["shards"]:
             documents = read_json(PUBLIC_ROOT / shard["path"])
             assert len(documents) == shard["document_count"]

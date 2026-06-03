@@ -19,6 +19,10 @@ LIST_URL = "https://jwc.njupt.edu.cn/1594/list.htm"
 SAVE_DIR = os.path.join(BASE_DIR, "apps", "web", "public", "generated", "exam")
 JWC_TLS_VERIFY = os.environ.get("NJUPT_JWC_VERIFY_TLS", "true").strip().lower() not in {"0", "false", "no"}
 
+
+class ExamPipelineError(RuntimeError):
+    """Fatal exam data update failure."""
+
 # 1. 必须包含的关键词 (且关系)
 REQUIRED_KEYWORDS = ["学年", "学期"]
 # 2. 必须包含其中之一的关键词 (或关系)
@@ -85,7 +89,7 @@ def download_file(url: str, save_path: str, max_retries: int = 3) -> bool:
             if attempt < max_retries:
                 time.sleep(2)  # 等待后重试
             else:
-                return False
+                raise ExamPipelineError(f"下载失败且已耗尽重试次数: {url}") from e
 
 def find_latest_schedule_notification() -> Optional[tuple[str, str]]:
     """遍历列表页，寻找最新的、符合逻辑的通知"""
@@ -97,8 +101,7 @@ def find_latest_schedule_notification() -> Optional[tuple[str, str]]:
         
         container = soup.select_one('div.col_news_con')
         if not container:
-            print("❌ 未找到列表容器，请检查选择器。")
-            return None
+            raise ExamPipelineError("未找到列表容器，请检查选择器。")
 
         news_items = container.select('li.news')
         
@@ -127,7 +130,7 @@ def find_latest_schedule_notification() -> Optional[tuple[str, str]]:
         
     except Exception as e:
         print(f"❌ 列表获取失败: {e}")
-        return None
+        raise ExamPipelineError("列表获取失败") from e
 
 def process_detail_page(url: str, title: str):
     """解析详情页并智能下载附件"""
@@ -155,8 +158,7 @@ def process_detail_page(url: str, title: str):
                 candidates.append({'name': name, 'url': full_url})
 
         if not candidates:
-            print("⚠️ 未发现 Excel 附件。")
-            return
+            raise ExamPipelineError("未发现 Excel 附件")
 
         # 2. 智能筛选附件
         student_files = [f for f in candidates if is_student_file(f['name'])]
@@ -186,8 +188,7 @@ def process_detail_page(url: str, title: str):
                     downloaded_files.append(file_info['name'])
             
             if count == 0:
-                print("❌ 没有成功下载任何文件。")
-                return
+                raise ExamPipelineError("没有成功下载任何文件")
 
             # 4. Idempotency Check (比对 hash)
             should_update = False
@@ -231,6 +232,7 @@ def process_detail_page(url: str, title: str):
                         os.remove(os.path.join(SAVE_DIR, f))
                     except Exception as e:
                         print(f"   ❌ 删除失败 {f}: {e}")
+                        raise ExamPipelineError(f"删除既有考试文件失败: {f}") from e
 
             # 移动新文件
             for fname in downloaded_files:
@@ -261,6 +263,7 @@ def process_detail_page(url: str, title: str):
             
     except Exception as e:
         print(f"❌ 详情页解析失败: {e}")
+        raise ExamPipelineError("详情页解析失败") from e
 
 if __name__ == "__main__":
     print("=== NJUPT 考试安排自动同步工具 ===")

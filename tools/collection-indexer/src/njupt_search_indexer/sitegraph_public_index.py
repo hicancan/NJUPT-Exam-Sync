@@ -24,6 +24,9 @@ from .sitegraph_hot_query_proofs import (
     HOT_QUERY_CERTIFICATE_MODEL,
     HOT_QUERY_COMPLETE_CERTIFICATE_VERSION,
     HOT_QUERY_COMPLETE_PROOF_MODEL,
+    HOT_QUERY_FAST_START_VERSION,
+    HOT_QUERY_INITIAL_CERTIFICATE_VERSION,
+    HOT_QUERY_INITIAL_LIMIT,
     HOT_QUERY_RANK_EVIDENCE_MODEL,
     HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL,
     HOT_QUERY_TOPK_CERTIFICATE_VERSION,
@@ -138,6 +141,8 @@ SOURCE_AUTHORITY: dict[str, dict[str, Any]] = {
 }
 
 ATTACHMENT_EVIDENCE_LEVELS = ("metadata_only", "filename_only", "text_extracted", "snippet", "full_content")
+MAX_PUBLIC_JSON_ARTIFACT_BYTES = 1024 * 1024
+SPLIT_PUBLIC_JSON_TARGET_BYTES = 768 * 1024
 HOT_QUERY_PROOF_QUERIES = [
     str(query)
     for query in json.loads((BASE_DIR / "config" / "search" / "hot-query-proof-queries.json").read_text(encoding="utf-8"))
@@ -163,13 +168,14 @@ def build_hot_query_proof_directory(
     documents: list[dict[str, Any]],
     query_aliases: dict[str, Any],
     full_shards: list[dict[str, Any]],
-) -> tuple[dict[str, Any], dict[str, int], dict[str, int]]:
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, int], dict[str, int], dict[str, int]]:
     shard_ids = [str(shard["shard_id"]) for shard in full_shards]
     shard_bytes_by_id = {str(shard["shard_id"]): int(shard.get("bytes") or 0) for shard in full_shards}
     shard_count_by_id = {str(shard["shard_id"]): int(shard.get("count") or 0) for shard in full_shards}
     certificate_entries: dict[str, dict[str, Any]] = {}
     certificate_bytes_by_query: dict[str, int] = {}
     top_certificate_bytes_by_query: dict[str, int] = {}
+    initial_certificate_bytes_by_query: dict[str, int] = {}
 
     for query in HOT_QUERY_PROOF_QUERIES:
         normalized_query = normalize_text(query)
@@ -190,14 +196,36 @@ def build_hot_query_proof_directory(
 
         matched_shard_list = sorted(matched_shards)
         ranked_matching_documents = sorted(matching_documents, key=lambda document: hot_query_topk_sort_key(document, query, rank_terms))
+        initial_documents = ranked_matching_documents[:HOT_QUERY_INITIAL_LIMIT]
         top_documents = ranked_matching_documents[:HOT_QUERY_TOPK_LIMIT]
+        initial_document_ids = {str(document.get("id") or "") for document in initial_documents}
         top_document_ids = {str(document.get("id") or "") for document in top_documents}
+        initial_matched_shards = sorted({
+            str((document.get("shard") or {}).get("shard_id") or "")
+            for document in documents
+            if str(document.get("id") or "") in initial_document_ids
+            and (document.get("shard") or {}).get("shard_id")
+        })
         top_matched_shards = sorted({
             str((document.get("shard") or {}).get("shard_id") or "")
             for document in documents
             if str(document.get("id") or "") in top_document_ids
             and (document.get("shard") or {}).get("shard_id")
         })
+        initial_rank_floor = min(
+            (
+                hot_query_runtime_rank_score(document, query, rank_terms, float(document.get("rank_base_score") or 0.0))
+                for document in initial_documents
+            ),
+            default=0.0,
+        )
+        initial_tail_rank_ceiling = max(
+            (
+                hot_query_runtime_rank_score(document, query, rank_terms, float(document.get("rank_base_score") or 0.0))
+                for document in ranked_matching_documents[HOT_QUERY_INITIAL_LIMIT:]
+            ),
+            default=0.0,
+        )
         top_rank_floor = min(
             (
                 hot_query_runtime_rank_score(document, query, rank_terms, float(document.get("rank_base_score") or 0.0))
@@ -211,6 +239,40 @@ def build_hot_query_proof_directory(
                 for document in ranked_matching_documents[HOT_QUERY_TOPK_LIMIT:]
             ),
             default=0.0,
+        )
+        initial_certificate = {
+            "version": HOT_QUERY_INITIAL_CERTIFICATE_VERSION,
+            "document_payload_model": HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL,
+            "rank_evidence_model": HOT_QUERY_RANK_EVIDENCE_MODEL,
+            "query": query,
+            "normalized_query": normalized_query,
+            "match_phrases": match_phrases,
+            "rank_terms": rank_terms,
+            "phrase_key": phrase_key,
+            "initial_limit": HOT_QUERY_INITIAL_LIMIT,
+            "top_k_limit": HOT_QUERY_INITIAL_LIMIT,
+            "top_k_count": len(initial_documents),
+            "match_count": len(matching_documents),
+            "total_shards": len(full_shards),
+            "total_documents": len(documents),
+            "matched_shards": initial_matched_shards,
+            "matched_shard_count": len(initial_matched_shards),
+            "proved_no_match_shards": 0,
+            "dominance": {
+                "model": "runtime_intent_rank_desc_then_date_desc_then_id_v1",
+                "top_runtime_rank_floor": round(initial_rank_floor, 4),
+                "tail_runtime_rank_ceiling": round(initial_tail_rank_ceiling, 4),
+                "tail_document_count": max(0, len(matching_documents) - len(initial_documents)),
+                "dominates_by_runtime_rank": initial_tail_rank_ceiling <= initial_rank_floor,
+            },
+            "documents": initial_documents,
+        }
+        initial_artifact = write_hashed_json(
+            PUBLIC_ROOT,
+            PUBLIC_HOT_QUERY_PROOF_DIR,
+            f"hot_query_initial.{stable_ascii_slug(normalized_query, fallback='query', max_length=48)}",
+            initial_certificate,
+            compact=True,
         )
         top_certificate = {
             "version": HOT_QUERY_TOPK_CERTIFICATE_VERSION,
@@ -283,6 +345,12 @@ def build_hot_query_proof_directory(
             "normalized_query": normalized_query,
             "match_phrases": match_phrases,
             "phrase_key": phrase_key,
+            "initial_certificate": {
+                **artifact_entry(initial_artifact, role="hot_query_top_initial", count=len(initial_documents), load="fast_start"),
+                "initial_limit": HOT_QUERY_INITIAL_LIMIT,
+                "top_k_limit": HOT_QUERY_INITIAL_LIMIT,
+                "match_count": len(matching_documents),
+            },
             "top_certificate": {
                 **artifact_entry(top_artifact, role="hot_query_topk_certificate", count=len(top_documents), load="query_planned"),
                 "top_k_limit": HOT_QUERY_TOPK_LIMIT,
@@ -296,6 +364,7 @@ def build_hot_query_proof_directory(
         }
         certificate_bytes_by_query[normalized_query] = int(artifact["bytes"])
         top_certificate_bytes_by_query[normalized_query] = int(top_artifact["bytes"])
+        initial_certificate_bytes_by_query[normalized_query] = int(initial_artifact["bytes"])
 
     for entry in list(certificate_entries.values()):
         canonical_query = str(entry["normalized_query"])
@@ -312,6 +381,31 @@ def build_hot_query_proof_directory(
                 "query": str(alias),
                 "alias_of": canonical_query,
             }
+
+    fast_start_entries: dict[str, dict[str, Any]] = {}
+    for normalized_key, entry in certificate_entries.items():
+        initial_entry = entry.get("initial_certificate")
+        if not isinstance(initial_entry, dict):
+            continue
+        fast_start_entries[normalized_key] = {
+            "query": str(entry.get("query") or normalized_key),
+            "normalized_query": normalized_key,
+            "alias_of": entry.get("alias_of"),
+            "phrase_key": str(entry.get("phrase_key") or ""),
+            "match_count": int(entry.get("match_count") or 0),
+            "initial_certificate": initial_entry,
+        }
+    fast_start = {
+        "version": HOT_QUERY_FAST_START_VERSION,
+        "scope": "global_unfiltered_queries",
+        "normalization": "nfkc-lower-command-affix-v1",
+        "initial_certificate_version": HOT_QUERY_INITIAL_CERTIFICATE_VERSION,
+        "top_document_payload_model": HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL,
+        "rank_evidence_model": HOT_QUERY_RANK_EVIDENCE_MODEL,
+        "query_count": len(fast_start_entries),
+        "queries": fast_start_entries,
+    }
+    fast_start_artifact = write_hashed_json(PUBLIC_ROOT, PUBLIC_ARTIFACT_DIR, "hot_query_fast_start", fast_start, compact=True)
 
     directory = {
         "version": "sitegraph-hot-query-complete-directory-v3",
@@ -331,7 +425,11 @@ def build_hot_query_proof_directory(
         **artifact_entry(directory_artifact, role="hot_query_proof_directory", count=len(certificate_entries), load="verify"),
         "query_count": len(certificate_entries),
         "certificate_model": directory["certificate_model"],
-    }, certificate_bytes_by_query, top_certificate_bytes_by_query
+    }, {
+        **artifact_entry(fast_start_artifact, role="hot_query_fast_start", count=len(fast_start_entries), load="fast_start"),
+        "query_count": len(fast_start_entries),
+        "initial_certificate_version": HOT_QUERY_INITIAL_CERTIFICATE_VERSION,
+    }, certificate_bytes_by_query, top_certificate_bytes_by_query, initial_certificate_bytes_by_query
 
 
 def configure_collection_output(collection_id: str = COLLECTION_ID, output_dir: Path | None = None) -> None:
@@ -491,6 +589,165 @@ def attachment_filename_index(attachments: list[dict[str, Any]]) -> list[dict[st
         }
         for item in attachments
     ]
+
+
+def chunked_mapping_payloads(
+    entries: dict[str, Any],
+    *,
+    wrapper: dict[str, Any],
+    payload_key: str = "entries",
+    target_bytes: int = SPLIT_PUBLIC_JSON_TARGET_BYTES,
+) -> list[dict[str, Any]]:
+    chunks: list[dict[str, Any]] = []
+    current: dict[str, Any] = {}
+    for key, value in sorted(entries.items()):
+        candidate = {**current, key: value}
+        candidate_payload = {**wrapper, payload_key: candidate}
+        if current and len(json_bytes(candidate_payload, compact=True)) > target_bytes:
+            chunks.append(current)
+            current = {key: value}
+        else:
+            current = candidate
+    if current or not entries:
+        chunks.append(current)
+    return chunks
+
+
+def chunked_list_payloads(
+    records: list[dict[str, Any]],
+    *,
+    wrapper: dict[str, Any],
+    payload_key: str = "records",
+    target_bytes: int = SPLIT_PUBLIC_JSON_TARGET_BYTES,
+) -> list[list[dict[str, Any]]]:
+    chunks: list[list[dict[str, Any]]] = []
+    current: list[dict[str, Any]] = []
+    for record in records:
+        candidate = [*current, record]
+        candidate_payload = {**wrapper, payload_key: candidate}
+        if current and len(json_bytes(candidate_payload, compact=True)) > target_bytes:
+            chunks.append(current)
+            current = [record]
+        else:
+            current = candidate
+    if current or not records:
+        chunks.append(current)
+    return chunks
+
+
+def write_chunked_mapping_entry(
+    directory: Path,
+    logical_prefix: str,
+    source_id: str,
+    entries: dict[str, Any],
+    *,
+    manifest_version: str,
+    part_version: str,
+    manifest_role: str,
+    part_role: str,
+    load: str,
+) -> dict[str, Any]:
+    part_entries: list[dict[str, Any]] = []
+    for index, chunk in enumerate(chunked_mapping_payloads(entries, wrapper={"version": part_version, "source_id": source_id})):
+        part_artifact = write_hashed_json(
+            PUBLIC_ROOT,
+            directory,
+            f"{logical_prefix}.{source_id}.part{index:03d}",
+            {"version": part_version, "source_id": source_id, "entries": chunk},
+            compact=True,
+        )
+        part_entries.append(artifact_entry(part_artifact, role=part_role, count=len(chunk), load=load))
+    manifest_payload = {
+        "version": manifest_version,
+        "source_id": source_id,
+        "encoding": "chunked-json-object-v1",
+        "entry_count": len(entries),
+        "part_count": len(part_entries),
+        "parts": part_entries,
+    }
+    manifest_artifact = write_hashed_json(PUBLIC_ROOT, directory, f"{logical_prefix}.{source_id}", manifest_payload, compact=True)
+    entry = artifact_entry(manifest_artifact, role=manifest_role, count=len(entries), load=load)
+    entry["part_count"] = len(part_entries)
+    entry["runtime_bytes"] = int(entry["bytes"]) + sum(int(part["bytes"]) for part in part_entries)
+    return entry
+
+
+def write_chunked_list_entry(
+    directory: Path,
+    logical_prefix: str,
+    source_id: str,
+    records: list[dict[str, Any]],
+    *,
+    manifest_version: str,
+    part_version: str,
+    manifest_role: str,
+    part_role: str,
+    load: str,
+) -> dict[str, Any]:
+    part_entries: list[dict[str, Any]] = []
+    for index, chunk in enumerate(chunked_list_payloads(records, wrapper={"version": part_version, "source_id": source_id})):
+        part_artifact = write_hashed_json(
+            PUBLIC_ROOT,
+            directory,
+            f"{logical_prefix}.{source_id}.part{index:03d}",
+            {"version": part_version, "source_id": source_id, "records": chunk},
+            compact=True,
+        )
+        part_entries.append(artifact_entry(part_artifact, role=part_role, count=len(chunk), load=load))
+    manifest_payload = {
+        "version": manifest_version,
+        "source_id": source_id,
+        "encoding": "chunked-json-list-v1",
+        "record_count": len(records),
+        "part_count": len(part_entries),
+        "parts": part_entries,
+    }
+    manifest_artifact = write_hashed_json(PUBLIC_ROOT, directory, f"{logical_prefix}.{source_id}", manifest_payload, compact=True)
+    entry = artifact_entry(manifest_artifact, role=manifest_role, count=len(records), load=load)
+    entry["part_count"] = len(part_entries)
+    entry["runtime_bytes"] = int(entry["bytes"]) + sum(int(part["bytes"]) for part in part_entries)
+    return entry
+
+
+def write_outcomes_entry(outcomes: dict[str, Any]) -> dict[str, Any]:
+    families: dict[str, Any] = {}
+    scalars: dict[str, Any] = {}
+    for family, value in sorted(outcomes.items()):
+        if not isinstance(value, list):
+            scalars[family] = value
+            continue
+        part_entries: list[dict[str, Any]] = []
+        if any(not isinstance(item, dict) for item in value):
+            raise ValueError(f"outcomes.{family} must contain objects only")
+        records = value
+        for index, chunk in enumerate(chunked_list_payloads(records, wrapper={"version": "sitegraph-outcomes-part-v1", "family": family})):
+            part_artifact = write_hashed_json(
+                PUBLIC_ROOT,
+                PUBLIC_ARTIFACT_DIR,
+                f"outcomes.{stable_ascii_slug(family, fallback='family', max_length=48)}.part{index:03d}",
+                {"version": "sitegraph-outcomes-part-v1", "family": family, "records": chunk},
+                compact=True,
+            )
+            part_entries.append(artifact_entry(part_artifact, role="outcomes_part", count=len(chunk), load="audit"))
+        families[family] = {
+            "record_count": len(records),
+            "part_count": len(part_entries),
+            "parts": part_entries,
+        }
+    manifest_payload = {
+        "version": "sitegraph-outcomes-manifest-v1",
+        "encoding": "chunked-outcomes-v1",
+        "families": families,
+        "scalars": scalars,
+    }
+    manifest_artifact = write_hashed_json(PUBLIC_ROOT, PUBLIC_ARTIFACT_DIR, "outcomes", manifest_payload, compact=True)
+    entry = artifact_entry(manifest_artifact, role="outcomes", load="audit")
+    entry["runtime_bytes"] = int(entry["bytes"]) + sum(
+        int(part["bytes"])
+        for family in families.values()
+        for part in family["parts"]
+    )
+    return entry
 
 
 def route_blob(document: dict[str, Any]) -> str:
@@ -753,9 +1010,39 @@ def build_source_manifests(
             ],
         }
         proof_catalog_artifact = write_hashed_json(PUBLIC_ROOT, PUBLIC_PROOF_CATALOG_DIR, f"proof_catalog.{source_id}", proof_catalog, compact=True)
-        shard_filter_artifact = write_hashed_json(PUBLIC_ROOT, PUBLIC_SHARD_FILTER_DIR, f"shard_filter.{source_id}", source_filter, compact=True)
-        attachment_meta_artifact = write_hashed_json(PUBLIC_ROOT, PUBLIC_ATTACHMENT_META_DIR, f"attachment_meta.{source_id}", attachment_meta, compact=True)
-        attachment_filename_artifact = write_hashed_json(PUBLIC_ROOT, PUBLIC_ATTACHMENT_FILENAME_DIR, f"attachment_filename.{source_id}", attachment_filename_index(attachment_meta), compact=True)
+        shard_filter_entry = write_chunked_mapping_entry(
+            PUBLIC_SHARD_FILTER_DIR,
+            "shard_filter",
+            source_id,
+            source_filter,
+            manifest_version="sitegraph-shard-filter-parts-v1",
+            part_version="sitegraph-shard-filter-part-v1",
+            manifest_role="shard_filter",
+            part_role="shard_filter_part",
+            load="verify",
+        )
+        attachment_meta_entry = write_chunked_list_entry(
+            PUBLIC_ATTACHMENT_META_DIR,
+            "attachment_meta",
+            source_id,
+            attachment_meta,
+            manifest_version="sitegraph-attachment-meta-parts-v1",
+            part_version="sitegraph-attachment-meta-part-v1",
+            manifest_role="attachment_meta_index",
+            part_role="attachment_meta_part",
+            load="on_demand",
+        )
+        attachment_filename_entry = write_chunked_list_entry(
+            PUBLIC_ATTACHMENT_FILENAME_DIR,
+            "attachment_filename",
+            source_id,
+            attachment_filename_index(attachment_meta),
+            manifest_version="sitegraph-attachment-filename-parts-v1",
+            part_version="sitegraph-attachment-filename-part-v1",
+            manifest_role="attachment_filename_index",
+            part_role="attachment_filename_part",
+            load="query_planned",
+        )
         attachment_text_artifact = write_hashed_json(
             PUBLIC_ROOT,
             PUBLIC_ATTACHMENT_TEXT_DIR,
@@ -779,9 +1066,9 @@ def build_source_manifests(
             "local_indexes": local_refs_by_source.get(source_id, []),
             "artifacts": {
                 "proof_catalog": artifact_entry(proof_catalog_artifact, role="proof_catalog", count=len(source_shards), load="verify"),
-                "shard_filter": artifact_entry(shard_filter_artifact, role="shard_filter", count=len(source_filter), load="verify"),
-                "attachment_meta_index": artifact_entry(attachment_meta_artifact, role="attachment_meta_index", count=len(attachment_meta), load="on_demand"),
-                "attachment_filename_index": artifact_entry(attachment_filename_artifact, role="attachment_filename_index", count=len(attachment_meta), load="query_planned"),
+                "shard_filter": shard_filter_entry,
+                "attachment_meta_index": attachment_meta_entry,
+                "attachment_filename_index": attachment_filename_entry,
                 "attachment_text_shards": artifact_entry(attachment_text_artifact, role="attachment_text_shards", count=0, load="future_lazy"),
                 "section_index": artifact_entry(section_artifact, role="section_index", count=len(sections_by_source.get(source_id, [])), load="on_demand"),
                 "external_index": artifact_entry(external_artifact, role="external_index", count=len(external_by_source.get(source_id, [])), load="on_demand"),
@@ -867,6 +1154,10 @@ def public_artifact_dirs() -> tuple[Path, ...]:
     )
 
 
+def artifact_runtime_bytes(entry: dict[str, Any]) -> int:
+    return int(entry.get("runtime_bytes") or entry.get("bytes") or 0)
+
+
 def local_light_runtime_bytes(ref: dict[str, Any]) -> int:
     meta = ref.get("light_index_meta") if isinstance(ref.get("light_index_meta"), dict) else None
     packed = ref.get("light_index_packed") if isinstance(ref.get("light_index_packed"), dict) else None
@@ -901,7 +1192,13 @@ def write_public_index(packages: list[dict[str, Any]], built: dict[str, Any], *,
     local_refs, local_refs_by_source = build_local_indexes(documents, shard_by_id)
     section_index = build_section_index(packages, documents)
     query_aliases = query_alias_payload()
-    hot_query_proof_artifact, hot_query_certificate_bytes_by_query, hot_query_top_certificate_bytes_by_query = build_hot_query_proof_directory(
+    (
+        hot_query_proof_artifact,
+        hot_query_fast_start_artifact,
+        hot_query_certificate_bytes_by_query,
+        hot_query_top_certificate_bytes_by_query,
+        hot_query_initial_certificate_bytes_by_query,
+    ) = build_hot_query_proof_directory(
         documents,
         query_aliases,
         full_shards,
@@ -927,7 +1224,7 @@ def write_public_index(packages: list[dict[str, Any]], built: dict[str, Any], *,
     source_registry_artifact = write_hashed_json(PUBLIC_ROOT, PUBLIC_ARTIFACT_DIR, "source_registry", source_registry, compact=True)
     query_directory_artifact = write_hashed_json(PUBLIC_ROOT, PUBLIC_ARTIFACT_DIR, "global_query_directory", global_query_directory, compact=True)
     aliases_artifact = write_hashed_json(PUBLIC_ROOT, PUBLIC_ARTIFACT_DIR, "query_aliases", query_aliases, compact=False)
-    outcomes_artifact = write_hashed_json(PUBLIC_ROOT, PUBLIC_ARTIFACT_DIR, "outcomes", built["outcomes"], compact=True)
+    outcomes_entry = write_outcomes_entry(built["outcomes"])
 
     upstream_counts = aggregate_counts(packages)
     per_source_truth_counts = source_truth_counts(packages)
@@ -963,14 +1260,16 @@ def write_public_index(packages: list[dict[str, Any]], built: dict[str, Any], *,
     artifacts["source_registry"] = artifact_entry(source_registry_artifact, role="source_registry", count=len(source_registry["sources"]), load="bootstrap")
     artifacts["global_query_directory"] = artifact_entry(query_directory_artifact, role="global_query_directory", count=global_query_directory["entry_count"], load="bootstrap")
     artifacts["query_aliases"] = artifact_entry(aliases_artifact, role="query_aliases", count=len(query_aliases), load="bootstrap")
-    artifacts["outcomes"] = artifact_entry(outcomes_artifact, role="outcomes", load="audit")
+    artifacts["outcomes"] = outcomes_entry
     artifacts["quality_report"] = artifact_entry(quality_report_artifact, role="quality_report", load="audit")
     artifacts["query_eval_report"] = artifact_entry(query_eval_artifact, role="query_eval_report", load="audit")
     artifacts["hot_query_proof_directory"] = hot_query_proof_artifact
+    artifacts["hot_query_fast_start"] = hot_query_fast_start_artifact
 
     generated_at = now_iso()
     upstream_generated_at = latest_upstream_generated_at(packages) or generated_at
     first_screen_artifacts = ["source_registry", "global_query_directory", "query_aliases"]
+    fast_start_artifacts = ["hot_query_fast_start"]
     global_attachment_coverage = attachment_evidence_coverage(built["attachment_index"])
 
     def make_manifest() -> dict[str, Any]:
@@ -994,6 +1293,8 @@ def write_public_index(packages: list[dict[str, Any]], built: dict[str, Any], *,
                 "readiness": "routed_bootstrap",
                 "legacy_global_first_screen": False,
                 "first_screen_artifacts": first_screen_artifacts,
+                "fast_start_artifacts": fast_start_artifacts,
+                "hot_query_initial_results": HOT_QUERY_INITIAL_LIMIT,
                 "local_index_loading": "query_planned_on_demand",
                 "body_index_loading": "query_planned_on_demand",
                 "full_text_loading": "lazy_candidate_hydration_then_verified_scope_scan",
@@ -1017,6 +1318,8 @@ def write_public_index(packages: list[dict[str, Any]], built: dict[str, Any], *,
                     "local_impact_body_index_packed",
                     "proof_catalog",
                     "shard_filter",
+                    "hot_query_fast_start",
+                    "hot_query_top_initial",
                     "hot_query_topk_certificate",
                     "hot_query_complete_certificate",
                     "full_shards",
@@ -1115,7 +1418,7 @@ def write_public_index(packages: list[dict[str, Any]], built: dict[str, Any], *,
         }
 
     proof_catalog_total_bytes = sum(int(payload["artifacts"]["proof_catalog"]["bytes"]) for payload in source_manifest_payloads.values())
-    shard_filter_total_bytes = sum(int(payload["artifacts"]["shard_filter"]["bytes"]) for payload in source_manifest_payloads.values())
+    shard_filter_total_bytes = sum(artifact_runtime_bytes(payload["artifacts"]["shard_filter"]) for payload in source_manifest_payloads.values())
     size_report = {
         "generated_at": now_iso(),
         "first_screen_files": [],
@@ -1143,6 +1446,10 @@ def write_public_index(packages: list[dict[str, Any]], built: dict[str, Any], *,
         "shard_filter_total_bytes": shard_filter_total_bytes,
         "proof_certificate_total_bytes": proof_catalog_total_bytes + shard_filter_total_bytes,
         "hot_query_proof_directory_bytes": artifacts["hot_query_proof_directory"]["bytes"],
+        "hot_query_fast_start_bytes": artifacts["hot_query_fast_start"]["bytes"],
+        "hot_query_initial_certificate_total_bytes": sum(hot_query_initial_certificate_bytes_by_query.values()),
+        "hot_query_initial_certificate_bytes_by_query": hot_query_initial_certificate_bytes_by_query,
+        "hot_query_first_trusted_max_uncached_bytes": int(artifacts["hot_query_fast_start"]["bytes"]) + max(hot_query_initial_certificate_bytes_by_query.values(), default=0),
         "hot_query_topk_certificate_total_bytes": sum(hot_query_top_certificate_bytes_by_query.values()),
         "hot_query_topk_certificate_bytes_by_query": hot_query_top_certificate_bytes_by_query,
         "hot_query_complete_certificate_total_bytes": sum(hot_query_certificate_bytes_by_query.values()),
@@ -1158,6 +1465,7 @@ def write_public_index(packages: list[dict[str, Any]], built: dict[str, Any], *,
         "avg_full_shard_documents": round(sum(int(item["count"]) for item in full_shards) / max(1, len(full_shards)), 2),
         "artifact_count": sum(1 for _ in PUBLIC_SITEGRAPH_DIR.rglob("*.json")),
         "artifact_total_bytes": sum(path.stat().st_size for path in PUBLIC_SITEGRAPH_DIR.rglob("*.json")),
+        "max_public_json_artifact_bytes": max((path.stat().st_size for path in PUBLIC_SITEGRAPH_DIR.rglob("*.json")), default=0),
         "binary_artifact_count": sum(1 for _ in PUBLIC_SITEGRAPH_DIR.rglob("*.bin")),
         "binary_artifact_total_bytes": sum(path.stat().st_size for path in PUBLIC_SITEGRAPH_DIR.rglob("*.bin")),
         "runtime_artifact_total_bytes": sum(path.stat().st_size for path in PUBLIC_SITEGRAPH_DIR.rglob("*") if path.is_file()),
@@ -1195,15 +1503,20 @@ def write_public_index(packages: list[dict[str, Any]], built: dict[str, Any], *,
     size_report["routed_first_screen_bytes"] = bootstrap_bytes + sum(int(artifacts[name]["bytes"]) for name in first_screen_artifacts)
     size_report["routed_first_screen_total_bytes"] = size_report["routed_first_screen_bytes"]
     size_report["proof_catalog_total_bytes"] = sum(int(payload["artifacts"]["proof_catalog"]["bytes"]) for payload in source_manifest_payloads.values())
-    size_report["shard_filter_total_bytes"] = sum(int(payload["artifacts"]["shard_filter"]["bytes"]) for payload in source_manifest_payloads.values())
+    size_report["shard_filter_total_bytes"] = sum(artifact_runtime_bytes(payload["artifacts"]["shard_filter"]) for payload in source_manifest_payloads.values())
     size_report["proof_certificate_total_bytes"] = size_report["proof_catalog_total_bytes"] + size_report["shard_filter_total_bytes"]
     size_report["hot_query_proof_directory_bytes"] = artifacts["hot_query_proof_directory"]["bytes"]
+    size_report["hot_query_fast_start_bytes"] = artifacts["hot_query_fast_start"]["bytes"]
+    size_report["hot_query_initial_certificate_total_bytes"] = sum(hot_query_initial_certificate_bytes_by_query.values())
+    size_report["hot_query_initial_certificate_bytes_by_query"] = hot_query_initial_certificate_bytes_by_query
+    size_report["hot_query_first_trusted_max_uncached_bytes"] = int(artifacts["hot_query_fast_start"]["bytes"]) + max(hot_query_initial_certificate_bytes_by_query.values(), default=0)
     size_report["hot_query_topk_certificate_total_bytes"] = sum(hot_query_top_certificate_bytes_by_query.values())
     size_report["hot_query_topk_certificate_bytes_by_query"] = hot_query_top_certificate_bytes_by_query
     size_report["hot_query_complete_certificate_total_bytes"] = sum(hot_query_certificate_bytes_by_query.values())
     size_report["hot_query_complete_certificate_bytes_by_query"] = hot_query_certificate_bytes_by_query
     size_report["artifact_count"] = sum(1 for _ in PUBLIC_SITEGRAPH_DIR.rglob("*.json"))
     size_report["artifact_total_bytes"] = sum(path.stat().st_size for path in PUBLIC_SITEGRAPH_DIR.rglob("*.json"))
+    size_report["max_public_json_artifact_bytes"] = max((path.stat().st_size for path in PUBLIC_SITEGRAPH_DIR.rglob("*.json")), default=0)
     size_report["binary_artifact_count"] = sum(1 for _ in PUBLIC_SITEGRAPH_DIR.rglob("*.bin"))
     size_report["binary_artifact_total_bytes"] = sum(path.stat().st_size for path in PUBLIC_SITEGRAPH_DIR.rglob("*.bin"))
     size_report["runtime_artifact_total_bytes"] = sum(path.stat().st_size for path in PUBLIC_SITEGRAPH_DIR.rglob("*") if path.is_file())

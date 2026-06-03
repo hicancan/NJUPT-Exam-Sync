@@ -269,6 +269,10 @@ export const SitegraphSearchManifestSchema = z.object({
             z.literal('global_query_directory'),
             z.literal('query_aliases')
         ]),
+        fast_start_artifacts: z.tuple([
+            z.literal('hot_query_fast_start')
+        ]),
+        hot_query_initial_results: z.number(),
         local_index_loading: z.literal('query_planned_on_demand'),
         body_index_loading: z.literal('query_planned_on_demand'),
         full_text_loading: z.literal('lazy_candidate_hydration_then_verified_scope_scan'),
@@ -320,6 +324,7 @@ export const SitegraphSearchManifestSchema = z.object({
         source_registry: SitegraphArtifactSchema,
         global_query_directory: SitegraphArtifactSchema,
         query_aliases: SitegraphArtifactSchema,
+        hot_query_fast_start: SitegraphArtifactSchema,
         outcomes: SitegraphArtifactSchema,
         quality_report: SitegraphArtifactSchema,
         query_eval_report: SitegraphArtifactSchema,
@@ -500,6 +505,9 @@ export interface SitegraphQueryStats {
     uncachedLoadedBytes: number;
     cachedArtifactBytes: number;
     cache: SitegraphArtifactCacheStats;
+    fast_start_used?: boolean;
+    first_result_source?: 'hot_query_initial' | 'hot_query_topk' | 'dynamic_retrieval';
+    resource_trace_id?: string;
     fallbacks: SitegraphFallbackStats;
     retrieval: {
         dynamicPruning: boolean;

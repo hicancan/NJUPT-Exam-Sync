@@ -15,11 +15,15 @@ SIZE_BUDGETS = {
     "source_registry_bytes": 50_000,
     "query_aliases_bytes": 20_000,
     "local_index_count": 300,
-    "artifact_count": 1_600,
+    "artifact_count": 1_900,
     "full_shard_count": 1_000,
     "max_full_shard_bytes": 512 * 1024,
     "avg_full_shard_bytes": 96 * 1024,
+    "max_public_json_artifact_bytes": 1024 * 1024,
+    "hot_query_first_trusted_max_uncached_bytes": 150 * 1024,
 }
+
+LOGO_BYTE_BUDGET = 96 * 1024
 
 
 def fail(message: str) -> None:
@@ -50,6 +54,12 @@ def main() -> None:
             fail(f"size_report missing {field}")
         if float(actual) > budget:
             fail(f"{field}={actual} exceeds budget {budget}")
+    logo_path = PUBLIC_ROOT / "assets" / "logo.png"
+    if not logo_path.exists():
+        fail(f"logo asset is missing: {logo_path}")
+    logo_bytes = logo_path.stat().st_size
+    if logo_bytes > LOGO_BYTE_BUDGET:
+        fail(f"logo.png bytes={logo_bytes} exceeds budget {LOGO_BYTE_BUDGET}")
     print("[check_public_artifact_sizes] ok")
 
 

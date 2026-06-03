@@ -280,8 +280,24 @@ def load_shard_filter(index: dict[str, Any], source_manifest: dict[str, Any]) ->
     if path in cache:
         record_cache(index, True, bytes_count)
         return cache[path]
-    cache[path] = read_json(PUBLIC_ROOT / path)
+    payload = read_json(PUBLIC_ROOT / path)
     record_cache(index, False, bytes_count)
+    if isinstance(payload, dict) and payload.get("version") == "sitegraph-shard-filter-parts-v1":
+        merged: dict[str, Any] = {}
+        for part in payload.get("parts") or []:
+            if not isinstance(part, dict) or not part.get("path"):
+                raise ValueError(f"invalid shard_filter part reference: {path}")
+            part_path = str(part["path"])
+            part_payload = read_json(PUBLIC_ROOT / part_path)
+            record_cache(index, False, int(part.get("bytes") or 0))
+            entries = part_payload.get("entries") if isinstance(part_payload, dict) else None
+            if not isinstance(entries, dict):
+                raise ValueError(f"invalid shard_filter part payload: {part_path}")
+            merged.update(entries)
+        if len(merged) != int(payload.get("entry_count") or -1):
+            raise ValueError(f"shard_filter part count mismatch: {path}")
+        payload = merged
+    cache[path] = payload
     return cache[path]
 
 

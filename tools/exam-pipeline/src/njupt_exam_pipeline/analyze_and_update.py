@@ -20,6 +20,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+class ExamPipelineError(RuntimeError):
+    """Fatal exam data pipeline failure."""
+
 try:
     import pandas as pd
     import openpyxl
@@ -332,7 +336,7 @@ def process_single_file(file_path: str) -> Optional[Dict[str, Any]]:
 
     except Exception as e:
         logger.error(f"Failed to process {file_path}: {e}", exc_info=True)
-        return None
+        raise ExamPipelineError(f"Failed to process exam spreadsheet: {file_path}") from e
 
 def generate_markdown_report(analyses: List[Dict], total_records: int) -> str:
     """Generate comprehensive markdown report with Raw Excel Analysis + Processing Results"""
@@ -568,20 +572,24 @@ def main():
     files = get_xlsx_files()
     
     if not files:
-        logger.warning(f"No .xlsx files found in '{DATA_DIR}' directory.")
-        # Try to debug why
-        logger.info(f"Base Dir: {BASE_DIR}")
-        logger.info(f"Public Dir: {PUBLIC_DIR}")
-        return
+        raise ExamPipelineError(
+            f"No .xlsx files found in '{DATA_DIR}'. Base Dir: {BASE_DIR}; Public Dir: {PUBLIC_DIR}"
+        )
 
     analyses = []
     all_rows = []
 
     for f in files:
         result = process_single_file(f)
-        if result:
-            analyses.append(result)
-            all_rows.extend(result['raw_data'])
+        if result["parse_fail_count"] > 0:
+            raise ExamPipelineError(
+                f"{result['filename']} has {result['parse_fail_count']} unparsable exam rows"
+            )
+        analyses.append(result)
+        all_rows.extend(result['raw_data'])
+
+    if not analyses:
+        raise ExamPipelineError("No exam spreadsheets were processed")
 
     logger.info(f"Generated {len(all_rows)} records.")
     
@@ -607,6 +615,7 @@ def main():
                 json.dump(all_rows, f, ensure_ascii=False, separators=(',', ':'))
         except Exception as e:
             logger.error(f"Failed to write JSON: {e}")
+            raise ExamPipelineError(f"Failed to write {MERGED_JSON_PATH}") from e
 
         report_content = generate_markdown_report(analyses, len(all_rows))
         try:
@@ -614,6 +623,7 @@ def main():
                 f.write(report_content)
         except Exception as e:
              logger.error(f"Failed to write Report: {e}")
+             raise ExamPipelineError(f"Failed to write {OUTPUT_DOC_PATH}") from e
 
         manifest = {
             "generated_at": get_beijing_time().isoformat(),
@@ -637,6 +647,7 @@ def main():
                 json.dump(manifest, f, indent=2, ensure_ascii=False)
         except Exception as e:
              logger.error(f"Failed to write Manifest: {e}")
+             raise ExamPipelineError(f"Failed to write {os.path.join(DATA_DIR, 'data_summary.json')}") from e
 
         logger.info("✅ Data processing and updates complete.")
     else:

@@ -1,11 +1,13 @@
 import type { SitegraphArtifact, SitegraphFullDocument } from '@njupt-search/contracts';
 import hotQueryNormalization from '../../../config/search/hot-query-normalization.json';
-import { SearchContractError } from './sitegraphContract';
+import { SearchContractError, parseSitegraphFullDocuments } from './sitegraphContract';
 import { normalizeSearchText as normalize } from './tokenizer';
 
 export const HOT_QUERY_DIRECTORY_VERSION = 'sitegraph-hot-query-complete-directory-v3';
+export const HOT_QUERY_FAST_START_VERSION = 'sitegraph-hot-query-fast-start-v1';
 export const HOT_QUERY_CERTIFICATE_VERSION = 'sitegraph-hot-query-complete-certificate-v3';
 export const HOT_QUERY_TOPK_CERTIFICATE_VERSION = 'sitegraph-hot-query-topk-certificate-v2';
+export const HOT_QUERY_INITIAL_CERTIFICATE_VERSION = 'sitegraph-hot-query-initial-certificate-v1';
 export const HOT_QUERY_CERTIFICATE_MODEL = 'hot-query-minimal-complete-proof-v3';
 export const HOT_QUERY_COMPLETE_PROOF_MODEL = 'match-proof-minimal-filter-v1';
 export const HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL = 'rank-display-match-window-certificate-v2';
@@ -22,6 +24,11 @@ export interface HotQueryProofDirectoryEntry extends SitegraphArtifact {
     matched_shard_count: number;
     matched_shard_bytes: number;
     match_count: number;
+    initial_certificate?: SitegraphArtifact & {
+        initial_limit?: number;
+        top_k_limit?: number;
+        match_count?: number;
+    };
     top_certificate?: SitegraphArtifact & {
         top_k_limit?: number;
         match_count?: number;
@@ -100,12 +107,62 @@ export interface HotQueryTopCertificate {
     documents: SitegraphFullDocument[];
 }
 
+export interface HotQueryInitialCertificate {
+    version: typeof HOT_QUERY_INITIAL_CERTIFICATE_VERSION;
+    document_payload_model: typeof HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL;
+    rank_evidence_model?: typeof HOT_QUERY_RANK_EVIDENCE_MODEL;
+    query: string;
+    normalized_query: string;
+    match_phrases: string[];
+    rank_terms?: string[];
+    phrase_key: string;
+    initial_limit: number;
+    top_k_limit: number;
+    top_k_count: number;
+    match_count: number;
+    total_shards: number;
+    total_documents: number;
+    matched_shards: string[];
+    matched_shard_count: number;
+    documents: SitegraphFullDocument[];
+}
+
+export interface HotQueryFastStartEntry {
+    query: string;
+    normalized_query: string;
+    alias_of?: string | null;
+    phrase_key: string;
+    match_count: number;
+    initial_certificate: SitegraphArtifact & {
+        initial_limit?: number;
+        top_k_limit?: number;
+        match_count?: number;
+    };
+}
+
+export interface HotQueryFastStartIndex {
+    version: typeof HOT_QUERY_FAST_START_VERSION;
+    scope: 'global_unfiltered_queries';
+    normalization: string;
+    initial_certificate_version: typeof HOT_QUERY_INITIAL_CERTIFICATE_VERSION;
+    top_document_payload_model: typeof HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL;
+    rank_evidence_model?: typeof HOT_QUERY_RANK_EVIDENCE_MODEL;
+    query_count?: number;
+    queries: Record<string, HotQueryFastStartEntry>;
+}
+
 export type HotQueryRankedDocumentPayload = SitegraphFullDocument & {
     rank_base_score?: unknown;
 };
 
 export interface HotQueryProofEntryMatch {
     entry: HotQueryProofDirectoryEntry;
+    matchedQuery: string;
+    matchKind: 'exact' | 'normalized_command';
+}
+
+export interface HotQueryFastStartEntryMatch {
+    entry: HotQueryFastStartEntry;
     matchedQuery: string;
     matchKind: 'exact' | 'normalized_command';
 }
@@ -177,6 +234,15 @@ const entryForNormalizedKey = (
     return Object.values(directory.queries).find(entry => normalize(entry.query) === normalizedKey);
 };
 
+const fastStartEntryForNormalizedKey = (
+    fastStart: HotQueryFastStartIndex,
+    normalizedKey: string
+): HotQueryFastStartEntry | undefined => {
+    const direct = fastStart.queries[normalizedKey];
+    if (direct) return direct;
+    return Object.values(fastStart.queries).find(entry => normalize(entry.query) === normalizedKey);
+};
+
 export const resolveHotQueryProofEntry = (
     directory: HotQueryProofDirectory,
     normalizedQuery: string
@@ -195,4 +261,123 @@ export const resolveHotQueryProofEntry = (
         }
     }
     return null;
+};
+
+export const resolveHotQueryFastStartEntry = (
+    fastStart: HotQueryFastStartIndex,
+    normalizedQuery: string
+): HotQueryFastStartEntryMatch | null => {
+    const normalized = normalize(normalizedQuery);
+    if (!normalized) return null;
+    const candidates = hotQueryIntentCandidates(normalized);
+    for (const [index, candidate] of candidates.entries()) {
+        const entry = fastStartEntryForNormalizedKey(fastStart, candidate);
+        if (entry) {
+            return {
+                entry,
+                matchedQuery: candidate,
+                matchKind: index === 0 ? 'exact' : 'normalized_command',
+            };
+        }
+    }
+    return null;
+};
+
+const asRecord = (payload: unknown, source: string): Record<string, unknown> => {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        throw new SearchContractError(`Validation failed for ${source}: payload must be an object`);
+    }
+    return payload as Record<string, unknown>;
+};
+
+const validateHotQueryArtifact = (payload: unknown, source: string): SitegraphArtifact => {
+    const record = asRecord(payload, source);
+    if (
+        typeof record.path !== 'string'
+        || typeof record.sha256 !== 'string'
+        || typeof record.bytes !== 'number'
+        || !Number.isFinite(record.bytes)
+        || typeof record.role !== 'string'
+    ) {
+        throw new SearchContractError(`Validation failed for ${source}: invalid artifact reference`);
+    }
+    if (record.role !== 'hot_query_top_initial') {
+        throw new SearchContractError(`Validation failed for ${source}: initial certificate role must be hot_query_top_initial`);
+    }
+    return record as unknown as SitegraphArtifact;
+};
+
+export const parseHotQueryFastStartIndex = (payload: unknown, source: string): HotQueryFastStartIndex => {
+    const record = asRecord(payload, source);
+    if (record.version !== HOT_QUERY_FAST_START_VERSION) {
+        throw new SearchContractError(`Validation failed for ${source}: unexpected fast-start version`);
+    }
+    if (record.scope !== 'global_unfiltered_queries') {
+        throw new SearchContractError(`Validation failed for ${source}: fast-start scope must be global_unfiltered_queries`);
+    }
+    if (record.initial_certificate_version !== HOT_QUERY_INITIAL_CERTIFICATE_VERSION) {
+        throw new SearchContractError(`Validation failed for ${source}: unexpected initial certificate version`);
+    }
+    if (record.top_document_payload_model !== HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL) {
+        throw new SearchContractError(`Validation failed for ${source}: unexpected top document payload model`);
+    }
+    const rawQueries = asRecord(record.queries, `${source}.queries`);
+    const queries: Record<string, HotQueryFastStartEntry> = {};
+    for (const [key, rawEntry] of Object.entries(rawQueries)) {
+        const entry = asRecord(rawEntry, `${source}.queries.${key}`);
+        if (
+            typeof entry.query !== 'string'
+            || typeof entry.normalized_query !== 'string'
+            || typeof entry.phrase_key !== 'string'
+            || typeof entry.match_count !== 'number'
+            || !Number.isFinite(entry.match_count)
+        ) {
+            throw new SearchContractError(`Validation failed for ${source}.queries.${key}: invalid fast-start entry`);
+        }
+        const initialCertificate = validateHotQueryArtifact(entry.initial_certificate, `${source}.queries.${key}.initial_certificate`);
+        queries[key] = {
+            ...entry,
+            initial_certificate: initialCertificate,
+        } as HotQueryFastStartEntry;
+    }
+    return {
+        ...(record as unknown as HotQueryFastStartIndex),
+        queries,
+    };
+};
+
+export const parseHotQueryInitialCertificate = (payload: unknown, source: string): HotQueryInitialCertificate => {
+    const record = asRecord(payload, source);
+    if (record.version !== HOT_QUERY_INITIAL_CERTIFICATE_VERSION) {
+        throw new SearchContractError(`Validation failed for ${source}: unexpected initial certificate version`);
+    }
+    if (record.document_payload_model !== HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL) {
+        throw new SearchContractError(`Validation failed for ${source}: unexpected initial document payload model`);
+    }
+    if (
+        typeof record.query !== 'string'
+        || typeof record.normalized_query !== 'string'
+        || typeof record.phrase_key !== 'string'
+        || typeof record.initial_limit !== 'number'
+        || !Number.isFinite(record.initial_limit)
+        || typeof record.top_k_count !== 'number'
+        || !Number.isFinite(record.top_k_count)
+        || typeof record.match_count !== 'number'
+        || !Number.isFinite(record.match_count)
+        || typeof record.total_shards !== 'number'
+        || !Number.isFinite(record.total_shards)
+        || typeof record.total_documents !== 'number'
+        || !Number.isFinite(record.total_documents)
+        || typeof record.matched_shard_count !== 'number'
+        || !Number.isFinite(record.matched_shard_count)
+        || !Array.isArray(record.match_phrases)
+        || !Array.isArray(record.matched_shards)
+    ) {
+        throw new SearchContractError(`Validation failed for ${source}: invalid initial certificate`);
+    }
+    const documents = parseSitegraphFullDocuments(record.documents, `${source}.documents`);
+    return {
+        ...(record as unknown as HotQueryInitialCertificate),
+        documents,
+    };
 };

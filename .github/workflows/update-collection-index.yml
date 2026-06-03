@@ -80,34 +80,35 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
-          cache: 'pip'
+          python-version-file: '.python-version'
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8
 
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
         run: |
-          python -m pip install -U pip
-          python -m pip install -e .[test]
+          uv sync --frozen --extra test
           npm ci
 
       - name: Build collection artifacts
         run: |
-          python -m njupt_search_indexer validate --skip-output
-          python -m njupt_search_indexer build --collection-id njupt-public --out "$COLLECTION_DIR"
-          python -m njupt_search_indexer validate --collection "$COLLECTION_DIR"
+          uv run python -m njupt_search_indexer validate --skip-output
+          uv run python -m njupt_search_indexer build --collection-id njupt-public --out "$COLLECTION_DIR"
+          uv run python -m njupt_search_indexer validate --collection "$COLLECTION_DIR"
 
       - name: Validate generated collection artifacts
         run: |
-          python tools/quality-gates/scripts/check_source_complexity.py
-          python tools/quality-gates/scripts/validate_search_index.py
-          python tools/quality-gates/scripts/check_public_artifact_sizes.py
-          python -m njupt_search_eval run-smoke-queries --collection "$COLLECTION_DIR"
-          python -m njupt_search_eval run-task-queries --collection "$COLLECTION_DIR"
+          uv run python tools/quality-gates/scripts/check_source_complexity.py
+          uv run python tools/quality-gates/scripts/validate_search_index.py
+          uv run python tools/quality-gates/scripts/check_public_artifact_sizes.py
+          uv run python -m njupt_search_eval run-smoke-queries --collection "$COLLECTION_DIR"
+          uv run python -m njupt_search_eval run-task-queries --collection "$COLLECTION_DIR"
 
       - name: Frontend checks
         run: |
@@ -117,6 +118,6 @@ jobs:
 
       - name: Commit collection artifact changes
         run: |
-          python tools/ci/commit_generated_changes.py \
+          uv run python tools/ci/commit_generated_changes.py \
             --message "Auto-update collection index" \
             --add apps/web/public/generated/collections/njupt-public/
