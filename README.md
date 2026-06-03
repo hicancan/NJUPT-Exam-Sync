@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="./apps/web/public/assets/logo.png" alt="njupt-search logo" width="120" />
+
 # njupt-search
 
 南京邮电大学无服务端聚合检索与信息服务系统
@@ -182,4 +184,4 @@ uv run python tools/quality-gates/scripts/check_public_artifact_sizes.py
 
 ## 📄 许可证 (License)
 
-本项目开源协议基于 [AGPL-3.0 License](LICENSE)。南京邮电大学相关图标与基础数据源归属原著作权方，本项目仅作技术交流与非盈利性校园聚合服务。
+本项目开源协议基于 [AGPL-3.0 License](LICENSE)。南京邮电大学基础数据源及部分涉校名称归属原著作权方。本项目的独立 Logo 与 UI 图标均为独立设计。本项目仅作技术交流与非盈利性校园聚合服务。
