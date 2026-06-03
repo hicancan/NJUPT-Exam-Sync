@@ -9,7 +9,7 @@ from typing import Any
 
 from .sitegraph_artifact_io import write_hashed_json
 from .sitegraph_index_postings import exhaustive_scan_blob
-from .sitegraph_text import clean_text, normalize_text, sha256_text, stable_slug
+from .sitegraph_text import clean_text, normalize_text, sha256_text, stable_ascii_slug
 
 
 PROOF_FILTER_NGRAM_MAX = 5
@@ -82,7 +82,7 @@ def shard_year(document: dict[str, Any]) -> str:
 def shard_section(document: dict[str, Any]) -> str:
     nav_path = document.get("nav_path") if isinstance(document.get("nav_path"), list) else []
     section = nav_path[0] if nav_path else document.get("section_id") or document.get("section")
-    return stable_slug(section, fallback="root", max_length=32)
+    return stable_ascii_slug(section, fallback="root", max_length=32)
 
 
 def shard_bucket(document: dict[str, Any], bucket_count: int = 4) -> str:
@@ -93,9 +93,9 @@ def shard_bucket(document: dict[str, Any], bucket_count: int = 4) -> str:
 def shard_id_for_document(document: dict[str, Any]) -> str:
     return "__".join(
         [
-            stable_slug(document.get("source_id"), fallback="source"),
-            stable_slug(document.get("facet"), fallback="facet"),
-            stable_slug(document.get("record_type"), fallback="record"),
+            stable_ascii_slug(document.get("source_id"), fallback="source"),
+            stable_ascii_slug(document.get("facet"), fallback="facet"),
+            stable_ascii_slug(document.get("record_type"), fallback="record"),
             shard_year(document),
             shard_section(document),
             shard_bucket(document),

@@ -65,6 +65,18 @@ def walk_keys(payload):
             yield from walk_keys(item)
 
 
+def walk_path_values(payload):
+    if isinstance(payload, dict):
+        for key, value in payload.items():
+            if key == "path":
+                yield str(value)
+            else:
+                yield from walk_path_values(value)
+    elif isinstance(payload, list):
+        for item in payload:
+            yield from walk_path_values(item)
+
+
 def read_artifact(artifact: dict):
     return read_json(PUBLIC_ROOT / artifact["path"])
 
@@ -120,6 +132,21 @@ def expected_source_counts(manifest: dict) -> dict[str, dict[str, int]]:
         }
         for source_id in EXPECTED_SOURCE_IDS
     }
+
+
+def test_public_artifact_paths_are_uri_safe_ascii():
+    for path in PUBLIC_INDEX_DIR.rglob("*"):
+        relative = path.relative_to(PUBLIC_ROOT).as_posix()
+        relative.encode("ascii")
+        assert "%" not in relative
+        assert " " not in relative
+
+    for path in PUBLIC_INDEX_DIR.rglob("*.json"):
+        payload = read_json(path)
+        for artifact_path in walk_path_values(payload):
+            artifact_path.encode("ascii")
+            assert "%" not in artifact_path
+            assert " " not in artifact_path
 
 
 def test_public_index_is_pure_sitegraph_contract():

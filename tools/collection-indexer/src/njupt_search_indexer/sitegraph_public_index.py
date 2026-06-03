@@ -44,7 +44,7 @@ from .sitegraph_package_summary import (
 )
 from .sitegraph_shards import build_locality_shards, shard_year
 from .sitegraph_source import package_source_id
-from .sitegraph_text import clean_text, normalize_text, sha256_text, stable_slug
+from .sitegraph_text import clean_text, normalize_text, sha256_text, stable_ascii_slug
 
 
 BASE_DIR = Path(__file__).resolve().parents[4]
@@ -241,7 +241,7 @@ def build_hot_query_proof_directory(
         top_artifact = write_hashed_json(
             PUBLIC_ROOT,
             PUBLIC_HOT_QUERY_PROOF_DIR,
-            f"hot_query_topk.{stable_slug(normalized_query, fallback='query', max_length=48)}",
+            f"hot_query_topk.{stable_ascii_slug(normalized_query, fallback='query', max_length=48)}",
             top_certificate,
             compact=True,
         )
@@ -273,7 +273,7 @@ def build_hot_query_proof_directory(
         artifact = write_hashed_json(
             PUBLIC_ROOT,
             PUBLIC_HOT_QUERY_PROOF_DIR,
-            f"hot_query_complete.{stable_slug(normalized_query, fallback='query', max_length=48)}",
+            f"hot_query_complete.{stable_ascii_slug(normalized_query, fallback='query', max_length=48)}",
             certificate,
             compact=True,
         )
@@ -401,9 +401,9 @@ def index_scope_for_document(document: dict[str, Any]) -> tuple[str, str, str]:
 def index_id_for_scope(source_id: str, facet: str, year: str) -> str:
     return "__".join(
         [
-            stable_slug(source_id, fallback="source"),
-            stable_slug(facet, fallback="facet"),
-            stable_slug(year, fallback="year"),
+            stable_ascii_slug(source_id, fallback="source"),
+            stable_ascii_slug(facet, fallback="facet"),
+            stable_ascii_slug(year, fallback="year"),
         ]
     )
 

@@ -32,6 +32,21 @@ def stable_slug(value: Any, *, fallback: str = "unknown", max_length: int = 48) 
     return text[:max_length]
 
 
+def stable_ascii_slug(value: Any, *, fallback: str = "unknown", max_length: int = 48) -> str:
+    text = normalize_text(value)
+    ascii_text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    slug = re.sub(r"[^a-z0-9_-]+", "-", ascii_text).strip("-")
+    if not slug:
+        slug = fallback
+    needs_digest = any(ord(char) > 0x7F for char in text) or len(slug) > max_length
+    if not needs_digest:
+        return slug[:max_length]
+    digest = sha1_text(text or fallback, length=12)
+    head_limit = max(1, max_length - len(digest) - 1)
+    head = slug[:head_limit].strip("-") or fallback[:head_limit].strip("-") or "x"
+    return f"{head}-{digest}"
+
+
 def canonical_title(value: Any) -> str:
     text = clean_text(value)
     text = re.sub(r"^【[^】]{1,24}】", "", text)

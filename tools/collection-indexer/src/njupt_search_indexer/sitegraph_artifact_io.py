@@ -2,8 +2,17 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any
+
+
+PUBLIC_LOGICAL_NAME_RE = re.compile(r"^[A-Za-z0-9._-]+$")
+
+
+def validate_public_logical_name(logical_name: str) -> None:
+    if not PUBLIC_LOGICAL_NAME_RE.fullmatch(logical_name):
+        raise ValueError(f"public artifact logical name must be URI-safe ASCII: {logical_name!r}")
 
 
 def write_json(path: Path, payload: Any, *, compact: bool = False) -> None:
@@ -32,6 +41,7 @@ def write_hashed_json(
     *,
     compact: bool = True,
 ) -> dict[str, Any]:
+    validate_public_logical_name(logical_name)
     data = json_bytes(payload, compact=compact)
     digest = hashlib.sha256(data).hexdigest()
     filename = f"{logical_name}.{digest[:16]}.json"
@@ -53,6 +63,7 @@ def write_hashed_bytes(
     *,
     extension: str,
 ) -> dict[str, Any]:
+    validate_public_logical_name(logical_name)
     digest = hashlib.sha256(data).hexdigest()
     filename = f"{logical_name}.{digest[:16]}.{extension.lstrip('.')}"
     path = directory / filename
