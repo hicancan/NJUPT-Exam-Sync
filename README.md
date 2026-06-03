@@ -12,7 +12,7 @@
 [![Python](https://img.shields.io/badge/Python-3.10+-FFD43B.svg)](https://www.python.org/)
 [![PWA](https://img.shields.io/badge/PWA-Supported-orange.svg)](https://vite-pwa-org.netlify.app/)
 
-[**在线访问**](https://njupt.hicancan.top) • [**设计初衷**](#-项目定位与初衷-the-vision) • [**核心特性**](#-核心特性矩阵-core-features) • [**底层技术剖析**](#️-底层硬核技术剖析-deep-dive) • [**代码库全景**](#️-monorepo-代码架构-project-structure) • [**本地开发**](#-本地开发与部署-quick-start)
+[**在线访问**](https://njupt.hicancan.top) • [**设计初衷**](#项目定位与初衷-the-vision) • [**核心特性**](#核心特性矩阵-core-features) • [**核心架构剖析**](#核心架构剖析-architecture) • [**代码架构**](#monorepo-代码架构-project-structure) • [**本地开发**](#本地开发与部署-quick-start)
 
 </div>
 
@@ -184,4 +184,4 @@ uv run python tools/quality-gates/scripts/check_public_artifact_sizes.py
 
 ## 📄 许可证 (License)
 
-本项目开源协议基于 [AGPL-3.0 License](LICENSE)。南京邮电大学基础数据源及部分涉校名称归属原著作权方。本项目的独立 Logo 与 UI 图标均为独立设计。本项目仅作技术交流与非盈利性校园聚合服务。
+本项目开源协议基于 [AGPL-3.0 License](LICENSE)。南京邮电大学基础数据源及部分涉校名称归属原著作权方。本项目仅作技术交流与非盈利性校园聚合服务。
