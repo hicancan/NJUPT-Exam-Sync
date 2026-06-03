@@ -40,18 +40,21 @@
 
 ### 1. `SGIXB002` 极致压缩二进制倒排协议
 传统的 JSON 倒排索引在网络传输时极其臃肿。本项目在离线阶段 (`tools/collection-indexer`) 彻底舍弃了文本结构，独创了 `SGIXB002` 紧凑二进制格式：
-*   **Delta-Encoding (差值编码)**：将倒排表中的绝对文档 ID ($D_i$) 替换为相邻文档的差值 ($D_i - D_{i-1}$)，从而将大整数降维成极小的正整数。
-*   **VarInt (7-bit 变长整数压缩)**：针对降维后的差值，采用可变长度编码（最高位作为延续标志位）。对于小型差值，仅需 1 个字节即可存储。
-*   **成果**：网络体积较原始 JSON 数据缩减达 **82%** 以上，显著降低了首屏拉取（Hydration）的字节预算。
+*   **Delta-Encoding (差值编码)**：将倒排表中的绝对文档 ID ($D_i$) 替换为相邻文档 of 差值 ($D_i - D_{i-1}$)，从而将大整数降维成极小的正整数差值。
+*   **VarInt (7-bit 变长整数压缩)**：针对降维后的差值，采用可变长度编码（字节最高位第 8 位作为延续标志位，其余 7 位存储数值）。对于小型差值仅需 1 个字节即可存储。
+*   **按需路由与渐进加载 (Query-Planned Progressive Hydration)**：首屏启动仅拉取源注册表（`source_registry`）和全局路由表（`global_query_directory`），体积仅数百 KB。倒排索引的分片和主体部分 (`light_index_packed` 和 `body_index_packed`) 仅在用户输入特定查询词并完成匹配路径规划后，才会按需加载和实例化。
+*   **成果**：二进制倒排体积较原始 JSON 数据缩减达 **82%** 以上，显著降低了初次网络传输与解包的资源开销。
 
 ### 2. Rust WASM 的 O(1) 块级剪枝算法 (Block-Max WAND)
 在数以万计的文档倒排表合并时，普通的前端 JS 循环会导致主线程严重掉帧。我们在 `tools/wasm/packed-impact-decoder` 中，使用 Rust 实现了一种激进的提前跳跃算法：
+*   **SGIXB002 格式的 O(1) 词项跳过**：在解析二进制索引时，`SGIXB002` 头部维护了词项 payload 长度目录。对于未被查询命中的词项，引擎可以通过直接移动读取指针（Offset Jump）在 $O(1)$ 时间内跳过其整块数据，**完全避免了无用词项倒排表字段的 VarInt 解压与内存分配**。
+*   **Block-Max WAND 动态剪枝**：块（Block，默认 32 个文档 ID）的文档打分上限按 Impact 降序排列。如果当前评估块的最大可能分数（当前块的 Term Impact 加上后续未评估 Term 的最大 Impact 之和）低于已收集的 Top-K 候选结果的最低门槛（Competitive Threshold），则引擎在算分循环中**直接整块剪枝跳过**。
 ```rust
 // 计算当前词项块及后续未评估词项块的最大可能算分上限
-let max_possible_for_unseen_doc = block.impact + suffix.get(index + 1).unwrap_or(0.0);
+let max_possible_for_unseen_doc = block.impact + suffix.get(index + 1).copied().unwrap_or(0.0);
 
-// 如果理论最高分依然低于已评估的 Top-K 候选门槛 (competitive_threshold)
-// 引擎将直接整块剪枝 (O(1) Early-Exit)，跳过该块的 VarInt 解压与循环打分！
+// 如果该块所有文档理论最大分数依然低于已评估的 Top-K 候选门槛 (competitive_threshold)
+// 且该块内的文档不属于已知的候选者，则引擎将直接整块剪枝跳过，免去对该块文档的算分评估与 Top-K 插入！
 if !has_known_candidate && scores.len() >= target && max_possible_for_unseen_doc <= threshold {
     impact_blocks_pruned += 1;
     continue; 
@@ -59,15 +62,18 @@ if !has_known_candidate && scores.len() >= target && max_possible_for_unseen_doc
 ```
 
 ### 3. Web Worker 编排与多阶段证明检索
-为保证 React UI 绝对流畅，所有的网络拉取、分片解包、正则比对全部隔离在独立的 Web Worker 中 (`collectionSearch.worker.ts`)：
+为保证 React UI 绝对流畅（60fps），所有的网络拉取、分片解包、正则比对全部隔离在独立的 Web Worker 中 (`collectionSearch.worker.ts`)：
 *   **热路径前置 (Hot Query Bypass)**：针对高频短词，直接派发预计算的验证证书，免扫倒排直接返回。
-*   **渐进式注水 (Progressive Hydration)**：优先拉取 `Light Index` 填充第一屏结果，用户向下滚动时按需拉取巨型 `Full Shards`。
-*   **布隆过滤器哈希排误 (Bloom Filter Verification)**：加载分片前，计算哈希比对源文件的 Bloom Filter 签名，未命中的 Shard 直接被阻断拉取请求，避免无用带宽消耗。
+*   **多阶段渐进式注水 (Multi-Stage Progressive Hydration)**：根据 `@njupt-search/search-core` 的路由规划，检索过程分为以下多阶段，按需流式推进：
+  1. **`first_trusted_results`**：快速拉取体积极小的轻量倒发索引 (`light_index_packed`)，提取核心文档元数据，提供即时的第一屏结果。
+  2. **`top_results_hydrated`**：拉取完整倒排主体 (`body_index_packed`)，调用 Rust WASM 算分引擎，深化候选文档打分与排序。
+  3. **`global_exhaustive_complete` / `scoped_exhaustive_complete`**：进行全量分片扫描与完备性验证。
+*   **基于 Bloom 过滤器的分片排除证明 (Shard Filter Verification)**：每个数据源的 `proof_catalog` 维护了对每个 Full Shard 生成的 `bloom-fnv1a32-utf8` 签名。在进入全量分片扫描阶段前，Worker 在本地快速对查询关键词计算多重哈希并在 Shard 签名中检索。如果 Bloom 过滤器证明该分片必定不含任何查询关键词，则**直接在网络层阻断该分片的拉取请求**，实现精准的按需传输与 0 带宽浪费。
 
 ### 4. 数据管道：确定性日历生成与 Zod 契约层
 在 `tools/exam-pipeline` 中，Python 的 `pandas` 与双重正则处理了中国高校极为复杂的混合时间字符串（如 `2025年11月15日(10:25-12:15)`），并输出干净的 JSON 记录：
-*   **防重复幽灵事件 (Deterministic UID)**：前端 `packages/exam-core` 在生成 `.ics` 订阅链接时，抛弃了随机 UUID，采用 `班级+课程+时间+地点` 联合计算确定性哈希。当教务处临时调整考场时，学生日历会自动覆盖更新，而不会出现两场考试的“幽灵叠加”。
-*   **跨语言安全沙箱**：TypeScript 侧采用 `Zod` 定义严格 Schema (`packages/contracts`)。将 Python 爬虫产出的静态文件视为“不可信输入”，强制反序列化校验，形成真正的接口契约安全防护。
+*   **防重复幽灵事件 (Deterministic UID)**：前端 `packages/exam-core` 在生成 `.ics` 订阅链接时，抛弃了随机 UUID，采用 FNV-1a 32-bit 哈希算法，对班级名、课程名、课程代码、起止时间戳、校区、考试地点及教师等关键字段计算确定性的唯一 UID，当教务处临时调整考场时，学生日历会自动覆盖更新，而不会出现两场考试的“幽灵叠加”。
+*   **跨语言安全沙箱**：TypeScript 侧采用 `Zod` 定义严格 Schema (`packages/contracts`，包含 `ExamSchema`, `ManifestSchema` 等)。将 Python 爬虫产出的静态文件视为“不可信输入”，强制反序列化校验，形成真正的接口接口安全防护。
 
 ---
 
@@ -75,26 +81,26 @@ if !has_known_candidate && scores.len() >= target && max_possible_for_unseen_doc
 
 ```mermaid
 graph TD
-    subaxis_offline[离线构建管线 (Github Actions)]
-    subaxis_client[客户端运行时 (Browser)]
+    subaxis_offline["离线构建管线 (Github Actions)"]
+    subaxis_client["客户端运行时 (Browser)"]
 
-    subgraph 离线管线 [离线构建管线 (Data Pipeline)]
-        A[各学院教务通知网] -->|抓取| B(tools/exam-pipeline<br>Python ETL 清洗)
-        C[全网静态文档数据] -->|解析| D(tools/collection-indexer<br>Python 倒排构建)
+    subgraph 离线管线 ["离线构建管线 (Data Pipeline)"]
+        A["各学院教务通知网"] -->|抓取| B("tools/exam-pipeline<br>Python ETL 清洗")
+        C["全网静态文档数据"] -->|解析| D("tools/collection-indexer<br>Python 倒排构建")
         
-        B -->|生成| E[(ICS 日历源)]
-        D -->|Delta+VarInt 压缩| F[(SGIXB002 二进制索引包)]
+        B -->|生成| E[("ICS 日历源")]
+        D -->|Delta+VarInt 压缩| F[("SGIXB002 二进制索引包")]
     end
 
-    subgraph 边缘分发 [CDN Edge]
-        E -.静态缓存.-> G[CDN 边缘节点]
+    subgraph 边缘分发 ["CDN Edge"]
+        E -.静态缓存.-> G["CDN 边缘节点"]
         F -.分片缓存.-> G
     end
 
-    subgraph 客户端 [客户端运行时 (PWA)]
-        G ==>|按需 Hydration| H[Web Worker 编排中心<br>packages/search-core]
-        H <-->|内存读写| I((Rust WASM 算分引擎<br>Block-Max WAND))
-        H -->|异步返回结果| J[React 主线程 UI]
+    subgraph 客户端 ["客户端运行时 (PWA)"]
+        G ==>|按需 Hydration| H["Web Worker 编排中心<br>packages/search-core"]
+        H <-->|内存读写| I(("Rust WASM 算分引擎<br>Block-Max WAND"))
+        H -->|异步返回结果| J["React 主线程 UI"]
     end
 
     classDef python fill:#4B8BBE,stroke:#306998,stroke-width:2px,color:white;
