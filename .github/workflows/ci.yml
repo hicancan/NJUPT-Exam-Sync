@@ -65,7 +65,7 @@ jobs:
           (cd tools/wasm/packed-impact-decoder && wasm-pack build --target web --release --out-dir pkg)
           cmp tools/wasm/packed-impact-decoder/pkg/packed_impact_decoder.js apps/web/src/features/collection-search/wasm/packed_impact_decoder.js
           cmp tools/wasm/packed-impact-decoder/pkg/packed_impact_decoder.d.ts apps/web/src/features/collection-search/wasm/packed_impact_decoder.d.ts
-          cmp tools/wasm/packed-impact-decoder/pkg/packed_impact_decoder_bg.wasm apps/web/src/features/collection-search/wasm/packed_impact_decoder_bg.wasm
+          node tools/wasm/packed-impact-decoder/scripts/verifyWasmEquivalence.mjs
           cmp tools/wasm/packed-impact-decoder/pkg/packed_impact_decoder_bg.wasm.d.ts apps/web/src/features/collection-search/wasm/packed_impact_decoder_bg.wasm.d.ts
 
       - name: Frontend checks
