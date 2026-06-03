@@ -1604,6 +1604,21 @@ const hydrateCandidatePhase = async (
     };
 };
 
+const loadedShardDocuments = (
+    path: string,
+    fullDocsByIndex: Map<number, SitegraphFullDocument>
+): SitegraphFullDocument[] | null => {
+    const cached = shardCache.get(path);
+    if (cached) return cached;
+    const documents = Array.from(fullDocsByIndex.values()).filter(document => {
+        const shard = document.shard && typeof document.shard === 'object'
+            ? document.shard as { path?: unknown }
+            : null;
+        return shard?.path === path;
+    });
+    return documents.length > 0 ? documents : null;
+};
+
 const filterTokenHashInt = (text: string, seed: number): number => {
     let value = (2166136261 ^ seed) >>> 0;
     const bytes = new TextEncoder().encode(text);
@@ -2440,13 +2455,34 @@ export const searchSitegraphProgressively = async (
         .filter(shard => proofLedgerEntries?.find(entry => entry.shard_id === shard.shard_id)?.state === 'pending');
     totalScopeShards = proofLedgerEntries.length;
     totalScopeDocuments = inScopeShards.reduce((sum, shard) => sum + shard.count, 0);
+    let provedNoMatchShards = 0;
+    let scannedShards = 0;
+    let searchedDocuments = 0;
+    const initiallyVerifiedMatches: RankedSitegraphDocument[] = [];
+    for (const shard of inScopeShards) {
+        if (!loadedShardPaths.has(shard.path)) continue;
+        const documents = loadedShardDocuments(shard.path, fullDocsByIndex);
+        if (!documents) continue;
+        scannedShards += 1;
+        setLedgerState(proofLedgerEntries, shard.shard_id, 'scanned', 'full shard already hydrated before completion proof');
+        for (const document of documents) {
+            fullDocsByIndex.set(document.doc_index, document);
+            searchedDocuments += 1;
+            if (sitegraphDocumentMatchesFilters(document, filters, now) && documentMatchesFullScan(document, matchPhrases)) {
+                telemetry.fullScanMatchDocIndices.add(document.doc_index);
+                const baseScore = scores.get(document.doc_index) ?? 24;
+                initiallyVerifiedMatches.push(rankSitegraphDocument(document, trimmed, terms, baseScore));
+            }
+        }
+    }
+    const hasInitialVerifiedResults = mergeRankedResults(resultMap, initiallyVerifiedMatches) > 0;
     const verificationStartedCoverage = coverageFor(
         session,
         'verification_started',
         FULL_SCAN_FIELDS,
-        0,
-        0,
-        0,
+        provedNoMatchShards,
+        scannedShards,
+        searchedDocuments,
         totalScopeShards,
         totalScopeDocuments,
         localIndexBytes,
@@ -2458,7 +2494,7 @@ export const searchSitegraphProgressively = async (
         proofLedgerEntries,
         cacheStats
     );
-    emitResults('verification_started', verificationStartedCoverage, false);
+    emitResults('verification_started', verificationStartedCoverage, hasInitialVerifiedResults);
 
     const shardFiltersBySource = new Map<string, ShardFilterMap>();
     for (const sourceManifest of verificationManifests) {
@@ -2467,13 +2503,13 @@ export const searchSitegraphProgressively = async (
         filterBytes += sourceManifest.artifacts.shard_filter?.bytes || 0;
     }
 
-    let provedNoMatchShards = 0;
-    let scannedShards = 0;
-    let searchedDocuments = 0;
     const shardBytesByPath = new Map(inScopeShards.map(shard => [shard.path, shard.bytes]));
-    for (let shardIndex = 0; shardIndex < inScopeShards.length; shardIndex += SHARD_BATCH_SIZE) {
+    const pendingVerificationShards = inScopeShards.filter(shard => (
+        proofLedgerEntries?.find(entry => entry.shard_id === shard.shard_id)?.state === 'pending'
+    ));
+    for (let shardIndex = 0; shardIndex < pendingVerificationShards.length; shardIndex += SHARD_BATCH_SIZE) {
         throwIfAborted(signal);
-        const shardBatch = inScopeShards.slice(shardIndex, shardIndex + SHARD_BATCH_SIZE);
+        const shardBatch = pendingVerificationShards.slice(shardIndex, shardIndex + SHARD_BATCH_SIZE);
         const scanBatch = shardBatch.filter(shard => {
             const canSkip = shardFilterProvesNoMatch(shard.shard_id, shardFiltersBySource.get(String(shard.source_id || '')) || {}, matchPhrases);
             if (canSkip) {

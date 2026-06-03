@@ -8,6 +8,7 @@ import {
 } from '@/shared/lib/contracts';
 import { fetchJson } from '@/shared/lib/fetch';
 import {
+    clearSitegraphRuntimeCaches,
     createBrowserContentHashArtifactCache,
     fetchJsonArtifact,
     parseSitegraphGlobalQueryDirectory,
@@ -59,6 +60,11 @@ const post = (payload: Record<string, unknown>) => {
 const publicPath = (path: string): string => {
     if (/^https?:\/\//.test(path) || path.startsWith('/')) return path;
     return `/${path}`;
+};
+
+const isRecoverableArtifactError = (error: unknown): boolean => {
+    const message = error instanceof Error ? error.message : String(error);
+    return /\/generated\/collections\/njupt-public\/.+ HTTP (404|408|409|425|429|500|502|503|504)\b/.test(message);
 };
 
 const ensurePackedImpactDecoder = (): Promise<unknown> => {
@@ -133,11 +139,7 @@ const packedImpactRetriever: PackedImpactRetriever = {
     },
 };
 
-const init = async (requestId: number) => {
-    activeController?.abort();
-    const controller = new AbortController();
-    activeController = controller;
-    activeRequestId = requestId;
+const loadSession = async (requestId: number, controller: AbortController, postReady = true) => {
     const manifestPath = publicPath(APP_CONFIG.DATA_URLS.SEARCH_MANIFEST);
     const manifestPayload = await fetchJson(manifestPath, controller.signal, 'manifest');
     manifest = parseSitegraphManifest(manifestPayload, manifestPath);
@@ -156,24 +158,34 @@ const init = async (requestId: number) => {
         artifactCache,
         packedImpactRetriever,
     };
-    post({
-        type: 'ready',
-        requestId,
-        manifest,
-        filterOptions: sourceRegistry.filter_options,
-        firstScreenBytes: artifacts.source_registry.bytes + artifacts.global_query_directory.bytes + artifacts.query_aliases.bytes,
-        bootstrapCache: {
-            scope: artifactCache.scope,
-            artifact_hits: [sourceRegistryPayload, queryDirectoryPayload, aliasesPayload].filter(item => item.cacheHit).length,
-            artifact_misses: [sourceRegistryPayload, queryDirectoryPayload, aliasesPayload].filter(item => !item.cacheHit).length,
-            cached_bytes: [sourceRegistryPayload, queryDirectoryPayload, aliasesPayload]
-                .filter(item => item.cacheHit)
-                .reduce((sum, item) => sum + item.byteLength, 0),
-            uncached_bytes: [sourceRegistryPayload, queryDirectoryPayload, aliasesPayload]
-                .filter(item => !item.cacheHit)
-                .reduce((sum, item) => sum + item.byteLength, 0),
-        },
-    });
+    if (postReady) {
+        post({
+            type: 'ready',
+            requestId,
+            manifest,
+            filterOptions: sourceRegistry.filter_options,
+            firstScreenBytes: artifacts.source_registry.bytes + artifacts.global_query_directory.bytes + artifacts.query_aliases.bytes,
+            bootstrapCache: {
+                scope: artifactCache.scope,
+                artifact_hits: [sourceRegistryPayload, queryDirectoryPayload, aliasesPayload].filter(item => item.cacheHit).length,
+                artifact_misses: [sourceRegistryPayload, queryDirectoryPayload, aliasesPayload].filter(item => !item.cacheHit).length,
+                cached_bytes: [sourceRegistryPayload, queryDirectoryPayload, aliasesPayload]
+                    .filter(item => item.cacheHit)
+                    .reduce((sum, item) => sum + item.byteLength, 0),
+                uncached_bytes: [sourceRegistryPayload, queryDirectoryPayload, aliasesPayload]
+                    .filter(item => !item.cacheHit)
+                    .reduce((sum, item) => sum + item.byteLength, 0),
+            },
+        });
+    }
+};
+
+const init = async (requestId: number) => {
+    activeController?.abort();
+    const controller = new AbortController();
+    activeController = controller;
+    activeRequestId = requestId;
+    await loadSession(requestId, controller);
 };
 
 const query = async (
@@ -183,17 +195,33 @@ const query = async (
     sortMode: SitegraphSortMode = 'relevance',
     filters: SitegraphSearchFilters = {}
 ) => {
-    if (!session) {
-        throw new Error('Search worker is not initialized');
-    }
     activeController?.abort();
-    const controller = new AbortController();
+    let controller = new AbortController();
     activeController = controller;
     activeRequestId = requestId;
-    await searchSitegraphProgressively(session, queryText, controller.signal, event => {
-        lastCoverage = event.coverage;
-        post({ ...event, requestId });
-    }, { limit, sortMode, filters });
+    const runSearch = async () => {
+        if (!session) await loadSession(requestId, controller);
+        if (!session) throw new Error('Search worker is not initialized');
+        await searchSitegraphProgressively(session, queryText, controller.signal, event => {
+            lastCoverage = event.coverage;
+            post({ ...event, requestId });
+        }, { limit, sortMode, filters });
+    };
+    try {
+        await runSearch();
+    } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') throw error;
+        if (!isRecoverableArtifactError(error)) throw error;
+        clearSitegraphRuntimeCaches();
+        manifest = null;
+        session = null;
+        lastCoverage = null;
+        controller = new AbortController();
+        activeController = controller;
+        activeRequestId = requestId;
+        await loadSession(requestId, controller);
+        await runSearch();
+    }
 };
 
 self.onmessage = (event: MessageEvent<IncomingMessage>) => {

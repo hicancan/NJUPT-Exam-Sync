@@ -1039,7 +1039,6 @@ describe('sitegraph search contract', () => {
                 'body_index_started',
                 'top_results_hydrated',
                 'verification_started',
-                'partial_verified',
                 'global_exhaustive_complete'
             ]));
             const complete = events.at(-1);
@@ -1710,6 +1709,31 @@ describe('sitegraph search contract', () => {
             expect(complete?.coverage.scanned_shards).toBe(0);
             expect(complete?.results).toEqual([]);
         });
+    });
+
+    it('carries hydrated full shards into verification coverage without resetting progress', async () => {
+        const fixture = makeRoutedFixture('proof-progress-carry-forward', [makeDocument()], {
+            queryTerms: ['转专业申请'],
+            lightTerms: impactTerms({ 转专业: { t: [0] }, 申请: { t: [0] } }),
+            bodyTerms: impactTerms({ 转专业: { c: [0] }, 申请: { c: [0] } }),
+        });
+        const shardPath = required(fixture.sourceManifest.full_shards[0], 'expected full shard').path;
+        const requestedPaths: string[] = [];
+
+        await withMockFetch(fixture, async () => {
+            const events: SitegraphSearchEvent[] = [];
+            await searchSitegraphProgressively(fixture.session, '转专业申请', new AbortController().signal, event => events.push(event), { limit: 5 });
+            const firstTrusted = events.find(event => event.type === 'first_trusted_results');
+            const verification = events.find(event => event.type === 'verification_started');
+            const complete = events.at(-1);
+            expect(firstTrusted?.coverage.scanned_shards).toBe(1);
+            expect(verification?.coverage.scanned_shards).toBe(1);
+            expect(verification?.coverage.pending_shards).toBe(0);
+            expect(verification?.coverage.failed_shards).toBe(0);
+            expect(complete?.type).toBe('global_exhaustive_complete');
+            expect(complete?.coverage.exhaustive_complete).toBe(true);
+            expect(requestedPaths.filter(path => path.endsWith(shardPath))).toHaveLength(1);
+        }, { requestedPaths });
     });
 
     it('reuses browser persistent content-hash artifacts after runtime memory caches are cleared', async () => {

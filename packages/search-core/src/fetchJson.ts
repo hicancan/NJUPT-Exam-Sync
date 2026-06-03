@@ -34,12 +34,36 @@ const cacheModeFor = (resourceType: FetchResourceType): RequestCache => {
     }
 };
 
+const RETRYABLE_ARTIFACT_STATUSES = new Set([404, 408, 409, 425, 429, 500, 502, 503, 504]);
+
+const canRetryArtifactFetch = (resourceType: FetchResourceType, status: number): boolean => {
+    return (resourceType === 'index' || resourceType === 'shard') && RETRYABLE_ARTIFACT_STATUSES.has(status);
+};
+
+const withRetryCacheBust = (url: string): string => {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}__njupt_retry=${Date.now().toString(36)}`;
+};
+
+const fetchWithCacheRecovery = async (
+    url: string,
+    signal: AbortSignal | undefined,
+    resourceType: FetchResourceType
+): Promise<Response> => {
+    const response = await fetch(url, { cache: cacheModeFor(resourceType), signal });
+    if (response.ok || !canRetryArtifactFetch(resourceType, response.status)) {
+        return response;
+    }
+    const retryResponse = await fetch(withRetryCacheBust(url), { cache: 'reload', signal });
+    return retryResponse.ok ? retryResponse : response;
+};
+
 export const fetchJson = async <T = unknown>(
     url: string,
     signal?: AbortSignal,
     resourceType: FetchResourceType = 'default'
 ): Promise<T> => {
-    const response = await fetch(url, { cache: cacheModeFor(resourceType), signal });
+    const response = await fetchWithCacheRecovery(url, signal, resourceType);
 
     if (!response.ok) {
         throw new Error(`数据请求失败: ${url} HTTP ${response.status}`);
@@ -57,7 +81,7 @@ export const fetchArrayBuffer = async (
     signal?: AbortSignal,
     resourceType: FetchResourceType = 'default'
 ): Promise<ArrayBuffer> => {
-    const response = await fetch(url, { cache: cacheModeFor(resourceType), signal });
+    const response = await fetchWithCacheRecovery(url, signal, resourceType);
 
     if (!response.ok) {
         throw new Error(`数据请求失败: ${url} HTTP ${response.status}`);
@@ -87,7 +111,7 @@ const fetchArrayBufferArtifactResult = async (
         }
     }
 
-    const response = await fetch(url, { cache: cacheModeFor(resourceType), signal });
+    const response = await fetchWithCacheRecovery(url, signal, resourceType);
     if (!response.ok) {
         throw new Error(`数据请求失败: ${url} HTTP ${response.status}`);
     }
