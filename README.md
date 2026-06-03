@@ -47,7 +47,7 @@
 
 ### 2. Rust WASM 的 O(1) 块级剪枝算法 (Block-Max WAND)
 在数以万计的文档倒排表合并时，普通的前端 JS 循环会导致主线程严重掉帧。我们在 `tools/wasm/packed-impact-decoder` 中，使用 Rust 实现了一种激进的提前跳跃算法：
-*   **SGIXB002 格式的 O(1) 词项跳过**：在解析二进制索引时，`SGIXB002` 头部维护了词项 payload 长度目录。对于未被查询命中的词项，引擎可以通过直接移动读取指针（Offset Jump）在 $O(1)$ 时间内跳过其整块数据，**完全避免了无用词项倒排表字段的 VarInt 解压与内存分配**。
+*   **结构化包头与动态剪枝预备**：在解析二进制索引时，`SGIXB002` 头部维护了词项 payload 长度目录。这为未来的 O(1) 块级跳过打下了结构基础。
 *   **Block-Max WAND 动态剪枝**：块（Block，默认 32 个文档 ID）的文档打分上限按 Impact 降序排列。如果当前评估块的最大可能分数（当前块的 Term Impact 加上后续未评估 Term 的最大 Impact 之和）低于已收集的 Top-K 候选结果的最低门槛（Competitive Threshold），则引擎在算分循环中**直接整块剪枝跳过**。
 ```rust
 // 计算当前词项块及后续未评估词项块的最大可能算分上限
@@ -64,6 +64,7 @@ if !has_known_candidate && scores.len() >= target && max_possible_for_unseen_doc
 ### 3. Web Worker 编排与多阶段证明检索
 为保证 React UI 绝对流畅（60fps），所有的网络拉取、分片解包、正则比对全部隔离在独立的 Web Worker 中 (`collectionSearch.worker.ts`)：
 *   **热路径前置 (Hot Query Bypass)**：针对高频短词，引擎直接通过 `hot_query_proof_directory` 获取预先编译的 `HotQueryProofCertificate`，在 $O(1)$ 时间内绕过所有的倒排索引扫描与算分循环，直接下发结构化结果。
+*   **IndexedDB 强缓存与边缘容灾 (Network Resilience)**：网络层内置了 `njupt-search-artifact-cache` IndexedDB 持久化缓存，将 ArrayBuffer 级的分片数据强缓存在用户本地硬盘。如果遇到 CDN 节点 502/504 等错误，引擎会自带 `__njupt_retry` 时间戳发起 Cache-Busting 重试，实现极端的弱网容错。
 *   **多阶段渐进式注水 (Multi-Stage Progressive Hydration)**：根据 `@njupt-search/search-core` 的路由规划，检索过程分为以下多阶段，按需流式推进：
   1. **`first_trusted_results`**：快速拉取体积极小的轻量倒发索引 (`light_index_packed`)，提取核心文档元数据，提供即时的第一屏结果。
   2. **`top_results_hydrated`**：拉取完整倒排主体 (`body_index_packed`)，调用 Rust WASM 算分引擎，深化候选文档打分与排序。
