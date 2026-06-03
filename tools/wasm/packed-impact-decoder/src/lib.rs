@@ -382,14 +382,11 @@ fn collect_packed_impact_blocks(
                     matched_term_count += 1;
                     let fields = collect_fields(&mut payload_cursor)?;
                     push_term_blocks(&mut blocks, &term, fields, block_size, &field_impacts);
-                }
-                if !payload_cursor.is_done() {
-                    scan_fields(&mut payload_cursor)?;
-                }
-                if !payload_cursor.is_done() {
-                    return Err(JsValue::from_str(
-                        "trailing bytes in packed impact term payload",
-                    ));
+                    if !payload_cursor.is_done() {
+                        return Err(JsValue::from_str(
+                            "trailing bytes in packed impact term payload",
+                        ));
+                    }
                 }
                 cursor.offset = end;
             }

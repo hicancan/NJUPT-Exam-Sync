@@ -47,7 +47,7 @@
 
 ### 2. Rust WASM 的 O(1) 块级剪枝算法 (Block-Max WAND)
 在数以万计的文档倒排表合并时，普通的前端 JS 循环会导致主线程严重掉帧。我们在 `tools/wasm/packed-impact-decoder` 中，使用 Rust 实现了一种激进的提前跳跃算法：
-*   **结构化包头与动态剪枝预备**：在解析二进制索引时，`SGIXB002` 头部维护了词项 payload 长度目录。这为未来的 O(1) 块级跳过打下了结构基础。
+*   **SGIXB002 格式的 O(1) 词项跳过**：在解析二进制索引时，`SGIXB002` 头部维护了词项 payload 长度目录。对于未被查询命中的词项，WASM 引擎会直接移动读取指针（Offset Jump）在 $O(1)$ 时间内跳过其整块数据，**在底层实现了物理级别的零解压（Zero-Decompression）**。
 *   **Block-Max WAND 动态剪枝**：块（Block，默认 32 个文档 ID）的文档打分上限按 Impact 降序排列。如果当前评估块的最大可能分数（当前块的 Term Impact 加上后续未评估 Term 的最大 Impact 之和）低于已收集的 Top-K 候选结果的最低门槛（Competitive Threshold），则引擎在算分循环中**直接整块剪枝跳过**。
 ```rust
 // 计算当前词项块及后续未评估词项块的最大可能算分上限
