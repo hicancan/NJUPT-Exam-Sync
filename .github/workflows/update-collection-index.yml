@@ -83,7 +83,7 @@ jobs:
           python-version-file: '.python-version'
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v8
+        uses: astral-sh/setup-uv@v8.2.0
 
       - name: Set up Node
         uses: actions/setup-node@v6
