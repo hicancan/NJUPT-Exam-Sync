@@ -57,7 +57,11 @@ jobs:
 
       - name: Verify WASM release artifacts
         run: |
-          cargo install wasm-pack --locked
+          curl -fsSL -o /tmp/binaryen.tar.gz https://github.com/WebAssembly/binaryen/releases/download/version_129/binaryen-version_129-x86_64-linux.tar.gz
+          tar -xzf /tmp/binaryen.tar.gz -C /tmp
+          export PATH="/tmp/binaryen-version_129/bin:$PATH"
+          wasm-opt --version
+          cargo install wasm-pack --version 0.15.0 --locked
           (cd tools/wasm/packed-impact-decoder && wasm-pack build --target web --release --out-dir pkg)
           cmp tools/wasm/packed-impact-decoder/pkg/packed_impact_decoder.js apps/web/src/features/collection-search/wasm/packed_impact_decoder.js
           cmp tools/wasm/packed-impact-decoder/pkg/packed_impact_decoder.d.ts apps/web/src/features/collection-search/wasm/packed_impact_decoder.d.ts
