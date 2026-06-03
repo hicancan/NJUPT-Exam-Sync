@@ -71,6 +71,45 @@ if !has_known_candidate && scores.len() >= target && max_possible_for_unseen_doc
 
 ---
 
+## 🗺️ 系统架构图 (System Architecture)
+
+```mermaid
+graph TD
+    subaxis_offline[离线构建管线 (Github Actions)]
+    subaxis_client[客户端运行时 (Browser)]
+
+    subgraph 离线管线 [离线构建管线 (Data Pipeline)]
+        A[各学院教务通知网] -->|抓取| B(tools/exam-pipeline<br>Python ETL 清洗)
+        C[全网静态文档数据] -->|解析| D(tools/collection-indexer<br>Python 倒排构建)
+        
+        B -->|生成| E[(ICS 日历源)]
+        D -->|Delta+VarInt 压缩| F[(SGIXB002 二进制索引包)]
+    end
+
+    subgraph 边缘分发 [CDN Edge]
+        E -.静态缓存.-> G[CDN 边缘节点]
+        F -.分片缓存.-> G
+    end
+
+    subgraph 客户端 [客户端运行时 (PWA)]
+        G ==>|按需 Hydration| H[Web Worker 编排中心<br>packages/search-core]
+        H <-->|内存读写| I((Rust WASM 算分引擎<br>Block-Max WAND))
+        H -->|异步返回结果| J[React 主线程 UI]
+    end
+
+    classDef python fill:#4B8BBE,stroke:#306998,stroke-width:2px,color:white;
+    classDef rust fill:#DEA584,stroke:#A57A5A,stroke-width:2px,color:black;
+    classDef ts fill:#3178C6,stroke:#235A97,stroke-width:2px,color:white;
+    classDef storage fill:#f9f9f9,stroke:#333,stroke-width:2px;
+    
+    class B,D python;
+    class I rust;
+    class H,J ts;
+    class E,F storage;
+```
+
+---
+
 ## 🏗️ Monorepo 代码架构 (Project Structure)
 
 项目采用 NPM Workspaces 与 Python `uv` 混合构建，实现了严密的职责隔离。
