@@ -24,24 +24,18 @@ GENERATED_PREFIXES = (
 )
 
 DEFAULT_LINE_LIMITS = {
-    ".ts": 800,
-    ".tsx": 650,
-    ".py": 900,
-    ".rs": 900,
+    ".ts": 500,
+    ".tsx": 500,
+    ".py": 800,
+    ".rs": 800,
 }
 
-# Ratchet budgets for legacy oversized modules. These are not quality targets.
-# They freeze current debt so future changes have to extract code instead of
-# making the largest files larger.
 FILE_LINE_LIMITS = {
     "apps/web/src/features/collection-search/worker/collectionSearch.worker.ts": 500,
     "packages/search-core/src/sitegraphSearch.ts": 500,
     "packages/search-core/src/sitegraphCompletionProofRuntime.ts": 500,
     "packages/search-core/src/sitegraphHotSearchPhases.ts": 500,
     "packages/search-core/src/sitegraphRecallRuntime.ts": 200,
-    "tools/collection-indexer/src/njupt_search_indexer/sitegraph_public_index.py": 1560,
-    "tools/search-eval/src/njupt_search_eval/sitegraph_search.py": 1780,
-    "tools/search-eval/src/njupt_search_eval/sitegraph_lower_bound_report.py": 1920,
 }
 
 

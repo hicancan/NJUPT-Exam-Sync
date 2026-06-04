@@ -1,1422 +1,686 @@
 {
-  "report": "njupt-search-browser-verification-v17-static-lower-bound",
-  "generated_at": "2026-06-04T09:12:13.257Z",
-  "base_url": "http://127.0.0.1:5194/",
+  "report": "njupt-search-browser-verification-v20-local-architecture-final",
+  "generated_at": "2026-06-04T13:43:58.940Z",
+  "base_url": "http://127.0.0.1:4177/",
   "summary": {
     "passed": true,
-    "scenario_count": 9,
+    "scenario_count": 11,
     "failed": [],
     "persistent_cache_passed": true,
-    "max_warm_uncached_immutable_bytes": 0,
-    "max_immutable_artifact_network_bytes": 51114827,
     "viewports": [
       "1280x720",
       "390x844"
     ],
-    "console_error_count": 0
+    "max_warm_uncached_immutable_bytes": 0
   },
   "scenarios": [
     {
-      "name": "desktop-hot-cold",
+      "name": "desktop-hot-calendar",
       "query": "校历",
-      "filters": {},
-      "viewport": {
-        "width": 1280,
-        "height": 720
+      "viewport": "1280x720",
+      "filters": null,
+      "elapsed_ms": 2969,
+      "first_settled_ms": 197,
+      "has_result_text": true,
+      "has_data_error": false,
+      "diagnostics": {
+        "phase": "global_exhaustive_complete",
+        "first_result_source": "热查询首屏证书",
+        "query_class": "热查询",
+        "fast_start_visible": true,
+        "new_read_zero": true,
+        "new_read_text": "0 B",
+        "loaded_text": "657 KB",
+        "match_count": 96,
+        "proved_no_match_shards": 864
       },
-      "started_at": "2026-06-04T09:11:51.942Z",
-      "first_result_ms": 78,
-      "complete_ms": 322,
-      "result_count_visible": 20,
-      "first_result_title": "2025-2026学年校历",
-      "completion_label": "全量核查完毕",
-      "generated_request_count": 9,
-      "generated_network_bytes": 832030,
-      "immutable_artifact_request_count": 8,
-      "immutable_artifact_network_bytes": 815492,
-      "non_200_count": 0,
-      "requests": [
+      "layout": {
+        "client_width": 1270,
+        "overflow_x": 0,
+        "overflowing_elements": [],
+        "scroll_width": 1270
+      },
+      "console_error_count": 0,
+      "console_errors": [],
+      "assets": [
         {
-          "path": "/",
-          "status": 200,
-          "bytes": 1427,
-          "elapsedMs": 1
+          "kind": "script",
+          "name": "index-vRUgntJp.js",
+          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
         },
         {
-          "path": "/assets/index-jwFPPIya.js",
-          "status": 200,
-          "bytes": 346013,
-          "elapsedMs": 2
+          "kind": "stylesheet",
+          "name": "index-CR5wMP_P.css",
+          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
         },
         {
-          "path": "/assets/index-CR5wMP_P.css",
-          "status": 200,
-          "bytes": 31795,
-          "elapsedMs": 2
+          "kind": "script",
+          "name": "workbox-window.prod.es5-BBnX5xw4.js",
+          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
         },
         {
-          "path": "/assets/workbox-window.prod.es5-BBnX5xw4.js",
-          "status": 200,
-          "bytes": 5748,
-          "elapsedMs": 1
+          "kind": "image",
+          "name": "logo.png",
+          "url": "http://127.0.0.1:4177/assets/logo.png"
         },
         {
-          "path": "/assets/logo.png",
-          "status": 200,
-          "bytes": 42286,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/assets/collectionSearch.worker-DK9M4uxs.js",
-          "status": 200,
-          "bytes": 162725,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/sw.js",
-          "status": 200,
-          "bytes": 2792,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/manifest.json",
-          "status": 200,
-          "bytes": 16538,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/workbox-177409a8.js",
-          "status": 200,
-          "bytes": 24274,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/index.html",
-          "status": 200,
-          "bytes": 1427,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/artifacts/hot_query_fast_start.d6a96a997d0b27ed.json",
-          "status": 200,
-          "bytes": 58254,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/hot_query_proofs/hot_query_initial.query-80647da2400d.63fcbde976711643.json",
-          "status": 200,
-          "bytes": 84089,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/assets/packed_impact_decoder_bg-D3RaiDhW.wasm",
-          "status": 200,
-          "bytes": 187638,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/artifacts/source_registry.16da5d8c5c412874.json",
-          "status": 200,
-          "bytes": 4805,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/artifacts/query_aliases.6bd5b1e0bb1500c8.json",
-          "status": 200,
-          "bytes": 2853,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/artifacts/global_query_directory.e29efba6d92ba372.json",
-          "status": 200,
-          "bytes": 205959,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/artifacts/hot_query_proof_directory.8295e6ef3c6bed3f.json",
-          "status": 200,
-          "bytes": 137986,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/hot_query_proofs/hot_query_topk.query-80647da2400d.8ac5eae3d1343b27.json",
-          "status": 200,
-          "bytes": 277999,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/assets/icon-192x192.png",
-          "status": 200,
-          "bytes": 22104,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/assets/icon-512x512.png",
-          "status": 200,
-          "bytes": 176717,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/assets/logo.png",
-          "status": 200,
-          "bytes": 42286,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/manifest.webmanifest",
-          "status": 200,
-          "bytes": 424,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/hot_query_proofs/hot_query_complete.query-80647da2400d.d1d5d44218d2dfe3.json",
-          "status": 200,
-          "bytes": 43547,
-          "elapsedMs": 1
+          "kind": "script",
+          "name": "collectionSearch.worker-DK9M4uxs.js",
+          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
         }
-      ]
+      ],
+      "passed": true
     },
     {
-      "name": "desktop-hot-warm-repeat",
-      "query": "校历",
-      "filters": {},
-      "viewport": {
-        "width": 1280,
-        "height": 720
-      },
-      "started_at": "2026-06-04T09:11:52.465Z",
-      "first_result_ms": 76,
-      "complete_ms": 322,
-      "result_count_visible": 20,
-      "first_result_title": "2025-2026学年校历",
-      "completion_label": "全量核查完毕",
-      "generated_request_count": 1,
-      "generated_network_bytes": 16538,
-      "immutable_artifact_request_count": 0,
-      "immutable_artifact_network_bytes": 0,
-      "non_200_count": 0,
-      "requests": [
-        {
-          "path": "/generated/collections/njupt-public/manifest.json",
-          "status": 200,
-          "bytes": 16538,
-          "elapsedMs": 1
-        }
-      ]
-    },
-    {
-      "name": "desktop-hot-alias",
+      "name": "desktop-hot-cet",
       "query": "四六级",
-      "filters": {},
-      "viewport": {
-        "width": 1280,
-        "height": 720
+      "viewport": "1280x720",
+      "filters": null,
+      "elapsed_ms": 2895,
+      "first_settled_ms": 187,
+      "has_result_text": true,
+      "has_data_error": false,
+      "diagnostics": {
+        "phase": "global_exhaustive_complete",
+        "first_result_source": "热查询首屏证书",
+        "query_class": "热查询",
+        "fast_start_visible": true,
+        "new_read_zero": true,
+        "new_read_text": "0 B",
+        "loaded_text": "845 KB",
+        "match_count": 449,
+        "proved_no_match_shards": 816
       },
-      "started_at": "2026-06-04T09:11:52.934Z",
-      "first_result_ms": 86,
-      "complete_ms": 324,
-      "result_count_visible": 20,
-      "first_result_title": "【教务管理办公室】南京邮电大学2026年5月全国大学英语四六级口语考试通知",
-      "completion_label": "全量核查完毕",
-      "generated_request_count": 4,
-      "generated_network_bytes": 600922,
-      "immutable_artifact_request_count": 3,
-      "immutable_artifact_network_bytes": 584384,
-      "non_200_count": 0,
-      "requests": [
+      "layout": {
+        "client_width": 1270,
+        "overflow_x": 0,
+        "overflowing_elements": [],
+        "scroll_width": 1270
+      },
+      "console_error_count": 0,
+      "console_errors": [],
+      "assets": [
         {
-          "path": "/generated/collections/njupt-public/manifest.json",
-          "status": 200,
-          "bytes": 16538,
-          "elapsedMs": 1
+          "kind": "script",
+          "name": "index-vRUgntJp.js",
+          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
         },
         {
-          "path": "/generated/collections/njupt-public/sitegraph/hot_query_proofs/hot_query_initial.query-ae87dc1bf388.cdad0f0dda5ccebe.json",
-          "status": 200,
-          "bytes": 70804,
-          "elapsedMs": 0
+          "kind": "stylesheet",
+          "name": "index-CR5wMP_P.css",
+          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
         },
         {
-          "path": "/generated/collections/njupt-public/sitegraph/hot_query_proofs/hot_query_topk.query-ae87dc1bf388.15b0c5da2720a7c7.json",
-          "status": 200,
-          "bytes": 273349,
-          "elapsedMs": 1
+          "kind": "script",
+          "name": "workbox-window.prod.es5-BBnX5xw4.js",
+          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
         },
         {
-          "path": "/generated/collections/njupt-public/sitegraph/hot_query_proofs/hot_query_complete.query-ae87dc1bf388.6eae83312d8be647.json",
-          "status": 200,
-          "bytes": 240231,
-          "elapsedMs": 2
+          "kind": "image",
+          "name": "logo.png",
+          "url": "http://127.0.0.1:4177/assets/logo.png"
+        },
+        {
+          "kind": "script",
+          "name": "collectionSearch.worker-DK9M4uxs.js",
+          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
         }
-      ]
+      ],
+      "passed": true
     },
     {
-      "name": "desktop-high-df",
-      "query": "通知",
-      "filters": {},
-      "viewport": {
-        "width": 1280,
-        "height": 720
+      "name": "desktop-hot-grade",
+      "query": "成绩",
+      "viewport": "1280x720",
+      "filters": null,
+      "elapsed_ms": 821,
+      "first_settled_ms": 41,
+      "has_result_text": true,
+      "has_data_error": false,
+      "diagnostics": {
+        "phase": "global_exhaustive_complete",
+        "first_result_source": "热查询首屏证书",
+        "query_class": "热查询",
+        "fast_start_visible": true,
+        "new_read_zero": true,
+        "new_read_text": "0 B",
+        "loaded_text": "1.4 MB",
+        "match_count": 2116,
+        "proved_no_match_shards": 387
       },
-      "started_at": "2026-06-04T09:11:53.412Z",
-      "first_result_ms": 99,
-      "complete_ms": 15294,
-      "result_count_visible": 20,
-      "first_result_title": "【考试中心】关于2025级新生英语分级考试学生相关注意事项的通知",
-      "completion_label": "全量核查完毕",
-      "generated_request_count": 713,
-      "generated_network_bytes": 51131365,
-      "immutable_artifact_request_count": 712,
-      "immutable_artifact_network_bytes": 51114827,
-      "non_200_count": 0,
-      "requests": [
+      "layout": {
+        "client_width": 1270,
+        "overflow_x": 0,
+        "overflowing_elements": [],
+        "scroll_width": 1270
+      },
+      "console_error_count": 0,
+      "console_errors": [],
+      "assets": [
         {
-          "path": "/generated/collections/njupt-public/manifest.json",
-          "status": 200,
-          "bytes": 16538,
-          "elapsedMs": 1
+          "kind": "script",
+          "name": "index-vRUgntJp.js",
+          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
         },
         {
-          "path": "/generated/collections/njupt-public/sitegraph/hot_query_proofs/hot_query_initial.query-7a66c0d03631.efb39d4bb11c0258.json",
-          "status": 200,
-          "bytes": 77463,
-          "elapsedMs": 1
+          "kind": "stylesheet",
+          "name": "index-CR5wMP_P.css",
+          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
         },
         {
-          "path": "/generated/collections/njupt-public/sitegraph/source_manifests/source_manifest.jwc.c86a692fe2bc3aec.json",
-          "status": 200,
-          "bytes": 415980,
-          "elapsedMs": 2
+          "kind": "script",
+          "name": "workbox-window.prod.es5-BBnX5xw4.js",
+          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
         },
         {
-          "path": "/generated/collections/njupt-public/sitegraph/source_manifests/source_manifest.xsc.0f3ff941f252cde7.json",
-          "status": 200,
-          "bytes": 147738,
-          "elapsedMs": 1
+          "kind": "image",
+          "name": "logo.png",
+          "url": "http://127.0.0.1:4177/assets/logo.png"
         },
         {
-          "path": "/generated/collections/njupt-public/sitegraph/source_manifests/source_manifest.cxcy.422659ce204b01fb.json",
-          "status": 200,
-          "bytes": 153036,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__notice_article__2025.6ccbbfc589f73299.json",
-          "status": 200,
-          "bytes": 66968,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__news__2025.94e9879808b1cd90.json",
-          "status": 200,
-          "bytes": 86029,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__exam__2025.7f9310c47ab277dc.json",
-          "status": 200,
-          "bytes": 100566,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__notice_article__2025.9deb30ef11a50cef.bin",
-          "status": 200,
-          "bytes": 32295,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__news__2025.cd27b4dbeba6f59d.bin",
-          "status": 200,
-          "bytes": 48613,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__exam__2025.333806c2722422de.bin",
-          "status": 200,
-          "bytes": 57899,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__exam__detail__2025__root-ff93ad0e4ec6__b2.4752937c6c3f3a7e.json",
-          "status": 200,
-          "bytes": 122408,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__exam__detail__2025__root-ff93ad0e4ec6__b3.be31fa774fa19101.json",
-          "status": 200,
-          "bytes": 151903,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__notice_article__detail__2025__root-ff93ad0e4ec6__b0.087772f7c9a0236b.json",
-          "status": 200,
-          "bytes": 60011,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__exam__detail__2025__root-ff93ad0e4ec6__b1.d009ea56407b30d1.json",
-          "status": 200,
-          "bytes": 128113,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__exam__detail__2025__root-ff93ad0e4ec6__b0.76beffde2553f17a.json",
-          "status": 200,
-          "bytes": 61559,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__news__detail__2025__root-ff93ad0e4ec6__b2.9be950dc6992df64.json",
-          "status": 200,
-          "bytes": 69465,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__notice_article__2024.01e9256557499152.json",
-          "status": 200,
-          "bytes": 86380,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__exam__2024.fdf7db0c9bb4e474.json",
-          "status": 200,
-          "bytes": 116578,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__notice_article__2023.eef1fdef222406a3.json",
-          "status": 200,
-          "bytes": 67866,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__notice_article__2024.4c0fcfd1fb47e067.bin",
-          "status": 200,
-          "bytes": 39834,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__notice_article__2023.5dab0daa3ea86479.bin",
-          "status": 200,
-          "bytes": 36398,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__exam__2024.d8ebb117fc16a134.bin",
-          "status": 200,
-          "bytes": 61442,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__exam__2025.2fb4f52d86a1ebf7.bin",
-          "status": 200,
-          "bytes": 124867,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__news__2025.03d9c0b3f4a31064.bin",
-          "status": 200,
-          "bytes": 149396,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__notice_article__2025.3d630025ca6e3ea2.bin",
-          "status": 200,
-          "bytes": 109155,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__notice_article__2024.d89f4bd1a8d2975e.bin",
-          "status": 200,
-          "bytes": 145070,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__notice_article__2023.19e6e89ec494422e.bin",
-          "status": 200,
-          "bytes": 116615,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__exam__2024.0a6b2b07234f340e.bin",
-          "status": 200,
-          "bytes": 132649,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__exam__detail__2024__root-ff93ad0e4ec6__b1.52c292f06bcdf86b.json",
-          "status": 200,
-          "bytes": 132872,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__notice_article__detail__2024__root-ff93ad0e4ec6__b0.6ba59c50883f8187.json",
-          "status": 200,
-          "bytes": 73950,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__exam__detail__2024__root-ff93ad0e4ec6__b2.c38f4da84ce7eea8.json",
-          "status": 200,
-          "bytes": 155634,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__exam__detail__2024__root-ff93ad0e4ec6__b3.c3ba8d792b5cfe7e.json",
-          "status": 200,
-          "bytes": 134090,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__exam__detail__2024__root-ff93ad0e4ec6__b0.ea113ed3d0ab0b00.json",
-          "status": 200,
-          "bytes": 111435,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__notice_article__detail__2024__root-ff93ad0e4ec6__b2.aac51355df5823bf.json",
-          "status": 200,
-          "bytes": 52636,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__notice_article__detail__2023__root-ff93ad0e4ec6__b2.2a6d4ba980c8c6cb.json",
-          "status": 200,
-          "bytes": 62295,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__notice_article__detail__2023__root-ff93ad0e4ec6__b1.e663853355be2973.json",
-          "status": 200,
-          "bytes": 37072,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__notice_article__detail__2023__root-ff93ad0e4ec6__b0.2c03612a9dfda695.json",
-          "status": 200,
-          "bytes": 50028,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__notice_article__detail__2024__root-ff93ad0e4ec6__b3.a4f90a0e83024125.json",
-          "status": 200,
-          "bytes": 63412,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__notice_article__detail__2024__root-ff93ad0e4ec6__b1.051f7c6d4a3225ef.json",
-          "status": 200,
-          "bytes": 59887,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__notice_article__detail__2025__root-ff93ad0e4ec6__b1.3e69fd25f1faaba3.json",
-          "status": 200,
-          "bytes": 49167,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__notice_article__detail__2025__root-ff93ad0e4ec6__b3.b5c0e767ba6ab4a7.json",
-          "status": 200,
-          "bytes": 52165,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/proof_catalogs/proof_catalog.jwc.a3a13c0416d5b078.json",
-          "status": 200,
-          "bytes": 478318,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/proof_catalogs/proof_catalog.xsc.a5b5543bc06fd5a3.json",
-          "status": 200,
-          "bytes": 139499,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/proof_catalogs/proof_catalog.cxcy.84970805203f8acb.json",
-          "status": 200,
-          "bytes": 139062,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/shard_filters/shard_filter.jwc.5e08f62027786f47.json",
-          "status": 200,
-          "bytes": 1716,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/shard_filters/shard_filter.jwc.part000.0fc15ed0f47deefc.json",
-          "status": 200,
-          "bytes": 778373,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/shard_filters/shard_filter.jwc.part001.4a196bdb609c20be.json",
-          "status": 200,
-          "bytes": 785896,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/shard_filters/shard_filter.jwc.part002.794797bd72da1c40.json",
-          "status": 200,
-          "bytes": 775405,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/shard_filters/shard_filter.jwc.part003.9d4334e0ba19811a.json",
-          "status": 200,
-          "bytes": 775212,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/shard_filters/shard_filter.jwc.part004.bce7654ca2562bdd.json",
-          "status": 200,
-          "bytes": 777468,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/shard_filters/shard_filter.jwc.part005.6461150de04acf17.json",
-          "status": 200,
-          "bytes": 434421,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/shard_filters/shard_filter.xsc.9577af25e88323e4.json",
-          "status": 200,
-          "bytes": 667,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/shard_filters/shard_filter.xsc.part000.9f34aac752bf2957.json",
-          "status": 200,
-          "bytes": 783135,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/shard_filters/shard_filter.xsc.part001.16c73c336bf38e3b.json",
-          "status": 200,
-          "bytes": 116558,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/shard_filters/shard_filter.cxcy.5a90cc201446191d.json",
-          "status": 200,
-          "bytes": 668,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/shard_filters/shard_filter.cxcy.part000.3b0203cb5b521c9d.json",
-          "status": 200,
-          "bytes": 781760,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/shard_filters/shard_filter.cxcy.part001.c60ad52ee3fce9e6.json",
-          "status": 200,
-          "bytes": 39658,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2014__root-ff93ad0e4ec6__b0.3b770099d1fae0f4.json",
-          "status": 200,
-          "bytes": 4935,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2014__root-ff93ad0e4ec6__b1.aca0740f59955331.json",
-          "status": 200,
-          "bytes": 14403,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/sw.js",
-          "status": 200,
-          "bytes": 2792,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2014__root-ff93ad0e4ec6__b2.c46b9ccb1188a138.json",
-          "status": 200,
-          "bytes": 7445,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2014__root-ff93ad0e4ec6__b3.05fa80fe17930955.json",
-          "status": 200,
-          "bytes": 2531,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2015__root-ff93ad0e4ec6__b0.9760ceef862494aa.json",
-          "status": 200,
-          "bytes": 2346,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/workbox-177409a8.js",
-          "status": 200,
-          "bytes": 24274,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2015__root-ff93ad0e4ec6__b2.98dfb297286b28a8.json",
-          "status": 200,
-          "bytes": 4585,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2016__root-ff93ad0e4ec6__b1.0fa9f8254a066675.json",
-          "status": 200,
-          "bytes": 2271,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2015__root-ff93ad0e4ec6__b3.57eb3acc2fa56916.json",
-          "status": 200,
-          "bytes": 4991,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2015__root-ff93ad0e4ec6__b1.c96b47462c77b910.json",
-          "status": 200,
-          "bytes": 2316,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2016__root-ff93ad0e4ec6__b3.45acddfb36c7fbd8.json",
-          "status": 200,
-          "bytes": 4812,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2017__root-ff93ad0e4ec6__b0.05b4f482d043d230.json",
-          "status": 200,
-          "bytes": 16670,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2017__root-ff93ad0e4ec6__b1.ad4bf459c7d68cb7.json",
-          "status": 200,
-          "bytes": 4993,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2018__root-ff93ad0e4ec6__b0.4144875574055572.json",
-          "status": 200,
-          "bytes": 13989,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2018__root-ff93ad0e4ec6__b1.fcc8c1485f7401e8.json",
-          "status": 200,
-          "bytes": 25462,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2018__root-ff93ad0e4ec6__b2.1e3c60921324d0c7.json",
-          "status": 200,
-          "bytes": 9733,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2018__root-ff93ad0e4ec6__b3.d888fd555dc24305.json",
-          "status": 200,
-          "bytes": 11773,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2019__root-ff93ad0e4ec6__b0.13f62fb31463770e.json",
-          "status": 200,
-          "bytes": 12198,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2019__root-ff93ad0e4ec6__b2.5ad5cc49ae274022.json",
-          "status": 200,
-          "bytes": 4969,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2020__root-ff93ad0e4ec6__b0.87dc116d7b5be11a.json",
-          "status": 200,
-          "bytes": 2673,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2022__root-ff93ad0e4ec6__b0.cf179645273885a5.json",
-          "status": 200,
-          "bytes": 2368,
-          "elapsedMs": 1
+          "kind": "script",
+          "name": "collectionSearch.worker-DK9M4uxs.js",
+          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
         }
-      ]
+      ],
+      "passed": true
+    },
+    {
+      "name": "desktop-high-df-notice",
+      "query": "通知",
+      "viewport": "1280x720",
+      "filters": null,
+      "elapsed_ms": 981,
+      "first_settled_ms": 201,
+      "has_result_text": true,
+      "has_data_error": false,
+      "diagnostics": {
+        "phase": "top_results_hydrated",
+        "first_result_source": "热查询首屏证书",
+        "query_class": "热查询",
+        "fast_start_visible": true,
+        "new_read_zero": true,
+        "new_read_text": "0 B",
+        "loaded_text": "3.5 MB",
+        "match_count": 160,
+        "proved_no_match_shards": 0
+      },
+      "layout": {
+        "client_width": 1270,
+        "overflow_x": 0,
+        "overflowing_elements": [],
+        "scroll_width": 1270
+      },
+      "console_error_count": 0,
+      "console_errors": [],
+      "assets": [
+        {
+          "kind": "script",
+          "name": "index-vRUgntJp.js",
+          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
+        },
+        {
+          "kind": "stylesheet",
+          "name": "index-CR5wMP_P.css",
+          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
+        },
+        {
+          "kind": "script",
+          "name": "workbox-window.prod.es5-BBnX5xw4.js",
+          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
+        },
+        {
+          "kind": "image",
+          "name": "logo.png",
+          "url": "http://127.0.0.1:4177/assets/logo.png"
+        },
+        {
+          "kind": "script",
+          "name": "collectionSearch.worker-DK9M4uxs.js",
+          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "desktop-high-df-student",
+      "query": "学生",
+      "viewport": "1280x720",
+      "filters": null,
+      "elapsed_ms": 836,
+      "first_settled_ms": 37,
+      "has_result_text": true,
+      "has_data_error": false,
+      "diagnostics": {
+        "phase": "top_results_hydrated",
+        "first_result_source": "热查询首屏证书",
+        "query_class": "热查询",
+        "fast_start_visible": true,
+        "new_read_zero": true,
+        "new_read_text": "0 B",
+        "loaded_text": "3.7 MB",
+        "match_count": 84,
+        "proved_no_match_shards": 0
+      },
+      "layout": {
+        "client_width": 1270,
+        "overflow_x": 0,
+        "overflowing_elements": [],
+        "scroll_width": 1270
+      },
+      "console_error_count": 0,
+      "console_errors": [],
+      "assets": [
+        {
+          "kind": "script",
+          "name": "index-vRUgntJp.js",
+          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
+        },
+        {
+          "kind": "stylesheet",
+          "name": "index-CR5wMP_P.css",
+          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
+        },
+        {
+          "kind": "script",
+          "name": "workbox-window.prod.es5-BBnX5xw4.js",
+          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
+        },
+        {
+          "kind": "image",
+          "name": "logo.png",
+          "url": "http://127.0.0.1:4177/assets/logo.png"
+        },
+        {
+          "kind": "script",
+          "name": "collectionSearch.worker-DK9M4uxs.js",
+          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "desktop-high-df-njupt",
+      "query": "南京邮电大学",
+      "viewport": "1280x720",
+      "filters": null,
+      "elapsed_ms": 2815,
+      "first_settled_ms": 46,
+      "has_result_text": true,
+      "has_data_error": false,
+      "diagnostics": {
+        "phase": "partial_verified",
+        "first_result_source": "热查询首屏证书",
+        "query_class": "热查询",
+        "fast_start_visible": true,
+        "new_read_zero": true,
+        "new_read_text": "0 B",
+        "loaded_text": "12.8 MB",
+        "match_count": 1098,
+        "proved_no_match_shards": 31
+      },
+      "layout": {
+        "client_width": 1270,
+        "overflow_x": 0,
+        "overflowing_elements": [],
+        "scroll_width": 1270
+      },
+      "console_error_count": 0,
+      "console_errors": [],
+      "assets": [
+        {
+          "kind": "script",
+          "name": "index-vRUgntJp.js",
+          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
+        },
+        {
+          "kind": "stylesheet",
+          "name": "index-CR5wMP_P.css",
+          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
+        },
+        {
+          "kind": "script",
+          "name": "workbox-window.prod.es5-BBnX5xw4.js",
+          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
+        },
+        {
+          "kind": "image",
+          "name": "logo.png",
+          "url": "http://127.0.0.1:4177/assets/logo.png"
+        },
+        {
+          "kind": "script",
+          "name": "collectionSearch.worker-DK9M4uxs.js",
+          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
+        }
+      ],
+      "passed": true
     },
     {
       "name": "desktop-cold-rare",
       "query": "缓考申请表",
-      "filters": {},
-      "viewport": {
-        "width": 1280,
-        "height": 720
+      "viewport": "1280x720",
+      "filters": null,
+      "elapsed_ms": 817,
+      "first_settled_ms": 49,
+      "has_result_text": true,
+      "has_data_error": false,
+      "diagnostics": {
+        "phase": "global_exhaustive_complete",
+        "first_result_source": "热查询首屏证书",
+        "query_class": "热查询",
+        "fast_start_visible": true,
+        "new_read_zero": true,
+        "new_read_text": "0 B",
+        "loaded_text": "353 KB",
+        "match_count": 3,
+        "proved_no_match_shards": 940
       },
-      "started_at": "2026-06-04T09:12:08.843Z",
-      "first_result_ms": 68,
-      "complete_ms": 68,
-      "result_count_visible": 3,
-      "first_result_title": "南京邮电大学学生缓考申请表 2026-04-16",
-      "completion_label": "全量核查完毕",
-      "generated_request_count": 4,
-      "generated_network_bytes": 32827,
-      "immutable_artifact_request_count": 3,
-      "immutable_artifact_network_bytes": 16289,
-      "non_200_count": 0,
-      "requests": [
+      "layout": {
+        "client_width": 1270,
+        "overflow_x": 0,
+        "overflowing_elements": [],
+        "scroll_width": 1270
+      },
+      "console_error_count": 0,
+      "console_errors": [],
+      "assets": [
         {
-          "path": "/generated/collections/njupt-public/manifest.json",
-          "status": 200,
-          "bytes": 16538,
-          "elapsedMs": 0
+          "kind": "script",
+          "name": "index-vRUgntJp.js",
+          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
         },
         {
-          "path": "/generated/collections/njupt-public/sitegraph/hot_query_proofs/hot_query_initial.query-aa0d31cd02a5.0d3160c0198b8ca0.json",
-          "status": 200,
-          "bytes": 6918,
-          "elapsedMs": 0
+          "kind": "stylesheet",
+          "name": "index-CR5wMP_P.css",
+          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
         },
         {
-          "path": "/generated/collections/njupt-public/sitegraph/hot_query_proofs/hot_query_topk.query-aa0d31cd02a5.13eef60101acc70b.json",
-          "status": 200,
-          "bytes": 6896,
-          "elapsedMs": 1
+          "kind": "script",
+          "name": "workbox-window.prod.es5-BBnX5xw4.js",
+          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
         },
         {
-          "path": "/generated/collections/njupt-public/sitegraph/hot_query_proofs/hot_query_complete.query-aa0d31cd02a5.80e19a49addf6c65.json",
-          "status": 200,
-          "bytes": 2475,
-          "elapsedMs": 0
+          "kind": "image",
+          "name": "logo.png",
+          "url": "http://127.0.0.1:4177/assets/logo.png"
+        },
+        {
+          "kind": "script",
+          "name": "collectionSearch.worker-DK9M4uxs.js",
+          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
         }
-      ]
+      ],
+      "passed": true
     },
     {
       "name": "desktop-miss",
       "query": "不存在的查询词",
-      "filters": {},
-      "viewport": {
-        "width": 1280,
-        "height": 720
+      "viewport": "1280x720",
+      "filters": null,
+      "elapsed_ms": 946,
+      "first_settled_ms": 195,
+      "has_result_text": true,
+      "has_data_error": false,
+      "diagnostics": {
+        "phase": "global_exhaustive_complete",
+        "first_result_source": "热查询首屏证书",
+        "query_class": "热查询",
+        "fast_start_visible": true,
+        "new_read_zero": true,
+        "new_read_text": "0 B",
+        "loaded_text": "345 KB",
+        "match_count": 0,
+        "proved_no_match_shards": 942
       },
-      "started_at": "2026-06-04T09:12:09.061Z",
-      "first_result_ms": null,
-      "complete_ms": 68,
-      "result_count_visible": 0,
-      "first_result_title": null,
-      "completion_label": "全量核查完毕",
-      "generated_request_count": 4,
-      "generated_network_bytes": 19493,
-      "immutable_artifact_request_count": 3,
-      "immutable_artifact_network_bytes": 2955,
-      "non_200_count": 0,
-      "requests": [
+      "layout": {
+        "client_width": 1270,
+        "overflow_x": 0,
+        "overflowing_elements": [],
+        "scroll_width": 1270
+      },
+      "console_error_count": 0,
+      "console_errors": [],
+      "assets": [
         {
-          "path": "/generated/collections/njupt-public/manifest.json",
-          "status": 200,
-          "bytes": 16538,
-          "elapsedMs": 1
+          "kind": "script",
+          "name": "index-vRUgntJp.js",
+          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
         },
         {
-          "path": "/generated/collections/njupt-public/sitegraph/hot_query_proofs/hot_query_initial.query-302df45443b2.6b761f1df282f1e8.json",
-          "status": 200,
-          "bytes": 1001,
-          "elapsedMs": 0
+          "kind": "stylesheet",
+          "name": "index-CR5wMP_P.css",
+          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
         },
         {
-          "path": "/generated/collections/njupt-public/sitegraph/hot_query_proofs/hot_query_topk.query-302df45443b2.7363682422ca0759.json",
-          "status": 200,
-          "bytes": 979,
-          "elapsedMs": 1
+          "kind": "script",
+          "name": "workbox-window.prod.es5-BBnX5xw4.js",
+          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
         },
         {
-          "path": "/generated/collections/njupt-public/sitegraph/hot_query_proofs/hot_query_complete.query-302df45443b2.c3eefa8c600866fd.json",
-          "status": 200,
-          "bytes": 975,
-          "elapsedMs": 0
+          "kind": "image",
+          "name": "logo.png",
+          "url": "http://127.0.0.1:4177/assets/logo.png"
+        },
+        {
+          "kind": "script",
+          "name": "collectionSearch.worker-DK9M4uxs.js",
+          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
         }
-      ]
+      ],
+      "passed": true
     },
     {
-      "name": "desktop-symbol-query",
-      "query": "！！",
-      "filters": {},
-      "viewport": {
-        "width": 1280,
-        "height": 720
+      "name": "desktop-degenerate",
+      "query": "a",
+      "viewport": "1280x720",
+      "filters": null,
+      "elapsed_ms": 3512,
+      "first_settled_ms": 39,
+      "has_result_text": true,
+      "has_data_error": false,
+      "diagnostics": {
+        "phase": null,
+        "first_result_source": null,
+        "query_class": null,
+        "fast_start_visible": false,
+        "new_read_zero": false,
+        "new_read_text": null,
+        "loaded_text": null,
+        "match_count": null,
+        "proved_no_match_shards": null
       },
-      "started_at": "2026-06-04T09:12:09.268Z",
-      "first_result_ms": 1011,
-      "complete_ms": 2412,
-      "result_count_visible": 4,
-      "first_result_title": "【实践科】2021年全国大学生英语竞赛报名通知",
-      "completion_label": "全量核查完毕",
-      "generated_request_count": 317,
-      "generated_network_bytes": 9315973,
-      "immutable_artifact_request_count": 316,
-      "immutable_artifact_network_bytes": 9299435,
-      "non_200_count": 0,
-      "requests": [
+      "layout": {
+        "client_width": 1270,
+        "overflow_x": 0,
+        "overflowing_elements": [],
+        "scroll_width": 1270
+      },
+      "console_error_count": 0,
+      "console_errors": [],
+      "assets": [
         {
-          "path": "/generated/collections/njupt-public/manifest.json",
-          "status": 200,
-          "bytes": 16538,
-          "elapsedMs": 1
+          "kind": "script",
+          "name": "index-vRUgntJp.js",
+          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
         },
         {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__exam__2022.c83638e93b504d08.json",
-          "status": 200,
-          "bytes": 106844,
-          "elapsedMs": 1
+          "kind": "stylesheet",
+          "name": "index-CR5wMP_P.css",
+          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
         },
         {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__exam__2021.b11162bd06740264.json",
-          "status": 200,
-          "bytes": 126366,
-          "elapsedMs": 1
+          "kind": "script",
+          "name": "workbox-window.prod.es5-BBnX5xw4.js",
+          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
         },
         {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__news__2024.dd0d5dc31c6713ed.json",
-          "status": 200,
-          "bytes": 98042,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__notice_article__2015.45781363a7ac6ef3.json",
-          "status": 200,
-          "bytes": 87059,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__workflow__2018.9fb5a6ce4fd4e015.json",
-          "status": 200,
-          "bytes": 80995,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__news__2019.d69bb5cd00ebd18b.json",
-          "status": 200,
-          "bytes": 95307,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__notice_article__2014.6ceed768b11e14b4.json",
-          "status": 200,
-          "bytes": 93034,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__news__2015.817e9f3ae759deec.json",
-          "status": 200,
-          "bytes": 113669,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__news__2018.a75aba8e3cf5caab.json",
-          "status": 200,
-          "bytes": 120126,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__news__2013.fdb0d3945a389ed0.json",
-          "status": 200,
-          "bytes": 122994,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__news__2017.0c799080fa19cc74.json",
-          "status": 200,
-          "bytes": 120984,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__exam__2022.0c4062a51702613d.bin",
-          "status": 200,
-          "bytes": 62648,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__news__2024.7dc802c95dee708a.bin",
-          "status": 200,
-          "bytes": 59428,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__exam__2021.65f9904d82db7f65.bin",
-          "status": 200,
-          "bytes": 66250,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__notice_article__2014.b7b09d06759fe267.bin",
-          "status": 200,
-          "bytes": 74892,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__workflow__2018.57382232a8d8e847.bin",
-          "status": 200,
-          "bytes": 65448,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__notice_article__2015.0ef54ea3bd988293.bin",
-          "status": 200,
-          "bytes": 39091,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__news__2015.983124248b1a5733.bin",
-          "status": 200,
-          "bytes": 63795,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__news__2018.c03ae97988a00bb4.bin",
-          "status": 200,
-          "bytes": 61780,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__news__2013.ec64fc2cd93981e0.bin",
-          "status": 200,
-          "bytes": 63403,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__news__2017.f4cc2f41a7ac9006.bin",
-          "status": 200,
-          "bytes": 60685,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__news__2019.0d911f1bb8110827.bin",
-          "status": 200,
-          "bytes": 49014,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__news__2014.563806bc1c3946c4.json",
-          "status": 200,
-          "bytes": 141871,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__news__2016.0f9c32211def17bf.json",
-          "status": 200,
-          "bytes": 122235,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__notice_article__2013.7bf0c2cb91bcc3d7.json",
-          "status": 200,
-          "bytes": 164737,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__exam__2010.7a1d2b1cd336c74d.json",
-          "status": 200,
-          "bytes": 160999,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.jwc__exam__2020.146c603e435a6e4c.json",
-          "status": 200,
-          "bytes": 132899,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__news__2014.e64ab0acd74948ee.bin",
-          "status": 200,
-          "bytes": 67321,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__news__2016.84d667832bbce6bb.bin",
-          "status": 200,
-          "bytes": 65151,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__exam__2020.a3a2f06f0152114f.bin",
-          "status": 200,
-          "bytes": 68850,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__notice_article__2013.ca7c9d2a44b56d69.bin",
-          "status": 200,
-          "bytes": 75964,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.jwc__exam__2010.781ed16f9491ee19.bin",
-          "status": 200,
-          "bytes": 70598,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__exam__2021.7c569178a33a3d78.bin",
-          "status": 200,
-          "bytes": 146525,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__exam__2022.b7477aed6fc2a8db.bin",
-          "status": 200,
-          "bytes": 130703,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__news__2024.56fe5f3bdd716e55.bin",
-          "status": 200,
-          "bytes": 155200,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__notice_article__2015.f46902af52347003.bin",
-          "status": 200,
-          "bytes": 141601,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__news__2019.da5a47dbf48961fc.bin",
-          "status": 200,
-          "bytes": 140082,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__workflow__2018.e276765c6f716203.bin",
-          "status": 200,
-          "bytes": 138535,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__notice_article__2014.5732f4db4ad045f6.bin",
-          "status": 200,
-          "bytes": 134984,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__news__2015.3f83224a52fd67fa.bin",
-          "status": 200,
-          "bytes": 170367,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__news__2013.8967e07c946c5b0c.bin",
-          "status": 200,
-          "bytes": 181338,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__news__2018.bfb81644b3f3a6b1.bin",
-          "status": 200,
-          "bytes": 181125,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__news__2017.616f5229b6d16e30.bin",
-          "status": 200,
-          "bytes": 184724,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__news__2014.c85471688770f964.bin",
-          "status": 200,
-          "bytes": 178584,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__exam__2020.34627bc812427d91.bin",
-          "status": 200,
-          "bytes": 183451,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__news__2016.1f8500ee8c63e095.bin",
-          "status": 200,
-          "bytes": 195088,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__notice_article__2013.230b408f5f5c14af.bin",
-          "status": 200,
-          "bytes": 165970,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.jwc__exam__2010.c01e7c6aef3d9939.bin",
-          "status": 200,
-          "bytes": 185671,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2014__root-e76830975fb3__b0.01c7abbdab8113f5.json",
-          "status": 200,
-          "bytes": 2477,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2014__root-e76830975fb3__b2.a7e4f58cbb27bd9f.json",
-          "status": 200,
-          "bytes": 2342,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2015__root-e76830975fb3__b3.74a74ff302678e52.json",
-          "status": 200,
-          "bytes": 2402,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2017__root-4002391b15aa__b1.2bf0c6e9a5314185.json",
-          "status": 200,
-          "bytes": 5031,
-          "elapsedMs": 2
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2017__root-e76830975fb3__b0.7d9c8ab112f70162.json",
-          "status": 200,
-          "bytes": 2446,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2017__root-e76830975fb3__b2.2ece57561710e597.json",
-          "status": 200,
-          "bytes": 2416,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2018__root-e76830975fb3__b0.4f7f5692c7f6b3fc.json",
-          "status": 200,
-          "bytes": 2431,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2017__root-ff93ad0e4ec6__b2.eba08cbffd616663.json",
-          "status": 200,
-          "bytes": 4914,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2018__root-e76830975fb3__b1.5e6d912412cf60c9.json",
-          "status": 200,
-          "bytes": 2371,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2018__root-e76830975fb3__b3.df63eb6bd0e6241e.json",
-          "status": 200,
-          "bytes": 2525,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2019__root-4002391b15aa__b2.a29edb19e11e3e03.json",
-          "status": 200,
-          "bytes": 5029,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2019__root-ff93ad0e4ec6__b1.b842f1b7c25bdeda.json",
-          "status": 200,
-          "bytes": 5157,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2021__root-4002391b15aa__b1.48dbd4ad1462f66e.json",
-          "status": 200,
-          "bytes": 2256,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2021__root-ff93ad0e4ec6__b0.904eff4dc566fa15.json",
-          "status": 200,
-          "bytes": 2271,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2021__root-ff93ad0e4ec6__b1.f694dcf87d9dff1b.json",
-          "status": 200,
-          "bytes": 2319,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2024__root-4002391b15aa__b2.59ee1ce1e915dbe0.json",
-          "status": 200,
-          "bytes": 6655,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2024__root-ff93ad0e4ec6__b1.82fa425f234ebdbb.json",
-          "status": 200,
-          "bytes": 9125,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2025__root-ff93ad0e4ec6__b0.3f8e348f4aae122a.json",
-          "status": 200,
-          "bytes": 2292,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2025__root-ff93ad0e4ec6__b1.23735fe83156af23.json",
-          "status": 200,
-          "bytes": 2336,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2025__root-ff93ad0e4ec6__b3.260e5daeb827c6d5.json",
-          "status": 200,
-          "bytes": 2262,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2026__root-e76830975fb3__b0.75e3294d6584d7c5.json",
-          "status": 200,
-          "bytes": 14596,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2026__root-e76830975fb3__b1.863302f5a5f7c34c.json",
-          "status": 200,
-          "bytes": 16826,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2026__root-e76830975fb3__b2.99bd029b819b13b5.json",
-          "status": 200,
-          "bytes": 12092,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__2026__root-ff93ad0e4ec6__b0.cbc1864613c67708.json",
-          "status": 200,
-          "bytes": 45871,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__attachment__undated__root-ff93ad0e4ec6__b2.fe05216dba6e65e2.json",
-          "status": 200,
-          "bytes": 2097,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__detail__2013__root-e76830975fb3__b0.d481061b8f7d3615.json",
-          "status": 200,
-          "bytes": 16770,
-          "elapsedMs": 3
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__detail__2013__root-e76830975fb3__b3.3b3c5b52129f8a1f.json",
-          "status": 200,
-          "bytes": 6427,
-          "elapsedMs": 0
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__detail__2016__root-e76830975fb3__b3.0d48b5c17493038c.json",
-          "status": 200,
-          "bytes": 2012,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__download__detail__undated__root-ff93ad0e4ec6__b1.404be2eb06b73a89.json",
-          "status": 200,
-          "bytes": 1250,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__exam__detail__2013__root-4002391b15aa__b2.5ed6f164bd4b0298.json",
-          "status": 200,
-          "bytes": 11067,
-          "elapsedMs": 1
-        },
-        {
-          "path": "/generated/collections/njupt-public/sitegraph/full_shards/full.jwc__exam__detail__2019__root-4002391b15aa__b3.3bffeccd59490f2d.json",
-          "status": 200,
-          "bytes": 5247,
-          "elapsedMs": 1
+          "kind": "image",
+          "name": "logo.png",
+          "url": "http://127.0.0.1:4177/assets/logo.png"
         }
-      ]
+      ],
+      "passed": true
     },
     {
       "name": "desktop-filter-time",
       "query": "奖学金",
+      "viewport": "1280x720",
       "filters": {
-        "sourceId": "xsc",
+        "source": "xsc",
         "facet": "notice_article",
         "dateRange": "past_year"
       },
-      "viewport": {
-        "width": 1280,
-        "height": 720
+      "elapsed_ms": 16091,
+      "first_settled_ms": 12102,
+      "has_result_text": true,
+      "has_data_error": false,
+      "diagnostics": {
+        "phase": "scoped_exhaustive_complete",
+        "first_result_source": "热查询 Top-K 证书",
+        "query_class": "筛选查询",
+        "fast_start_visible": false,
+        "new_read_zero": true,
+        "new_read_text": "0 B",
+        "loaded_text": "828 KB",
+        "match_count": 6,
+        "proved_no_match_shards": 2
       },
-      "started_at": "2026-06-04T09:12:11.810Z",
-      "first_result_ms": 52,
-      "complete_ms": 52,
-      "result_count_visible": 6,
-      "first_result_title": "南京邮电大学2024-2025学年“甘霖励志奖学金”拟推荐名单公示",
-      "completion_label": "筛选范围核查完毕",
-      "generated_request_count": 0,
-      "generated_network_bytes": 0,
-      "immutable_artifact_request_count": 0,
-      "immutable_artifact_network_bytes": 0,
-      "non_200_count": 0,
-      "requests": []
+      "layout": {
+        "client_width": 1270,
+        "overflow_x": 0,
+        "overflowing_elements": [],
+        "scroll_width": 1270
+      },
+      "console_error_count": 0,
+      "console_errors": [],
+      "assets": [
+        {
+          "kind": "script",
+          "name": "index-vRUgntJp.js",
+          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
+        },
+        {
+          "kind": "stylesheet",
+          "name": "index-CR5wMP_P.css",
+          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
+        },
+        {
+          "kind": "script",
+          "name": "workbox-window.prod.es5-BBnX5xw4.js",
+          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
+        },
+        {
+          "kind": "image",
+          "name": "logo.png",
+          "url": "http://127.0.0.1:4177/assets/logo.png"
+        },
+        {
+          "kind": "script",
+          "name": "collectionSearch.worker-DK9M4uxs.js",
+          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
+        }
+      ],
+      "passed": true
     },
     {
-      "name": "mobile-hot",
+      "name": "mobile-hot-startup",
       "query": "大创",
-      "filters": {},
-      "viewport": {
-        "width": 390,
-        "height": 844
+      "viewport": "390x844",
+      "filters": null,
+      "elapsed_ms": 824,
+      "first_settled_ms": 42,
+      "has_result_text": true,
+      "has_data_error": false,
+      "diagnostics": {
+        "phase": "global_exhaustive_complete",
+        "first_result_source": "热查询首屏证书",
+        "query_class": "热查询",
+        "fast_start_visible": true,
+        "new_read_zero": true,
+        "new_read_text": "0 B",
+        "loaded_text": "1.2 MB",
+        "match_count": 1075,
+        "proved_no_match_shards": 471
       },
-      "started_at": "2026-06-04T09:12:12.749Z",
-      "first_result_ms": 95,
-      "complete_ms": 336,
-      "result_count_visible": 20,
-      "first_result_title": "2024年度大学生创新创业训练计划项目结题验收成绩公示",
-      "completion_label": "全量核查完毕",
-      "generated_request_count": 4,
-      "generated_network_bytes": 935213,
-      "immutable_artifact_request_count": 3,
-      "immutable_artifact_network_bytes": 918675,
-      "non_200_count": 0,
-      "requests": [
+      "layout": {
+        "client_width": 380,
+        "overflow_x": 0,
+        "overflowing_elements": [],
+        "scroll_width": 380
+      },
+      "console_error_count": 0,
+      "console_errors": [],
+      "assets": [
         {
-          "path": "/generated/collections/njupt-public/manifest.json",
-          "status": 200,
-          "bytes": 16538,
-          "elapsedMs": 1
+          "kind": "script",
+          "name": "index-vRUgntJp.js",
+          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
         },
         {
-          "path": "/generated/collections/njupt-public/sitegraph/hot_query_proofs/hot_query_initial.query-66ee9d993a64.98743cc440d6fc0a.json",
-          "status": 200,
-          "bytes": 62398,
-          "elapsedMs": 1
+          "kind": "stylesheet",
+          "name": "index-CR5wMP_P.css",
+          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
         },
         {
-          "path": "/generated/collections/njupt-public/sitegraph/hot_query_proofs/hot_query_topk.query-66ee9d993a64.7b673726398f2f31.json",
-          "status": 200,
-          "bytes": 244181,
-          "elapsedMs": 1
+          "kind": "script",
+          "name": "workbox-window.prod.es5-BBnX5xw4.js",
+          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
         },
         {
-          "path": "/generated/collections/njupt-public/sitegraph/hot_query_proofs/hot_query_complete.query-66ee9d993a64.3b515248b51e5c2b.json",
-          "status": 200,
-          "bytes": 612096,
-          "elapsedMs": 1
+          "kind": "image",
+          "name": "logo.png",
+          "url": "http://127.0.0.1:4177/assets/logo.png"
+        },
+        {
+          "kind": "script",
+          "name": "collectionSearch.worker-DK9M4uxs.js",
+          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
         }
-      ]
+      ],
+      "passed": true
     }
   ],
-  "console_errors": []
+  "warm_repeat": {
+    "name": "desktop-warm-repeat-calendar",
+    "query": "校历",
+    "viewport": "1280x720",
+    "diagnostics_first": {
+      "phase": "global_exhaustive_complete",
+      "first_result_source": "热查询首屏证书",
+      "query_class": "热查询",
+      "fast_start_visible": true,
+      "new_read_zero": true,
+      "new_read_text": "0 B",
+      "loaded_text": "657 KB",
+      "match_count": 96,
+      "proved_no_match_shards": 864
+    },
+    "diagnostics_second": {
+      "phase": "global_exhaustive_complete",
+      "first_result_source": "热查询首屏证书",
+      "query_class": "热查询",
+      "fast_start_visible": true,
+      "new_read_zero": true,
+      "new_read_text": "0 B",
+      "loaded_text": "657 KB",
+      "match_count": 96,
+      "proved_no_match_shards": 864
+    },
+    "immutable_artifact_transfer_bytes": 0,
+    "has_data_error": false,
+    "layout": {
+      "client_width": 1270,
+      "overflow_x": 0,
+      "overflowing_elements": [],
+      "scroll_width": 1270
+    },
+    "console_error_count": 0,
+    "passed": true
+  },
+  "evidence_notes": [
+    "The in-app browser isolated context does not expose ResourceTiming performance entries, so immutable warm transfer bytes are checked through the app diagnostic new-read counter.",
+    "High-DF broad queries are accepted once visible partial results are rendered; proof completion remains asynchronous.",
+    "All scenarios assert no visible data request failure, no artifact HTTP error text, no console error logs, and no horizontal layout overflow."
+  ]
 }

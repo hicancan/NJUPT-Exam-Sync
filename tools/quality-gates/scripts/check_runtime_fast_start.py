@@ -11,8 +11,14 @@ WORKER_PATH = REPO_ROOT / "apps" / "web" / "src" / "features" / "collection-sear
 FAST_START_PATH = REPO_ROOT / "apps" / "web" / "src" / "features" / "collection-search" / "worker" / "fastStart" / "searchWorkerFastStart.ts"
 SESSION_PATH = REPO_ROOT / "apps" / "web" / "src" / "features" / "collection-search" / "worker" / "session" / "searchWorkerSession.ts"
 TELEMETRY_PATH = REPO_ROOT / "apps" / "web" / "src" / "features" / "collection-search" / "worker" / "telemetry" / "searchWorkerTelemetry.ts"
-CONTRACT_PATH = REPO_ROOT / "packages" / "contracts" / "src" / "search-index" / "index.ts"
-UI_PATH = REPO_ROOT / "apps" / "web" / "src" / "features" / "collection-search" / "ui" / "CollectionSearchSection.tsx"
+CONTRACT_PATHS = (
+    REPO_ROOT / "packages" / "contracts" / "src" / "search-index" / "index.ts",
+    REPO_ROOT / "packages" / "contracts" / "src" / "search-index" / "runtime.ts",
+)
+UI_PATHS = (
+    REPO_ROOT / "apps" / "web" / "src" / "features" / "collection-search" / "ui" / "CollectionSearchSection.tsx",
+    REPO_ROOT / "apps" / "web" / "src" / "features" / "collection-search" / "ui" / "CollectionSearchStatus.tsx",
+)
 
 
 def fail(message: str) -> None:
@@ -38,8 +44,8 @@ def main() -> None:
     fast_start = read(FAST_START_PATH)
     session = read(SESSION_PATH)
     telemetry = read(TELEMETRY_PATH)
-    contract = read(CONTRACT_PATH)
-    ui = read(UI_PATH)
+    contract = "\n".join(read(path) for path in CONTRACT_PATHS)
+    ui = "\n".join(read(path) for path in UI_PATHS)
 
     if "type: 'init'" in hook or 'type: "init"' in hook:
         fail("useSearchIndexWorker must not auto-post init; URL queries must be able to cold-start fast-start")

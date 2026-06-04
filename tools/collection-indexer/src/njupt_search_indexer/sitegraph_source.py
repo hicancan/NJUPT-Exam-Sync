@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -255,3 +256,16 @@ def validate_sitegraph_package(index_dir: Path) -> dict[str, Any]:
 
 def package_source_id(package: dict[str, Any]) -> str:
     return clean_text(package.get("site", {}).get("site_id")) or clean_text(package.get("manifest", {}).get("site_id")) or "sitegraph"
+
+
+def document_source_id(document: dict[str, Any]) -> str:
+    return clean_text(document.get("source_id")) or "unknown"
+
+
+def package_source_domain(package: dict[str, Any]) -> str:
+    return clean_text(package.get("site", {}).get("domain")) or clean_text(package.get("site", {}).get("base_url"))
+
+
+def source_field_counts(documents: list[dict[str, Any]], source_id: str, field: str) -> dict[str, int]:
+    counts = Counter(str(document.get(field) or "unknown") for document in documents if document_source_id(document) == source_id)
+    return dict(sorted(counts.items()))
