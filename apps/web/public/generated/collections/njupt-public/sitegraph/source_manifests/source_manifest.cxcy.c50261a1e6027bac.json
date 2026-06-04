@@ -1,0 +1,3408 @@
+{
+  "version": "sitegraph-source-manifest-proof-ledger-v3",
+  "source_id": "cxcy",
+  "display_name": "创新创业教育学院",
+  "domain": "cxcy.njupt.edu.cn",
+  "doc_count": 685,
+  "attachment_count": 204,
+  "attachment_evidence_coverage": {
+    "total": 204,
+    "metadata_only": 204,
+    "filename_only": 204,
+    "text_extracted": 0,
+    "snippet": 0,
+    "full_content": 0
+  },
+  "facet_counts": {
+    "download": 104,
+    "exam": 38,
+    "external": 58,
+    "news": 173,
+    "notice_article": 224,
+    "policy": 21,
+    "system": 2,
+    "workflow": 65
+  },
+  "record_counts": {
+    "attachment": 13,
+    "detail": 612,
+    "external": 60
+  },
+  "year_counts": {
+    "2017": 2,
+    "2018": 76,
+    "2019": 66,
+    "2020": 67,
+    "2021": 61,
+    "2022": 67,
+    "2023": 17,
+    "2024": 97,
+    "2025": 85,
+    "2026": 53,
+    "undated": 94
+  },
+  "local_indexes": [
+    {
+      "index_id": "cxcy__download__2018",
+      "scope": {
+        "index_id": "cxcy__download__2018",
+        "source_id": "cxcy",
+        "facet": "download",
+        "year": "2018",
+        "shard_ids": [
+          "cxcy__download__detail__2018__root-ff93ad0e4ec6__b0",
+          "cxcy__download__detail__2018__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 2,
+      "shards": [
+        {
+          "shard_id": "cxcy__download__detail__2018__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2018__root-ff93ad0e4ec6__b0.7a37f258571b003e.json",
+          "bytes": 3563,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__download__detail__2018__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2018__root-ff93ad0e4ec6__b3.29f06e734855433d.json",
+          "bytes": 4661,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__download__2018.e08ae6759a0f84a0.json",
+        "sha256": "e08ae6759a0f84a00ec894650dacd3e5e0395a457a80c12c352d23b3b7610685",
+        "bytes": 2999,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 2
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__download__2018.bdff871d07bf5ef2.bin",
+        "sha256": "bdff871d07bf5ef24b4737849717f0b06337d4069ad8babbb953ef8b16610cd3",
+        "bytes": 3634,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__download__2018.4bd3802b2d3386a0.bin",
+        "sha256": "4bd3802b2d3386a0f40a9c76ad700cfe247cb73e1a22b5dc55cb765a6ce0f882",
+        "bytes": 6887,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__download__2019",
+      "scope": {
+        "index_id": "cxcy__download__2019",
+        "source_id": "cxcy",
+        "facet": "download",
+        "year": "2019",
+        "shard_ids": [
+          "cxcy__download__detail__2019__root-ff93ad0e4ec6__b0",
+          "cxcy__download__detail__2019__root-ff93ad0e4ec6__b1",
+          "cxcy__download__detail__2019__root-ff93ad0e4ec6__b2",
+          "cxcy__download__detail__2019__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 8,
+      "shards": [
+        {
+          "shard_id": "cxcy__download__detail__2019__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2019__root-ff93ad0e4ec6__b0.6af79b0ac87f5c74.json",
+          "bytes": 9533,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__download__detail__2019__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2019__root-ff93ad0e4ec6__b1.831e791458f45d8f.json",
+          "bytes": 2984,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__download__detail__2019__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2019__root-ff93ad0e4ec6__b2.b394cf8096ca1951.json",
+          "bytes": 5694,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__download__detail__2019__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2019__root-ff93ad0e4ec6__b3.08ef5cb354c0de53.json",
+          "bytes": 20936,
+          "count": 3
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__download__2019.a90924cf1f46eb04.json",
+        "sha256": "a90924cf1f46eb04e78f2cc6517966c970ba56a83e130ce9987962131e7e4009",
+        "bytes": 10197,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 8
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__download__2019.cd8170139592dade.bin",
+        "sha256": "cd8170139592dade2427206dc72e1e11e32eb2783f8c1154fd79d495e147f139",
+        "bytes": 7464,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__download__2019.647d539c8e586e41.bin",
+        "sha256": "647d539c8e586e416417e452216a75db56e53a99eda5f377e739452487281598",
+        "bytes": 22824,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__download__2020",
+      "scope": {
+        "index_id": "cxcy__download__2020",
+        "source_id": "cxcy",
+        "facet": "download",
+        "year": "2020",
+        "shard_ids": [
+          "cxcy__download__detail__2020__root-ff93ad0e4ec6__b0",
+          "cxcy__download__detail__2020__root-ff93ad0e4ec6__b1",
+          "cxcy__download__detail__2020__root-ff93ad0e4ec6__b2"
+        ]
+      },
+      "doc_count": 9,
+      "shards": [
+        {
+          "shard_id": "cxcy__download__detail__2020__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2020__root-ff93ad0e4ec6__b0.2317f1c51c53f8eb.json",
+          "bytes": 20268,
+          "count": 4
+        },
+        {
+          "shard_id": "cxcy__download__detail__2020__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2020__root-ff93ad0e4ec6__b1.4e7d153d798b0cef.json",
+          "bytes": 13968,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__download__detail__2020__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2020__root-ff93ad0e4ec6__b2.4e8bf3330f46cb30.json",
+          "bytes": 14723,
+          "count": 3
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__download__2020.ca68dbfd35d6e9a5.json",
+        "sha256": "ca68dbfd35d6e9a5ae7b2d05dbc87ffe36de780f98871d9d74c4370eb161b63b",
+        "bytes": 11316,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 9
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__download__2020.69f75c24b8b5e2fe.bin",
+        "sha256": "69f75c24b8b5e2fe95a91731e86a2b17e16c1b6d49c5cc39cfb20251ae8144f1",
+        "bytes": 8175,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__download__2020.0b172b00405661d7.bin",
+        "sha256": "0b172b00405661d78ee2658a9cd1b04c118660a4b70b047a07feec31c0a559c5",
+        "bytes": 24241,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__download__2021",
+      "scope": {
+        "index_id": "cxcy__download__2021",
+        "source_id": "cxcy",
+        "facet": "download",
+        "year": "2021",
+        "shard_ids": [
+          "cxcy__download__detail__2021__root-ff93ad0e4ec6__b0",
+          "cxcy__download__detail__2021__root-ff93ad0e4ec6__b1",
+          "cxcy__download__detail__2021__root-ff93ad0e4ec6__b2",
+          "cxcy__download__detail__2021__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 12,
+      "shards": [
+        {
+          "shard_id": "cxcy__download__detail__2021__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2021__root-ff93ad0e4ec6__b0.36b534362b11ad43.json",
+          "bytes": 24389,
+          "count": 4
+        },
+        {
+          "shard_id": "cxcy__download__detail__2021__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2021__root-ff93ad0e4ec6__b1.ed7c90bb1597aa07.json",
+          "bytes": 4450,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__download__detail__2021__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2021__root-ff93ad0e4ec6__b2.2bb977fe4d911197.json",
+          "bytes": 5827,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__download__detail__2021__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2021__root-ff93ad0e4ec6__b3.44325810b5904823.json",
+          "bytes": 33453,
+          "count": 6
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__download__2021.5455b8240b24d274.json",
+        "sha256": "5455b8240b24d2742175d4ee595c11ac455652e7364b392e251f0a648de7d344",
+        "bytes": 14944,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 12
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__download__2021.5e9382faef8a7c72.bin",
+        "sha256": "5e9382faef8a7c72ad4fa2492f10c5e5edfeb64ee1ce547cb84a5835cf41b127",
+        "bytes": 10791,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__download__2021.7b2e56da34c41f6e.bin",
+        "sha256": "7b2e56da34c41f6ec52a3e78a8a6949e5ecc9d54b347c0273d11df0cf80558e9",
+        "bytes": 32954,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__download__2022",
+      "scope": {
+        "index_id": "cxcy__download__2022",
+        "source_id": "cxcy",
+        "facet": "download",
+        "year": "2022",
+        "shard_ids": [
+          "cxcy__download__detail__2022__root-ff93ad0e4ec6__b0",
+          "cxcy__download__detail__2022__root-ff93ad0e4ec6__b1",
+          "cxcy__download__detail__2022__root-ff93ad0e4ec6__b2",
+          "cxcy__download__detail__2022__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 12,
+      "shards": [
+        {
+          "shard_id": "cxcy__download__detail__2022__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2022__root-ff93ad0e4ec6__b0.e77fce3948dd1887.json",
+          "bytes": 8411,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__download__detail__2022__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2022__root-ff93ad0e4ec6__b1.8c1ebee27a2e6359.json",
+          "bytes": 28297,
+          "count": 6
+        },
+        {
+          "shard_id": "cxcy__download__detail__2022__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2022__root-ff93ad0e4ec6__b2.d5fb07e97d45cfe4.json",
+          "bytes": 5956,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__download__detail__2022__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2022__root-ff93ad0e4ec6__b3.d1d6934d889e6a42.json",
+          "bytes": 20836,
+          "count": 3
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__download__2022.5bfe9ec62969600a.json",
+        "sha256": "5bfe9ec62969600ace8c25886deccc2c60ddc975b058f65130cb57d4b9606bf2",
+        "bytes": 14971,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 12
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__download__2022.fabfa00974cfc5b6.bin",
+        "sha256": "fabfa00974cfc5b6774aad046eebb4ac69f110df9882c76f104ab3660f575154",
+        "bytes": 10884,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__download__2022.c2aac167958cdba8.bin",
+        "sha256": "c2aac167958cdba8a3972fe0b5e87809c7f7a2188a633de9d3fab2c89edb76e1",
+        "bytes": 32364,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__download__2023",
+      "scope": {
+        "index_id": "cxcy__download__2023",
+        "source_id": "cxcy",
+        "facet": "download",
+        "year": "2023",
+        "shard_ids": [
+          "cxcy__download__detail__2023__root-ff93ad0e4ec6__b0",
+          "cxcy__download__detail__2023__root-ff93ad0e4ec6__b2",
+          "cxcy__download__detail__2023__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 6,
+      "shards": [
+        {
+          "shard_id": "cxcy__download__detail__2023__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2023__root-ff93ad0e4ec6__b0.cdf087b9014e55fe.json",
+          "bytes": 3758,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__download__detail__2023__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2023__root-ff93ad0e4ec6__b2.ecc926a5127c2000.json",
+          "bytes": 20585,
+          "count": 4
+        },
+        {
+          "shard_id": "cxcy__download__detail__2023__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2023__root-ff93ad0e4ec6__b3.63d9d84a3f723604.json",
+          "bytes": 3424,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__download__2023.0fc0b8346b7dcec5.json",
+        "sha256": "0fc0b8346b7dcec5c6d84add3f5fada797453edb04acc64e8bc732092d39cbb1",
+        "bytes": 7769,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 6
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__download__2023.b50f42194273973a.bin",
+        "sha256": "b50f42194273973a0c81d8029c956fc952327bf486f4b37d843093f984775ffa",
+        "bytes": 6339,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__download__2023.91610806744f9469.bin",
+        "sha256": "91610806744f9469fdd3349606477af7034fa39f5fabab59815fe6e1b86a8a72",
+        "bytes": 17322,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__download__2024",
+      "scope": {
+        "index_id": "cxcy__download__2024",
+        "source_id": "cxcy",
+        "facet": "download",
+        "year": "2024",
+        "shard_ids": [
+          "cxcy__download__detail__2024__root-ff93ad0e4ec6__b0",
+          "cxcy__download__detail__2024__root-ff93ad0e4ec6__b1",
+          "cxcy__download__detail__2024__root-ff93ad0e4ec6__b2",
+          "cxcy__download__detail__2024__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 12,
+      "shards": [
+        {
+          "shard_id": "cxcy__download__detail__2024__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2024__root-ff93ad0e4ec6__b0.c9c8e141904338e8.json",
+          "bytes": 14657,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__download__detail__2024__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2024__root-ff93ad0e4ec6__b1.7f9087c49148555d.json",
+          "bytes": 11011,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__download__detail__2024__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2024__root-ff93ad0e4ec6__b2.b6b66c40312d573f.json",
+          "bytes": 55833,
+          "count": 7
+        },
+        {
+          "shard_id": "cxcy__download__detail__2024__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2024__root-ff93ad0e4ec6__b3.44b519f21254774b.json",
+          "bytes": 3698,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__download__2024.bdea01b6ff0955c0.json",
+        "sha256": "bdea01b6ff0955c0df3378c6b72375364a63eac8f65b98a2e977c679c2b78908",
+        "bytes": 14777,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 12
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__download__2024.f9013332bf1ee823.bin",
+        "sha256": "f9013332bf1ee823d7be1a2a3d5623873bad713fabf461582305a88ee0160979",
+        "bytes": 14659,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__download__2024.23f7ac775b0266bf.bin",
+        "sha256": "23f7ac775b0266bf2853bbf43ddfbbd31265d94ca348d443572eec2b04741fe8",
+        "bytes": 30956,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__download__2025",
+      "scope": {
+        "index_id": "cxcy__download__2025",
+        "source_id": "cxcy",
+        "facet": "download",
+        "year": "2025",
+        "shard_ids": [
+          "cxcy__download__detail__2025__root-ff93ad0e4ec6__b0",
+          "cxcy__download__detail__2025__root-ff93ad0e4ec6__b1",
+          "cxcy__download__detail__2025__root-ff93ad0e4ec6__b2",
+          "cxcy__download__detail__2025__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 17,
+      "shards": [
+        {
+          "shard_id": "cxcy__download__detail__2025__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2025__root-ff93ad0e4ec6__b0.379a3c19f86ea63f.json",
+          "bytes": 32330,
+          "count": 7
+        },
+        {
+          "shard_id": "cxcy__download__detail__2025__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2025__root-ff93ad0e4ec6__b1.e7f6d02b7bc4241e.json",
+          "bytes": 17934,
+          "count": 4
+        },
+        {
+          "shard_id": "cxcy__download__detail__2025__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2025__root-ff93ad0e4ec6__b2.d4de26884e835b79.json",
+          "bytes": 12578,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__download__detail__2025__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2025__root-ff93ad0e4ec6__b3.022a58c172f11b34.json",
+          "bytes": 32401,
+          "count": 4
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__download__2025.4bdc20ed765e0305.json",
+        "sha256": "4bdc20ed765e0305b56714a808d287295c4f2d8fb84984185178ef89aaf99dbf",
+        "bytes": 20714,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 17
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__download__2025.0b941f6994c0c257.bin",
+        "sha256": "0b941f6994c0c257b7eef18cb45c296e05e3825651c8680d806e7100920eb906",
+        "bytes": 20353,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__download__2025.ed2d35de4c798365.bin",
+        "sha256": "ed2d35de4c79836529138321849a7a7eb1e11fe47fbe588547b3a91f6d696225",
+        "bytes": 42608,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__download__2026",
+      "scope": {
+        "index_id": "cxcy__download__2026",
+        "source_id": "cxcy",
+        "facet": "download",
+        "year": "2026",
+        "shard_ids": [
+          "cxcy__download__detail__2026__root-ff93ad0e4ec6__b0",
+          "cxcy__download__detail__2026__root-ff93ad0e4ec6__b1",
+          "cxcy__download__detail__2026__root-ff93ad0e4ec6__b2",
+          "cxcy__download__detail__2026__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 13,
+      "shards": [
+        {
+          "shard_id": "cxcy__download__detail__2026__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2026__root-ff93ad0e4ec6__b0.a32fa092ad61ed9b.json",
+          "bytes": 24698,
+          "count": 4
+        },
+        {
+          "shard_id": "cxcy__download__detail__2026__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2026__root-ff93ad0e4ec6__b1.290ff4c9fcaef8a2.json",
+          "bytes": 4990,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__download__detail__2026__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2026__root-ff93ad0e4ec6__b2.5b6d7656b4296701.json",
+          "bytes": 20984,
+          "count": 4
+        },
+        {
+          "shard_id": "cxcy__download__detail__2026__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__detail__2026__root-ff93ad0e4ec6__b3.d686321613d24a30.json",
+          "bytes": 24162,
+          "count": 4
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__download__2026.77b8615327847e19.json",
+        "sha256": "77b8615327847e19396581df928becbbf414450d1a3c74708bba40ea4614af94",
+        "bytes": 16275,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 13
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__download__2026.1b739824f21b6282.bin",
+        "sha256": "1b739824f21b62825d6d4bad9cdf54ab23f5f026d2f1726cbbdfac0dc1d28f1b",
+        "bytes": 15284,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__download__2026.6654d2c173d65990.bin",
+        "sha256": "6654d2c173d65990531407302d5ad5e8033147f5c92c2cb0fcbe944fac971f82",
+        "bytes": 35088,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__download__undated",
+      "scope": {
+        "index_id": "cxcy__download__undated",
+        "source_id": "cxcy",
+        "facet": "download",
+        "year": "undated",
+        "shard_ids": [
+          "cxcy__download__attachment__undated__root-0a67a722e3c7__b1",
+          "cxcy__download__attachment__undated__root-0a67a722e3c7__b2",
+          "cxcy__download__attachment__undated__root-0a67a722e3c7__b3",
+          "cxcy__download__attachment__undated__root-ff93ad0e4ec6__b0",
+          "cxcy__download__attachment__undated__root-ff93ad0e4ec6__b1",
+          "cxcy__download__attachment__undated__root-ff93ad0e4ec6__b2",
+          "cxcy__download__attachment__undated__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 13,
+      "shards": [
+        {
+          "shard_id": "cxcy__download__attachment__undated__root-0a67a722e3c7__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__attachment__undated__root-0a67a722e3c7__b1.9cba07167d4d36af.json",
+          "bytes": 2045,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__download__attachment__undated__root-0a67a722e3c7__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__attachment__undated__root-0a67a722e3c7__b2.f30bc9229449a0b2.json",
+          "bytes": 2165,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__download__attachment__undated__root-0a67a722e3c7__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__attachment__undated__root-0a67a722e3c7__b3.166dd32965df47fd.json",
+          "bytes": 2135,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__download__attachment__undated__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__attachment__undated__root-ff93ad0e4ec6__b0.eeb70f77958ef983.json",
+          "bytes": 4789,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__download__attachment__undated__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__attachment__undated__root-ff93ad0e4ec6__b1.8ce4c3568ffc315e.json",
+          "bytes": 2447,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__download__attachment__undated__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__attachment__undated__root-ff93ad0e4ec6__b2.d7842db82c0b721f.json",
+          "bytes": 9541,
+          "count": 4
+        },
+        {
+          "shard_id": "cxcy__download__attachment__undated__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__download__attachment__undated__root-ff93ad0e4ec6__b3.66848de4ac2f3704.json",
+          "bytes": 6928,
+          "count": 3
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__download__undated.7be820054b3f2564.json",
+        "sha256": "7be820054b3f25645ae9826758b5ab6343f9c701186e12a01534444945b73737",
+        "bytes": 16879,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 13
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__download__undated.8e903993a663c1ed.bin",
+        "sha256": "8e903993a663c1edfdc539db7f361652a2ea5b24a937ebb01ce2692372322448",
+        "bytes": 11228,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__download__undated.833b7c49356c616b.bin",
+        "sha256": "833b7c49356c616bd66410928fbfee9a2081a14277e38b67b052e825b0e1212d",
+        "bytes": 10026,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__exam__2018",
+      "scope": {
+        "index_id": "cxcy__exam__2018",
+        "source_id": "cxcy",
+        "facet": "exam",
+        "year": "2018",
+        "shard_ids": [
+          "cxcy__exam__detail__2018__root-ff93ad0e4ec6__b0",
+          "cxcy__exam__detail__2018__root-ff93ad0e4ec6__b2",
+          "cxcy__exam__detail__2018__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 4,
+      "shards": [
+        {
+          "shard_id": "cxcy__exam__detail__2018__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2018__root-ff93ad0e4ec6__b0.73fb36a943903fbb.json",
+          "bytes": 15424,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__exam__detail__2018__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2018__root-ff93ad0e4ec6__b2.901b577848c8ce92.json",
+          "bytes": 8376,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__exam__detail__2018__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2018__root-ff93ad0e4ec6__b3.8de85134ecf415fc.json",
+          "bytes": 17419,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__exam__2018.2c1beecd96fd209c.json",
+        "sha256": "2c1beecd96fd209c5ec0f5287349bbfc9d31083797de3c39ca379dbbf45e4574",
+        "bytes": 5289,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 4
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__exam__2018.4953975e36fc4daa.bin",
+        "sha256": "4953975e36fc4daa727a843eb0f5e096918b3fd348ab1d2c5aff12bfa8ee19c2",
+        "bytes": 4554,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__exam__2018.23e8c3c996f89f37.bin",
+        "sha256": "23e8c3c996f89f37b9fe8a49b206bffb7d945e9b3bc68ae6a074329574d6d89f",
+        "bytes": 12518,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__exam__2019",
+      "scope": {
+        "index_id": "cxcy__exam__2019",
+        "source_id": "cxcy",
+        "facet": "exam",
+        "year": "2019",
+        "shard_ids": [
+          "cxcy__exam__detail__2019__root-ff93ad0e4ec6__b0",
+          "cxcy__exam__detail__2019__root-ff93ad0e4ec6__b1",
+          "cxcy__exam__detail__2019__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 4,
+      "shards": [
+        {
+          "shard_id": "cxcy__exam__detail__2019__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2019__root-ff93ad0e4ec6__b0.dffb5827af7ceb3e.json",
+          "bytes": 4882,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__exam__detail__2019__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2019__root-ff93ad0e4ec6__b1.059d899a48ff7ef3.json",
+          "bytes": 11992,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__exam__detail__2019__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2019__root-ff93ad0e4ec6__b3.84c9fc98543f2c94.json",
+          "bytes": 5529,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__exam__2019.1654a0b564230457.json",
+        "sha256": "1654a0b5642304573f15f38ad09fd260a856735a0e2a77bf2852d1e946da5eee",
+        "bytes": 5523,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 4
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__exam__2019.81f23a6c25bf2183.bin",
+        "sha256": "81f23a6c25bf2183171b55913f7c8ca00744ee28263944e1c860aff4f52015a2",
+        "bytes": 5703,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__exam__2019.3695fc2d0f4e9b77.bin",
+        "sha256": "3695fc2d0f4e9b778d0a36fbc4722c3bd82d56cd26ebcbb26cf03547f63cb5a2",
+        "bytes": 13076,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__exam__2020",
+      "scope": {
+        "index_id": "cxcy__exam__2020",
+        "source_id": "cxcy",
+        "facet": "exam",
+        "year": "2020",
+        "shard_ids": [
+          "cxcy__exam__detail__2020__root-ff93ad0e4ec6__b0",
+          "cxcy__exam__detail__2020__root-ff93ad0e4ec6__b1",
+          "cxcy__exam__detail__2020__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 5,
+      "shards": [
+        {
+          "shard_id": "cxcy__exam__detail__2020__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2020__root-ff93ad0e4ec6__b0.cef32fd59d85bc3d.json",
+          "bytes": 10357,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__exam__detail__2020__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2020__root-ff93ad0e4ec6__b1.b6a1f3a347d3a065.json",
+          "bytes": 10054,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__exam__detail__2020__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2020__root-ff93ad0e4ec6__b3.048864848a3b2039.json",
+          "bytes": 10024,
+          "count": 2
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__exam__2020.56939ccf211621c6.json",
+        "sha256": "56939ccf211621c634dc4570e8dc63b73bd8cbcc20481a671d98513799c9e1b0",
+        "bytes": 6521,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 5
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__exam__2020.20021056ddde93b0.bin",
+        "sha256": "20021056ddde93b0c35b1a2aca1123f08527fc2d4ea06cfd6d02aa2b4bddb469",
+        "bytes": 5643,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__exam__2020.4201d52c436df43a.bin",
+        "sha256": "4201d52c436df43a1d38a8ab8d04ca8d642bfeb72729887585417a5be7772ab7",
+        "bytes": 16406,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__exam__2021",
+      "scope": {
+        "index_id": "cxcy__exam__2021",
+        "source_id": "cxcy",
+        "facet": "exam",
+        "year": "2021",
+        "shard_ids": [
+          "cxcy__exam__detail__2021__root-ff93ad0e4ec6__b1",
+          "cxcy__exam__detail__2021__root-ff93ad0e4ec6__b2"
+        ]
+      },
+      "doc_count": 4,
+      "shards": [
+        {
+          "shard_id": "cxcy__exam__detail__2021__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2021__root-ff93ad0e4ec6__b1.e009ea8a5a5fbd73.json",
+          "bytes": 15295,
+          "count": 3
+        },
+        {
+          "shard_id": "cxcy__exam__detail__2021__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2021__root-ff93ad0e4ec6__b2.bfe850ac1bb53010.json",
+          "bytes": 2930,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__exam__2021.418c1ac7834e3822.json",
+        "sha256": "418c1ac7834e38220e95b5e3fba4f4bbe27910f1a807df9b72ce76c493b8ab67",
+        "bytes": 5406,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 4
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__exam__2021.a43dd573e705d549.bin",
+        "sha256": "a43dd573e705d549927d019fb95a3d5e4842711a5a20fddd8dadf2cfcae5b9b6",
+        "bytes": 5439,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__exam__2021.41fdb6ffa7e3eeb7.bin",
+        "sha256": "41fdb6ffa7e3eeb709c5b470e79669a1428935fd2e581e0f2c5ddbd150ae035a",
+        "bytes": 13446,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__exam__2022",
+      "scope": {
+        "index_id": "cxcy__exam__2022",
+        "source_id": "cxcy",
+        "facet": "exam",
+        "year": "2022",
+        "shard_ids": [
+          "cxcy__exam__detail__2022__root-ff93ad0e4ec6__b0",
+          "cxcy__exam__detail__2022__root-ff93ad0e4ec6__b1",
+          "cxcy__exam__detail__2022__root-ff93ad0e4ec6__b2",
+          "cxcy__exam__detail__2022__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 4,
+      "shards": [
+        {
+          "shard_id": "cxcy__exam__detail__2022__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2022__root-ff93ad0e4ec6__b0.e62fe4c0767d9b6f.json",
+          "bytes": 5683,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__exam__detail__2022__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2022__root-ff93ad0e4ec6__b1.b2740a207acac3e9.json",
+          "bytes": 2437,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__exam__detail__2022__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2022__root-ff93ad0e4ec6__b2.0487993239d49e89.json",
+          "bytes": 5953,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__exam__detail__2022__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2022__root-ff93ad0e4ec6__b3.7a3a69494375be6c.json",
+          "bytes": 6788,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__exam__2022.74a77df2aeadbf1b.json",
+        "sha256": "74a77df2aeadbf1ba9c52c175fcfc9241534e018d08156aefd315f8229141bab",
+        "bytes": 5405,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 4
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__exam__2022.a467d01f9ddadbfb.bin",
+        "sha256": "a467d01f9ddadbfb1d87a4065c584bda1b2ea8b8e10ad13aea2bce6edc966ab3",
+        "bytes": 3889,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__exam__2022.2b1e3bab89e348bc.bin",
+        "sha256": "2b1e3bab89e348bcd1e46784932bdcf9f1ff79eb25f356d4bdfabca72e4b77c7",
+        "bytes": 12910,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__exam__2024",
+      "scope": {
+        "index_id": "cxcy__exam__2024",
+        "source_id": "cxcy",
+        "facet": "exam",
+        "year": "2024",
+        "shard_ids": [
+          "cxcy__exam__detail__2024__root-ff93ad0e4ec6__b0",
+          "cxcy__exam__detail__2024__root-ff93ad0e4ec6__b1",
+          "cxcy__exam__detail__2024__root-ff93ad0e4ec6__b2"
+        ]
+      },
+      "doc_count": 5,
+      "shards": [
+        {
+          "shard_id": "cxcy__exam__detail__2024__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2024__root-ff93ad0e4ec6__b0.3e8b061b934ba5f6.json",
+          "bytes": 3221,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__exam__detail__2024__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2024__root-ff93ad0e4ec6__b1.0d2c8c717b307670.json",
+          "bytes": 3220,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__exam__detail__2024__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2024__root-ff93ad0e4ec6__b2.50b6391f91a0fa52.json",
+          "bytes": 25747,
+          "count": 3
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__exam__2024.f6099aa6a8846770.json",
+        "sha256": "f6099aa6a8846770d597d80ad31e4242e624d6a463aea78657a544fb2a8a253c",
+        "bytes": 6521,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 5
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__exam__2024.683634809709277a.bin",
+        "sha256": "683634809709277a8e57c4375c6e8d51997a15da1d83c5b4ac4cfdab9ae86a2c",
+        "bytes": 6242,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__exam__2024.fb75d9df7ccb696d.bin",
+        "sha256": "fb75d9df7ccb696d6c0c5b6bb55832043d01bd9d7d6aa1cb5f6207c17d7dcc75",
+        "bytes": 14289,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__exam__2025",
+      "scope": {
+        "index_id": "cxcy__exam__2025",
+        "source_id": "cxcy",
+        "facet": "exam",
+        "year": "2025",
+        "shard_ids": [
+          "cxcy__exam__detail__2025__root-ff93ad0e4ec6__b0",
+          "cxcy__exam__detail__2025__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 5,
+      "shards": [
+        {
+          "shard_id": "cxcy__exam__detail__2025__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2025__root-ff93ad0e4ec6__b0.12cef027472ff96c.json",
+          "bytes": 23174,
+          "count": 3
+        },
+        {
+          "shard_id": "cxcy__exam__detail__2025__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2025__root-ff93ad0e4ec6__b3.accd440552807275.json",
+          "bytes": 11061,
+          "count": 2
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__exam__2025.86bb7a9c4e5663ce.json",
+        "sha256": "86bb7a9c4e5663ce3b0d8a410a0b04d200cc379866bd9432a15dba3b33651f73",
+        "bytes": 6526,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 5
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__exam__2025.c81b279c3e4f13f1.bin",
+        "sha256": "c81b279c3e4f13f10111d2cc8499ff558332c1157a21620c9a1513afc91669fc",
+        "bytes": 8775,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__exam__2025.af6a5a75012c32dd.bin",
+        "sha256": "af6a5a75012c32dd923039e01849f87e26a004097e3e5ee91ccc94f132208465",
+        "bytes": 16220,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__exam__2026",
+      "scope": {
+        "index_id": "cxcy__exam__2026",
+        "source_id": "cxcy",
+        "facet": "exam",
+        "year": "2026",
+        "shard_ids": [
+          "cxcy__exam__detail__2026__root-ff93ad0e4ec6__b1",
+          "cxcy__exam__detail__2026__root-ff93ad0e4ec6__b2",
+          "cxcy__exam__detail__2026__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 7,
+      "shards": [
+        {
+          "shard_id": "cxcy__exam__detail__2026__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2026__root-ff93ad0e4ec6__b1.87e48b69c4d6ceba.json",
+          "bytes": 17791,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__exam__detail__2026__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2026__root-ff93ad0e4ec6__b2.5c115b80753573bb.json",
+          "bytes": 30099,
+          "count": 3
+        },
+        {
+          "shard_id": "cxcy__exam__detail__2026__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__exam__detail__2026__root-ff93ad0e4ec6__b3.49d6046b6414e2aa.json",
+          "bytes": 21401,
+          "count": 2
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__exam__2026.7151be48501df82d.json",
+        "sha256": "7151be48501df82d3e2ac544dd9ee8be63fc7b9f276aecca9669ded1e1a873e3",
+        "bytes": 8909,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 7
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__exam__2026.7a0e4435ab6fa725.bin",
+        "sha256": "7a0e4435ab6fa72503b0bbd50522bddd8f04a2ea678b919198477ed252a04bc1",
+        "bytes": 9981,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__exam__2026.b6d62ae68a1f9aaa.bin",
+        "sha256": "b6d62ae68a1f9aaaf5897aac213d59dcf96c8da7ea3195a9623fb823275f453b",
+        "bytes": 17858,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__external__undated",
+      "scope": {
+        "index_id": "cxcy__external__undated",
+        "source_id": "cxcy",
+        "facet": "external",
+        "year": "undated",
+        "shard_ids": [
+          "cxcy__external__external__undated__root-ff93ad0e4ec6__b0",
+          "cxcy__external__external__undated__root-ff93ad0e4ec6__b1",
+          "cxcy__external__external__undated__root-ff93ad0e4ec6__b2",
+          "cxcy__external__external__undated__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 58,
+      "shards": [
+        {
+          "shard_id": "cxcy__external__external__undated__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__external__external__undated__root-ff93ad0e4ec6__b0.f372cf63a52bc62a.json",
+          "bytes": 27292,
+          "count": 17
+        },
+        {
+          "shard_id": "cxcy__external__external__undated__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__external__external__undated__root-ff93ad0e4ec6__b1.9f3d0bb9e28877e3.json",
+          "bytes": 26452,
+          "count": 15
+        },
+        {
+          "shard_id": "cxcy__external__external__undated__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__external__external__undated__root-ff93ad0e4ec6__b2.382601ddcd4d59d0.json",
+          "bytes": 19212,
+          "count": 12
+        },
+        {
+          "shard_id": "cxcy__external__external__undated__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__external__external__undated__root-ff93ad0e4ec6__b3.2fa0850f952beb92.json",
+          "bytes": 22670,
+          "count": 14
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__external__undated.77c0ea3754255ebc.json",
+        "sha256": "77c0ea3754255ebcf834cee1a825f3f0c6e73a725ba7d198e9ee1e97b4875d88",
+        "bytes": 65660,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 58
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__external__undated.b71d70d6603b2e7d.bin",
+        "sha256": "b71d70d6603b2e7d903e8ff2cc77c089b13c8600857c55a9a140e00ee38d064f",
+        "bytes": 22025,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__external__undated.7870485887a93ad3.bin",
+        "sha256": "7870485887a93ad3581fec5ce5ed87c0ccd9d1dce353898aae49210d320f2f05",
+        "bytes": 16460,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__news__2018",
+      "scope": {
+        "index_id": "cxcy__news__2018",
+        "source_id": "cxcy",
+        "facet": "news",
+        "year": "2018",
+        "shard_ids": [
+          "cxcy__news__detail__2018__root-ff93ad0e4ec6__b0",
+          "cxcy__news__detail__2018__root-ff93ad0e4ec6__b1",
+          "cxcy__news__detail__2018__root-ff93ad0e4ec6__b2",
+          "cxcy__news__detail__2018__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 31,
+      "shards": [
+        {
+          "shard_id": "cxcy__news__detail__2018__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2018__root-ff93ad0e4ec6__b0.9a35c612fa64f745.json",
+          "bytes": 14365,
+          "count": 5
+        },
+        {
+          "shard_id": "cxcy__news__detail__2018__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2018__root-ff93ad0e4ec6__b1.2387b0dbff877a0e.json",
+          "bytes": 36864,
+          "count": 12
+        },
+        {
+          "shard_id": "cxcy__news__detail__2018__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2018__root-ff93ad0e4ec6__b2.8a8c9b7faf14b88c.json",
+          "bytes": 16929,
+          "count": 6
+        },
+        {
+          "shard_id": "cxcy__news__detail__2018__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2018__root-ff93ad0e4ec6__b3.bec7f1008c90d51f.json",
+          "bytes": 20463,
+          "count": 8
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__news__2018.b98045c84d38609d.json",
+        "sha256": "b98045c84d38609d3925c32da0f74caefec7b8c0052e013c3ab9859880e51dae",
+        "bytes": 37311,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 31
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__news__2018.8daff22920292882.bin",
+        "sha256": "8daff22920292882d28096e5f0a4d74e2b27638093ad443d9a5238c7dc03778a",
+        "bytes": 19181,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__news__2018.e3c31abb4208f850.bin",
+        "sha256": "e3c31abb4208f850cd3d8d088492f45c5e0a754ce33eed58bc2e74ba1ab4c53c",
+        "bytes": 60065,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__news__2019",
+      "scope": {
+        "index_id": "cxcy__news__2019",
+        "source_id": "cxcy",
+        "facet": "news",
+        "year": "2019",
+        "shard_ids": [
+          "cxcy__news__detail__2019__root-ff93ad0e4ec6__b0",
+          "cxcy__news__detail__2019__root-ff93ad0e4ec6__b1",
+          "cxcy__news__detail__2019__root-ff93ad0e4ec6__b2",
+          "cxcy__news__detail__2019__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 19,
+      "shards": [
+        {
+          "shard_id": "cxcy__news__detail__2019__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2019__root-ff93ad0e4ec6__b0.d59896645ce07828.json",
+          "bytes": 9273,
+          "count": 3
+        },
+        {
+          "shard_id": "cxcy__news__detail__2019__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2019__root-ff93ad0e4ec6__b1.e334f5531809432a.json",
+          "bytes": 12189,
+          "count": 5
+        },
+        {
+          "shard_id": "cxcy__news__detail__2019__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2019__root-ff93ad0e4ec6__b2.c156ad3b1d027a0d.json",
+          "bytes": 16515,
+          "count": 5
+        },
+        {
+          "shard_id": "cxcy__news__detail__2019__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2019__root-ff93ad0e4ec6__b3.15b7e90894340065.json",
+          "bytes": 16862,
+          "count": 6
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__news__2019.a7751eb9a5ed6bbd.json",
+        "sha256": "a7751eb9a5ed6bbda6d0dc64bb9d160ddae1560f4e967dd8c0cf61b2bc7f1202",
+        "bytes": 22899,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 19
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__news__2019.0cc505517e644a3d.bin",
+        "sha256": "0cc505517e644a3d83a46a18c97fae4a6fcec48bcc8d69fa6216dce898f37acc",
+        "bytes": 12936,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__news__2019.f9708b012d1db62f.bin",
+        "sha256": "f9708b012d1db62f2e86225f42d45f2fe1384c035fb2c7990ebdb6a11676ad3e",
+        "bytes": 44481,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__news__2020",
+      "scope": {
+        "index_id": "cxcy__news__2020",
+        "source_id": "cxcy",
+        "facet": "news",
+        "year": "2020",
+        "shard_ids": [
+          "cxcy__news__detail__2020__root-ff93ad0e4ec6__b0",
+          "cxcy__news__detail__2020__root-ff93ad0e4ec6__b1",
+          "cxcy__news__detail__2020__root-ff93ad0e4ec6__b2",
+          "cxcy__news__detail__2020__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 22,
+      "shards": [
+        {
+          "shard_id": "cxcy__news__detail__2020__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2020__root-ff93ad0e4ec6__b0.1115fc3b08ffbbc4.json",
+          "bytes": 19919,
+          "count": 6
+        },
+        {
+          "shard_id": "cxcy__news__detail__2020__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2020__root-ff93ad0e4ec6__b1.cad8ce3e637af958.json",
+          "bytes": 12139,
+          "count": 4
+        },
+        {
+          "shard_id": "cxcy__news__detail__2020__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2020__root-ff93ad0e4ec6__b2.d88c43c055f8d05a.json",
+          "bytes": 17208,
+          "count": 6
+        },
+        {
+          "shard_id": "cxcy__news__detail__2020__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2020__root-ff93ad0e4ec6__b3.3c37b916ab0b7ed8.json",
+          "bytes": 18540,
+          "count": 6
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__news__2020.9400fe8c13f408cb.json",
+        "sha256": "9400fe8c13f408cbb78172ea6653a42c30ef4420766822402f9e453d88ca8319",
+        "bytes": 27057,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 22
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__news__2020.7c784ed4fea79bc2.bin",
+        "sha256": "7c784ed4fea79bc28de25a741230cc65a80b5b2601f4289a3dedad3530b57da4",
+        "bytes": 18725,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__news__2020.625f48457c91beed.bin",
+        "sha256": "625f48457c91beedbf41bc9574b72c95f42102e6a3fad3dc01cf729e86f77a32",
+        "bytes": 54798,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__news__2021",
+      "scope": {
+        "index_id": "cxcy__news__2021",
+        "source_id": "cxcy",
+        "facet": "news",
+        "year": "2021",
+        "shard_ids": [
+          "cxcy__news__detail__2021__root-ff93ad0e4ec6__b0",
+          "cxcy__news__detail__2021__root-ff93ad0e4ec6__b1",
+          "cxcy__news__detail__2021__root-ff93ad0e4ec6__b2",
+          "cxcy__news__detail__2021__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 17,
+      "shards": [
+        {
+          "shard_id": "cxcy__news__detail__2021__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2021__root-ff93ad0e4ec6__b0.5b607bf251e6bca1.json",
+          "bytes": 8523,
+          "count": 3
+        },
+        {
+          "shard_id": "cxcy__news__detail__2021__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2021__root-ff93ad0e4ec6__b1.966b9691c063083b.json",
+          "bytes": 21798,
+          "count": 7
+        },
+        {
+          "shard_id": "cxcy__news__detail__2021__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2021__root-ff93ad0e4ec6__b2.5cb8610a1593b785.json",
+          "bytes": 7660,
+          "count": 3
+        },
+        {
+          "shard_id": "cxcy__news__detail__2021__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2021__root-ff93ad0e4ec6__b3.4db71573a77d6d83.json",
+          "bytes": 13229,
+          "count": 4
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__news__2021.abf1b0c8e0afe6ba.json",
+        "sha256": "abf1b0c8e0afe6ba86cbe1f1b2becf1836b0cac9b620628ad48c2c367efa1c45",
+        "bytes": 20721,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 17
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__news__2021.d8ba68981caaa830.bin",
+        "sha256": "d8ba68981caaa83070c87839d371927facdccdfd4b7359017fe3e24c166f3e97",
+        "bytes": 14031,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__news__2021.5948638e2dc89d8e.bin",
+        "sha256": "5948638e2dc89d8ecca9018043c638f59a4b4461dffeed080e1ff53203168151",
+        "bytes": 41153,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__news__2022",
+      "scope": {
+        "index_id": "cxcy__news__2022",
+        "source_id": "cxcy",
+        "facet": "news",
+        "year": "2022",
+        "shard_ids": [
+          "cxcy__news__detail__2022__root-ff93ad0e4ec6__b0",
+          "cxcy__news__detail__2022__root-ff93ad0e4ec6__b1",
+          "cxcy__news__detail__2022__root-ff93ad0e4ec6__b2",
+          "cxcy__news__detail__2022__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 14,
+      "shards": [
+        {
+          "shard_id": "cxcy__news__detail__2022__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2022__root-ff93ad0e4ec6__b0.32dc50c962eae321.json",
+          "bytes": 5080,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__news__detail__2022__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2022__root-ff93ad0e4ec6__b1.a5f5d921d908047b.json",
+          "bytes": 17960,
+          "count": 5
+        },
+        {
+          "shard_id": "cxcy__news__detail__2022__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2022__root-ff93ad0e4ec6__b2.962acbaba748cd77.json",
+          "bytes": 12375,
+          "count": 4
+        },
+        {
+          "shard_id": "cxcy__news__detail__2022__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2022__root-ff93ad0e4ec6__b3.da69f77c550f9c72.json",
+          "bytes": 11637,
+          "count": 4
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__news__2022.0bbeb2ce9a5a0f3c.json",
+        "sha256": "0bbeb2ce9a5a0f3cf77d9783fdfeda389ec5c1d301882bb8335b1e1deb9d719c",
+        "bytes": 17363,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 14
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__news__2022.ae5c8e3985dd24e8.bin",
+        "sha256": "ae5c8e3985dd24e8abdc31c5e4f81b09ec62341c25f16526dc6d637867b48fd8",
+        "bytes": 13319,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__news__2022.08829742e01d88aa.bin",
+        "sha256": "08829742e01d88aa098fef8351f565c61bea3f65099fa7ee3c0dde0e6364b21e",
+        "bytes": 36401,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__news__2023",
+      "scope": {
+        "index_id": "cxcy__news__2023",
+        "source_id": "cxcy",
+        "facet": "news",
+        "year": "2023",
+        "shard_ids": [
+          "cxcy__news__detail__2023__root-ff93ad0e4ec6__b1",
+          "cxcy__news__detail__2023__root-ff93ad0e4ec6__b2",
+          "cxcy__news__detail__2023__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 4,
+      "shards": [
+        {
+          "shard_id": "cxcy__news__detail__2023__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2023__root-ff93ad0e4ec6__b1.53f8da3ece806135.json",
+          "bytes": 3006,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__news__detail__2023__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2023__root-ff93ad0e4ec6__b2.4d776c29f7bdb417.json",
+          "bytes": 6165,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__news__detail__2023__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2023__root-ff93ad0e4ec6__b3.53b492ec9af0b3c4.json",
+          "bytes": 3615,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__news__2023.4608c219f40b50d6.json",
+        "sha256": "4608c219f40b50d6582be47d75fe792f7869dfaeb7227a13fd568bb8d245276c",
+        "bytes": 5421,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 4
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__news__2023.eeb2cfab82fd8531.bin",
+        "sha256": "eeb2cfab82fd8531060ff76987df9f782486ddce7446c13d24c5b1ffd98101d4",
+        "bytes": 4802,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__news__2023.e637c17626f76fa1.bin",
+        "sha256": "e637c17626f76fa1cd0d3049efd132b27454600d825474bbbcc95171a57ebfff",
+        "bytes": 12931,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__news__2024",
+      "scope": {
+        "index_id": "cxcy__news__2024",
+        "source_id": "cxcy",
+        "facet": "news",
+        "year": "2024",
+        "shard_ids": [
+          "cxcy__news__detail__2024__root-ff93ad0e4ec6__b0",
+          "cxcy__news__detail__2024__root-ff93ad0e4ec6__b1",
+          "cxcy__news__detail__2024__root-ff93ad0e4ec6__b2",
+          "cxcy__news__detail__2024__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 34,
+      "shards": [
+        {
+          "shard_id": "cxcy__news__detail__2024__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2024__root-ff93ad0e4ec6__b0.b9e147359233f5ec.json",
+          "bytes": 30268,
+          "count": 8
+        },
+        {
+          "shard_id": "cxcy__news__detail__2024__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2024__root-ff93ad0e4ec6__b1.aa116ee70f1a233c.json",
+          "bytes": 23035,
+          "count": 7
+        },
+        {
+          "shard_id": "cxcy__news__detail__2024__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2024__root-ff93ad0e4ec6__b2.ccb43b3bbbafade2.json",
+          "bytes": 17870,
+          "count": 5
+        },
+        {
+          "shard_id": "cxcy__news__detail__2024__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2024__root-ff93ad0e4ec6__b3.84558757ff2f3f37.json",
+          "bytes": 53693,
+          "count": 14
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__news__2024.b3f15b7b895ed930.json",
+        "sha256": "b3f15b7b895ed930a5d71ab5bc529e72956762db530a2c1a1442c24a5fb49bf7",
+        "bytes": 40093,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 34
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__news__2024.9cd25b1736d9e72f.bin",
+        "sha256": "9cd25b1736d9e72f673bd8164ae85e9397010faef107908ca2d66482c73c6000",
+        "bytes": 23745,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__news__2024.7a40bde7f77b0204.bin",
+        "sha256": "7a40bde7f77b0204704a404d803fa35e9f54fb053e0e54599f886ee45e6735d2",
+        "bytes": 82141,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__news__2025",
+      "scope": {
+        "index_id": "cxcy__news__2025",
+        "source_id": "cxcy",
+        "facet": "news",
+        "year": "2025",
+        "shard_ids": [
+          "cxcy__news__detail__2025__root-ff93ad0e4ec6__b0",
+          "cxcy__news__detail__2025__root-ff93ad0e4ec6__b1",
+          "cxcy__news__detail__2025__root-ff93ad0e4ec6__b2",
+          "cxcy__news__detail__2025__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 27,
+      "shards": [
+        {
+          "shard_id": "cxcy__news__detail__2025__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2025__root-ff93ad0e4ec6__b0.25c86311a09e4ee0.json",
+          "bytes": 35255,
+          "count": 10
+        },
+        {
+          "shard_id": "cxcy__news__detail__2025__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2025__root-ff93ad0e4ec6__b1.b54968036162808a.json",
+          "bytes": 25587,
+          "count": 8
+        },
+        {
+          "shard_id": "cxcy__news__detail__2025__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2025__root-ff93ad0e4ec6__b2.09dfc13d47f9aad4.json",
+          "bytes": 16311,
+          "count": 4
+        },
+        {
+          "shard_id": "cxcy__news__detail__2025__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2025__root-ff93ad0e4ec6__b3.f17502c4f84bff25.json",
+          "bytes": 16387,
+          "count": 5
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__news__2025.0a59fadd40d80f4c.json",
+        "sha256": "0a59fadd40d80f4ca4a4d208d786f7878ac017c2b9268b389699d391c5bad97d",
+        "bytes": 32205,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 27
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__news__2025.81b7e3292d99abb3.bin",
+        "sha256": "81b7e3292d99abb3d13c54f8fade282b07031b1f24796c6db3681feadea301a5",
+        "bytes": 19754,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__news__2025.dbe335a82b8415e9.bin",
+        "sha256": "dbe335a82b8415e91d173aa3d343e5b8ed59907e9277b4c8c7eab22ed749b4ac",
+        "bytes": 65614,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__news__2026",
+      "scope": {
+        "index_id": "cxcy__news__2026",
+        "source_id": "cxcy",
+        "facet": "news",
+        "year": "2026",
+        "shard_ids": [
+          "cxcy__news__detail__2026__root-ff93ad0e4ec6__b1",
+          "cxcy__news__detail__2026__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 5,
+      "shards": [
+        {
+          "shard_id": "cxcy__news__detail__2026__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2026__root-ff93ad0e4ec6__b1.5998086f9ec16d71.json",
+          "bytes": 8217,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__news__detail__2026__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__news__detail__2026__root-ff93ad0e4ec6__b3.5ebd9bb7031bb724.json",
+          "bytes": 12916,
+          "count": 3
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__news__2026.2f5d5a829f15a7ba.json",
+        "sha256": "2f5d5a829f15a7bacffc819b5e6c0e8c66e36ce38b67889ca352d037fe6da059",
+        "bytes": 6567,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 5
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__news__2026.888200d27ff5c44d.bin",
+        "sha256": "888200d27ff5c44d40d087ee9b628a87045392493bcd5638eed3bc35f9fb1d16",
+        "bytes": 5406,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__news__2026.7a7275750bee5efd.bin",
+        "sha256": "7a7275750bee5efd07d40e6b8146891e4c113a9e3f95cd0c0ee658aaf267e41d",
+        "bytes": 14437,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__notice_article__2018",
+      "scope": {
+        "index_id": "cxcy__notice_article__2018",
+        "source_id": "cxcy",
+        "facet": "notice_article",
+        "year": "2018",
+        "shard_ids": [
+          "cxcy__notice_article__detail__2018__root-ff93ad0e4ec6__b0",
+          "cxcy__notice_article__detail__2018__root-ff93ad0e4ec6__b1",
+          "cxcy__notice_article__detail__2018__root-ff93ad0e4ec6__b2",
+          "cxcy__notice_article__detail__2018__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 35,
+      "shards": [
+        {
+          "shard_id": "cxcy__notice_article__detail__2018__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2018__root-ff93ad0e4ec6__b0.dc61866eb4b2bd02.json",
+          "bytes": 20409,
+          "count": 7
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2018__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2018__root-ff93ad0e4ec6__b1.02678f9659520d96.json",
+          "bytes": 33455,
+          "count": 10
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2018__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2018__root-ff93ad0e4ec6__b2.bf17ea0ae96bbb1d.json",
+          "bytes": 31644,
+          "count": 10
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2018__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2018__root-ff93ad0e4ec6__b3.1f02101e5cd8dbd1.json",
+          "bytes": 22644,
+          "count": 8
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__notice_article__2018.49b6c762c4d136de.json",
+        "sha256": "49b6c762c4d136de730201be012d4a939ea5339d5616ba30cbf434be422ea02a",
+        "bytes": 42945,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 35
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__notice_article__2018.732bcb72d18dc892.bin",
+        "sha256": "732bcb72d18dc892c00cb354164d818dabb1189e98a8c348e9c343bf9779a7f5",
+        "bytes": 21369,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__notice_article__2018.3a6fba000309271e.bin",
+        "sha256": "3a6fba000309271e54aae04667ccefe2f630d34281aee60d133540fbef7778a0",
+        "bytes": 72264,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__notice_article__2019",
+      "scope": {
+        "index_id": "cxcy__notice_article__2019",
+        "source_id": "cxcy",
+        "facet": "notice_article",
+        "year": "2019",
+        "shard_ids": [
+          "cxcy__notice_article__detail__2019__root-ff93ad0e4ec6__b0",
+          "cxcy__notice_article__detail__2019__root-ff93ad0e4ec6__b1",
+          "cxcy__notice_article__detail__2019__root-ff93ad0e4ec6__b2",
+          "cxcy__notice_article__detail__2019__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 26,
+      "shards": [
+        {
+          "shard_id": "cxcy__notice_article__detail__2019__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2019__root-ff93ad0e4ec6__b0.0829664819a75027.json",
+          "bytes": 28263,
+          "count": 8
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2019__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2019__root-ff93ad0e4ec6__b1.dccb4112a68eab4e.json",
+          "bytes": 19668,
+          "count": 5
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2019__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2019__root-ff93ad0e4ec6__b2.197b22e5c1010392.json",
+          "bytes": 21013,
+          "count": 6
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2019__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2019__root-ff93ad0e4ec6__b3.5819ddd0d6741301.json",
+          "bytes": 20764,
+          "count": 7
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__notice_article__2019.8fcf2d8aecc78c94.json",
+        "sha256": "8fcf2d8aecc78c94ba0f197c1e71eb50c2bac4bb43e98a675809039de0d55a36",
+        "bytes": 31780,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 26
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__notice_article__2019.2d825879f8cf5769.bin",
+        "sha256": "2d825879f8cf5769216412e0cb82af36247141dd816b0914466b02465797d5d3",
+        "bytes": 17208,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__notice_article__2019.d14e2a5ce647ed89.bin",
+        "sha256": "d14e2a5ce647ed89750e6aea04b94324c74c71c8ef1477f50eda5095fa6410f3",
+        "bytes": 61152,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__notice_article__2020",
+      "scope": {
+        "index_id": "cxcy__notice_article__2020",
+        "source_id": "cxcy",
+        "facet": "notice_article",
+        "year": "2020",
+        "shard_ids": [
+          "cxcy__notice_article__detail__2020__root-ff93ad0e4ec6__b0",
+          "cxcy__notice_article__detail__2020__root-ff93ad0e4ec6__b1",
+          "cxcy__notice_article__detail__2020__root-ff93ad0e4ec6__b2",
+          "cxcy__notice_article__detail__2020__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 25,
+      "shards": [
+        {
+          "shard_id": "cxcy__notice_article__detail__2020__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2020__root-ff93ad0e4ec6__b0.cbfd12d35e3b9334.json",
+          "bytes": 24737,
+          "count": 7
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2020__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2020__root-ff93ad0e4ec6__b1.f02d89e8d78f6f7c.json",
+          "bytes": 19415,
+          "count": 6
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2020__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2020__root-ff93ad0e4ec6__b2.58027a7dd77f57e0.json",
+          "bytes": 17877,
+          "count": 5
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2020__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2020__root-ff93ad0e4ec6__b3.da4dea24b9b73fe5.json",
+          "bytes": 19642,
+          "count": 7
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__notice_article__2020.fb11c40210c0e53a.json",
+        "sha256": "fb11c40210c0e53a29aa3db1ce337b21f85c87245940893f0549d9deef457058",
+        "bytes": 31346,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 25
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__notice_article__2020.7f772a3b4eed5e02.bin",
+        "sha256": "7f772a3b4eed5e02440cd07198dd58c99b2089ad72f52d0677a87ea3fff0cefa",
+        "bytes": 20418,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__notice_article__2020.8016db813b85aff7.bin",
+        "sha256": "8016db813b85aff75cce50a902af08dcf050e71ba0ed1c694d5f0d7c78b0f01c",
+        "bytes": 60524,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__notice_article__2021",
+      "scope": {
+        "index_id": "cxcy__notice_article__2021",
+        "source_id": "cxcy",
+        "facet": "notice_article",
+        "year": "2021",
+        "shard_ids": [
+          "cxcy__notice_article__detail__2021__root-ff93ad0e4ec6__b0",
+          "cxcy__notice_article__detail__2021__root-ff93ad0e4ec6__b1",
+          "cxcy__notice_article__detail__2021__root-ff93ad0e4ec6__b2",
+          "cxcy__notice_article__detail__2021__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 21,
+      "shards": [
+        {
+          "shard_id": "cxcy__notice_article__detail__2021__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2021__root-ff93ad0e4ec6__b0.eee3f5124bdefeb1.json",
+          "bytes": 9168,
+          "count": 3
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2021__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2021__root-ff93ad0e4ec6__b1.0fcc617e8660a842.json",
+          "bytes": 14281,
+          "count": 5
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2021__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2021__root-ff93ad0e4ec6__b2.ff138abe566a780e.json",
+          "bytes": 22662,
+          "count": 7
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2021__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2021__root-ff93ad0e4ec6__b3.88cb4e1c38373616.json",
+          "bytes": 17625,
+          "count": 6
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__notice_article__2021.cab132ebeee1e080.json",
+        "sha256": "cab132ebeee1e0807b560ebfce77420d70367325fcebb6f66469f961a68dfb55",
+        "bytes": 25947,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 21
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__notice_article__2021.ce135510a30ba257.bin",
+        "sha256": "ce135510a30ba257f8e3c8356bd305cc2a167290b5422ba4f7a9ef8b8071a1f8",
+        "bytes": 15458,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__notice_article__2021.6f3eab367674b4b3.bin",
+        "sha256": "6f3eab367674b4b3685ede034700a52a56885dafab94603a5b07e05e507b5b38",
+        "bytes": 46237,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__notice_article__2022",
+      "scope": {
+        "index_id": "cxcy__notice_article__2022",
+        "source_id": "cxcy",
+        "facet": "notice_article",
+        "year": "2022",
+        "shard_ids": [
+          "cxcy__notice_article__detail__2022__root-ff93ad0e4ec6__b0",
+          "cxcy__notice_article__detail__2022__root-ff93ad0e4ec6__b1",
+          "cxcy__notice_article__detail__2022__root-ff93ad0e4ec6__b2",
+          "cxcy__notice_article__detail__2022__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 27,
+      "shards": [
+        {
+          "shard_id": "cxcy__notice_article__detail__2022__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2022__root-ff93ad0e4ec6__b0.6cc15a2b10bba806.json",
+          "bytes": 16000,
+          "count": 7
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2022__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2022__root-ff93ad0e4ec6__b1.6e1962d4b0850dda.json",
+          "bytes": 9729,
+          "count": 4
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2022__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2022__root-ff93ad0e4ec6__b2.3a1df6e955881764.json",
+          "bytes": 8910,
+          "count": 4
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2022__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2022__root-ff93ad0e4ec6__b3.9d420bdec474e120.json",
+          "bytes": 22099,
+          "count": 12
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__notice_article__2022.bd1cafaa246d749b.json",
+        "sha256": "bd1cafaa246d749b298c898a3163369996038b66fac5d11fe18a830b6f9bc6d8",
+        "bytes": 32344,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 27
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__notice_article__2022.fe68136d1d01c16a.bin",
+        "sha256": "fe68136d1d01c16a5d05bd7434f869b8099478b84fa36979611153550f0d00c7",
+        "bytes": 15000,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__notice_article__2022.25b77c8b53c7d5b4.bin",
+        "sha256": "25b77c8b53c7d5b4a200adf251e691a37b32a3f0ce5f2595cf12fe5f73e6452d",
+        "bytes": 30532,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__notice_article__2023",
+      "scope": {
+        "index_id": "cxcy__notice_article__2023",
+        "source_id": "cxcy",
+        "facet": "notice_article",
+        "year": "2023",
+        "shard_ids": [
+          "cxcy__notice_article__detail__2023__root-ff93ad0e4ec6__b1",
+          "cxcy__notice_article__detail__2023__root-ff93ad0e4ec6__b2"
+        ]
+      },
+      "doc_count": 2,
+      "shards": [
+        {
+          "shard_id": "cxcy__notice_article__detail__2023__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2023__root-ff93ad0e4ec6__b1.ac84ca7c60e7fcc0.json",
+          "bytes": 2540,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2023__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2023__root-ff93ad0e4ec6__b2.25b33d8ef7fd693f.json",
+          "bytes": 1410,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__notice_article__2023.20aca3094b1a76e6.json",
+        "sha256": "20aca3094b1a76e613a35e8fca1dc61f9e74b5943e6c5346485c3f17336e2878",
+        "bytes": 2963,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 2
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__notice_article__2023.9e614a017ba787b9.bin",
+        "sha256": "9e614a017ba787b99de6ac175c2f9db077a232c85d736c5bd645c2af4367280d",
+        "bytes": 2021,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__notice_article__2023.cd7b8706cc027a63.bin",
+        "sha256": "cd7b8706cc027a63822e930abc5b2ebc5c2bb8c6ae6da4dbea334880600ade45",
+        "bytes": 2933,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__notice_article__2024",
+      "scope": {
+        "index_id": "cxcy__notice_article__2024",
+        "source_id": "cxcy",
+        "facet": "notice_article",
+        "year": "2024",
+        "shard_ids": [
+          "cxcy__notice_article__detail__2024__root-ff93ad0e4ec6__b0",
+          "cxcy__notice_article__detail__2024__root-ff93ad0e4ec6__b1",
+          "cxcy__notice_article__detail__2024__root-ff93ad0e4ec6__b2",
+          "cxcy__notice_article__detail__2024__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 40,
+      "shards": [
+        {
+          "shard_id": "cxcy__notice_article__detail__2024__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2024__root-ff93ad0e4ec6__b0.5ff61dc3e120451d.json",
+          "bytes": 20281,
+          "count": 7
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2024__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2024__root-ff93ad0e4ec6__b1.dc1587930c5c113d.json",
+          "bytes": 42241,
+          "count": 13
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2024__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2024__root-ff93ad0e4ec6__b2.066ed78c31dd2471.json",
+          "bytes": 44862,
+          "count": 12
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2024__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2024__root-ff93ad0e4ec6__b3.7af656e310a73847.json",
+          "bytes": 28052,
+          "count": 8
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__notice_article__2024.feddf1cb9a1ff057.json",
+        "sha256": "feddf1cb9a1ff0570cd090b80c6db28dc9c457d3c761973cd95a24d55ef22134",
+        "bytes": 49480,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 40
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__notice_article__2024.d7070b9beea53a13.bin",
+        "sha256": "d7070b9beea53a13f09ea1bdbde3b8bbe5d344bba1ec639b4b1b1e910aa48f44",
+        "bytes": 26787,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__notice_article__2024.d58ce2d9bed5979e.bin",
+        "sha256": "d58ce2d9bed5979e259eb18a94fc3894dc451b9e326c2269d11675fe6d6dcaf4",
+        "bytes": 72935,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__notice_article__2025",
+      "scope": {
+        "index_id": "cxcy__notice_article__2025",
+        "source_id": "cxcy",
+        "facet": "notice_article",
+        "year": "2025",
+        "shard_ids": [
+          "cxcy__notice_article__detail__2025__root-ff93ad0e4ec6__b0",
+          "cxcy__notice_article__detail__2025__root-ff93ad0e4ec6__b1",
+          "cxcy__notice_article__detail__2025__root-ff93ad0e4ec6__b2",
+          "cxcy__notice_article__detail__2025__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 21,
+      "shards": [
+        {
+          "shard_id": "cxcy__notice_article__detail__2025__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2025__root-ff93ad0e4ec6__b0.3d6fcfdf34832159.json",
+          "bytes": 9064,
+          "count": 5
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2025__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2025__root-ff93ad0e4ec6__b1.8fdd063f8bcba8c5.json",
+          "bytes": 29534,
+          "count": 7
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2025__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2025__root-ff93ad0e4ec6__b2.8f726dae789de22e.json",
+          "bytes": 19431,
+          "count": 7
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2025__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2025__root-ff93ad0e4ec6__b3.20b12c186bcbc105.json",
+          "bytes": 16059,
+          "count": 2
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__notice_article__2025.90cc13f953cd90b6.json",
+        "sha256": "90cc13f953cd90b68710dc622af1c59605290c3752ba1135a7e9c40c8aab5bb6",
+        "bytes": 26368,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 21
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__notice_article__2025.ac122e2bd5f0e473.bin",
+        "sha256": "ac122e2bd5f0e4735e8d542209eb5e9f3ff0088e39b3813c48d1811a5b46164d",
+        "bytes": 16499,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__notice_article__2025.02586828fdc0990e.bin",
+        "sha256": "02586828fdc0990ee2794bf4206740e1ef788f94d4901bfff2b8bec66f53179c",
+        "bytes": 34532,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__notice_article__2026",
+      "scope": {
+        "index_id": "cxcy__notice_article__2026",
+        "source_id": "cxcy",
+        "facet": "notice_article",
+        "year": "2026",
+        "shard_ids": [
+          "cxcy__notice_article__detail__2026__root-ff93ad0e4ec6__b0",
+          "cxcy__notice_article__detail__2026__root-ff93ad0e4ec6__b2",
+          "cxcy__notice_article__detail__2026__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 7,
+      "shards": [
+        {
+          "shard_id": "cxcy__notice_article__detail__2026__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2026__root-ff93ad0e4ec6__b0.bebe8df8a134596c.json",
+          "bytes": 10276,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2026__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2026__root-ff93ad0e4ec6__b2.39b5e44ff5ee7864.json",
+          "bytes": 16369,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__2026__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__2026__root-ff93ad0e4ec6__b3.2833d500a66cfd44.json",
+          "bytes": 6433,
+          "count": 3
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__notice_article__2026.f4612561b30b027d.json",
+        "sha256": "f4612561b30b027d991ce14001cc9d5b07b7042a3bf0995cbc60bdc263c59f4b",
+        "bytes": 9251,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 7
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__notice_article__2026.a6f905b528dee893.bin",
+        "sha256": "a6f905b528dee893224b8dda6e7bac56fd3da9620ef97c32616ee6bde49dcde9",
+        "bytes": 8937,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__notice_article__2026.1446326891c2f098.bin",
+        "sha256": "1446326891c2f0984cf8b6f84efd959ddde01750d0128a1e8c8f7724a5dea53c",
+        "bytes": 17488,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__notice_article__undated",
+      "scope": {
+        "index_id": "cxcy__notice_article__undated",
+        "source_id": "cxcy",
+        "facet": "notice_article",
+        "year": "undated",
+        "shard_ids": [
+          "cxcy__notice_article__detail__undated__root-2f024092c520__b0",
+          "cxcy__notice_article__detail__undated__root-ff93ad0e4ec6__b0",
+          "cxcy__notice_article__detail__undated__root-ff93ad0e4ec6__b1",
+          "cxcy__notice_article__detail__undated__root-ff93ad0e4ec6__b2",
+          "cxcy__notice_article__detail__undated__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 20,
+      "shards": [
+        {
+          "shard_id": "cxcy__notice_article__detail__undated__root-2f024092c520__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__undated__root-2f024092c520__b0.ee1ec336990f0606.json",
+          "bytes": 1285,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__undated__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__undated__root-ff93ad0e4ec6__b0.a649cb05e07cac87.json",
+          "bytes": 6339,
+          "count": 4
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__undated__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__undated__root-ff93ad0e4ec6__b1.90a48f3c9020aebf.json",
+          "bytes": 17122,
+          "count": 7
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__undated__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__undated__root-ff93ad0e4ec6__b2.34ac99a90cef2ee6.json",
+          "bytes": 7196,
+          "count": 3
+        },
+        {
+          "shard_id": "cxcy__notice_article__detail__undated__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__notice_article__detail__undated__root-ff93ad0e4ec6__b3.daf59ad60ab4b22b.json",
+          "bytes": 6335,
+          "count": 5
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__notice_article__undated.03490150e5062f66.json",
+        "sha256": "03490150e5062f66df738976d56dd20fc99c4c893f2c9880b1ac217f12689002",
+        "bytes": 21694,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 20
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__notice_article__undated.407801f6d73fe75f.bin",
+        "sha256": "407801f6d73fe75f8c8ac981ab68920895185a63d1aba6012965adba484e1fa7",
+        "bytes": 6551,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__notice_article__undated.45fa7f88cc15216f.bin",
+        "sha256": "45fa7f88cc15216f317067f1404a62219f0fe52b7bfa2c15d42d4e0a202faebd",
+        "bytes": 20433,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__policy__2018",
+      "scope": {
+        "index_id": "cxcy__policy__2018",
+        "source_id": "cxcy",
+        "facet": "policy",
+        "year": "2018",
+        "shard_ids": [
+          "cxcy__policy__detail__2018__root-ff93ad0e4ec6__b1"
+        ]
+      },
+      "doc_count": 2,
+      "shards": [
+        {
+          "shard_id": "cxcy__policy__detail__2018__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__policy__detail__2018__root-ff93ad0e4ec6__b1.b96878c39a7f754d.json",
+          "bytes": 11366,
+          "count": 2
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__policy__2018.d9536f3a9669e02b.json",
+        "sha256": "d9536f3a9669e02b9cfa05cf77e44108970b842b5eb160ba0bfb01b2e533d6b0",
+        "bytes": 3041,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 2
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__policy__2018.15ef30586347cfa6.bin",
+        "sha256": "15ef30586347cfa6c12601a0a032e2bf2d07417d5e40133c433a6fb00e2f5111",
+        "bytes": 3369,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__policy__2018.7a681326dbabeb27.bin",
+        "sha256": "7a681326dbabeb27fb169045a6bca18a3ae3680123ad39fe58e642b102114d90",
+        "bytes": 6641,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__policy__2019",
+      "scope": {
+        "index_id": "cxcy__policy__2019",
+        "source_id": "cxcy",
+        "facet": "policy",
+        "year": "2019",
+        "shard_ids": [
+          "cxcy__policy__detail__2019__root-ff93ad0e4ec6__b0",
+          "cxcy__policy__detail__2019__root-ff93ad0e4ec6__b1"
+        ]
+      },
+      "doc_count": 5,
+      "shards": [
+        {
+          "shard_id": "cxcy__policy__detail__2019__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__policy__detail__2019__root-ff93ad0e4ec6__b0.51644f25d1ff301c.json",
+          "bytes": 11503,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__policy__detail__2019__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__policy__detail__2019__root-ff93ad0e4ec6__b1.1debcbd1318ab977.json",
+          "bytes": 33769,
+          "count": 3
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__policy__2019.1502e85504cb70ab.json",
+        "sha256": "1502e85504cb70ab8239add6cc7832fbbeb97694549cc1a01a77198881ca7534",
+        "bytes": 6619,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 5
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__policy__2019.16676576ca177392.bin",
+        "sha256": "16676576ca17739296c12f27e57e04472a9d08a7d2bac77dc340a18047d5757a",
+        "bytes": 5558,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__policy__2019.5b0063b1608e6905.bin",
+        "sha256": "5b0063b1608e6905986913287dae8fbdcabce4c447e44eb6cc032adee7614b74",
+        "bytes": 15446,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__policy__2020",
+      "scope": {
+        "index_id": "cxcy__policy__2020",
+        "source_id": "cxcy",
+        "facet": "policy",
+        "year": "2020",
+        "shard_ids": [
+          "cxcy__policy__detail__2020__root-ff93ad0e4ec6__b0",
+          "cxcy__policy__detail__2020__root-ff93ad0e4ec6__b1",
+          "cxcy__policy__detail__2020__root-ff93ad0e4ec6__b2"
+        ]
+      },
+      "doc_count": 4,
+      "shards": [
+        {
+          "shard_id": "cxcy__policy__detail__2020__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__policy__detail__2020__root-ff93ad0e4ec6__b0.2820d0ac245bc2da.json",
+          "bytes": 7349,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__policy__detail__2020__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__policy__detail__2020__root-ff93ad0e4ec6__b1.631c73bbe4f936f5.json",
+          "bytes": 19134,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__policy__detail__2020__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__policy__detail__2020__root-ff93ad0e4ec6__b2.717e86a245a2e94b.json",
+          "bytes": 28746,
+          "count": 2
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__policy__2020.8679e1f54b25db2a.json",
+        "sha256": "8679e1f54b25db2a870e028ef476251096f6a0ea7503bcc2c990aa8a5dd51e17",
+        "bytes": 5308,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 4
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__policy__2020.c44dc94e11b76005.bin",
+        "sha256": "c44dc94e11b76005ae86d1971f5dd4117884618728c9ea37bf3d599a7e4c459c",
+        "bytes": 5406,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__policy__2020.1f101bc31f0997f1.bin",
+        "sha256": "1f101bc31f0997f1da0c46dad88188951c57be148d0528184e6e2ddc03904783",
+        "bytes": 11933,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__policy__2021",
+      "scope": {
+        "index_id": "cxcy__policy__2021",
+        "source_id": "cxcy",
+        "facet": "policy",
+        "year": "2021",
+        "shard_ids": [
+          "cxcy__policy__detail__2021__root-ff93ad0e4ec6__b0",
+          "cxcy__policy__detail__2021__root-ff93ad0e4ec6__b1"
+        ]
+      },
+      "doc_count": 3,
+      "shards": [
+        {
+          "shard_id": "cxcy__policy__detail__2021__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__policy__detail__2021__root-ff93ad0e4ec6__b0.bcba12b3a1765739.json",
+          "bytes": 5079,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__policy__detail__2021__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__policy__detail__2021__root-ff93ad0e4ec6__b1.242c2ff38e540dbe.json",
+          "bytes": 24201,
+          "count": 2
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__policy__2021.2788ecec5c34d51d.json",
+        "sha256": "2788ecec5c34d51dc20e4e36cae86f9cff43baacab33faefdae5f5a2b5432d59",
+        "bytes": 4175,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 3
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__policy__2021.8f32e90f7f646a94.bin",
+        "sha256": "8f32e90f7f646a94c5a9e5e397e897bb9008545d453624d1b9a8f7e9cc9e97dd",
+        "bytes": 3348,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__policy__2021.18d6dd1426d88eb9.bin",
+        "sha256": "18d6dd1426d88eb994ca873e01fa1414161549c7b46dd2bb4fd857d26f45a72e",
+        "bytes": 7425,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__policy__2022",
+      "scope": {
+        "index_id": "cxcy__policy__2022",
+        "source_id": "cxcy",
+        "facet": "policy",
+        "year": "2022",
+        "shard_ids": [
+          "cxcy__policy__detail__2022__root-ff93ad0e4ec6__b0",
+          "cxcy__policy__detail__2022__root-ff93ad0e4ec6__b1"
+        ]
+      },
+      "doc_count": 2,
+      "shards": [
+        {
+          "shard_id": "cxcy__policy__detail__2022__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__policy__detail__2022__root-ff93ad0e4ec6__b0.9d821f1fa72ce96d.json",
+          "bytes": 4183,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__policy__detail__2022__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__policy__detail__2022__root-ff93ad0e4ec6__b1.d409d3ed50185811.json",
+          "bytes": 7732,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__policy__2022.ba3a61acefa6dcef.json",
+        "sha256": "ba3a61acefa6dceff3a5b00b06367e339b931abf597501ecbc6b083b1705e784",
+        "bytes": 2950,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 2
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__policy__2022.4729393b3cf6dd10.bin",
+        "sha256": "4729393b3cf6dd10c2ec423a4dec51562a1d6c3183ac8f4f381f65beff926222",
+        "bytes": 3411,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__policy__2022.1c07a24e4eaacbf0.bin",
+        "sha256": "1c07a24e4eaacbf05b49e569933024741da5e67a15d403765304179394425141",
+        "bytes": 7203,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__policy__2025",
+      "scope": {
+        "index_id": "cxcy__policy__2025",
+        "source_id": "cxcy",
+        "facet": "policy",
+        "year": "2025",
+        "shard_ids": [
+          "cxcy__policy__detail__2025__root-ff93ad0e4ec6__b1",
+          "cxcy__policy__detail__2025__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 3,
+      "shards": [
+        {
+          "shard_id": "cxcy__policy__detail__2025__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__policy__detail__2025__root-ff93ad0e4ec6__b1.ba8d8cde4ccf0237.json",
+          "bytes": 9236,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__policy__detail__2025__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__policy__detail__2025__root-ff93ad0e4ec6__b3.dfbe45f86bdaf72f.json",
+          "bytes": 6035,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__policy__2025.f9390d7f28705927.json",
+        "sha256": "f9390d7f28705927e4a157c1dcb278408309b82b988b3fad476daa1eedf1228f",
+        "bytes": 4267,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 3
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__policy__2025.1a982efe98dffa47.bin",
+        "sha256": "1a982efe98dffa47f0f37246d0d48ead5825af64c3d404285e81553340c7398a",
+        "bytes": 5223,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__policy__2025.98f02a6696615e37.bin",
+        "sha256": "98f02a6696615e37a7341d7c31367f23991c01532ed1305e91f7218505c9bbcd",
+        "bytes": 8047,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__policy__2026",
+      "scope": {
+        "index_id": "cxcy__policy__2026",
+        "source_id": "cxcy",
+        "facet": "policy",
+        "year": "2026",
+        "shard_ids": [
+          "cxcy__policy__detail__2026__root-ff93ad0e4ec6__b2"
+        ]
+      },
+      "doc_count": 1,
+      "shards": [
+        {
+          "shard_id": "cxcy__policy__detail__2026__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__policy__detail__2026__root-ff93ad0e4ec6__b2.6ce3cfd1dd060bb8.json",
+          "bytes": 6672,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__policy__2026.9758da7f03dd911d.json",
+        "sha256": "9758da7f03dd911d749ba7a461928be63dbed8178fb0bf20a44c02744d760c58",
+        "bytes": 1847,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 1
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__policy__2026.ad59897406d8e8fe.bin",
+        "sha256": "ad59897406d8e8fefd69af2030af7724e0db68a76dfbea4d2f307750a85d3823",
+        "bytes": 2726,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__policy__2026.c35f88b3428f0c82.bin",
+        "sha256": "c35f88b3428f0c82129ed3627f7a1fdcf54794751013d09b8c0ab6a521c48ed8",
+        "bytes": 3882,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__policy__undated",
+      "scope": {
+        "index_id": "cxcy__policy__undated",
+        "source_id": "cxcy",
+        "facet": "policy",
+        "year": "undated",
+        "shard_ids": [
+          "cxcy__policy__detail__undated__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 1,
+      "shards": [
+        {
+          "shard_id": "cxcy__policy__detail__undated__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__policy__detail__undated__root-ff93ad0e4ec6__b3.66a1b75ac56f65a6.json",
+          "bytes": 1291,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__policy__undated.b2a1c78abf2025d7.json",
+        "sha256": "b2a1c78abf2025d7f02699916d24f7976bf3a642a216c393f9a3d88d806f0f3b",
+        "bytes": 1607,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 1
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__policy__undated.5a144971c09b45c6.bin",
+        "sha256": "5a144971c09b45c691d247cf6c5efd891f946ce6400cdbe6f95c136d31f4e6bd",
+        "bytes": 898,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__policy__undated.2073ac68e72a07ab.bin",
+        "sha256": "2073ac68e72a07ab5617108e065d34f6f965b5f0ea061fac4c1995144d637ddb",
+        "bytes": 1414,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__system__undated",
+      "scope": {
+        "index_id": "cxcy__system__undated",
+        "source_id": "cxcy",
+        "facet": "system",
+        "year": "undated",
+        "shard_ids": [
+          "cxcy__system__external__undated__root-ff93ad0e4ec6__b2"
+        ]
+      },
+      "doc_count": 2,
+      "shards": [
+        {
+          "shard_id": "cxcy__system__external__undated__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__system__external__undated__root-ff93ad0e4ec6__b2.2702a0d44afd24a6.json",
+          "bytes": 3101,
+          "count": 2
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__system__undated.e162a17990218fea.json",
+        "sha256": "e162a17990218fea60920dea06c61dbab1fe9d5a2f81e7ac02016e83700703f8",
+        "bytes": 2733,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 2
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__system__undated.09ad5ab70e7afff4.bin",
+        "sha256": "09ad5ab70e7afff43a0325fe844c93c6a1c8926128d07741329318251b49b3b7",
+        "bytes": 2901,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__system__undated.772453634b0d0afd.bin",
+        "sha256": "772453634b0d0afdfa6f3e96c1fa4c6e4465ba9b2957f88662a784a6f9629d53",
+        "bytes": 2658,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__workflow__2017",
+      "scope": {
+        "index_id": "cxcy__workflow__2017",
+        "source_id": "cxcy",
+        "facet": "workflow",
+        "year": "2017",
+        "shard_ids": [
+          "cxcy__workflow__detail__2017__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 2,
+      "shards": [
+        {
+          "shard_id": "cxcy__workflow__detail__2017__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2017__root-ff93ad0e4ec6__b3.330a4dba684f4b7e.json",
+          "bytes": 8978,
+          "count": 2
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__workflow__2017.0620cb6f1db3b08b.json",
+        "sha256": "0620cb6f1db3b08bef88e550de0432c17978a2832b5a2227855c60d07c2ee13c",
+        "bytes": 2966,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 2
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__workflow__2017.08b8e0d6b58568fe.bin",
+        "sha256": "08b8e0d6b58568fe95332bdfba1dcc5dc91b0e94cd6920830ab9bc1e062a9a9d",
+        "bytes": 2142,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__workflow__2017.daf200677fb7213c.bin",
+        "sha256": "daf200677fb7213cc34460879ec56f12edd83e6296ac2708a6f74f07ae280557",
+        "bytes": 4481,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__workflow__2018",
+      "scope": {
+        "index_id": "cxcy__workflow__2018",
+        "source_id": "cxcy",
+        "facet": "workflow",
+        "year": "2018",
+        "shard_ids": [
+          "cxcy__workflow__detail__2018__root-ff93ad0e4ec6__b1",
+          "cxcy__workflow__detail__2018__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 2,
+      "shards": [
+        {
+          "shard_id": "cxcy__workflow__detail__2018__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2018__root-ff93ad0e4ec6__b1.d19b7ebf126f0c61.json",
+          "bytes": 7646,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__workflow__detail__2018__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2018__root-ff93ad0e4ec6__b3.17c277cfb865539f.json",
+          "bytes": 4858,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__workflow__2018.cfb03c105e0c51b7.json",
+        "sha256": "cfb03c105e0c51b71ac62c128abf4c95325902f02f1ab2e5b32af592fc3c682c",
+        "bytes": 3101,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 2
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__workflow__2018.9a87a98e35bfa2f6.bin",
+        "sha256": "9a87a98e35bfa2f607e5e66fb88ae137ce38594b735f8bd1f89a305d82263cd4",
+        "bytes": 3286,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__workflow__2018.93869aee46a5173c.bin",
+        "sha256": "93869aee46a5173c4f641db73c917fef6c0bb54cf5495dffda380172bf670216",
+        "bytes": 7037,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__workflow__2019",
+      "scope": {
+        "index_id": "cxcy__workflow__2019",
+        "source_id": "cxcy",
+        "facet": "workflow",
+        "year": "2019",
+        "shard_ids": [
+          "cxcy__workflow__detail__2019__root-ff93ad0e4ec6__b0",
+          "cxcy__workflow__detail__2019__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 4,
+      "shards": [
+        {
+          "shard_id": "cxcy__workflow__detail__2019__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2019__root-ff93ad0e4ec6__b0.0750aae5f1235e43.json",
+          "bytes": 5240,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__workflow__detail__2019__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2019__root-ff93ad0e4ec6__b3.e016eb9017f4e848.json",
+          "bytes": 15598,
+          "count": 3
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__workflow__2019.d5a269ae732a4b6a.json",
+        "sha256": "d5a269ae732a4b6a1777d1328fa2360602492bef901331b6f9bf91d6bd6b02aa",
+        "bytes": 5471,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 4
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__workflow__2019.b4f52eda7af35df1.bin",
+        "sha256": "b4f52eda7af35df1fd070eeec8366ad4d042d8fa85f5fbbbe8cd776cd4309f60",
+        "bytes": 4261,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__workflow__2019.236f89922548f852.bin",
+        "sha256": "236f89922548f852b628d1c095ad31b0207b8292fffdd512ffafc42ba8fe20ed",
+        "bytes": 13223,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__workflow__2020",
+      "scope": {
+        "index_id": "cxcy__workflow__2020",
+        "source_id": "cxcy",
+        "facet": "workflow",
+        "year": "2020",
+        "shard_ids": [
+          "cxcy__workflow__detail__2020__root-ff93ad0e4ec6__b1",
+          "cxcy__workflow__detail__2020__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 2,
+      "shards": [
+        {
+          "shard_id": "cxcy__workflow__detail__2020__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2020__root-ff93ad0e4ec6__b1.097aa94d95e7ece5.json",
+          "bytes": 6052,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__workflow__detail__2020__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2020__root-ff93ad0e4ec6__b3.c8f0687fbe5913a5.json",
+          "bytes": 6873,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__workflow__2020.112aa638f4c4f637.json",
+        "sha256": "112aa638f4c4f637415b2bd04f674d60d603e47da4db540b2182f5850ae47bfe",
+        "bytes": 3149,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 2
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__workflow__2020.6a047095e765e32b.bin",
+        "sha256": "6a047095e765e32b2e10847f178d1b84614c99af484869a48f8e0ebed27fe106",
+        "bytes": 3253,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__workflow__2020.8fdf7375e02f9db0.bin",
+        "sha256": "8fdf7375e02f9db002ccbbda88c16baa181f995c895040618d658b1c1302e23d",
+        "bytes": 7136,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__workflow__2021",
+      "scope": {
+        "index_id": "cxcy__workflow__2021",
+        "source_id": "cxcy",
+        "facet": "workflow",
+        "year": "2021",
+        "shard_ids": [
+          "cxcy__workflow__detail__2021__root-ff93ad0e4ec6__b1",
+          "cxcy__workflow__detail__2021__root-ff93ad0e4ec6__b2"
+        ]
+      },
+      "doc_count": 4,
+      "shards": [
+        {
+          "shard_id": "cxcy__workflow__detail__2021__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2021__root-ff93ad0e4ec6__b1.85532c334360d0b2.json",
+          "bytes": 14219,
+          "count": 3
+        },
+        {
+          "shard_id": "cxcy__workflow__detail__2021__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2021__root-ff93ad0e4ec6__b2.dbe5494cb52f7745.json",
+          "bytes": 7179,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__workflow__2021.4ca4eaf5622c352a.json",
+        "sha256": "4ca4eaf5622c352a2685b0768b8aac08eaf90f653a81500a0f5c78b3988a3848",
+        "bytes": 5323,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 4
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__workflow__2021.04e7d114e4d80121.bin",
+        "sha256": "04e7d114e4d801213a7538d9a985eda5b319918420b86ce6372f864f79d863b4",
+        "bytes": 4062,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__workflow__2021.f4403c17b60dd7e7.bin",
+        "sha256": "f4403c17b60dd7e7d781960a205e016683e8446fc40c727a8a728dfe57347b15",
+        "bytes": 13017,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__workflow__2022",
+      "scope": {
+        "index_id": "cxcy__workflow__2022",
+        "source_id": "cxcy",
+        "facet": "workflow",
+        "year": "2022",
+        "shard_ids": [
+          "cxcy__workflow__detail__2022__root-ff93ad0e4ec6__b1",
+          "cxcy__workflow__detail__2022__root-ff93ad0e4ec6__b2",
+          "cxcy__workflow__detail__2022__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 8,
+      "shards": [
+        {
+          "shard_id": "cxcy__workflow__detail__2022__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2022__root-ff93ad0e4ec6__b1.3bcc28074b427ab0.json",
+          "bytes": 14382,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__workflow__detail__2022__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2022__root-ff93ad0e4ec6__b2.2f0dcb8c51d2b971.json",
+          "bytes": 13346,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__workflow__detail__2022__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2022__root-ff93ad0e4ec6__b3.d97084fbba9616db.json",
+          "bytes": 27918,
+          "count": 4
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__workflow__2022.f86a62d5ffef1592.json",
+        "sha256": "f86a62d5ffef1592bb34e29b9f677c55d9b080234b1c929d2def164986620ed0",
+        "bytes": 10516,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 8
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__workflow__2022.a2b5e84ff755c6fa.bin",
+        "sha256": "a2b5e84ff755c6fa7f5f5d28172ec2189cc18f84efd44ae5211f97f13b125cb0",
+        "bytes": 7576,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__workflow__2022.e5635cecd2fce21e.bin",
+        "sha256": "e5635cecd2fce21e7d1f2f252a086c7460318ee4eafac0f352f2a17970a34ecc",
+        "bytes": 20793,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__workflow__2023",
+      "scope": {
+        "index_id": "cxcy__workflow__2023",
+        "source_id": "cxcy",
+        "facet": "workflow",
+        "year": "2023",
+        "shard_ids": [
+          "cxcy__workflow__detail__2023__root-ff93ad0e4ec6__b0",
+          "cxcy__workflow__detail__2023__root-ff93ad0e4ec6__b1",
+          "cxcy__workflow__detail__2023__root-ff93ad0e4ec6__b2"
+        ]
+      },
+      "doc_count": 5,
+      "shards": [
+        {
+          "shard_id": "cxcy__workflow__detail__2023__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2023__root-ff93ad0e4ec6__b0.d53057a568c2c03b.json",
+          "bytes": 25943,
+          "count": 3
+        },
+        {
+          "shard_id": "cxcy__workflow__detail__2023__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2023__root-ff93ad0e4ec6__b1.44c6c80d308b538e.json",
+          "bytes": 6415,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__workflow__detail__2023__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2023__root-ff93ad0e4ec6__b2.fd4851be4552938c.json",
+          "bytes": 6273,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__workflow__2023.15362050c819bdfa.json",
+        "sha256": "15362050c819bdfa08fceef09283e0385c484194479fee999e610a5708a890ac",
+        "bytes": 6631,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 5
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__workflow__2023.95dff81be53be116.bin",
+        "sha256": "95dff81be53be116a3d5c146f19f6c377a41b9fff628ce5c447f86a1b867d7a3",
+        "bytes": 4893,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__workflow__2023.f0a1e5541d68ea21.bin",
+        "sha256": "f0a1e5541d68ea2196e9425af3a58c05891f0481dc5fcf9e5223975996af48e9",
+        "bytes": 14531,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__workflow__2024",
+      "scope": {
+        "index_id": "cxcy__workflow__2024",
+        "source_id": "cxcy",
+        "facet": "workflow",
+        "year": "2024",
+        "shard_ids": [
+          "cxcy__workflow__detail__2024__root-ff93ad0e4ec6__b0",
+          "cxcy__workflow__detail__2024__root-ff93ad0e4ec6__b1",
+          "cxcy__workflow__detail__2024__root-ff93ad0e4ec6__b2",
+          "cxcy__workflow__detail__2024__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 6,
+      "shards": [
+        {
+          "shard_id": "cxcy__workflow__detail__2024__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2024__root-ff93ad0e4ec6__b0.9e81e987a7104609.json",
+          "bytes": 15110,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__workflow__detail__2024__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2024__root-ff93ad0e4ec6__b1.ce4d5c27ae1f0f1b.json",
+          "bytes": 6779,
+          "count": 1
+        },
+        {
+          "shard_id": "cxcy__workflow__detail__2024__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2024__root-ff93ad0e4ec6__b2.1380fcc7f72c461d.json",
+          "bytes": 11953,
+          "count": 2
+        },
+        {
+          "shard_id": "cxcy__workflow__detail__2024__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2024__root-ff93ad0e4ec6__b3.cd5e7db8f1480b54.json",
+          "bytes": 7146,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__workflow__2024.98e0006a26585e9a.json",
+        "sha256": "98e0006a26585e9a33c586179266f3d1c1926b7f90f745fb9b11786788697739",
+        "bytes": 7851,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 6
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__workflow__2024.75bfceeba05692be.bin",
+        "sha256": "75bfceeba05692be02375db144e062e56e1784ae798c72b22f9aa88922c3d6ad",
+        "bytes": 7327,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__workflow__2024.439d4961a8502ae9.bin",
+        "sha256": "439d4961a8502ae9200764f7d09ae093731de738e23c763280b29c9b6ad501ac",
+        "bytes": 17406,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__workflow__2025",
+      "scope": {
+        "index_id": "cxcy__workflow__2025",
+        "source_id": "cxcy",
+        "facet": "workflow",
+        "year": "2025",
+        "shard_ids": [
+          "cxcy__workflow__detail__2025__root-ff93ad0e4ec6__b0",
+          "cxcy__workflow__detail__2025__root-ff93ad0e4ec6__b1",
+          "cxcy__workflow__detail__2025__root-ff93ad0e4ec6__b2"
+        ]
+      },
+      "doc_count": 12,
+      "shards": [
+        {
+          "shard_id": "cxcy__workflow__detail__2025__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2025__root-ff93ad0e4ec6__b0.82407adf43172084.json",
+          "bytes": 25958,
+          "count": 4
+        },
+        {
+          "shard_id": "cxcy__workflow__detail__2025__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2025__root-ff93ad0e4ec6__b1.271b1d42424098e4.json",
+          "bytes": 18987,
+          "count": 3
+        },
+        {
+          "shard_id": "cxcy__workflow__detail__2025__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2025__root-ff93ad0e4ec6__b2.0f066bd5ae1ab275.json",
+          "bytes": 36798,
+          "count": 5
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__workflow__2025.bda53f63c76a0297.json",
+        "sha256": "bda53f63c76a02973ed4321bcb63e8c37e463e2b4ecd9cb31eac890b14996d29",
+        "bytes": 15290,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 12
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__workflow__2025.fc724bc0593b56d1.bin",
+        "sha256": "fc724bc0593b56d10c1e9dce1125949b2f1e3961b2fd472e23933e8f7c100c67",
+        "bytes": 13843,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__workflow__2025.fe69c7f095848a7f.bin",
+        "sha256": "fe69c7f095848a7f9572b857b8f3be709bee310ffa67c03142a2e8b0e61a6777",
+        "bytes": 34641,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "cxcy__workflow__2026",
+      "scope": {
+        "index_id": "cxcy__workflow__2026",
+        "source_id": "cxcy",
+        "facet": "workflow",
+        "year": "2026",
+        "shard_ids": [
+          "cxcy__workflow__detail__2026__root-ff93ad0e4ec6__b0",
+          "cxcy__workflow__detail__2026__root-ff93ad0e4ec6__b1",
+          "cxcy__workflow__detail__2026__root-ff93ad0e4ec6__b2",
+          "cxcy__workflow__detail__2026__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 20,
+      "shards": [
+        {
+          "shard_id": "cxcy__workflow__detail__2026__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2026__root-ff93ad0e4ec6__b0.7f2857647a68c98b.json",
+          "bytes": 44639,
+          "count": 5
+        },
+        {
+          "shard_id": "cxcy__workflow__detail__2026__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2026__root-ff93ad0e4ec6__b1.980c66ca34d84394.json",
+          "bytes": 23545,
+          "count": 3
+        },
+        {
+          "shard_id": "cxcy__workflow__detail__2026__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2026__root-ff93ad0e4ec6__b2.021bd1117535380e.json",
+          "bytes": 39132,
+          "count": 6
+        },
+        {
+          "shard_id": "cxcy__workflow__detail__2026__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.cxcy__workflow__detail__2026__root-ff93ad0e4ec6__b3.47ea2b926d560e3b.json",
+          "bytes": 62317,
+          "count": 6
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.cxcy__workflow__2026.c8676f1c7d538633.json",
+        "sha256": "c8676f1c7d538633d64b0ef000b5f3c16181f02c287d30f04df7d225a6569da6",
+        "bytes": 25003,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 20
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.cxcy__workflow__2026.79cf192ad7f100ba.bin",
+        "sha256": "79cf192ad7f100ba84751d00404e4d4f428b5bc8d7e12df1852f9485eac1d3d7",
+        "bytes": 22576,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.cxcy__workflow__2026.405314f5ee699e9f.bin",
+        "sha256": "405314f5ee699e9f797c151575987ee13c62bd50b55d538518dc6e3811d6f302",
+        "bytes": 50692,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    }
+  ],
+  "artifacts": {
+    "proof_catalog": {
+      "path": "generated/collections/njupt-public/sitegraph/proof_catalogs/proof_catalog.cxcy.4a1423cb5f6630f7.json",
+      "sha256": "4a1423cb5f6630f705b939ba0505bdb41e8d3525d8bf6aa499d04f94e29bc753",
+      "bytes": 139062,
+      "role": "proof_catalog",
+      "load": "verify",
+      "count": 178
+    },
+    "shard_filter": {
+      "path": "generated/collections/njupt-public/sitegraph/shard_filters/shard_filter.cxcy.5a90cc201446191d.json",
+      "sha256": "5a90cc201446191dfbf22c07306c89ed1cbd579ee77045b12b2620e744529415",
+      "bytes": 668,
+      "role": "shard_filter",
+      "load": "verify",
+      "count": 178,
+      "part_count": 2,
+      "runtime_bytes": 822086
+    },
+    "attachment_meta_index": {
+      "path": "generated/collections/njupt-public/sitegraph/attachment_meta_indexes/attachment_meta.cxcy.ba99c9f4a3e61b3b.json",
+      "sha256": "ba99c9f4a3e61b3ba8aec252c64b067b93879b1bc205a17c8fe9ad271f6ba164",
+      "bytes": 428,
+      "role": "attachment_meta_index",
+      "load": "on_demand",
+      "count": 204,
+      "part_count": 1,
+      "runtime_bytes": 136595
+    },
+    "attachment_filename_index": {
+      "path": "generated/collections/njupt-public/sitegraph/attachment_filename_indexes/attachment_filename.cxcy.d1f1d13b5bee9905.json",
+      "sha256": "d1f1d13b5bee9905145c4dc77d2ea301bdb309ab6602e7459140abc50e650591",
+      "bytes": 448,
+      "role": "attachment_filename_index",
+      "load": "query_planned",
+      "count": 204,
+      "part_count": 1,
+      "runtime_bytes": 124826
+    },
+    "attachment_text_shards": {
+      "path": "generated/collections/njupt-public/sitegraph/attachment_text_shards/attachment_text_manifest.cxcy.6fa279f6aaff0d96.json",
+      "sha256": "6fa279f6aaff0d96677bb9e23f5aaadbbad6d249884293cdf256b70799a2f058",
+      "bytes": 90,
+      "role": "attachment_text_shards",
+      "load": "future_lazy",
+      "count": 0
+    },
+    "section_index": {
+      "path": "generated/collections/njupt-public/sitegraph/section_indexes/section_index.cxcy.49c7da11feac77a3.json",
+      "sha256": "49c7da11feac77a308212531811a22a30d5996e3cfccf9584c2c8cfee694cdd6",
+      "bytes": 11784,
+      "role": "section_index",
+      "load": "on_demand",
+      "count": 39
+    },
+    "external_index": {
+      "path": "generated/collections/njupt-public/sitegraph/external_indexes/external_index.cxcy.3be8570170eb4879.json",
+      "sha256": "3be8570170eb4879425f16e8b20b48319aebdc6b4c2ee1672693b931862a9166",
+      "bytes": 22291,
+      "role": "external_index",
+      "load": "on_demand",
+      "count": 60
+    }
+  }
+}
