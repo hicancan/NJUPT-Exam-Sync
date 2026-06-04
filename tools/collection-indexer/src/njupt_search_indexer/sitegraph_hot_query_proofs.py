@@ -16,12 +16,13 @@ SEARCH_INTENT_CONFIG = json.loads(
 )
 HOT_QUERY_CERTIFICATE_MODEL = "hot-query-minimal-complete-proof-v3"
 HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL = "rank-display-match-window-certificate-v2"
-HOT_QUERY_COMPLETE_PROOF_MODEL = "match-proof-minimal-filter-v1"
+HOT_QUERY_COMPLETE_PROOF_MODEL = "match-proof-compact-filter-v2"
 HOT_QUERY_RANK_EVIDENCE_MODEL = "query-token-field-impact-full-document-v1"
 HOT_QUERY_FAST_START_VERSION = "sitegraph-hot-query-fast-start-v1"
 HOT_QUERY_TOPK_CERTIFICATE_VERSION = "sitegraph-hot-query-topk-certificate-v2"
 HOT_QUERY_INITIAL_CERTIFICATE_VERSION = "sitegraph-hot-query-initial-certificate-v1"
-HOT_QUERY_COMPLETE_CERTIFICATE_VERSION = "sitegraph-hot-query-complete-certificate-v3"
+HOT_QUERY_COMPLETE_CERTIFICATE_VERSION = "sitegraph-hot-query-complete-certificate-v4"
+HOT_QUERY_PROOF_DOCUMENT_ENCODING = "sitegraph-hot-query-proof-doc-tuples-v1"
 HOT_QUERY_TOPK_LIMIT = 80
 HOT_QUERY_INITIAL_LIMIT = 20
 HOT_QUERY_CONTENT_CONTEXT_CHARS = 128
@@ -529,6 +530,101 @@ def hot_query_proof_document_payload(
         if key in document and document.get(key) is not None:
             payload[key] = document.get(key)
     return payload
+
+
+def _intern_compact_value(
+    dictionaries: dict[str, list[str]],
+    indexes: dict[str, dict[str, int]],
+    key: str,
+    value: Any,
+) -> int:
+    text = str(value or "")
+    existing = indexes[key].get(text)
+    if existing is not None:
+        return existing
+    indexes[key][text] = len(dictionaries[key])
+    dictionaries[key].append(text)
+    return indexes[key][text]
+
+
+def _compact_rank_score(value: float) -> int | float:
+    rounded = round(float(value), 4)
+    return int(rounded) if rounded.is_integer() else rounded
+
+
+def _compact_date_index(
+    dictionaries: dict[str, list[str]],
+    indexes: dict[str, dict[str, int]],
+    key: str,
+    document: dict[str, Any],
+) -> int:
+    if key not in document or document.get(key) is None:
+        return -1
+    return _intern_compact_value(dictionaries, indexes, "dates", document.get(key))
+
+
+def _compact_optional_string_index(
+    dictionaries: dict[str, list[str]],
+    indexes: dict[str, dict[str, int]],
+    dictionary_key: str,
+    document_key: str,
+    document: dict[str, Any],
+) -> int:
+    if document_key not in document or document.get(document_key) is None:
+        return -1
+    return _intern_compact_value(dictionaries, indexes, dictionary_key, document.get(document_key))
+
+
+def compact_hot_query_proof_documents(
+    documents: list[dict[str, Any]],
+    query: str,
+    match_phrases: list[str],
+    rank_terms: list[str],
+) -> tuple[dict[str, list[str]], list[list[Any]]]:
+    dictionaries: dict[str, list[str]] = {
+        "source_ids": [],
+        "facets": [],
+        "record_types": [],
+        "shards": [],
+        "fields": [],
+        "phrases": [],
+        "dates": [],
+        "date_kinds": [],
+        "date_confidences": [],
+    }
+    indexes: dict[str, dict[str, int]] = {key: {} for key in dictionaries}
+    proof_needles = hot_query_proof_needles(query, match_phrases)
+    rows: list[list[Any]] = []
+    for document in documents:
+        evidence = hot_query_match_evidence(document, proof_needles)
+        phrases = evidence["phrases"][:1]
+        if not phrases:
+            raise ValueError(f"hot query proof document has no matching phrase for query {query!r}")
+        fields = evidence["fields"][:4] or ["content"]
+        shard = document.get("shard") if isinstance(document.get("shard"), dict) else {}
+        row: list[Any] = [
+            int(document["doc_index"]),
+            _intern_compact_value(dictionaries, indexes, "source_ids", document.get("source_id")),
+            _intern_compact_value(dictionaries, indexes, "facets", document.get("facet")),
+            _intern_compact_value(dictionaries, indexes, "record_types", document.get("record_type")),
+            _intern_compact_value(dictionaries, indexes, "shards", shard.get("shard_id") or ""),
+            _compact_rank_score(hot_query_rank_base_score(document, rank_terms)),
+            [_intern_compact_value(dictionaries, indexes, "fields", field) for field in fields],
+            [_intern_compact_value(dictionaries, indexes, "phrases", phrase) for phrase in phrases],
+        ]
+        optional_tail = [
+            _compact_date_index(dictionaries, indexes, "published_at", document),
+            _compact_date_index(dictionaries, indexes, "updated_at", document),
+            _compact_date_index(dictionaries, indexes, "recorded_at", document),
+            _compact_date_index(dictionaries, indexes, "version_date", document),
+            _compact_optional_string_index(dictionaries, indexes, "date_kinds", "date_kind", document),
+            _compact_optional_string_index(dictionaries, indexes, "date_confidences", "date_confidence", document),
+        ]
+        while optional_tail and optional_tail[-1] < 0:
+            optional_tail.pop()
+        row.extend(optional_tail)
+        rows.append(row)
+    return dictionaries, rows
 
 
 def hot_query_document_payload(

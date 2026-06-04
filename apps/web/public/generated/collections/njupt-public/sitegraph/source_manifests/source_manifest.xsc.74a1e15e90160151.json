@@ -1,0 +1,3308 @@
+{
+  "version": "sitegraph-source-manifest-proof-ledger-v3",
+  "source_id": "xsc",
+  "display_name": "学生工作部（处）",
+  "domain": "xsc.njupt.edu.cn",
+  "doc_count": 1669,
+  "attachment_count": 17,
+  "attachment_evidence_coverage": {
+    "total": 17,
+    "metadata_only": 17,
+    "filename_only": 17,
+    "text_extracted": 0,
+    "snippet": 0,
+    "full_content": 0
+  },
+  "facet_counts": {
+    "download": 14,
+    "exam": 228,
+    "external": 68,
+    "news": 64,
+    "notice_article": 1049,
+    "policy": 108,
+    "system": 7,
+    "workflow": 131
+  },
+  "record_counts": {
+    "attachment": 5,
+    "detail": 1589,
+    "external": 75
+  },
+  "year_counts": {
+    "2017": 1,
+    "2018": 23,
+    "2019": 23,
+    "2020": 157,
+    "2021": 264,
+    "2022": 105,
+    "2023": 280,
+    "2024": 446,
+    "2025": 299,
+    "2026": 34,
+    "undated": 37
+  },
+  "local_indexes": [
+    {
+      "index_id": "xsc__download__2020",
+      "scope": {
+        "index_id": "xsc__download__2020",
+        "source_id": "xsc",
+        "facet": "download",
+        "year": "2020",
+        "shard_ids": [
+          "xsc__download__detail__2020__root-ea209bc555e6__b1"
+        ]
+      },
+      "doc_count": 1,
+      "shards": [
+        {
+          "shard_id": "xsc__download__detail__2020__root-ea209bc555e6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__download__detail__2020__root-ea209bc555e6__b1.b0f93d68a5d89779.json",
+          "bytes": 1996,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__download__2020.8e27ca54e84cdfc4.json",
+        "sha256": "8e27ca54e84cdfc4a109e05b2eced4ebff18711ec19e58db716fb9e666536295",
+        "bytes": 1701,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 1
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__download__2020.476cff7b5cb891e8.bin",
+        "sha256": "476cff7b5cb891e8401adaf7fcc92b3aa0cea30cb2311e74e20f40fd259f129b",
+        "bytes": 1941,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__download__2020.1820039c413d6f1e.bin",
+        "sha256": "1820039c413d6f1ea4cbb70d78e5b8b95c8015dc6c4ca1f1fbdc0d7b6c047683",
+        "bytes": 901,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__download__2021",
+      "scope": {
+        "index_id": "xsc__download__2021",
+        "source_id": "xsc",
+        "facet": "download",
+        "year": "2021",
+        "shard_ids": [
+          "xsc__download__detail__2021__root-ff93ad0e4ec6__b0",
+          "xsc__download__detail__2021__root-ff93ad0e4ec6__b2"
+        ]
+      },
+      "doc_count": 2,
+      "shards": [
+        {
+          "shard_id": "xsc__download__detail__2021__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__download__detail__2021__root-ff93ad0e4ec6__b0.78039d4e4146ac2c.json",
+          "bytes": 3017,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__download__detail__2021__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__download__detail__2021__root-ff93ad0e4ec6__b2.23997e8a61652425.json",
+          "bytes": 4769,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__download__2021.b4486a40b201a6ba.json",
+        "sha256": "b4486a40b201a6bade2a95da90c71d11f42718cf674a7a44ee2fd8a54f1c5ea9",
+        "bytes": 2989,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 2
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__download__2021.326eecbd3cab37ab.bin",
+        "sha256": "326eecbd3cab37ab6a0db08c30421f112777152258bf4767a4b73038ef064eee",
+        "bytes": 2883,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__download__2021.72867ea34838ea70.bin",
+        "sha256": "72867ea34838ea707eef56a0724ac4b54bd2109be46435ab7a090084feb7ff35",
+        "bytes": 7111,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__download__2023",
+      "scope": {
+        "index_id": "xsc__download__2023",
+        "source_id": "xsc",
+        "facet": "download",
+        "year": "2023",
+        "shard_ids": [
+          "xsc__download__attachment__2023__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 1,
+      "shards": [
+        {
+          "shard_id": "xsc__download__attachment__2023__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__download__attachment__2023__root-ff93ad0e4ec6__b3.2553131536a994c1.json",
+          "bytes": 2566,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__download__2023.e5fe21af247018c3.json",
+        "sha256": "e5fe21af247018c3ae801c7c984d9e0fd3e9b4f4dd5caf049febe5a0dc0f8ef1",
+        "bytes": 1935,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 1
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__download__2023.d3a32e78ccc76a9b.bin",
+        "sha256": "d3a32e78ccc76a9bbf8646fe8a26eaac168409dcaef86b78e4b632956646caf3",
+        "bytes": 2045,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__download__2023.b53a5b853aa7de2d.bin",
+        "sha256": "b53a5b853aa7de2dda0f33a897a0bee423d8b4e0f9403e350b5bdd36b81d2c63",
+        "bytes": 1857,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__download__2024",
+      "scope": {
+        "index_id": "xsc__download__2024",
+        "source_id": "xsc",
+        "facet": "download",
+        "year": "2024",
+        "shard_ids": [
+          "xsc__download__detail__2024__root-ff93ad0e4ec6__b0",
+          "xsc__download__detail__2024__root-ff93ad0e4ec6__b1",
+          "xsc__download__detail__2024__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 6,
+      "shards": [
+        {
+          "shard_id": "xsc__download__detail__2024__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__download__detail__2024__root-ff93ad0e4ec6__b0.b9c5f16c46b97f8d.json",
+          "bytes": 1418,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__download__detail__2024__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__download__detail__2024__root-ff93ad0e4ec6__b1.f4a2dcf91b7990bd.json",
+          "bytes": 2787,
+          "count": 2
+        },
+        {
+          "shard_id": "xsc__download__detail__2024__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__download__detail__2024__root-ff93ad0e4ec6__b3.3e659920b97a8387.json",
+          "bytes": 6862,
+          "count": 3
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__download__2024.1222e804db594cb0.json",
+        "sha256": "1222e804db594cb02abfc6ad64ce4df872f98637a8b4dbc9f0841760e4dedc3b",
+        "bytes": 7564,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 6
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__download__2024.57d2a1d06071700d.bin",
+        "sha256": "57d2a1d06071700d89f0089fbfe403e0cfb17e924780062e3375f00f31852816",
+        "bytes": 4753,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__download__2024.f65afaac087b6d37.bin",
+        "sha256": "f65afaac087b6d37de4c7adfda82064c453c66129b95b97502ef43ea7c668d1d",
+        "bytes": 6017,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__download__2025",
+      "scope": {
+        "index_id": "xsc__download__2025",
+        "source_id": "xsc",
+        "facet": "download",
+        "year": "2025",
+        "shard_ids": [
+          "xsc__download__attachment__2025__root-ff93ad0e4ec6__b1",
+          "xsc__download__attachment__2025__root-ff93ad0e4ec6__b2"
+        ]
+      },
+      "doc_count": 3,
+      "shards": [
+        {
+          "shard_id": "xsc__download__attachment__2025__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__download__attachment__2025__root-ff93ad0e4ec6__b1.3e9c8d4a7eb86af7.json",
+          "bytes": 2456,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__download__attachment__2025__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__download__attachment__2025__root-ff93ad0e4ec6__b2.2c7bd8569b5ef9af.json",
+          "bytes": 5039,
+          "count": 2
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__download__2025.80426f01aeb119e6.json",
+        "sha256": "80426f01aeb119e60a3223fa30fa0fd950acbfaee6fa32d0500f64790ce513be",
+        "bytes": 4573,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 3
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__download__2025.d6c14d17f29af600.bin",
+        "sha256": "d6c14d17f29af600fb0d9aa75c6d404dd672d8661d7cbe6b6e27312817789af3",
+        "bytes": 2428,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__download__2025.951e1b40609bef56.bin",
+        "sha256": "951e1b40609bef56266a3d88035808c168908dc39e500e079f10652bfb5589c4",
+        "bytes": 2004,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__download__undated",
+      "scope": {
+        "index_id": "xsc__download__undated",
+        "source_id": "xsc",
+        "facet": "download",
+        "year": "undated",
+        "shard_ids": [
+          "xsc__download__attachment__undated__root-ff93ad0e4ec6__b2"
+        ]
+      },
+      "doc_count": 1,
+      "shards": [
+        {
+          "shard_id": "xsc__download__attachment__undated__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__download__attachment__undated__root-ff93ad0e4ec6__b2.0b6e46e4a12d8d25.json",
+          "bytes": 1909,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__download__undated.60ecf9d2d7735956.json",
+        "sha256": "60ecf9d2d7735956338642e11fbf92b65216599ba8f0d57acc1d67b9713be164",
+        "bytes": 1694,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 1
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__download__undated.1d34f0565449e9d8.bin",
+        "sha256": "1d34f0565449e9d8bc4e0b245fdc1e5c5d0582b0391e6e553a499ae60a490b1b",
+        "bytes": 912,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__download__undated.7038fcebc1dee850.bin",
+        "sha256": "7038fcebc1dee8500ebc4e978962c3f1ef02d56024370e74fbc3ad91ae8efbaf",
+        "bytes": 925,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__exam__2018",
+      "scope": {
+        "index_id": "xsc__exam__2018",
+        "source_id": "xsc",
+        "facet": "exam",
+        "year": "2018",
+        "shard_ids": [
+          "xsc__exam__detail__2018__root-ff93ad0e4ec6__b0",
+          "xsc__exam__detail__2018__root-ff93ad0e4ec6__b1",
+          "xsc__exam__detail__2018__root-ff93ad0e4ec6__b2"
+        ]
+      },
+      "doc_count": 3,
+      "shards": [
+        {
+          "shard_id": "xsc__exam__detail__2018__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2018__root-ff93ad0e4ec6__b0.8ad1701e18ea41c5.json",
+          "bytes": 3355,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__exam__detail__2018__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2018__root-ff93ad0e4ec6__b1.60ad06dd381393b1.json",
+          "bytes": 3044,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__exam__detail__2018__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2018__root-ff93ad0e4ec6__b2.5c5a0d3aba70deed.json",
+          "bytes": 3863,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__exam__2018.72fb8bf21864f80d.json",
+        "sha256": "72fb8bf21864f80d39184cfcd8b933ee2c0bbb3f39fbb11256f34b2640ab5401",
+        "bytes": 4179,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 3
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__exam__2018.5f6d7ee06130d441.bin",
+        "sha256": "5f6d7ee06130d441405b70303a440f9f2c88c8d6071bc34251737361e3ac3f93",
+        "bytes": 3632,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__exam__2018.48065d349bad370d.bin",
+        "sha256": "48065d349bad370d7c420be1be701b15e7d4cb945536c2b349bf456ad65e1f86",
+        "bytes": 9872,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__exam__2019",
+      "scope": {
+        "index_id": "xsc__exam__2019",
+        "source_id": "xsc",
+        "facet": "exam",
+        "year": "2019",
+        "shard_ids": [
+          "xsc__exam__detail__2019__root-ff93ad0e4ec6__b0",
+          "xsc__exam__detail__2019__root-ff93ad0e4ec6__b1",
+          "xsc__exam__detail__2019__root-ff93ad0e4ec6__b2",
+          "xsc__exam__detail__2019__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 4,
+      "shards": [
+        {
+          "shard_id": "xsc__exam__detail__2019__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2019__root-ff93ad0e4ec6__b0.8392eaa321552f67.json",
+          "bytes": 4034,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__exam__detail__2019__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2019__root-ff93ad0e4ec6__b1.32f82c918c519ea3.json",
+          "bytes": 3938,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__exam__detail__2019__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2019__root-ff93ad0e4ec6__b2.fbc5d13d3729d6b7.json",
+          "bytes": 3332,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__exam__detail__2019__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2019__root-ff93ad0e4ec6__b3.28c54b706b8b9eb7.json",
+          "bytes": 5067,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__exam__2019.569653ae1076cbf4.json",
+        "sha256": "569653ae1076cbf47e4e904b02cb698a38da558ccaff8b6ce0c6367a9007d6cd",
+        "bytes": 5557,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 4
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__exam__2019.f1e8200affb10145.bin",
+        "sha256": "f1e8200affb10145f98984457de27f15fdbc746bdeed3b964fee8a87a244c85f",
+        "bytes": 4470,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__exam__2019.5e3ea834c57b5a79.bin",
+        "sha256": "5e3ea834c57b5a79684b219afb20e1e7f62ee0d454d40abb47529f1562c64eb7",
+        "bytes": 12962,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__exam__2020",
+      "scope": {
+        "index_id": "xsc__exam__2020",
+        "source_id": "xsc",
+        "facet": "exam",
+        "year": "2020",
+        "shard_ids": [
+          "xsc__exam__detail__2020__root-ff93ad0e4ec6__b0",
+          "xsc__exam__detail__2020__root-ff93ad0e4ec6__b1",
+          "xsc__exam__detail__2020__root-ff93ad0e4ec6__b2",
+          "xsc__exam__detail__2020__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 22,
+      "shards": [
+        {
+          "shard_id": "xsc__exam__detail__2020__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2020__root-ff93ad0e4ec6__b0.9adca2afc54db4d1.json",
+          "bytes": 18101,
+          "count": 5
+        },
+        {
+          "shard_id": "xsc__exam__detail__2020__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2020__root-ff93ad0e4ec6__b1.ee731376971b03e3.json",
+          "bytes": 24078,
+          "count": 7
+        },
+        {
+          "shard_id": "xsc__exam__detail__2020__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2020__root-ff93ad0e4ec6__b2.484396cc7cc5cd70.json",
+          "bytes": 18889,
+          "count": 6
+        },
+        {
+          "shard_id": "xsc__exam__detail__2020__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2020__root-ff93ad0e4ec6__b3.6fa58d81fa5a5870.json",
+          "bytes": 15139,
+          "count": 4
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__exam__2020.c4203418df7cdaff.json",
+        "sha256": "c4203418df7cdaffe348ce1ed4f0713a00c437722f45288e8aadf6ee477f4df0",
+        "bytes": 26424,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 22
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__exam__2020.617650e9ab324082.bin",
+        "sha256": "617650e9ab3240821d9d3bb7a913f3d5ffb7958ec331cd4d9f4ec835eba5d35d",
+        "bytes": 15180,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__exam__2020.3cb6b095530ce435.bin",
+        "sha256": "3cb6b095530ce43540d99bad5bf12c7553849e7f81754835060bade7aaf4292e",
+        "bytes": 58264,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__exam__2021",
+      "scope": {
+        "index_id": "xsc__exam__2021",
+        "source_id": "xsc",
+        "facet": "exam",
+        "year": "2021",
+        "shard_ids": [
+          "xsc__exam__detail__2021__root-ff93ad0e4ec6__b0",
+          "xsc__exam__detail__2021__root-ff93ad0e4ec6__b1",
+          "xsc__exam__detail__2021__root-ff93ad0e4ec6__b2",
+          "xsc__exam__detail__2021__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 35,
+      "shards": [
+        {
+          "shard_id": "xsc__exam__detail__2021__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2021__root-ff93ad0e4ec6__b0.1ffc31099775cd5e.json",
+          "bytes": 29777,
+          "count": 8
+        },
+        {
+          "shard_id": "xsc__exam__detail__2021__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2021__root-ff93ad0e4ec6__b1.1d3335e8e033679d.json",
+          "bytes": 34243,
+          "count": 9
+        },
+        {
+          "shard_id": "xsc__exam__detail__2021__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2021__root-ff93ad0e4ec6__b2.2df7866bb46d5255.json",
+          "bytes": 37601,
+          "count": 10
+        },
+        {
+          "shard_id": "xsc__exam__detail__2021__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2021__root-ff93ad0e4ec6__b3.0a4b2d1c1a56b8c0.json",
+          "bytes": 25487,
+          "count": 8
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__exam__2021.5d213744f3cd6535.json",
+        "sha256": "5d213744f3cd6535e47c98c1c59cefb1520070da2225ec46c8093d99890923eb",
+        "bytes": 41526,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 35
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__exam__2021.bbc8fa3bc7c3baad.bin",
+        "sha256": "bbc8fa3bc7c3baad8505c7f13159de59045d4ed8198bb3ab764d6a231bd0fc60",
+        "bytes": 22586,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__exam__2021.10561d7defb62d7d.bin",
+        "sha256": "10561d7defb62d7da347188d657a5c210dae383799f35e3ee6f5702011fbd083",
+        "bytes": 87710,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__exam__2022",
+      "scope": {
+        "index_id": "xsc__exam__2022",
+        "source_id": "xsc",
+        "facet": "exam",
+        "year": "2022",
+        "shard_ids": [
+          "xsc__exam__detail__2022__root-ff93ad0e4ec6__b0",
+          "xsc__exam__detail__2022__root-ff93ad0e4ec6__b1",
+          "xsc__exam__detail__2022__root-ff93ad0e4ec6__b2",
+          "xsc__exam__detail__2022__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 9,
+      "shards": [
+        {
+          "shard_id": "xsc__exam__detail__2022__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2022__root-ff93ad0e4ec6__b0.46e6fdac4411932a.json",
+          "bytes": 7630,
+          "count": 2
+        },
+        {
+          "shard_id": "xsc__exam__detail__2022__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2022__root-ff93ad0e4ec6__b1.6a073e2616eb83fc.json",
+          "bytes": 10892,
+          "count": 3
+        },
+        {
+          "shard_id": "xsc__exam__detail__2022__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2022__root-ff93ad0e4ec6__b2.70e011e140ab8670.json",
+          "bytes": 10698,
+          "count": 3
+        },
+        {
+          "shard_id": "xsc__exam__detail__2022__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2022__root-ff93ad0e4ec6__b3.5cbc5de6695e1a5c.json",
+          "bytes": 3301,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__exam__2022.788cf39d00480259.json",
+        "sha256": "788cf39d00480259b3c157fb4ddf364937dcd97d313a4f1430e907af398d42f2",
+        "bytes": 11252,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 9
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__exam__2022.71c0594195abd5ac.bin",
+        "sha256": "71c0594195abd5ac165a1601d12ffd20c3f95b76ee3b9563bc5dfb6153525f27",
+        "bytes": 8089,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__exam__2022.0b1b42367b210c01.bin",
+        "sha256": "0b1b42367b210c01c67cdc4d0130d8169c1d702d00c9d6c607e4d4449e875aea",
+        "bytes": 27110,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__exam__2023",
+      "scope": {
+        "index_id": "xsc__exam__2023",
+        "source_id": "xsc",
+        "facet": "exam",
+        "year": "2023",
+        "shard_ids": [
+          "xsc__exam__detail__2023__root-ff93ad0e4ec6__b0",
+          "xsc__exam__detail__2023__root-ff93ad0e4ec6__b1",
+          "xsc__exam__detail__2023__root-ff93ad0e4ec6__b2",
+          "xsc__exam__detail__2023__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 47,
+      "shards": [
+        {
+          "shard_id": "xsc__exam__detail__2023__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2023__root-ff93ad0e4ec6__b0.7bd31195fcdd6d67.json",
+          "bytes": 38450,
+          "count": 10
+        },
+        {
+          "shard_id": "xsc__exam__detail__2023__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2023__root-ff93ad0e4ec6__b1.68ebb5e492b89c0d.json",
+          "bytes": 55502,
+          "count": 14
+        },
+        {
+          "shard_id": "xsc__exam__detail__2023__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2023__root-ff93ad0e4ec6__b2.47436b7bce1948e9.json",
+          "bytes": 17604,
+          "count": 5
+        },
+        {
+          "shard_id": "xsc__exam__detail__2023__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2023__root-ff93ad0e4ec6__b3.07614c0391811fca.json",
+          "bytes": 67625,
+          "count": 18
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__exam__2023.46869876f63d2761.json",
+        "sha256": "46869876f63d276196b9e1edde0c21fc1769feeb5f0b6dcf4ba1dd51de9d8d5f",
+        "bytes": 57393,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 47
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__exam__2023.b6b900d23aeae465.bin",
+        "sha256": "b6b900d23aeae4657f62798c4a5a8ea80dfb104fb548d54d50e29e39a6849e62",
+        "bytes": 29797,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__exam__2023.f91e0102a9baf139.bin",
+        "sha256": "f91e0102a9baf139be36d2c5dfa5a2894fecec6fa77fba0fe6545d080b2f6869",
+        "bytes": 100163,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__exam__2024",
+      "scope": {
+        "index_id": "xsc__exam__2024",
+        "source_id": "xsc",
+        "facet": "exam",
+        "year": "2024",
+        "shard_ids": [
+          "xsc__exam__detail__2024__root-ff93ad0e4ec6__b0",
+          "xsc__exam__detail__2024__root-ff93ad0e4ec6__b1",
+          "xsc__exam__detail__2024__root-ff93ad0e4ec6__b2",
+          "xsc__exam__detail__2024__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 62,
+      "shards": [
+        {
+          "shard_id": "xsc__exam__detail__2024__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2024__root-ff93ad0e4ec6__b0.4317d88ee056e2b0.json",
+          "bytes": 53256,
+          "count": 14
+        },
+        {
+          "shard_id": "xsc__exam__detail__2024__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2024__root-ff93ad0e4ec6__b1.c71db16ea1d019f1.json",
+          "bytes": 46069,
+          "count": 12
+        },
+        {
+          "shard_id": "xsc__exam__detail__2024__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2024__root-ff93ad0e4ec6__b2.129d89ffe9225340.json",
+          "bytes": 53805,
+          "count": 14
+        },
+        {
+          "shard_id": "xsc__exam__detail__2024__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2024__root-ff93ad0e4ec6__b3.0301807bb79ae2b7.json",
+          "bytes": 92273,
+          "count": 22
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__exam__2024.cfdcf1c1676a4069.json",
+        "sha256": "cfdcf1c1676a4069dae240f545b2e62942d16156f7c573eb6db973b0abbbdb75",
+        "bytes": 74424,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 62
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__exam__2024.6f4810532223e00e.bin",
+        "sha256": "6f4810532223e00ed935210ca50ed854e62c9071b348519f6125f3c8c859e481",
+        "bytes": 35206,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__exam__2024.aea3ae0eae0b8261.bin",
+        "sha256": "aea3ae0eae0b8261bf293934adde22552cbd6b29e2414eb11c7668ebaf0bb809",
+        "bytes": 118745,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__exam__2025",
+      "scope": {
+        "index_id": "xsc__exam__2025",
+        "source_id": "xsc",
+        "facet": "exam",
+        "year": "2025",
+        "shard_ids": [
+          "xsc__exam__detail__2025__root-ff93ad0e4ec6__b0",
+          "xsc__exam__detail__2025__root-ff93ad0e4ec6__b1",
+          "xsc__exam__detail__2025__root-ff93ad0e4ec6__b2",
+          "xsc__exam__detail__2025__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 45,
+      "shards": [
+        {
+          "shard_id": "xsc__exam__detail__2025__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2025__root-ff93ad0e4ec6__b0.e3d024649f9a399d.json",
+          "bytes": 54421,
+          "count": 13
+        },
+        {
+          "shard_id": "xsc__exam__detail__2025__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2025__root-ff93ad0e4ec6__b1.c3831b2a0892b59a.json",
+          "bytes": 52709,
+          "count": 14
+        },
+        {
+          "shard_id": "xsc__exam__detail__2025__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2025__root-ff93ad0e4ec6__b2.8979cdb962171787.json",
+          "bytes": 21269,
+          "count": 6
+        },
+        {
+          "shard_id": "xsc__exam__detail__2025__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2025__root-ff93ad0e4ec6__b3.0666e0979b9f635a.json",
+          "bytes": 44747,
+          "count": 12
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__exam__2025.98015c07fe723163.json",
+        "sha256": "98015c07fe7231639bc4ea5c521b01d31b25a1ac07005037baf8cf43dea1911e",
+        "bytes": 52863,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 45
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__exam__2025.f5516c4226de536b.bin",
+        "sha256": "f5516c4226de536bad4c55c23e0efa3ede3af3ee7ccdfb6617c0d1dad1ff4623",
+        "bytes": 26858,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__exam__2025.7839c1d84a4bc90e.bin",
+        "sha256": "7839c1d84a4bc90ec1e00cdfff8c9cae38e05ceb58cdb4f68687740a2068abf7",
+        "bytes": 95596,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__exam__2026",
+      "scope": {
+        "index_id": "xsc__exam__2026",
+        "source_id": "xsc",
+        "facet": "exam",
+        "year": "2026",
+        "shard_ids": [
+          "xsc__exam__detail__2026__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 1,
+      "shards": [
+        {
+          "shard_id": "xsc__exam__detail__2026__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__exam__detail__2026__root-ff93ad0e4ec6__b3.157e0acaac1b21a3.json",
+          "bytes": 3797,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__exam__2026.c7f81806e5a114ba.json",
+        "sha256": "c7f81806e5a114ba6edaf3a27304e50e99c32c63be85b12d5c71fd4a6125ad03",
+        "bytes": 1803,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 1
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__exam__2026.528f25f6a162fe61.bin",
+        "sha256": "528f25f6a162fe61befbbff59ae04f0c702fecfd0186b1f75b7ca93a383f85be",
+        "bytes": 2090,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__exam__2026.2dc1aefc31e0b27c.bin",
+        "sha256": "2dc1aefc31e0b27c56f3f6f9ddfa6b881d5768ddc246d6672820b8b83890a80e",
+        "bytes": 3751,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__external__2024",
+      "scope": {
+        "index_id": "xsc__external__2024",
+        "source_id": "xsc",
+        "facet": "external",
+        "year": "2024",
+        "shard_ids": [
+          "xsc__external__external__2024__root-ff93ad0e4ec6__b0",
+          "xsc__external__external__2024__root-ff93ad0e4ec6__b1",
+          "xsc__external__external__2024__root-ff93ad0e4ec6__b2",
+          "xsc__external__external__2024__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 34,
+      "shards": [
+        {
+          "shard_id": "xsc__external__external__2024__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__external__external__2024__root-ff93ad0e4ec6__b0.cd889a5a5b7bae6b.json",
+          "bytes": 17294,
+          "count": 9
+        },
+        {
+          "shard_id": "xsc__external__external__2024__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__external__external__2024__root-ff93ad0e4ec6__b1.e44b027e05c165d9.json",
+          "bytes": 11615,
+          "count": 6
+        },
+        {
+          "shard_id": "xsc__external__external__2024__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__external__external__2024__root-ff93ad0e4ec6__b2.f92c9c98776fb5d1.json",
+          "bytes": 19244,
+          "count": 10
+        },
+        {
+          "shard_id": "xsc__external__external__2024__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__external__external__2024__root-ff93ad0e4ec6__b3.6bdc6a48f4db8a51.json",
+          "bytes": 17338,
+          "count": 9
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__external__2024.8170efc55e5e211e.json",
+        "sha256": "8170efc55e5e211e652a77fef59e503224462e6bac708b13a138b928d8aa8bfe",
+        "bytes": 42671,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 34
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__external__2024.11a678e89ef5dc7a.bin",
+        "sha256": "11a678e89ef5dc7a6adeb6476f66dc7ce1277175ec73c9a4b3c48628ff8d83e1",
+        "bytes": 27414,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__external__2024.4a5d7a55d62f81e5.bin",
+        "sha256": "4a5d7a55d62f81e525956bcb27eee3696dac4c39cc300ed0047ca1acefc5092c",
+        "bytes": 19794,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__external__2025",
+      "scope": {
+        "index_id": "xsc__external__2025",
+        "source_id": "xsc",
+        "facet": "external",
+        "year": "2025",
+        "shard_ids": [
+          "xsc__external__external__2025__root-ff93ad0e4ec6__b0",
+          "xsc__external__external__2025__root-ff93ad0e4ec6__b1",
+          "xsc__external__external__2025__root-ff93ad0e4ec6__b2",
+          "xsc__external__external__2025__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 8,
+      "shards": [
+        {
+          "shard_id": "xsc__external__external__2025__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__external__external__2025__root-ff93ad0e4ec6__b0.935fd01372235b96.json",
+          "bytes": 3754,
+          "count": 2
+        },
+        {
+          "shard_id": "xsc__external__external__2025__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__external__external__2025__root-ff93ad0e4ec6__b1.a9106cc2afc87303.json",
+          "bytes": 5808,
+          "count": 3
+        },
+        {
+          "shard_id": "xsc__external__external__2025__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__external__external__2025__root-ff93ad0e4ec6__b2.bb90f8c4b6766219.json",
+          "bytes": 1900,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__external__external__2025__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__external__external__2025__root-ff93ad0e4ec6__b3.8f1e501efa7444a5.json",
+          "bytes": 3829,
+          "count": 2
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__external__2025.997dfe8095d92207.json",
+        "sha256": "997dfe8095d92207ab0d94fbe765c6d0dfa582a5149e46105199f679a331a1d3",
+        "bytes": 10579,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 8
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__external__2025.49a50a1259479f33.bin",
+        "sha256": "49a50a1259479f3387bb8d272b1ac1ef6e7855b49806a7063fcfa817a4d58a29",
+        "bytes": 10407,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__external__2025.9d37093990035bd3.bin",
+        "sha256": "9d37093990035bd3cd4cb91bb835fcf662c9f88f0d25e1761774d61aca702b2b",
+        "bytes": 7667,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__external__undated",
+      "scope": {
+        "index_id": "xsc__external__undated",
+        "source_id": "xsc",
+        "facet": "external",
+        "year": "undated",
+        "shard_ids": [
+          "xsc__external__external__undated__root-ff93ad0e4ec6__b0",
+          "xsc__external__external__undated__root-ff93ad0e4ec6__b1",
+          "xsc__external__external__undated__root-ff93ad0e4ec6__b2",
+          "xsc__external__external__undated__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 26,
+      "shards": [
+        {
+          "shard_id": "xsc__external__external__undated__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__external__external__undated__root-ff93ad0e4ec6__b0.35d21fadffe9ccd6.json",
+          "bytes": 10420,
+          "count": 7
+        },
+        {
+          "shard_id": "xsc__external__external__undated__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__external__external__undated__root-ff93ad0e4ec6__b1.2c9f56f8881d74ce.json",
+          "bytes": 9492,
+          "count": 6
+        },
+        {
+          "shard_id": "xsc__external__external__undated__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__external__external__undated__root-ff93ad0e4ec6__b2.729bec869b025e19.json",
+          "bytes": 6000,
+          "count": 4
+        },
+        {
+          "shard_id": "xsc__external__external__undated__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__external__external__undated__root-ff93ad0e4ec6__b3.33f5f4d8ac70ad60.json",
+          "bytes": 13617,
+          "count": 9
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__external__undated.618619b99df3cf54.json",
+        "sha256": "618619b99df3cf546dac1be0133a564a479ae0421f5f4a55dc532a2515c1d742",
+        "bytes": 28186,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 26
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__external__undated.5de3abb789f80919.bin",
+        "sha256": "5de3abb789f80919f3928e0ecb6653e95faa9db3e66a88d037559ebbde044a26",
+        "bytes": 14865,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__external__undated.a4305193b07581e6.bin",
+        "sha256": "a4305193b07581e673f7ea3f36a85fd5167130f90361b43b66b95d0e4b8a6e60",
+        "bytes": 11882,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__news__2020",
+      "scope": {
+        "index_id": "xsc__news__2020",
+        "source_id": "xsc",
+        "facet": "news",
+        "year": "2020",
+        "shard_ids": [
+          "xsc__news__detail__2020__root-ff93ad0e4ec6__b0",
+          "xsc__news__detail__2020__root-ff93ad0e4ec6__b1",
+          "xsc__news__detail__2020__root-ff93ad0e4ec6__b2"
+        ]
+      },
+      "doc_count": 4,
+      "shards": [
+        {
+          "shard_id": "xsc__news__detail__2020__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2020__root-ff93ad0e4ec6__b0.3a497d137ae8635f.json",
+          "bytes": 3284,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__news__detail__2020__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2020__root-ff93ad0e4ec6__b1.f9e4d8eacffe3edc.json",
+          "bytes": 3968,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__news__detail__2020__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2020__root-ff93ad0e4ec6__b2.d4b025180a925d30.json",
+          "bytes": 7063,
+          "count": 2
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__news__2020.43675e2ac91f723b.json",
+        "sha256": "43675e2ac91f723b931e41419d5c6d70ea4ca260b760f9f3ff20e14b8588af36",
+        "bytes": 5404,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 4
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__news__2020.1270ba81d12769f4.bin",
+        "sha256": "1270ba81d12769f40d9ed120b2f42532a9f996f415a75bc46055ebd390c857fc",
+        "bytes": 5173,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__news__2020.6f6dba2bef8c747c.bin",
+        "sha256": "6f6dba2bef8c747c1243cfa46f7b8632a859814733b56ce09edd63eabdc376d8",
+        "bytes": 12871,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__news__2021",
+      "scope": {
+        "index_id": "xsc__news__2021",
+        "source_id": "xsc",
+        "facet": "news",
+        "year": "2021",
+        "shard_ids": [
+          "xsc__news__detail__2021__root-ff93ad0e4ec6__b1",
+          "xsc__news__detail__2021__root-ff93ad0e4ec6__b2",
+          "xsc__news__detail__2021__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 3,
+      "shards": [
+        {
+          "shard_id": "xsc__news__detail__2021__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2021__root-ff93ad0e4ec6__b1.dac0ca3d0c0cc6ad.json",
+          "bytes": 5326,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__news__detail__2021__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2021__root-ff93ad0e4ec6__b2.d26ec44058d8a1a3.json",
+          "bytes": 3035,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__news__detail__2021__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2021__root-ff93ad0e4ec6__b3.318ebd99c2d0a499.json",
+          "bytes": 4780,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__news__2021.a628b0aa2a948e90.json",
+        "sha256": "a628b0aa2a948e9025d7fb46650124ddd0334a90a3d8d0f18331c101c34eac44",
+        "bytes": 4281,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 3
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__news__2021.53415e6ff1394be8.bin",
+        "sha256": "53415e6ff1394be850d497dff5b023ab156f6223df7faa5ca2cf8c505131016d",
+        "bytes": 4173,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__news__2021.c10c5ecf36ec109a.bin",
+        "sha256": "c10c5ecf36ec109a93b8ec7f1661dea53a4131e42821420eecb69ea241f1d334",
+        "bytes": 9994,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__news__2022",
+      "scope": {
+        "index_id": "xsc__news__2022",
+        "source_id": "xsc",
+        "facet": "news",
+        "year": "2022",
+        "shard_ids": [
+          "xsc__news__detail__2022__root-ff93ad0e4ec6__b0",
+          "xsc__news__detail__2022__root-ff93ad0e4ec6__b1",
+          "xsc__news__detail__2022__root-ff93ad0e4ec6__b2",
+          "xsc__news__detail__2022__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 5,
+      "shards": [
+        {
+          "shard_id": "xsc__news__detail__2022__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2022__root-ff93ad0e4ec6__b0.98484750093beaef.json",
+          "bytes": 3387,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__news__detail__2022__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2022__root-ff93ad0e4ec6__b1.41e5878f337d0df1.json",
+          "bytes": 5348,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__news__detail__2022__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2022__root-ff93ad0e4ec6__b2.7387881e5e7406d7.json",
+          "bytes": 4017,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__news__detail__2022__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2022__root-ff93ad0e4ec6__b3.18d2316c3784715e.json",
+          "bytes": 7481,
+          "count": 2
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__news__2022.931e7fb224170b5a.json",
+        "sha256": "931e7fb224170b5a813f8d9305763330b4d3be8e95e1c96a258791e6c7ee66f1",
+        "bytes": 6567,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 5
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__news__2022.87494b6e93e7c9bf.bin",
+        "sha256": "87494b6e93e7c9bf3e22861d518eaa2a225f009eed3e5eb9199feea3ecf8c0f9",
+        "bytes": 4388,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__news__2022.99f39d952afa04d4.bin",
+        "sha256": "99f39d952afa04d4324c09b6fd0003627bcc91fbc8d300ac2dc65b4c3cffa4e4",
+        "bytes": 13006,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__news__2023",
+      "scope": {
+        "index_id": "xsc__news__2023",
+        "source_id": "xsc",
+        "facet": "news",
+        "year": "2023",
+        "shard_ids": [
+          "xsc__news__detail__2023__root-ff93ad0e4ec6__b0",
+          "xsc__news__detail__2023__root-ff93ad0e4ec6__b1",
+          "xsc__news__detail__2023__root-ff93ad0e4ec6__b2",
+          "xsc__news__detail__2023__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 10,
+      "shards": [
+        {
+          "shard_id": "xsc__news__detail__2023__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2023__root-ff93ad0e4ec6__b0.32924cdceb44a952.json",
+          "bytes": 13910,
+          "count": 4
+        },
+        {
+          "shard_id": "xsc__news__detail__2023__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2023__root-ff93ad0e4ec6__b1.28dd5c67e08c431b.json",
+          "bytes": 8678,
+          "count": 2
+        },
+        {
+          "shard_id": "xsc__news__detail__2023__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2023__root-ff93ad0e4ec6__b2.d61e11e37e3b4694.json",
+          "bytes": 2833,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__news__detail__2023__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2023__root-ff93ad0e4ec6__b3.281b1a9935ef8220.json",
+          "bytes": 11111,
+          "count": 3
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__news__2023.9beb17ba76a00e72.json",
+        "sha256": "9beb17ba76a00e72c2ff131ceeede8be2bb0a164e80e0c8df2049e9c61c7cc90",
+        "bytes": 12440,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 10
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__news__2023.d92098d298151086.bin",
+        "sha256": "d92098d2981510862b59e5a52a49648f1dd42f678890013b26b010f1125ed64b",
+        "bytes": 9991,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__news__2023.037aa53b97e8f720.bin",
+        "sha256": "037aa53b97e8f720fb5a2e890692e87822b3c5d803fc0c62a5234109442de8fa",
+        "bytes": 27387,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__news__2024",
+      "scope": {
+        "index_id": "xsc__news__2024",
+        "source_id": "xsc",
+        "facet": "news",
+        "year": "2024",
+        "shard_ids": [
+          "xsc__news__detail__2024__root-ff93ad0e4ec6__b0",
+          "xsc__news__detail__2024__root-ff93ad0e4ec6__b1",
+          "xsc__news__detail__2024__root-ff93ad0e4ec6__b2",
+          "xsc__news__detail__2024__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 21,
+      "shards": [
+        {
+          "shard_id": "xsc__news__detail__2024__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2024__root-ff93ad0e4ec6__b0.78367a3b696bd60b.json",
+          "bytes": 15918,
+          "count": 4
+        },
+        {
+          "shard_id": "xsc__news__detail__2024__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2024__root-ff93ad0e4ec6__b1.68b12d61b932c4f3.json",
+          "bytes": 32909,
+          "count": 7
+        },
+        {
+          "shard_id": "xsc__news__detail__2024__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2024__root-ff93ad0e4ec6__b2.8778d38e911d8163.json",
+          "bytes": 16243,
+          "count": 4
+        },
+        {
+          "shard_id": "xsc__news__detail__2024__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2024__root-ff93ad0e4ec6__b3.2e8c49bc5d02f6f9.json",
+          "bytes": 24725,
+          "count": 6
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__news__2024.f88bd7076dbb6850.json",
+        "sha256": "f88bd7076dbb6850017506cc2176f6b8521ba83b62ca96a32247bb29499ec9f0",
+        "bytes": 25120,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 21
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__news__2024.f8d97a352335f1dd.bin",
+        "sha256": "f8d97a352335f1ddbb9786430436a4adfda0dbae107e4d05447c4f5a9e77881b",
+        "bytes": 18544,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__news__2024.0b9efaa324ce1667.bin",
+        "sha256": "0b9efaa324ce16677149bfa03d9a9bf9fb483c38bd2621f1f426e7ece497b3b5",
+        "bytes": 54334,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__news__2025",
+      "scope": {
+        "index_id": "xsc__news__2025",
+        "source_id": "xsc",
+        "facet": "news",
+        "year": "2025",
+        "shard_ids": [
+          "xsc__news__detail__2025__root-ff93ad0e4ec6__b0",
+          "xsc__news__detail__2025__root-ff93ad0e4ec6__b1",
+          "xsc__news__detail__2025__root-ff93ad0e4ec6__b2",
+          "xsc__news__detail__2025__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 20,
+      "shards": [
+        {
+          "shard_id": "xsc__news__detail__2025__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2025__root-ff93ad0e4ec6__b0.fa0747d19dfca493.json",
+          "bytes": 21845,
+          "count": 6
+        },
+        {
+          "shard_id": "xsc__news__detail__2025__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2025__root-ff93ad0e4ec6__b1.cc051eaddf026620.json",
+          "bytes": 25872,
+          "count": 7
+        },
+        {
+          "shard_id": "xsc__news__detail__2025__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2025__root-ff93ad0e4ec6__b2.6e0aeffe3ac41e26.json",
+          "bytes": 16968,
+          "count": 4
+        },
+        {
+          "shard_id": "xsc__news__detail__2025__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2025__root-ff93ad0e4ec6__b3.bf2318df7fd5a062.json",
+          "bytes": 9647,
+          "count": 3
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__news__2025.950267a43dbdc874.json",
+        "sha256": "950267a43dbdc8748032200d89caae632fb74a809426a34f926d6e0811a01d39",
+        "bytes": 23924,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 20
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__news__2025.d4bc1517c4cc4bbd.bin",
+        "sha256": "d4bc1517c4cc4bbd791e37089ed1157755b1e14545411f23dbb5e2e168b70805",
+        "bytes": 18103,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__news__2025.ab671bde973d4988.bin",
+        "sha256": "ab671bde973d4988c74b8564281bc526af13b4c191c5bb5a9ac1a755d13c8c45",
+        "bytes": 51882,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__news__2026",
+      "scope": {
+        "index_id": "xsc__news__2026",
+        "source_id": "xsc",
+        "facet": "news",
+        "year": "2026",
+        "shard_ids": [
+          "xsc__news__detail__2026__root-ff93ad0e4ec6__b1"
+        ]
+      },
+      "doc_count": 1,
+      "shards": [
+        {
+          "shard_id": "xsc__news__detail__2026__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__news__detail__2026__root-ff93ad0e4ec6__b1.c05671b260e6381f.json",
+          "bytes": 3597,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__news__2026.c6b2e863d946a374.json",
+        "sha256": "c6b2e863d946a3748694bd9ee9c71ca9d7dd0d864ce9f086a2015259a523e471",
+        "bytes": 1720,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 1
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__news__2026.41ab831127f7e656.bin",
+        "sha256": "41ab831127f7e6562c8cc2f6a2aaa01707c54eddd56499c078b25b24a3534ec5",
+        "bytes": 1667,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__news__2026.0c7005b78f2b8f55.bin",
+        "sha256": "0c7005b78f2b8f55e23440cfd4c08bca0059b2b894b617ce55b9005bce0c876c",
+        "bytes": 3798,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__notice_article__2017",
+      "scope": {
+        "index_id": "xsc__notice_article__2017",
+        "source_id": "xsc",
+        "facet": "notice_article",
+        "year": "2017",
+        "shard_ids": [
+          "xsc__notice_article__detail__2017__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 1,
+      "shards": [
+        {
+          "shard_id": "xsc__notice_article__detail__2017__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2017__root-ff93ad0e4ec6__b3.eef1f03e55de739a.json",
+          "bytes": 2225,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__notice_article__2017.78cd062813ff2ee2.json",
+        "sha256": "78cd062813ff2ee227526b1db844f94080f399b7cf20552a3cf6b29fcb7076ed",
+        "bytes": 1799,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 1
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__notice_article__2017.e83032f9eb2fdc22.bin",
+        "sha256": "e83032f9eb2fdc224b57e2a0e5cd25bcecb2fc396a997bf614fd921b7fe2dead",
+        "bytes": 2533,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__notice_article__2017.4719f3ac53104fde.bin",
+        "sha256": "4719f3ac53104fde6825a3f336835ede9baf0ba537b51cb5eed022945208a4ab",
+        "bytes": 1922,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__notice_article__2018",
+      "scope": {
+        "index_id": "xsc__notice_article__2018",
+        "source_id": "xsc",
+        "facet": "notice_article",
+        "year": "2018",
+        "shard_ids": [
+          "xsc__notice_article__detail__2018__root-ff93ad0e4ec6__b0",
+          "xsc__notice_article__detail__2018__root-ff93ad0e4ec6__b1",
+          "xsc__notice_article__detail__2018__root-ff93ad0e4ec6__b2",
+          "xsc__notice_article__detail__2018__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 18,
+      "shards": [
+        {
+          "shard_id": "xsc__notice_article__detail__2018__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2018__root-ff93ad0e4ec6__b0.6bc6bc640cacf91a.json",
+          "bytes": 26387,
+          "count": 7
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2018__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2018__root-ff93ad0e4ec6__b1.aa0f8b40873a6a2b.json",
+          "bytes": 20077,
+          "count": 5
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2018__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2018__root-ff93ad0e4ec6__b2.b2406657250b4ddc.json",
+          "bytes": 10028,
+          "count": 3
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2018__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2018__root-ff93ad0e4ec6__b3.79bd6dd137d483b5.json",
+          "bytes": 9557,
+          "count": 3
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__notice_article__2018.8057e39ac13ac39c.json",
+        "sha256": "8057e39ac13ac39c3060096765608df17a5e1418600bc6325ec0768d3686a585",
+        "bytes": 22995,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 18
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__notice_article__2018.a063e0f54634d303.bin",
+        "sha256": "a063e0f54634d3037775100aa32e8daa7c2c9d11806fab49b638f20bc0860f96",
+        "bytes": 18460,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__notice_article__2018.cda1598c27fa7e65.bin",
+        "sha256": "cda1598c27fa7e65b6bf853e386b94c095ee368018d4e044928c742e8f0a5094",
+        "bytes": 49123,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__notice_article__2019",
+      "scope": {
+        "index_id": "xsc__notice_article__2019",
+        "source_id": "xsc",
+        "facet": "notice_article",
+        "year": "2019",
+        "shard_ids": [
+          "xsc__notice_article__detail__2019__root-ff93ad0e4ec6__b0",
+          "xsc__notice_article__detail__2019__root-ff93ad0e4ec6__b1",
+          "xsc__notice_article__detail__2019__root-ff93ad0e4ec6__b2",
+          "xsc__notice_article__detail__2019__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 15,
+      "shards": [
+        {
+          "shard_id": "xsc__notice_article__detail__2019__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2019__root-ff93ad0e4ec6__b0.6a0aba02fd3e1511.json",
+          "bytes": 13244,
+          "count": 3
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2019__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2019__root-ff93ad0e4ec6__b1.0624f6902c873920.json",
+          "bytes": 16923,
+          "count": 5
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2019__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2019__root-ff93ad0e4ec6__b2.1ece87a2bd32512a.json",
+          "bytes": 7100,
+          "count": 2
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2019__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2019__root-ff93ad0e4ec6__b3.da4be1d5ad7f7c57.json",
+          "bytes": 19267,
+          "count": 5
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__notice_article__2019.167fb2c89542f1c2.json",
+        "sha256": "167fb2c89542f1c273b0226c4b4d8297de21b39653799743c15786d2a3735e31",
+        "bytes": 18786,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 15
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__notice_article__2019.9691c1df9180f143.bin",
+        "sha256": "9691c1df9180f1437da64be8580df4946a56298ef58888cf7dc81d78b54270dc",
+        "bytes": 14397,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__notice_article__2019.5b1a116967bbfb65.bin",
+        "sha256": "5b1a116967bbfb6573204a2c1f10661c3afb4566661febf283c72021112c543f",
+        "bytes": 44309,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__notice_article__2020",
+      "scope": {
+        "index_id": "xsc__notice_article__2020",
+        "source_id": "xsc",
+        "facet": "notice_article",
+        "year": "2020",
+        "shard_ids": [
+          "xsc__notice_article__detail__2020__root-ff93ad0e4ec6__b0",
+          "xsc__notice_article__detail__2020__root-ff93ad0e4ec6__b1",
+          "xsc__notice_article__detail__2020__root-ff93ad0e4ec6__b2",
+          "xsc__notice_article__detail__2020__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 116,
+      "shards": [
+        {
+          "shard_id": "xsc__notice_article__detail__2020__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2020__root-ff93ad0e4ec6__b0.6518d84e7e9bab0d.json",
+          "bytes": 64868,
+          "count": 19
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2020__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2020__root-ff93ad0e4ec6__b1.5d03d3c6ea5cda69.json",
+          "bytes": 109976,
+          "count": 30
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2020__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2020__root-ff93ad0e4ec6__b2.c9864e0a6bf2bca2.json",
+          "bytes": 120309,
+          "count": 32
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2020__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2020__root-ff93ad0e4ec6__b3.5f45b676f72ee6e7.json",
+          "bytes": 137720,
+          "count": 35
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__notice_article__2020.485af9446780a6d7.json",
+        "sha256": "485af9446780a6d7358c47e03677dbbe612171f4a8806a83c1da5429788d08fa",
+        "bytes": 141042,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 116
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__notice_article__2020.b82f3bddb66c7dde.bin",
+        "sha256": "b82f3bddb66c7ddecd4b5ce68f3ecf9bafcf1f27bd594f559d4fc2b7902f99cf",
+        "bytes": 68395,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__notice_article__2020.a888ebed7a79b7ba.bin",
+        "sha256": "a888ebed7a79b7baa6a20dc187c73fa2c5c0eb75555408fe2affd6532443de99",
+        "bytes": 250120,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__notice_article__2021",
+      "scope": {
+        "index_id": "xsc__notice_article__2021",
+        "source_id": "xsc",
+        "facet": "notice_article",
+        "year": "2021",
+        "shard_ids": [
+          "xsc__notice_article__detail__2021__root-ff93ad0e4ec6__b0",
+          "xsc__notice_article__detail__2021__root-ff93ad0e4ec6__b1",
+          "xsc__notice_article__detail__2021__root-ff93ad0e4ec6__b2",
+          "xsc__notice_article__detail__2021__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 176,
+      "shards": [
+        {
+          "shard_id": "xsc__notice_article__detail__2021__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2021__root-ff93ad0e4ec6__b0.30485336bf07293d.json",
+          "bytes": 170411,
+          "count": 47
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2021__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2021__root-ff93ad0e4ec6__b1.107ded03f3ea1451.json",
+          "bytes": 160138,
+          "count": 44
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2021__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2021__root-ff93ad0e4ec6__b2.464987db46fbd483.json",
+          "bytes": 161339,
+          "count": 46
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2021__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2021__root-ff93ad0e4ec6__b3.1d00ebe14afbd515.json",
+          "bytes": 136156,
+          "count": 39
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__notice_article__2021.9a24cedaf50215c5.json",
+        "sha256": "9a24cedaf50215c5c595d3f33b807028496bd19a40ac24753f572acc06bfad48",
+        "bytes": 210986,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 176
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__notice_article__2021.65f4fb45a1c2301c.bin",
+        "sha256": "65f4fb45a1c2301c15f4f33c0a243d3ccb920cd020c0213633d53b22733a8b5f",
+        "bytes": 93126,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__notice_article__2021.fb5793921e482568.bin",
+        "sha256": "fb5793921e4825680cd182951bd8663215c9c3abd618c0c06182649a4e73a283",
+        "bytes": 354557,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__notice_article__2022",
+      "scope": {
+        "index_id": "xsc__notice_article__2022",
+        "source_id": "xsc",
+        "facet": "notice_article",
+        "year": "2022",
+        "shard_ids": [
+          "xsc__notice_article__detail__2022__root-ff93ad0e4ec6__b0",
+          "xsc__notice_article__detail__2022__root-ff93ad0e4ec6__b1",
+          "xsc__notice_article__detail__2022__root-ff93ad0e4ec6__b2",
+          "xsc__notice_article__detail__2022__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 80,
+      "shards": [
+        {
+          "shard_id": "xsc__notice_article__detail__2022__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2022__root-ff93ad0e4ec6__b0.5a9c864e64e08c89.json",
+          "bytes": 80195,
+          "count": 22
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2022__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2022__root-ff93ad0e4ec6__b1.6124c9784f61c86d.json",
+          "bytes": 67677,
+          "count": 18
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2022__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2022__root-ff93ad0e4ec6__b2.fa7c084ae92fd270.json",
+          "bytes": 47234,
+          "count": 15
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2022__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2022__root-ff93ad0e4ec6__b3.5895cb2c9e126e82.json",
+          "bytes": 93602,
+          "count": 25
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__notice_article__2022.df05592fce080e71.json",
+        "sha256": "df05592fce080e71267be42493eca03b4ec6d43481e9c749de54a5ffa43a1df6",
+        "bytes": 98193,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 80
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__notice_article__2022.a2f63ca3637e8441.bin",
+        "sha256": "a2f63ca3637e84419ceb843ee2c6fd7f0382addf7c07e1a0a07418a581b1ceb1",
+        "bytes": 38957,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__notice_article__2022.b35116c85d747e56.bin",
+        "sha256": "b35116c85d747e56e9a74dd3c9201f9140b543d9c497d705072667451e4ad4a8",
+        "bytes": 134484,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__notice_article__2023",
+      "scope": {
+        "index_id": "xsc__notice_article__2023",
+        "source_id": "xsc",
+        "facet": "notice_article",
+        "year": "2023",
+        "shard_ids": [
+          "xsc__notice_article__detail__2023__root-ff93ad0e4ec6__b0",
+          "xsc__notice_article__detail__2023__root-ff93ad0e4ec6__b1",
+          "xsc__notice_article__detail__2023__root-ff93ad0e4ec6__b2",
+          "xsc__notice_article__detail__2023__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 194,
+      "shards": [
+        {
+          "shard_id": "xsc__notice_article__detail__2023__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2023__root-ff93ad0e4ec6__b0.e010a3a533fe922b.json",
+          "bytes": 159294,
+          "count": 45
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2023__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2023__root-ff93ad0e4ec6__b1.a78744262ba8f36b.json",
+          "bytes": 163688,
+          "count": 45
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2023__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2023__root-ff93ad0e4ec6__b2.2075f60f10dd6999.json",
+          "bytes": 176257,
+          "count": 48
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2023__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2023__root-ff93ad0e4ec6__b3.a9a6fa7bf20d7c50.json",
+          "bytes": 207589,
+          "count": 56
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__notice_article__2023.89ce5193bfe42a3a.json",
+        "sha256": "89ce5193bfe42a3ac189bd114c8568efbf9d184cf40903055a7ed6bde5e290af",
+        "bytes": 232243,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 194
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__notice_article__2023.50c6c2fcba11eb65.bin",
+        "sha256": "50c6c2fcba11eb658027d267e849f84c62140707ae885909480a9c8dd6ed72a8",
+        "bytes": 98768,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__notice_article__2023.07a53a587b942f43.bin",
+        "sha256": "07a53a587b942f437a750ef58a69e61f578683aeaf3c99f319394035ce47b52c",
+        "bytes": 345299,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__notice_article__2024",
+      "scope": {
+        "index_id": "xsc__notice_article__2024",
+        "source_id": "xsc",
+        "facet": "notice_article",
+        "year": "2024",
+        "shard_ids": [
+          "xsc__notice_article__detail__2024__root-ff93ad0e4ec6__b0",
+          "xsc__notice_article__detail__2024__root-ff93ad0e4ec6__b1",
+          "xsc__notice_article__detail__2024__root-ff93ad0e4ec6__b2",
+          "xsc__notice_article__detail__2024__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 257,
+      "shards": [
+        {
+          "shard_id": "xsc__notice_article__detail__2024__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2024__root-ff93ad0e4ec6__b0.5c30b0f3037b1c3b.json",
+          "bytes": 199849,
+          "count": 63
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2024__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2024__root-ff93ad0e4ec6__b1.36110bfab30b623e.json",
+          "bytes": 234950,
+          "count": 68
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2024__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2024__root-ff93ad0e4ec6__b2.6aab160113b9663f.json",
+          "bytes": 237797,
+          "count": 70
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2024__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2024__root-ff93ad0e4ec6__b3.da5114cd2d771e84.json",
+          "bytes": 190051,
+          "count": 56
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__notice_article__2024.a02eab46249cdf89.json",
+        "sha256": "a02eab46249cdf899cd40b4f66ae5dda4b43f4e712591b460f9984aabfee2b28",
+        "bytes": 304998,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 257
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__notice_article__2024.c3d93c7f7109b3c9.bin",
+        "sha256": "c3d93c7f7109b3c9d67d6c712a7868c6ecd25a500fa9baeb1bd9d96689c04f9e",
+        "bytes": 117168,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__notice_article__2024.3dd6a0b8a656c1e8.bin",
+        "sha256": "3dd6a0b8a656c1e8428a4da88391242dfdff32b988e50fb07cc9ef41f8e407c9",
+        "bytes": 356632,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__notice_article__2025",
+      "scope": {
+        "index_id": "xsc__notice_article__2025",
+        "source_id": "xsc",
+        "facet": "notice_article",
+        "year": "2025",
+        "shard_ids": [
+          "xsc__notice_article__detail__2025__root-ff93ad0e4ec6__b0",
+          "xsc__notice_article__detail__2025__root-ff93ad0e4ec6__b1",
+          "xsc__notice_article__detail__2025__root-ff93ad0e4ec6__b2",
+          "xsc__notice_article__detail__2025__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 161,
+      "shards": [
+        {
+          "shard_id": "xsc__notice_article__detail__2025__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2025__root-ff93ad0e4ec6__b0.af01f44b34a9d992.json",
+          "bytes": 155281,
+          "count": 40
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2025__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2025__root-ff93ad0e4ec6__b1.85be7da96ef77f39.json",
+          "bytes": 141789,
+          "count": 36
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2025__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2025__root-ff93ad0e4ec6__b2.eaa720d952383f97.json",
+          "bytes": 161240,
+          "count": 43
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2025__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2025__root-ff93ad0e4ec6__b3.3cf0c94b1d00f9e6.json",
+          "bytes": 162161,
+          "count": 42
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__notice_article__2025.14faa6d8968ac381.json",
+        "sha256": "14faa6d8968ac381010217fcf63e8a669ba6248a346299f9b267ec3530632222",
+        "bytes": 192782,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 161
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__notice_article__2025.57a0d904887b3d35.bin",
+        "sha256": "57a0d904887b3d35212fa124a54db273e3668332fe4f2a4273e85e48c2c33335",
+        "bytes": 84352,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__notice_article__2025.fd9fcdb57b38539d.bin",
+        "sha256": "fd9fcdb57b38539dbba07735425a964633289c7a330010f9f279180d378627f9",
+        "bytes": 286914,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__notice_article__2026",
+      "scope": {
+        "index_id": "xsc__notice_article__2026",
+        "source_id": "xsc",
+        "facet": "notice_article",
+        "year": "2026",
+        "shard_ids": [
+          "xsc__notice_article__detail__2026__root-ff93ad0e4ec6__b0",
+          "xsc__notice_article__detail__2026__root-ff93ad0e4ec6__b1",
+          "xsc__notice_article__detail__2026__root-ff93ad0e4ec6__b2",
+          "xsc__notice_article__detail__2026__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 28,
+      "shards": [
+        {
+          "shard_id": "xsc__notice_article__detail__2026__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2026__root-ff93ad0e4ec6__b0.078bf89f9dade65f.json",
+          "bytes": 28152,
+          "count": 7
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2026__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2026__root-ff93ad0e4ec6__b1.22b69ed7366dd359.json",
+          "bytes": 21242,
+          "count": 6
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2026__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2026__root-ff93ad0e4ec6__b2.b57a14dc2fc73619.json",
+          "bytes": 26249,
+          "count": 7
+        },
+        {
+          "shard_id": "xsc__notice_article__detail__2026__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__2026__root-ff93ad0e4ec6__b3.b7d60038b8cebe09.json",
+          "bytes": 31569,
+          "count": 8
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__notice_article__2026.df7f6795e4aedde8.json",
+        "sha256": "df7f6795e4aedde8b5660d0c880a66b539aafc47e90dabe273d523a1973abca1",
+        "bytes": 34033,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 28
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__notice_article__2026.893a9c7b4001ccba.bin",
+        "sha256": "893a9c7b4001ccbaed8a6fd7bd73e636a1e5ca445bb7e425e391e775e7d3b205",
+        "bytes": 19897,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__notice_article__2026.fd3b13ae95eef512.bin",
+        "sha256": "fd3b13ae95eef512b986a06019da13a4face5dc769d8ccdf953f55489f0620b7",
+        "bytes": 56944,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__notice_article__undated",
+      "scope": {
+        "index_id": "xsc__notice_article__undated",
+        "source_id": "xsc",
+        "facet": "notice_article",
+        "year": "undated",
+        "shard_ids": [
+          "xsc__notice_article__detail__undated__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 3,
+      "shards": [
+        {
+          "shard_id": "xsc__notice_article__detail__undated__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__notice_article__detail__undated__root-ff93ad0e4ec6__b3.2eb4c978b814e88e.json",
+          "bytes": 9271,
+          "count": 3
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__notice_article__undated.f7be7fa00d183da3.json",
+        "sha256": "f7be7fa00d183da3ae542cd12870996179540eb6b7058b92620a1d0db670a075",
+        "bytes": 3656,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 3
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__notice_article__undated.ae84a4181d37d492.bin",
+        "sha256": "ae84a4181d37d4921814faf120491af25fa7c8ffa53f35ed1e61ad239205a9e0",
+        "bytes": 1335,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__notice_article__undated.433732fbecc45f26.bin",
+        "sha256": "433732fbecc45f26f63b2918c99c067d832511c076da68f146c6c1eb10662d20",
+        "bytes": 7493,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__policy__2018",
+      "scope": {
+        "index_id": "xsc__policy__2018",
+        "source_id": "xsc",
+        "facet": "policy",
+        "year": "2018",
+        "shard_ids": [
+          "xsc__policy__detail__2018__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 1,
+      "shards": [
+        {
+          "shard_id": "xsc__policy__detail__2018__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2018__root-ff93ad0e4ec6__b3.f2e3a9119e61543d.json",
+          "bytes": 4162,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__policy__2018.e612810d49124f99.json",
+        "sha256": "e612810d49124f99102aba77c3908f598d26479b7b079d8f33b7ecbf31deaeaa",
+        "bytes": 1757,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 1
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__policy__2018.05f1e326a9ba105d.bin",
+        "sha256": "05f1e326a9ba105d5ce3b277fcda3902e3bc3bf7e1272c30fe278d734ed6df94",
+        "bytes": 1809,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__policy__2018.a482355580c53e3e.bin",
+        "sha256": "a482355580c53e3e3863e3518cac9ba0a0f8579f52281fca881c064320d4274f",
+        "bytes": 3825,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__policy__2019",
+      "scope": {
+        "index_id": "xsc__policy__2019",
+        "source_id": "xsc",
+        "facet": "policy",
+        "year": "2019",
+        "shard_ids": [
+          "xsc__policy__detail__2019__root-ff93ad0e4ec6__b2"
+        ]
+      },
+      "doc_count": 1,
+      "shards": [
+        {
+          "shard_id": "xsc__policy__detail__2019__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2019__root-ff93ad0e4ec6__b2.5d8c75970ddd1da3.json",
+          "bytes": 3072,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__policy__2019.d0ecc5a976aaba65.json",
+        "sha256": "d0ecc5a976aaba651cccfa8f164a017dc983aea6bc0b08499284c4ff1de2a67e",
+        "bytes": 1769,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 1
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__policy__2019.93638d17e3898696.bin",
+        "sha256": "93638d17e389869628369503e5a9c549622f002fde1db90e9ac31eeaa28263d8",
+        "bytes": 1786,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__policy__2019.b7691193ff7bbd20.bin",
+        "sha256": "b7691193ff7bbd203a19ac59c7f45e8dfa47f4c87d2859b4e7599001f90e2615",
+        "bytes": 3707,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__policy__2020",
+      "scope": {
+        "index_id": "xsc__policy__2020",
+        "source_id": "xsc",
+        "facet": "policy",
+        "year": "2020",
+        "shard_ids": [
+          "xsc__policy__detail__2020__root-ff93ad0e4ec6__b0",
+          "xsc__policy__detail__2020__root-ff93ad0e4ec6__b1",
+          "xsc__policy__detail__2020__root-ff93ad0e4ec6__b2"
+        ]
+      },
+      "doc_count": 5,
+      "shards": [
+        {
+          "shard_id": "xsc__policy__detail__2020__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2020__root-ff93ad0e4ec6__b0.bc0a46a776e7e488.json",
+          "bytes": 5798,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__policy__detail__2020__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2020__root-ff93ad0e4ec6__b1.01dc57a7979052de.json",
+          "bytes": 6998,
+          "count": 2
+        },
+        {
+          "shard_id": "xsc__policy__detail__2020__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2020__root-ff93ad0e4ec6__b2.d80e6ef188c13995.json",
+          "bytes": 7546,
+          "count": 2
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__policy__2020.5700fe1051dc13cc.json",
+        "sha256": "5700fe1051dc13cc0600b7c09e336f02616d06a6163fea487594a799526f5f2e",
+        "bytes": 6317,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 5
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__policy__2020.7699464151778974.bin",
+        "sha256": "7699464151778974dd1fc40b75440ae4fc7a85272a113c7d44d575cf0244b2f4",
+        "bytes": 4894,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__policy__2020.91f17dc36bc67311.bin",
+        "sha256": "91f17dc36bc67311c1658b48eb857addcb6a7b11cbaccf91420998f4446fcff4",
+        "bytes": 16141,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__policy__2021",
+      "scope": {
+        "index_id": "xsc__policy__2021",
+        "source_id": "xsc",
+        "facet": "policy",
+        "year": "2021",
+        "shard_ids": [
+          "xsc__policy__detail__2021__root-ff93ad0e4ec6__b0",
+          "xsc__policy__detail__2021__root-ff93ad0e4ec6__b1",
+          "xsc__policy__detail__2021__root-ff93ad0e4ec6__b2",
+          "xsc__policy__detail__2021__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 16,
+      "shards": [
+        {
+          "shard_id": "xsc__policy__detail__2021__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2021__root-ff93ad0e4ec6__b0.ec4a4c3df1466910.json",
+          "bytes": 3305,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__policy__detail__2021__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2021__root-ff93ad0e4ec6__b1.f6a6d8d5f1a87e96.json",
+          "bytes": 13739,
+          "count": 4
+        },
+        {
+          "shard_id": "xsc__policy__detail__2021__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2021__root-ff93ad0e4ec6__b2.cdddad2d5160a518.json",
+          "bytes": 22594,
+          "count": 6
+        },
+        {
+          "shard_id": "xsc__policy__detail__2021__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2021__root-ff93ad0e4ec6__b3.c883becc02754cb4.json",
+          "bytes": 18641,
+          "count": 5
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__policy__2021.ca84856274924555.json",
+        "sha256": "ca84856274924555f9108f183b21d6cc5abef84b4ede9108280d13ccfbb64943",
+        "bytes": 19639,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 16
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__policy__2021.50d363cd5a068624.bin",
+        "sha256": "50d363cd5a0686249dafb3c6d1480adbbc2bd1702151446523e577dcd580a81e",
+        "bytes": 14114,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__policy__2021.c069afd86219af24.bin",
+        "sha256": "c069afd86219af24d0033019025a2aa11df1177dd8c9375506a0eb98fb3197ce",
+        "bytes": 40136,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__policy__2022",
+      "scope": {
+        "index_id": "xsc__policy__2022",
+        "source_id": "xsc",
+        "facet": "policy",
+        "year": "2022",
+        "shard_ids": [
+          "xsc__policy__detail__2022__root-ff93ad0e4ec6__b0",
+          "xsc__policy__detail__2022__root-ff93ad0e4ec6__b1",
+          "xsc__policy__detail__2022__root-ff93ad0e4ec6__b2"
+        ]
+      },
+      "doc_count": 6,
+      "shards": [
+        {
+          "shard_id": "xsc__policy__detail__2022__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2022__root-ff93ad0e4ec6__b0.ad1d7bb20e605aee.json",
+          "bytes": 15512,
+          "count": 4
+        },
+        {
+          "shard_id": "xsc__policy__detail__2022__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2022__root-ff93ad0e4ec6__b1.ab86ab575fca1db4.json",
+          "bytes": 4063,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__policy__detail__2022__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2022__root-ff93ad0e4ec6__b2.c6477eebf593a6e9.json",
+          "bytes": 3491,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__policy__2022.cd8045e4d24f76e6.json",
+        "sha256": "cd8045e4d24f76e6adfd81e59bc1a4a61c6037f40d6c67eec5daf2b09e2748f0",
+        "bytes": 7865,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 6
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__policy__2022.710d73e9213cdaa8.bin",
+        "sha256": "710d73e9213cdaa8caebe9237efe6aff02cd60e7dfb32829d55e40161ec34ada",
+        "bytes": 6297,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__policy__2022.66a55480723e351f.bin",
+        "sha256": "66a55480723e351fd5efdef4f80b20dd73c73cbd752db65855acaa0ba691a4f6",
+        "bytes": 14302,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__policy__2023",
+      "scope": {
+        "index_id": "xsc__policy__2023",
+        "source_id": "xsc",
+        "facet": "policy",
+        "year": "2023",
+        "shard_ids": [
+          "xsc__policy__detail__2023__root-ff93ad0e4ec6__b0",
+          "xsc__policy__detail__2023__root-ff93ad0e4ec6__b1",
+          "xsc__policy__detail__2023__root-ff93ad0e4ec6__b2",
+          "xsc__policy__detail__2023__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 10,
+      "shards": [
+        {
+          "shard_id": "xsc__policy__detail__2023__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2023__root-ff93ad0e4ec6__b0.1ac4ac93191e664f.json",
+          "bytes": 15534,
+          "count": 4
+        },
+        {
+          "shard_id": "xsc__policy__detail__2023__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2023__root-ff93ad0e4ec6__b1.102ac4c49e6c53c6.json",
+          "bytes": 11792,
+          "count": 3
+        },
+        {
+          "shard_id": "xsc__policy__detail__2023__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2023__root-ff93ad0e4ec6__b2.05f70afd76bca897.json",
+          "bytes": 7092,
+          "count": 2
+        },
+        {
+          "shard_id": "xsc__policy__detail__2023__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2023__root-ff93ad0e4ec6__b3.aaf2f999f7c8e7c0.json",
+          "bytes": 3704,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__policy__2023.e7cdfa438da9e2cf.json",
+        "sha256": "e7cdfa438da9e2cf3cd064c9363e7c5292a255281048bf77e11021aac410bdea",
+        "bytes": 12623,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 10
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__policy__2023.7172db3ba33dc8fc.bin",
+        "sha256": "7172db3ba33dc8fcf84c2d7c0005cb13620e23322eeac9410fc7ca6b2aed2f16",
+        "bytes": 9784,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__policy__2023.7b639bf7b6104d5e.bin",
+        "sha256": "7b639bf7b6104d5e3c02bfb882082968d1ec425f6382c5a373cb829e4224e16e",
+        "bytes": 27902,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__policy__2024",
+      "scope": {
+        "index_id": "xsc__policy__2024",
+        "source_id": "xsc",
+        "facet": "policy",
+        "year": "2024",
+        "shard_ids": [
+          "xsc__policy__detail__2024__root-ff93ad0e4ec6__b0",
+          "xsc__policy__detail__2024__root-ff93ad0e4ec6__b1",
+          "xsc__policy__detail__2024__root-ff93ad0e4ec6__b2",
+          "xsc__policy__detail__2024__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 40,
+      "shards": [
+        {
+          "shard_id": "xsc__policy__detail__2024__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2024__root-ff93ad0e4ec6__b0.ee82be71abf46a96.json",
+          "bytes": 34775,
+          "count": 10
+        },
+        {
+          "shard_id": "xsc__policy__detail__2024__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2024__root-ff93ad0e4ec6__b1.1765857dbe81ac08.json",
+          "bytes": 53772,
+          "count": 13
+        },
+        {
+          "shard_id": "xsc__policy__detail__2024__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2024__root-ff93ad0e4ec6__b2.eeb21edebaace2c9.json",
+          "bytes": 23787,
+          "count": 10
+        },
+        {
+          "shard_id": "xsc__policy__detail__2024__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2024__root-ff93ad0e4ec6__b3.7d8b2fb294e7d3d8.json",
+          "bytes": 35060,
+          "count": 7
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__policy__2024.2c7058899636fb45.json",
+        "sha256": "2c7058899636fb45b379ac7cb4c9d2befa7bf23383528701f856b313403368db",
+        "bytes": 46700,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 40
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__policy__2024.a89eb73222695aca.bin",
+        "sha256": "a89eb73222695aca2421aca9c2eedfc2efd1db932d9cf52b863d2ed6be5749b4",
+        "bytes": 24198,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__policy__2024.78c1392c6245041b.bin",
+        "sha256": "78c1392c6245041be74c10fc59098011e40a8f82498c0cbc537a2a775b142f5f",
+        "bytes": 56538,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__policy__2025",
+      "scope": {
+        "index_id": "xsc__policy__2025",
+        "source_id": "xsc",
+        "facet": "policy",
+        "year": "2025",
+        "shard_ids": [
+          "xsc__policy__detail__2025__root-ff93ad0e4ec6__b0",
+          "xsc__policy__detail__2025__root-ff93ad0e4ec6__b1",
+          "xsc__policy__detail__2025__root-ff93ad0e4ec6__b2",
+          "xsc__policy__detail__2025__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 26,
+      "shards": [
+        {
+          "shard_id": "xsc__policy__detail__2025__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2025__root-ff93ad0e4ec6__b0.70c8f9328946d28c.json",
+          "bytes": 27177,
+          "count": 6
+        },
+        {
+          "shard_id": "xsc__policy__detail__2025__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2025__root-ff93ad0e4ec6__b1.ddc141af77b09069.json",
+          "bytes": 32761,
+          "count": 6
+        },
+        {
+          "shard_id": "xsc__policy__detail__2025__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2025__root-ff93ad0e4ec6__b2.fa5b902e290c24e3.json",
+          "bytes": 23687,
+          "count": 6
+        },
+        {
+          "shard_id": "xsc__policy__detail__2025__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2025__root-ff93ad0e4ec6__b3.bca95bd48581518f.json",
+          "bytes": 34391,
+          "count": 8
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__policy__2025.af807b09e97319c3.json",
+        "sha256": "af807b09e97319c3389121a48750e9067febe35d1f6f0d1c5f022b3fe2e3bda2",
+        "bytes": 30771,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 26
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__policy__2025.bceb01bf37487195.bin",
+        "sha256": "bceb01bf374871957df78b27cd86a0e7c5cff2eba98ab079f7322df26b11f89c",
+        "bytes": 19717,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__policy__2025.c77a5272bffb7e60.bin",
+        "sha256": "c77a5272bffb7e60808806fc6cbd158fae635ac56a0ee4a6e0c172473f45b594",
+        "bytes": 59121,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__policy__2026",
+      "scope": {
+        "index_id": "xsc__policy__2026",
+        "source_id": "xsc",
+        "facet": "policy",
+        "year": "2026",
+        "shard_ids": [
+          "xsc__policy__detail__2026__root-ff93ad0e4ec6__b1"
+        ]
+      },
+      "doc_count": 3,
+      "shards": [
+        {
+          "shard_id": "xsc__policy__detail__2026__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__policy__detail__2026__root-ff93ad0e4ec6__b1.be9872d383841d2a.json",
+          "bytes": 13623,
+          "count": 3
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__policy__2026.c04e9fd004824b2d.json",
+        "sha256": "c04e9fd004824b2dc74f70ba2bb3d72f75ad22c095f012c6028b67bffcaf9bbf",
+        "bytes": 4121,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 3
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__policy__2026.f4685a72e762b573.bin",
+        "sha256": "f4685a72e762b57358b1c0270bb1fec347c7c5226b63bbbbef63b60fe8b84f2b",
+        "bytes": 4190,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__policy__2026.736497c3bb07950e.bin",
+        "sha256": "736497c3bb07950ec3460e6bff44d08df6edba4ff3d72bb3a21639aa3df278af",
+        "bytes": 7421,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__system__undated",
+      "scope": {
+        "index_id": "xsc__system__undated",
+        "source_id": "xsc",
+        "facet": "system",
+        "year": "undated",
+        "shard_ids": [
+          "xsc__system__external__undated__root-ff93ad0e4ec6__b0",
+          "xsc__system__external__undated__root-ff93ad0e4ec6__b2",
+          "xsc__system__external__undated__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 7,
+      "shards": [
+        {
+          "shard_id": "xsc__system__external__undated__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__system__external__undated__root-ff93ad0e4ec6__b0.2505345c8f116ae4.json",
+          "bytes": 4054,
+          "count": 3
+        },
+        {
+          "shard_id": "xsc__system__external__undated__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__system__external__undated__root-ff93ad0e4ec6__b2.68d9964c8b2be3f2.json",
+          "bytes": 4136,
+          "count": 3
+        },
+        {
+          "shard_id": "xsc__system__external__undated__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__system__external__undated__root-ff93ad0e4ec6__b3.5449d5621d361b5e.json",
+          "bytes": 1465,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__system__undated.59facf02bec1c171.json",
+        "sha256": "59facf02bec1c171350b886af39fef50adaffece661ebca7a0b4881eca9a6e35",
+        "bytes": 7543,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 7
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__system__undated.965be8a3944f79ea.bin",
+        "sha256": "965be8a3944f79ea3a2ad9593f45096cad469a6b0099876974ca6dbce5c08251",
+        "bytes": 3710,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__system__undated.dc42e244eb6cb047.bin",
+        "sha256": "dc42e244eb6cb0478c7c6f97836cbf84bd73970cf7562de1c7bb73fa21efe980",
+        "bytes": 3571,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__workflow__2018",
+      "scope": {
+        "index_id": "xsc__workflow__2018",
+        "source_id": "xsc",
+        "facet": "workflow",
+        "year": "2018",
+        "shard_ids": [
+          "xsc__workflow__detail__2018__root-ff93ad0e4ec6__b0"
+        ]
+      },
+      "doc_count": 1,
+      "shards": [
+        {
+          "shard_id": "xsc__workflow__detail__2018__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2018__root-ff93ad0e4ec6__b0.40d43af87a52dcc1.json",
+          "bytes": 3150,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__workflow__2018.12ee6dd47de3d3c3.json",
+        "sha256": "12ee6dd47de3d3c39cf77f0884bb3f8e4f748ddf3b54bb7d37bc2c63645ff2be",
+        "bytes": 1829,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 1
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__workflow__2018.39b6961e9583f29b.bin",
+        "sha256": "39b6961e9583f29b4e8d4da6bb960d9715b6eceb6dfe6f945942f25e50a5ec7f",
+        "bytes": 1922,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__workflow__2018.c6125a4325a1186d.bin",
+        "sha256": "c6125a4325a1186dd0b60f71e68eda526573e8f318e7ee74c04b0bf200674082",
+        "bytes": 3764,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__workflow__2019",
+      "scope": {
+        "index_id": "xsc__workflow__2019",
+        "source_id": "xsc",
+        "facet": "workflow",
+        "year": "2019",
+        "shard_ids": [
+          "xsc__workflow__detail__2019__root-ff93ad0e4ec6__b1",
+          "xsc__workflow__detail__2019__root-ff93ad0e4ec6__b2",
+          "xsc__workflow__detail__2019__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 3,
+      "shards": [
+        {
+          "shard_id": "xsc__workflow__detail__2019__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2019__root-ff93ad0e4ec6__b1.6790f577015fcb45.json",
+          "bytes": 3678,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2019__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2019__root-ff93ad0e4ec6__b2.598272560aeaf3ff.json",
+          "bytes": 3457,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2019__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2019__root-ff93ad0e4ec6__b3.e37fd97e11d64536.json",
+          "bytes": 4155,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__workflow__2019.526fbb4565915b29.json",
+        "sha256": "526fbb4565915b2941f469938a0943737ea2714b8f26f73f543310013a2cd952",
+        "bytes": 4323,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 3
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__workflow__2019.5af25a26dd4cc44d.bin",
+        "sha256": "5af25a26dd4cc44dcbb191e2ab835a34e2828a1157c988749377ff9a060b4c77",
+        "bytes": 4222,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__workflow__2019.b1dae7ce7d87d813.bin",
+        "sha256": "b1dae7ce7d87d81369302ecbf347e986f0ef5188f6f4269fd0735d3073544d23",
+        "bytes": 10564,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__workflow__2020",
+      "scope": {
+        "index_id": "xsc__workflow__2020",
+        "source_id": "xsc",
+        "facet": "workflow",
+        "year": "2020",
+        "shard_ids": [
+          "xsc__workflow__detail__2020__root-ea209bc555e6__b0",
+          "xsc__workflow__detail__2020__root-ea209bc555e6__b3",
+          "xsc__workflow__detail__2020__root-ff93ad0e4ec6__b0",
+          "xsc__workflow__detail__2020__root-ff93ad0e4ec6__b1",
+          "xsc__workflow__detail__2020__root-ff93ad0e4ec6__b2"
+        ]
+      },
+      "doc_count": 9,
+      "shards": [
+        {
+          "shard_id": "xsc__workflow__detail__2020__root-ea209bc555e6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2020__root-ea209bc555e6__b0.d77459ebf4c7ecc5.json",
+          "bytes": 4013,
+          "count": 2
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2020__root-ea209bc555e6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2020__root-ea209bc555e6__b3.d3781f47c7468bce.json",
+          "bytes": 4080,
+          "count": 2
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2020__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2020__root-ff93ad0e4ec6__b0.cce317d841de6ac8.json",
+          "bytes": 4476,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2020__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2020__root-ff93ad0e4ec6__b1.e17d155ebc7ec0c5.json",
+          "bytes": 11137,
+          "count": 3
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2020__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2020__root-ff93ad0e4ec6__b2.5a53856081a2d429.json",
+          "bytes": 4530,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__workflow__2020.d34258027ea1fff6.json",
+        "sha256": "d34258027ea1fff61b66582e44c119fe5afc6229ba0c5b40be9a245f6727ba11",
+        "bytes": 11305,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 9
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__workflow__2020.473f727831784e57.bin",
+        "sha256": "473f727831784e572efb686fdf543c8da20d456a820e9764723feccd3cb49278",
+        "bytes": 9364,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__workflow__2020.e43b7a31a2f6de83.bin",
+        "sha256": "e43b7a31a2f6de835ea6b73d5aaeef634b1b29b00d592e6648aea4a216d79bcb",
+        "bytes": 17855,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__workflow__2021",
+      "scope": {
+        "index_id": "xsc__workflow__2021",
+        "source_id": "xsc",
+        "facet": "workflow",
+        "year": "2021",
+        "shard_ids": [
+          "xsc__workflow__detail__2021__root-ea209bc555e6__b2",
+          "xsc__workflow__detail__2021__root-ff93ad0e4ec6__b0",
+          "xsc__workflow__detail__2021__root-ff93ad0e4ec6__b1",
+          "xsc__workflow__detail__2021__root-ff93ad0e4ec6__b2",
+          "xsc__workflow__detail__2021__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 32,
+      "shards": [
+        {
+          "shard_id": "xsc__workflow__detail__2021__root-ea209bc555e6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2021__root-ea209bc555e6__b2.adba26d9923f590c.json",
+          "bytes": 2066,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2021__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2021__root-ff93ad0e4ec6__b0.bb4008ea2bccb0c8.json",
+          "bytes": 22451,
+          "count": 7
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2021__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2021__root-ff93ad0e4ec6__b1.135c0a8ba9c2a9ed.json",
+          "bytes": 40307,
+          "count": 12
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2021__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2021__root-ff93ad0e4ec6__b2.0b5a71c0c2ef06ea.json",
+          "bytes": 18203,
+          "count": 6
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2021__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2021__root-ff93ad0e4ec6__b3.66d14c2211bbbf67.json",
+          "bytes": 22419,
+          "count": 6
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__workflow__2021.f1ebe11023f1c059.json",
+        "sha256": "f1ebe11023f1c05917d211c9962e356727e2bde58ad1a11bc50ac0c769e397ed",
+        "bytes": 38275,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 32
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__workflow__2021.459736da3af3d8c5.bin",
+        "sha256": "459736da3af3d8c5c6aee9517fffecda5f1df618893296ef838ec587904fee17",
+        "bytes": 19006,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__workflow__2021.69b96f8d7faad96a.bin",
+        "sha256": "69b96f8d7faad96a655892c1c73248d0f9899225df6b88adb79fb19b27fd9404",
+        "bytes": 72094,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__workflow__2022",
+      "scope": {
+        "index_id": "xsc__workflow__2022",
+        "source_id": "xsc",
+        "facet": "workflow",
+        "year": "2022",
+        "shard_ids": [
+          "xsc__workflow__detail__2022__root-ff93ad0e4ec6__b0",
+          "xsc__workflow__detail__2022__root-ff93ad0e4ec6__b1",
+          "xsc__workflow__detail__2022__root-ff93ad0e4ec6__b2",
+          "xsc__workflow__detail__2022__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 5,
+      "shards": [
+        {
+          "shard_id": "xsc__workflow__detail__2022__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2022__root-ff93ad0e4ec6__b0.874a29cbf910ad77.json",
+          "bytes": 6023,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2022__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2022__root-ff93ad0e4ec6__b1.17d51e8bddec729d.json",
+          "bytes": 4889,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2022__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2022__root-ff93ad0e4ec6__b2.62fcffe581919b55.json",
+          "bytes": 3804,
+          "count": 1
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2022__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2022__root-ff93ad0e4ec6__b3.f147107b7cec0703.json",
+          "bytes": 8572,
+          "count": 2
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__workflow__2022.fd1e91cf00dba93b.json",
+        "sha256": "fd1e91cf00dba93b2dfb73d77ab65014a654e8e22d03cef9b55f86683a48acb6",
+        "bytes": 6630,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 5
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__workflow__2022.3409a42a0d10e7aa.bin",
+        "sha256": "3409a42a0d10e7aa13e295ab3dcaaeebe08ba6bf2aacbfe2a62197a0687fbfbb",
+        "bytes": 5514,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__workflow__2022.cfa2e92f687e93f6.bin",
+        "sha256": "cfa2e92f687e93f657e52f69f3623b90113c58cb682d7ad9e8c910ab18c8bc85",
+        "bytes": 13540,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__workflow__2023",
+      "scope": {
+        "index_id": "xsc__workflow__2023",
+        "source_id": "xsc",
+        "facet": "workflow",
+        "year": "2023",
+        "shard_ids": [
+          "xsc__workflow__detail__2023__root-ff93ad0e4ec6__b0",
+          "xsc__workflow__detail__2023__root-ff93ad0e4ec6__b1",
+          "xsc__workflow__detail__2023__root-ff93ad0e4ec6__b2",
+          "xsc__workflow__detail__2023__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 18,
+      "shards": [
+        {
+          "shard_id": "xsc__workflow__detail__2023__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2023__root-ff93ad0e4ec6__b0.b5aface9b2a99784.json",
+          "bytes": 7724,
+          "count": 2
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2023__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2023__root-ff93ad0e4ec6__b1.d44dbd5e7bd4fec5.json",
+          "bytes": 23638,
+          "count": 7
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2023__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2023__root-ff93ad0e4ec6__b2.640163ad01700c73.json",
+          "bytes": 27435,
+          "count": 8
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2023__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2023__root-ff93ad0e4ec6__b3.f90b68571210b557.json",
+          "bytes": 2865,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__workflow__2023.38e7e2b9a3a2d3fc.json",
+        "sha256": "38e7e2b9a3a2d3fcc5d9eed00c4640b4120a66adf8694d546107eb3fb864f178",
+        "bytes": 21877,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 18
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__workflow__2023.02ff862b33c1bf4c.bin",
+        "sha256": "02ff862b33c1bf4cd44c855a4730c6a753d0efbfb07fa3594b409ef32802e003",
+        "bytes": 15766,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__workflow__2023.b687da7945a7a261.bin",
+        "sha256": "b687da7945a7a261dff7da37566f6104908ee5c72baab7fbbd6d42f33cffc121",
+        "bytes": 44791,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__workflow__2024",
+      "scope": {
+        "index_id": "xsc__workflow__2024",
+        "source_id": "xsc",
+        "facet": "workflow",
+        "year": "2024",
+        "shard_ids": [
+          "xsc__workflow__detail__2024__root-ff93ad0e4ec6__b0",
+          "xsc__workflow__detail__2024__root-ff93ad0e4ec6__b1",
+          "xsc__workflow__detail__2024__root-ff93ad0e4ec6__b2",
+          "xsc__workflow__detail__2024__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 26,
+      "shards": [
+        {
+          "shard_id": "xsc__workflow__detail__2024__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2024__root-ff93ad0e4ec6__b0.dd2e7e8bc2365020.json",
+          "bytes": 10631,
+          "count": 3
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2024__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2024__root-ff93ad0e4ec6__b1.0831a4651aa82f2f.json",
+          "bytes": 21320,
+          "count": 6
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2024__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2024__root-ff93ad0e4ec6__b2.1925c4ee909f415d.json",
+          "bytes": 39936,
+          "count": 10
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2024__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2024__root-ff93ad0e4ec6__b3.1fc9dc7b47da3b41.json",
+          "bytes": 26654,
+          "count": 7
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__workflow__2024.4a3cb2ea4cbb0d1c.json",
+        "sha256": "4a3cb2ea4cbb0d1c6e1d945558df42b9d3a300fc53c672e6185508e2fc6e22ef",
+        "bytes": 31904,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 26
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__workflow__2024.7f472611db8320d9.bin",
+        "sha256": "7f472611db8320d9224951fdf9a6cb0ea31ea042fa5a4aa8957b2d1128eca749",
+        "bytes": 17475,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__workflow__2024.291742b0003c14af.bin",
+        "sha256": "291742b0003c14af79b77c454c2a9cde4231babbabb7e1e7e14ee363e0f4468c",
+        "bytes": 58762,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__workflow__2025",
+      "scope": {
+        "index_id": "xsc__workflow__2025",
+        "source_id": "xsc",
+        "facet": "workflow",
+        "year": "2025",
+        "shard_ids": [
+          "xsc__workflow__detail__2025__root-ff93ad0e4ec6__b0",
+          "xsc__workflow__detail__2025__root-ff93ad0e4ec6__b1",
+          "xsc__workflow__detail__2025__root-ff93ad0e4ec6__b2",
+          "xsc__workflow__detail__2025__root-ff93ad0e4ec6__b3"
+        ]
+      },
+      "doc_count": 36,
+      "shards": [
+        {
+          "shard_id": "xsc__workflow__detail__2025__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2025__root-ff93ad0e4ec6__b0.3e9dc7ca5ac025de.json",
+          "bytes": 62770,
+          "count": 14
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2025__root-ff93ad0e4ec6__b1",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2025__root-ff93ad0e4ec6__b1.02bb2931c800f858.json",
+          "bytes": 28788,
+          "count": 6
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2025__root-ff93ad0e4ec6__b2",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2025__root-ff93ad0e4ec6__b2.ad899000cd433c46.json",
+          "bytes": 22006,
+          "count": 3
+        },
+        {
+          "shard_id": "xsc__workflow__detail__2025__root-ff93ad0e4ec6__b3",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2025__root-ff93ad0e4ec6__b3.e001a2a8db68ab55.json",
+          "bytes": 48436,
+          "count": 13
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__workflow__2025.b05e5bf31e1df68d.json",
+        "sha256": "b05e5bf31e1df68dcfa88aa9c8149e1ec980028993562b71c145bbc87ed11ac9",
+        "bytes": 43329,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 36
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__workflow__2025.b743d96efaec4878.bin",
+        "sha256": "b743d96efaec4878b530d1a3bc9689d3e49e5560e0ac18341a056e47e0df3c9b",
+        "bytes": 25279,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__workflow__2025.c18053ac8f27515c.bin",
+        "sha256": "c18053ac8f27515cf4f21c6fe8f5671987e20b43f8699de9e9c26cd2c44be90c",
+        "bytes": 80032,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    },
+    {
+      "index_id": "xsc__workflow__2026",
+      "scope": {
+        "index_id": "xsc__workflow__2026",
+        "source_id": "xsc",
+        "facet": "workflow",
+        "year": "2026",
+        "shard_ids": [
+          "xsc__workflow__detail__2026__root-ff93ad0e4ec6__b0"
+        ]
+      },
+      "doc_count": 1,
+      "shards": [
+        {
+          "shard_id": "xsc__workflow__detail__2026__root-ff93ad0e4ec6__b0",
+          "path": "generated/collections/njupt-public/sitegraph/full_shards/full.xsc__workflow__detail__2026__root-ff93ad0e4ec6__b0.af2c95b14b941bdb.json",
+          "bytes": 1366,
+          "count": 1
+        }
+      ],
+      "light_index_meta": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_meta_indexes/local_impact_light_meta.xsc__workflow__2026.1b6de95e8ec27532.json",
+        "sha256": "1b6de95e8ec2753258a6dcbd89f38d7eb434842e4ca69d7a6825492588141305",
+        "bytes": 1688,
+        "role": "local_impact_light_index_meta",
+        "load": "query_planned",
+        "count": 1
+      },
+      "light_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_light_packed_indexes/local_impact_light.xsc__workflow__2026.992dd46b18740aa8.bin",
+        "sha256": "992dd46b18740aa814302a63ec9ebc7cfdd205f047e4c2ef6712d9f0f6050129",
+        "bytes": 1540,
+        "role": "local_impact_light_index_packed",
+        "load": "query_planned"
+      },
+      "body_index_packed": {
+        "path": "generated/collections/njupt-public/sitegraph/local_impact_body_packed_indexes/local_impact_body.xsc__workflow__2026.9407eb8d60018e13.bin",
+        "sha256": "9407eb8d60018e1353653eb776b933c402fec7f9a4755dfd7811f60e5fe4a705",
+        "bytes": 1226,
+        "role": "local_impact_body_index_packed",
+        "load": "query_deepening"
+      }
+    }
+  ],
+  "artifacts": {
+    "proof_catalog": {
+      "path": "generated/collections/njupt-public/sitegraph/proof_catalogs/proof_catalog.xsc.a5b5543bc06fd5a3.json",
+      "sha256": "a5b5543bc06fd5a3c799c8db78a1684a98ef95c2ef034565ad724f7f95d450ad",
+      "bytes": 139499,
+      "role": "proof_catalog",
+      "load": "verify",
+      "count": 174
+    },
+    "shard_filter": {
+      "path": "generated/collections/njupt-public/sitegraph/shard_filters/shard_filter.xsc.9577af25e88323e4.json",
+      "sha256": "9577af25e88323e4ed133872c483ad39da0a4b170fd008906db8c2f9e9702b87",
+      "bytes": 667,
+      "role": "shard_filter",
+      "load": "verify",
+      "count": 174,
+      "part_count": 2,
+      "runtime_bytes": 900360
+    },
+    "attachment_meta_index": {
+      "path": "generated/collections/njupt-public/sitegraph/attachment_meta_indexes/attachment_meta.xsc.85a7d288c90c5892.json",
+      "sha256": "85a7d288c90c58922b88c0b3794c5688fd0faeabc517495a7bdfeb03c44cde92",
+      "bytes": 423,
+      "role": "attachment_meta_index",
+      "load": "on_demand",
+      "count": 17,
+      "part_count": 1,
+      "runtime_bytes": 12007
+    },
+    "attachment_filename_index": {
+      "path": "generated/collections/njupt-public/sitegraph/attachment_filename_indexes/attachment_filename.xsc.dcd51080e65d8dfb.json",
+      "sha256": "dcd51080e65d8dfb1ec7ee8ae036c2d9b7ef5f179dc8e9ba9cc7179b49e2aaf6",
+      "bytes": 443,
+      "role": "attachment_filename_index",
+      "load": "query_planned",
+      "count": 17,
+      "part_count": 1,
+      "runtime_bytes": 11163
+    },
+    "attachment_text_shards": {
+      "path": "generated/collections/njupt-public/sitegraph/attachment_text_shards/attachment_text_manifest.xsc.481ff6caaaa289aa.json",
+      "sha256": "481ff6caaaa289aa75a022e842037995aa6cde022b0cafda43261a89f08a9805",
+      "bytes": 89,
+      "role": "attachment_text_shards",
+      "load": "future_lazy",
+      "count": 0
+    },
+    "section_index": {
+      "path": "generated/collections/njupt-public/sitegraph/section_indexes/section_index.xsc.4b0bce457b00f81c.json",
+      "sha256": "4b0bce457b00f81cc8d731de3c077fc4afdb5c12ae4ef028a8a71d6bdcfe36ab",
+      "bytes": 10198,
+      "role": "section_index",
+      "load": "on_demand",
+      "count": 34
+    },
+    "external_index": {
+      "path": "generated/collections/njupt-public/sitegraph/external_indexes/external_index.xsc.31ffbb78bfe71155.json",
+      "sha256": "31ffbb78bfe711551735d7305d469cbe042979931d073171e275bd8c5b767d8f",
+      "bytes": 28020,
+      "role": "external_index",
+      "load": "on_demand",
+      "count": 75
+    }
+  }
+}

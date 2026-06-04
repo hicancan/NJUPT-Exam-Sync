@@ -135,7 +135,7 @@ def recall_documents_with_stats(
             "certificate_bytes": initial_filter_bytes,
             "dominance": hot_initial_certificate.get("dominance") or {},
         }
-    hot_top_proof = None if high_df_dynamic_query else matching_hot_query_top_proof(index, query, match_phrases)
+    hot_top_proof = matching_hot_query_top_proof(index, query, match_phrases)
     if hot_top_proof is not None:
         top_certificate, _entry, top_filter_bytes = hot_top_proof
         top_match_phrases = [str(item) for item in top_certificate.get("match_phrases") or []]

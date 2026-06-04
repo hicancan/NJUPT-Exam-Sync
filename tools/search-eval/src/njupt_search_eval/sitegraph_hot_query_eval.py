@@ -16,11 +16,12 @@ HOT_QUERY_NORMALIZATION_CONFIG = json.loads(
 HOT_QUERY_CERTIFICATE_MODEL = "hot-query-minimal-complete-proof-v3"
 HOT_QUERY_FAST_START_VERSION = "sitegraph-hot-query-fast-start-v1"
 HOT_QUERY_INITIAL_CERTIFICATE_VERSION = "sitegraph-hot-query-initial-certificate-v1"
-HOT_QUERY_COMPLETE_CERTIFICATE_VERSION = "sitegraph-hot-query-complete-certificate-v3"
-HOT_QUERY_COMPLETE_PROOF_MODEL = "match-proof-minimal-filter-v1"
+HOT_QUERY_COMPLETE_CERTIFICATE_VERSION = "sitegraph-hot-query-complete-certificate-v4"
+HOT_QUERY_COMPLETE_PROOF_MODEL = "match-proof-compact-filter-v2"
 HOT_QUERY_TOPK_CERTIFICATE_VERSION = "sitegraph-hot-query-topk-certificate-v2"
 HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL = "rank-display-match-window-certificate-v2"
 HOT_QUERY_RANK_EVIDENCE_MODEL = "query-token-field-impact-full-document-v1"
+HOT_QUERY_PROOF_DOCUMENT_ENCODING = "sitegraph-hot-query-proof-doc-tuples-v1"
 
 
 def read_json(path: Path) -> Any:
@@ -105,9 +106,82 @@ def load_hot_query_proof_certificate(index: dict[str, Any], entry: dict[str, Any
     if path in cache:
         record_cache(index, True, bytes_count)
         return cache[path]
-    cache[path] = read_json(PUBLIC_ROOT / path)
+    cache[path] = expand_hot_query_proof_certificate(read_json(PUBLIC_ROOT / path))
     record_cache(index, False, bytes_count)
     return cache[path]
+
+
+def _dictionary_value(dictionary: list[Any], index: Any, label: str) -> str:
+    if not isinstance(index, int) or index < 0 or index >= len(dictionary):
+        raise ValueError(f"invalid compact hot query proof dictionary index for {label}")
+    return str(dictionary[index])
+
+
+def _optional_dictionary_value(dictionary: list[Any], index: Any, label: str) -> str | None:
+    if index is None or index == -1:
+        return None
+    return _dictionary_value(dictionary, index, label)
+
+
+def _dictionary_values(dictionary: list[Any], indexes: Any, label: str) -> list[str]:
+    if not isinstance(indexes, list):
+        raise ValueError(f"invalid compact hot query proof dictionary list for {label}")
+    return [_dictionary_value(dictionary, index, f"{label}.{offset}") for offset, index in enumerate(indexes)]
+
+
+def expand_hot_query_proof_certificate(certificate: dict[str, Any]) -> dict[str, Any]:
+    if str(certificate.get("document_encoding") or "") != HOT_QUERY_PROOF_DOCUMENT_ENCODING:
+        return certificate
+    dictionaries = certificate.get("document_dictionaries")
+    rows = certificate.get("documents")
+    if not isinstance(dictionaries, dict) or not isinstance(rows, list):
+        raise ValueError("compact hot query proof certificate is missing dictionaries or rows")
+    required = ("source_ids", "facets", "record_types", "shards", "fields", "phrases", "dates", "date_kinds", "date_confidences")
+    for key in required:
+        if not isinstance(dictionaries.get(key), list):
+            raise ValueError(f"compact hot query proof dictionary {key} must be a list")
+    documents: list[dict[str, Any]] = []
+    for offset, row in enumerate(rows):
+        if not isinstance(row, list) or len(row) < 8:
+            raise ValueError(f"invalid compact hot query proof row at {offset}")
+        rank_base_score = row[5]
+        if not isinstance(row[0], int) or not isinstance(rank_base_score, int | float):
+            raise ValueError(f"invalid compact hot query proof scalar at {offset}")
+        fields = _dictionary_values(dictionaries["fields"], row[6], f"documents.{offset}.fields")
+        phrases = _dictionary_values(dictionaries["phrases"], row[7], f"documents.{offset}.phrases")
+        if not phrases:
+            raise ValueError(f"compact hot query proof row {offset} has no phrases")
+        document: dict[str, Any] = {
+            "doc_index": int(row[0]),
+            "id": str(row[0]),
+            "source_id": _dictionary_value(dictionaries["source_ids"], row[1], f"documents.{offset}.source_id"),
+            "facet": _dictionary_value(dictionaries["facets"], row[2], f"documents.{offset}.facet"),
+            "record_type": _dictionary_value(dictionaries["record_types"], row[3], f"documents.{offset}.record_type"),
+            "shard_id": _dictionary_value(dictionaries["shards"], row[4], f"documents.{offset}.shard_id"),
+            "rank_base_score": float(rank_base_score),
+            "match_evidence": {
+                "fields": fields,
+                "phrases": phrases,
+            },
+        }
+        for key, row_index in (("published_at", 8), ("updated_at", 9), ("recorded_at", 10), ("version_date", 11)):
+            value = _optional_dictionary_value(dictionaries["dates"], row[row_index] if len(row) > row_index else -1, f"documents.{offset}.{key}")
+            if value is not None:
+                document[key] = value
+        date_kind = _optional_dictionary_value(dictionaries["date_kinds"], row[12] if len(row) > 12 else -1, f"documents.{offset}.date_kind")
+        date_confidence = _optional_dictionary_value(
+            dictionaries["date_confidences"],
+            row[13] if len(row) > 13 else -1,
+            f"documents.{offset}.date_confidence",
+        )
+        if date_kind is not None:
+            document["date_kind"] = date_kind
+        if date_confidence is not None:
+            document["date_confidence"] = date_confidence
+        documents.append(document)
+    expanded = dict(certificate)
+    expanded["documents"] = documents
+    return expanded
 
 
 def load_hot_query_top_proof_certificate(index: dict[str, Any], entry: dict[str, Any]) -> dict[str, Any] | None:

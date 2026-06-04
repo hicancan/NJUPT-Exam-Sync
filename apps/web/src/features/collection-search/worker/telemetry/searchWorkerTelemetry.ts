@@ -75,6 +75,7 @@ export const classifyDynamicQuery = (
     filters: SitegraphSearchFilters,
     event: SearchTelemetryEvent
 ): SitegraphQueryClass => {
+    if (!isAllFilter(filters.dateRange)) return 'time_filtered';
     if (isFilteredSearch(filters)) return 'filtered';
     if (inferHotProofEvent(event)) return 'hot';
     const normalized = normalizeSearchText(queryText);

@@ -41,12 +41,12 @@ import {
     HOT_QUERY_CERTIFICATE_VERSION,
     HOT_QUERY_COMPLETE_PROOF_MODEL,
     HOT_QUERY_DIRECTORY_VERSION,
+    HOT_QUERY_PROOF_DOCUMENT_ENCODING,
     HOT_QUERY_RANK_EVIDENCE_MODEL,
     HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL,
     HOT_QUERY_TOPK_CERTIFICATE_VERSION,
     resolveHotQueryProofEntry,
-    type HotQueryProofDirectory,
-    type HotQueryProofDocument
+    type HotQueryProofDirectory
 } from '../src/sitegraphHotQuery';
 
 const artifact = (path: string, role: string, load = 'on_demand', count?: number) => ({
@@ -240,30 +240,63 @@ const makeDocument = (overrides: Partial<SitegraphFullDocument> = {}): Sitegraph
     };
 };
 
-const hotQueryProofDocumentFrom = (
+const hotQueryCompactProofPayloadFrom = (
     document: SitegraphFullDocument,
     phrases: string[],
     rankBaseScore = 128
-): HotQueryProofDocument => ({
-    doc_index: document.doc_index,
-    id: document.id,
-    source_id: document.source_id,
-    facet: document.facet,
-    record_type: document.record_type,
-    shard_id: document.shard.shard_id,
-    hash: document.hash,
-    published_at: document.published_at,
-    updated_at: document.updated_at,
-    recorded_at: document.recorded_at,
-    version_date: document.version_date,
-    date_kind: document.date_kind,
-    date_confidence: document.date_confidence,
-    rank_base_score: rankBaseScore,
-    match_evidence: {
-        fields: ['title'],
-        phrases
+): {
+    document_encoding: typeof HOT_QUERY_PROOF_DOCUMENT_ENCODING;
+    document_dictionaries: {
+        source_ids: string[];
+        facets: string[];
+        record_types: string[];
+        shards: string[];
+        fields: string[];
+        phrases: string[];
+        dates: string[];
+        date_kinds: string[];
+        date_confidences: string[];
+    };
+    documents: unknown[][];
+} => {
+    const dates = [document.published_at, document.version_date].filter((value): value is string => typeof value === 'string');
+    const dateIndex = (value: string | null | undefined): number => {
+        if (!value) return -1;
+        return dates.indexOf(value);
+    };
+    const dateKinds = document.date_kind ? [document.date_kind] : [];
+    const dateConfidences = document.date_confidence ? [document.date_confidence] : [];
+    return {
+        document_encoding: HOT_QUERY_PROOF_DOCUMENT_ENCODING,
+        document_dictionaries: {
+            source_ids: [document.source_id],
+            facets: [document.facet],
+            record_types: [document.record_type],
+            shards: [document.shard.shard_id],
+            fields: ['title'],
+            phrases,
+            dates,
+            date_kinds: dateKinds,
+            date_confidences: dateConfidences,
+        },
+        documents: [[
+            document.doc_index,
+            0,
+            0,
+            0,
+            0,
+            rankBaseScore,
+            [0],
+            phrases.map((_, index) => index),
+            dateIndex(document.published_at),
+            dateIndex(document.updated_at),
+            dateIndex(document.recorded_at),
+            dateIndex(document.version_date),
+            document.date_kind ? 0 : -1,
+            document.date_confidence ? 0 : -1,
+        ]],
     }
-});
+};
 
 const docMetaFrom = (document: SitegraphFullDocument): SitegraphDocMeta => ({
     doc_index: document.doc_index,
@@ -1168,7 +1201,7 @@ describe('sitegraph search contract', () => {
             matched_shard_count: 1,
             matched_shard_bytes: shard.bytes,
             proved_no_match_shards: 0,
-            documents: [hotQueryProofDocumentFrom(certificateDocument, ['校历'])],
+            ...hotQueryCompactProofPayloadFrom(certificateDocument, ['校历']),
             match_count: 1
         };
         const requestedPaths: string[] = [];
@@ -1301,7 +1334,7 @@ describe('sitegraph search contract', () => {
             matched_shard_count: 1,
             matched_shard_bytes: shard.bytes,
             proved_no_match_shards: 0,
-            documents: [hotQueryProofDocumentFrom(certificateDocument, ['教学周历', '校历'])],
+            ...hotQueryCompactProofPayloadFrom(certificateDocument, ['教学周历', '校历']),
             match_count: 1
         };
         const requestedPaths: string[] = [];
@@ -1428,7 +1461,7 @@ describe('sitegraph search contract', () => {
             matched_shard_count: 1,
             matched_shard_bytes: shard.bytes,
             proved_no_match_shards: 0,
-            documents: [hotQueryProofDocumentFrom(certificateDocument, ['成绩查询', '成绩复核', '成绩单', '成绩'])],
+            ...hotQueryCompactProofPayloadFrom(certificateDocument, ['成绩查询', '成绩复核', '成绩单', '成绩']),
             match_count: 1
         };
         const requestedPaths: string[] = [];
@@ -1622,7 +1655,7 @@ describe('sitegraph search contract', () => {
             matched_shard_count: 1,
             matched_shard_bytes: shard.bytes,
             proved_no_match_shards: 0,
-            documents: [hotQueryProofDocumentFrom(certificateDocument, ['校历'])],
+            ...hotQueryCompactProofPayloadFrom(certificateDocument, ['校历']),
             match_count: 1
         };
         const requestedPaths: string[] = [];

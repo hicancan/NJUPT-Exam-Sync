@@ -18,6 +18,7 @@ import {
     HOT_QUERY_CERTIFICATE_VERSION,
     HOT_QUERY_COMPLETE_PROOF_MODEL,
     HOT_QUERY_DIRECTORY_VERSION,
+    HOT_QUERY_PROOF_DOCUMENT_ENCODING,
     HOT_QUERY_RANK_EVIDENCE_MODEL,
     HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL,
     HOT_QUERY_TOPK_CERTIFICATE_VERSION,
@@ -96,14 +97,16 @@ export const loadHotQueryProofCertificate = async (
         || payload.version !== HOT_QUERY_CERTIFICATE_VERSION
         || payload.proof_payload_model !== HOT_QUERY_COMPLETE_PROOF_MODEL
         || payload.rank_evidence_model !== HOT_QUERY_RANK_EVIDENCE_MODEL
+        || payload.document_encoding !== HOT_QUERY_PROOF_DOCUMENT_ENCODING
         || payload.normalized_query !== entry.normalized_query
         || payload.phrase_key !== entry.phrase_key
         || !Array.isArray(payload.rank_terms)
+        || !payload.document_dictionaries
         || !Array.isArray(payload.documents)
     ) {
         throw new SearchContractError(`Validation failed for ${entry.path}: invalid hot query proof certificate`);
     }
-    payload.documents = parseHotQueryProofDocuments(payload.documents, entry.path);
+    payload.documents = parseHotQueryProofDocuments(payload.documents, entry.path, payload.document_dictionaries);
     hotQueryProofCache.set(entry.path, payload);
     return payload;
 };

@@ -1,188 +1,98 @@
 {
-  "report": "njupt-search-browser-verification-v20-local-architecture-final",
-  "generated_at": "2026-06-04T13:43:58.940Z",
-  "base_url": "http://127.0.0.1:4177/",
+  "report": "njupt-search-browser-verification-v21-compact-proof",
+  "generated_at": "2026-06-04T16:43:15.265505+00:00",
+  "base_url": "http://127.0.0.1:56120/",
   "summary": {
     "passed": true,
     "scenario_count": 11,
     "failed": [],
     "persistent_cache_passed": true,
+    "max_warm_uncached_immutable_bytes": 0,
     "viewports": [
       "1280x720",
       "390x844"
-    ],
-    "max_warm_uncached_immutable_bytes": 0
+    ]
   },
   "scenarios": [
     {
-      "name": "desktop-hot-calendar",
+      "name": "desktop-calendar",
       "query": "校历",
       "viewport": "1280x720",
       "filters": null,
-      "elapsed_ms": 2969,
-      "first_settled_ms": 197,
-      "has_result_text": true,
+      "elapsed_ms": 971.228,
+      "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
-        "phase": "global_exhaustive_complete",
-        "first_result_source": "热查询首屏证书",
-        "query_class": "热查询",
         "fast_start_visible": true,
-        "new_read_zero": true,
-        "new_read_text": "0 B",
-        "loaded_text": "657 KB",
-        "match_count": 96,
-        "proved_no_match_shards": 864
+        "topk_visible": false,
+        "full_check_visible": true,
+        "cache_visible": false
       },
+      "immutable_artifact_transfer_bytes": 0,
       "layout": {
-        "client_width": 1270,
+        "client_width": 1280,
+        "scroll_width": 1280,
         "overflow_x": 0,
-        "overflowing_elements": [],
-        "scroll_width": 1270
+        "overflowing_elements": []
       },
       "console_error_count": 0,
       "console_errors": [],
-      "assets": [
-        {
-          "kind": "script",
-          "name": "index-vRUgntJp.js",
-          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
-        },
-        {
-          "kind": "stylesheet",
-          "name": "index-CR5wMP_P.css",
-          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
-        },
-        {
-          "kind": "script",
-          "name": "workbox-window.prod.es5-BBnX5xw4.js",
-          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
-        },
-        {
-          "kind": "image",
-          "name": "logo.png",
-          "url": "http://127.0.0.1:4177/assets/logo.png"
-        },
-        {
-          "kind": "script",
-          "name": "collectionSearch.worker-DK9M4uxs.js",
-          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
-        }
-      ],
+      "http_artifact_error_count": 0,
+      "http_artifact_errors": [],
       "passed": true
     },
     {
-      "name": "desktop-hot-cet",
+      "name": "desktop-cet",
       "query": "四六级",
       "viewport": "1280x720",
       "filters": null,
-      "elapsed_ms": 2895,
-      "first_settled_ms": 187,
-      "has_result_text": true,
+      "elapsed_ms": 884.369,
+      "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
-        "phase": "global_exhaustive_complete",
-        "first_result_source": "热查询首屏证书",
-        "query_class": "热查询",
         "fast_start_visible": true,
-        "new_read_zero": true,
-        "new_read_text": "0 B",
-        "loaded_text": "845 KB",
-        "match_count": 449,
-        "proved_no_match_shards": 816
+        "topk_visible": false,
+        "full_check_visible": true,
+        "cache_visible": false
       },
+      "immutable_artifact_transfer_bytes": 0,
       "layout": {
-        "client_width": 1270,
+        "client_width": 1280,
+        "scroll_width": 1280,
         "overflow_x": 0,
-        "overflowing_elements": [],
-        "scroll_width": 1270
+        "overflowing_elements": []
       },
       "console_error_count": 0,
       "console_errors": [],
-      "assets": [
-        {
-          "kind": "script",
-          "name": "index-vRUgntJp.js",
-          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
-        },
-        {
-          "kind": "stylesheet",
-          "name": "index-CR5wMP_P.css",
-          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
-        },
-        {
-          "kind": "script",
-          "name": "workbox-window.prod.es5-BBnX5xw4.js",
-          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
-        },
-        {
-          "kind": "image",
-          "name": "logo.png",
-          "url": "http://127.0.0.1:4177/assets/logo.png"
-        },
-        {
-          "kind": "script",
-          "name": "collectionSearch.worker-DK9M4uxs.js",
-          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
-        }
-      ],
+      "http_artifact_error_count": 0,
+      "http_artifact_errors": [],
       "passed": true
     },
     {
-      "name": "desktop-hot-grade",
+      "name": "desktop-grade",
       "query": "成绩",
       "viewport": "1280x720",
       "filters": null,
-      "elapsed_ms": 821,
-      "first_settled_ms": 41,
-      "has_result_text": true,
+      "elapsed_ms": 935.746,
+      "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
-        "phase": "global_exhaustive_complete",
-        "first_result_source": "热查询首屏证书",
-        "query_class": "热查询",
         "fast_start_visible": true,
-        "new_read_zero": true,
-        "new_read_text": "0 B",
-        "loaded_text": "1.4 MB",
-        "match_count": 2116,
-        "proved_no_match_shards": 387
+        "topk_visible": false,
+        "full_check_visible": true,
+        "cache_visible": false
       },
+      "immutable_artifact_transfer_bytes": 0,
       "layout": {
-        "client_width": 1270,
+        "client_width": 1280,
+        "scroll_width": 1280,
         "overflow_x": 0,
-        "overflowing_elements": [],
-        "scroll_width": 1270
+        "overflowing_elements": []
       },
       "console_error_count": 0,
       "console_errors": [],
-      "assets": [
-        {
-          "kind": "script",
-          "name": "index-vRUgntJp.js",
-          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
-        },
-        {
-          "kind": "stylesheet",
-          "name": "index-CR5wMP_P.css",
-          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
-        },
-        {
-          "kind": "script",
-          "name": "workbox-window.prod.es5-BBnX5xw4.js",
-          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
-        },
-        {
-          "kind": "image",
-          "name": "logo.png",
-          "url": "http://127.0.0.1:4177/assets/logo.png"
-        },
-        {
-          "kind": "script",
-          "name": "collectionSearch.worker-DK9M4uxs.js",
-          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
-        }
-      ],
+      "http_artifact_error_count": 0,
+      "http_artifact_errors": [],
       "passed": true
     },
     {
@@ -190,56 +100,26 @@
       "query": "通知",
       "viewport": "1280x720",
       "filters": null,
-      "elapsed_ms": 981,
-      "first_settled_ms": 201,
-      "has_result_text": true,
+      "elapsed_ms": 905.204,
+      "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
-        "phase": "top_results_hydrated",
-        "first_result_source": "热查询首屏证书",
-        "query_class": "热查询",
         "fast_start_visible": true,
-        "new_read_zero": true,
-        "new_read_text": "0 B",
-        "loaded_text": "3.5 MB",
-        "match_count": 160,
-        "proved_no_match_shards": 0
+        "topk_visible": false,
+        "full_check_visible": true,
+        "cache_visible": false
       },
+      "immutable_artifact_transfer_bytes": 0,
       "layout": {
-        "client_width": 1270,
+        "client_width": 1280,
+        "scroll_width": 1280,
         "overflow_x": 0,
-        "overflowing_elements": [],
-        "scroll_width": 1270
+        "overflowing_elements": []
       },
       "console_error_count": 0,
       "console_errors": [],
-      "assets": [
-        {
-          "kind": "script",
-          "name": "index-vRUgntJp.js",
-          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
-        },
-        {
-          "kind": "stylesheet",
-          "name": "index-CR5wMP_P.css",
-          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
-        },
-        {
-          "kind": "script",
-          "name": "workbox-window.prod.es5-BBnX5xw4.js",
-          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
-        },
-        {
-          "kind": "image",
-          "name": "logo.png",
-          "url": "http://127.0.0.1:4177/assets/logo.png"
-        },
-        {
-          "kind": "script",
-          "name": "collectionSearch.worker-DK9M4uxs.js",
-          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
-        }
-      ],
+      "http_artifact_error_count": 0,
+      "http_artifact_errors": [],
       "passed": true
     },
     {
@@ -247,56 +127,26 @@
       "query": "学生",
       "viewport": "1280x720",
       "filters": null,
-      "elapsed_ms": 836,
-      "first_settled_ms": 37,
-      "has_result_text": true,
+      "elapsed_ms": 875.046,
+      "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
-        "phase": "top_results_hydrated",
-        "first_result_source": "热查询首屏证书",
-        "query_class": "热查询",
         "fast_start_visible": true,
-        "new_read_zero": true,
-        "new_read_text": "0 B",
-        "loaded_text": "3.7 MB",
-        "match_count": 84,
-        "proved_no_match_shards": 0
+        "topk_visible": false,
+        "full_check_visible": true,
+        "cache_visible": false
       },
+      "immutable_artifact_transfer_bytes": 0,
       "layout": {
-        "client_width": 1270,
+        "client_width": 1280,
+        "scroll_width": 1280,
         "overflow_x": 0,
-        "overflowing_elements": [],
-        "scroll_width": 1270
+        "overflowing_elements": []
       },
       "console_error_count": 0,
       "console_errors": [],
-      "assets": [
-        {
-          "kind": "script",
-          "name": "index-vRUgntJp.js",
-          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
-        },
-        {
-          "kind": "stylesheet",
-          "name": "index-CR5wMP_P.css",
-          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
-        },
-        {
-          "kind": "script",
-          "name": "workbox-window.prod.es5-BBnX5xw4.js",
-          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
-        },
-        {
-          "kind": "image",
-          "name": "logo.png",
-          "url": "http://127.0.0.1:4177/assets/logo.png"
-        },
-        {
-          "kind": "script",
-          "name": "collectionSearch.worker-DK9M4uxs.js",
-          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
-        }
-      ],
+      "http_artifact_error_count": 0,
+      "http_artifact_errors": [],
       "passed": true
     },
     {
@@ -304,56 +154,26 @@
       "query": "南京邮电大学",
       "viewport": "1280x720",
       "filters": null,
-      "elapsed_ms": 2815,
-      "first_settled_ms": 46,
-      "has_result_text": true,
+      "elapsed_ms": 941.838,
+      "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
-        "phase": "partial_verified",
-        "first_result_source": "热查询首屏证书",
-        "query_class": "热查询",
         "fast_start_visible": true,
-        "new_read_zero": true,
-        "new_read_text": "0 B",
-        "loaded_text": "12.8 MB",
-        "match_count": 1098,
-        "proved_no_match_shards": 31
+        "topk_visible": false,
+        "full_check_visible": true,
+        "cache_visible": false
       },
+      "immutable_artifact_transfer_bytes": 0,
       "layout": {
-        "client_width": 1270,
+        "client_width": 1280,
+        "scroll_width": 1280,
         "overflow_x": 0,
-        "overflowing_elements": [],
-        "scroll_width": 1270
+        "overflowing_elements": []
       },
       "console_error_count": 0,
       "console_errors": [],
-      "assets": [
-        {
-          "kind": "script",
-          "name": "index-vRUgntJp.js",
-          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
-        },
-        {
-          "kind": "stylesheet",
-          "name": "index-CR5wMP_P.css",
-          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
-        },
-        {
-          "kind": "script",
-          "name": "workbox-window.prod.es5-BBnX5xw4.js",
-          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
-        },
-        {
-          "kind": "image",
-          "name": "logo.png",
-          "url": "http://127.0.0.1:4177/assets/logo.png"
-        },
-        {
-          "kind": "script",
-          "name": "collectionSearch.worker-DK9M4uxs.js",
-          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
-        }
-      ],
+      "http_artifact_error_count": 0,
+      "http_artifact_errors": [],
       "passed": true
     },
     {
@@ -361,56 +181,26 @@
       "query": "缓考申请表",
       "viewport": "1280x720",
       "filters": null,
-      "elapsed_ms": 817,
-      "first_settled_ms": 49,
-      "has_result_text": true,
+      "elapsed_ms": 791.439,
+      "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
-        "phase": "global_exhaustive_complete",
-        "first_result_source": "热查询首屏证书",
-        "query_class": "热查询",
         "fast_start_visible": true,
-        "new_read_zero": true,
-        "new_read_text": "0 B",
-        "loaded_text": "353 KB",
-        "match_count": 3,
-        "proved_no_match_shards": 940
+        "topk_visible": false,
+        "full_check_visible": true,
+        "cache_visible": false
       },
+      "immutable_artifact_transfer_bytes": 0,
       "layout": {
-        "client_width": 1270,
+        "client_width": 1280,
+        "scroll_width": 1280,
         "overflow_x": 0,
-        "overflowing_elements": [],
-        "scroll_width": 1270
+        "overflowing_elements": []
       },
       "console_error_count": 0,
       "console_errors": [],
-      "assets": [
-        {
-          "kind": "script",
-          "name": "index-vRUgntJp.js",
-          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
-        },
-        {
-          "kind": "stylesheet",
-          "name": "index-CR5wMP_P.css",
-          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
-        },
-        {
-          "kind": "script",
-          "name": "workbox-window.prod.es5-BBnX5xw4.js",
-          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
-        },
-        {
-          "kind": "image",
-          "name": "logo.png",
-          "url": "http://127.0.0.1:4177/assets/logo.png"
-        },
-        {
-          "kind": "script",
-          "name": "collectionSearch.worker-DK9M4uxs.js",
-          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
-        }
-      ],
+      "http_artifact_error_count": 0,
+      "http_artifact_errors": [],
       "passed": true
     },
     {
@@ -418,56 +208,26 @@
       "query": "不存在的查询词",
       "viewport": "1280x720",
       "filters": null,
-      "elapsed_ms": 946,
-      "first_settled_ms": 195,
-      "has_result_text": true,
+      "elapsed_ms": 793.986,
+      "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
-        "phase": "global_exhaustive_complete",
-        "first_result_source": "热查询首屏证书",
-        "query_class": "热查询",
         "fast_start_visible": true,
-        "new_read_zero": true,
-        "new_read_text": "0 B",
-        "loaded_text": "345 KB",
-        "match_count": 0,
-        "proved_no_match_shards": 942
+        "topk_visible": false,
+        "full_check_visible": true,
+        "cache_visible": false
       },
+      "immutable_artifact_transfer_bytes": 0,
       "layout": {
-        "client_width": 1270,
+        "client_width": 1280,
+        "scroll_width": 1280,
         "overflow_x": 0,
-        "overflowing_elements": [],
-        "scroll_width": 1270
+        "overflowing_elements": []
       },
       "console_error_count": 0,
       "console_errors": [],
-      "assets": [
-        {
-          "kind": "script",
-          "name": "index-vRUgntJp.js",
-          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
-        },
-        {
-          "kind": "stylesheet",
-          "name": "index-CR5wMP_P.css",
-          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
-        },
-        {
-          "kind": "script",
-          "name": "workbox-window.prod.es5-BBnX5xw4.js",
-          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
-        },
-        {
-          "kind": "image",
-          "name": "logo.png",
-          "url": "http://127.0.0.1:4177/assets/logo.png"
-        },
-        {
-          "kind": "script",
-          "name": "collectionSearch.worker-DK9M4uxs.js",
-          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
-        }
-      ],
+      "http_artifact_error_count": 0,
+      "http_artifact_errors": [],
       "passed": true
     },
     {
@@ -475,51 +235,26 @@
       "query": "a",
       "viewport": "1280x720",
       "filters": null,
-      "elapsed_ms": 3512,
-      "first_settled_ms": 39,
-      "has_result_text": true,
+      "elapsed_ms": 643.421,
+      "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
-        "phase": null,
-        "first_result_source": null,
-        "query_class": null,
         "fast_start_visible": false,
-        "new_read_zero": false,
-        "new_read_text": null,
-        "loaded_text": null,
-        "match_count": null,
-        "proved_no_match_shards": null
+        "topk_visible": false,
+        "full_check_visible": false,
+        "cache_visible": false
       },
+      "immutable_artifact_transfer_bytes": 0,
       "layout": {
-        "client_width": 1270,
+        "client_width": 1280,
+        "scroll_width": 1280,
         "overflow_x": 0,
-        "overflowing_elements": [],
-        "scroll_width": 1270
+        "overflowing_elements": []
       },
       "console_error_count": 0,
       "console_errors": [],
-      "assets": [
-        {
-          "kind": "script",
-          "name": "index-vRUgntJp.js",
-          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
-        },
-        {
-          "kind": "stylesheet",
-          "name": "index-CR5wMP_P.css",
-          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
-        },
-        {
-          "kind": "script",
-          "name": "workbox-window.prod.es5-BBnX5xw4.js",
-          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
-        },
-        {
-          "kind": "image",
-          "name": "logo.png",
-          "url": "http://127.0.0.1:4177/assets/logo.png"
-        }
-      ],
+      "http_artifact_error_count": 0,
+      "http_artifact_errors": [],
       "passed": true
     },
     {
@@ -531,56 +266,26 @@
         "facet": "notice_article",
         "dateRange": "past_year"
       },
-      "elapsed_ms": 16091,
-      "first_settled_ms": 12102,
-      "has_result_text": true,
+      "elapsed_ms": 925.291,
+      "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
-        "phase": "scoped_exhaustive_complete",
-        "first_result_source": "热查询 Top-K 证书",
-        "query_class": "筛选查询",
-        "fast_start_visible": false,
-        "new_read_zero": true,
-        "new_read_text": "0 B",
-        "loaded_text": "828 KB",
-        "match_count": 6,
-        "proved_no_match_shards": 2
+        "fast_start_visible": true,
+        "topk_visible": false,
+        "full_check_visible": true,
+        "cache_visible": false
       },
+      "immutable_artifact_transfer_bytes": 0,
       "layout": {
-        "client_width": 1270,
+        "client_width": 1280,
+        "scroll_width": 1280,
         "overflow_x": 0,
-        "overflowing_elements": [],
-        "scroll_width": 1270
+        "overflowing_elements": []
       },
       "console_error_count": 0,
       "console_errors": [],
-      "assets": [
-        {
-          "kind": "script",
-          "name": "index-vRUgntJp.js",
-          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
-        },
-        {
-          "kind": "stylesheet",
-          "name": "index-CR5wMP_P.css",
-          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
-        },
-        {
-          "kind": "script",
-          "name": "workbox-window.prod.es5-BBnX5xw4.js",
-          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
-        },
-        {
-          "kind": "image",
-          "name": "logo.png",
-          "url": "http://127.0.0.1:4177/assets/logo.png"
-        },
-        {
-          "kind": "script",
-          "name": "collectionSearch.worker-DK9M4uxs.js",
-          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
-        }
-      ],
+      "http_artifact_error_count": 0,
+      "http_artifact_errors": [],
       "passed": true
     },
     {
@@ -588,56 +293,26 @@
       "query": "大创",
       "viewport": "390x844",
       "filters": null,
-      "elapsed_ms": 824,
-      "first_settled_ms": 42,
-      "has_result_text": true,
+      "elapsed_ms": 947.477,
+      "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
-        "phase": "global_exhaustive_complete",
-        "first_result_source": "热查询首屏证书",
-        "query_class": "热查询",
         "fast_start_visible": true,
-        "new_read_zero": true,
-        "new_read_text": "0 B",
-        "loaded_text": "1.2 MB",
-        "match_count": 1075,
-        "proved_no_match_shards": 471
+        "topk_visible": false,
+        "full_check_visible": true,
+        "cache_visible": false
       },
+      "immutable_artifact_transfer_bytes": 0,
       "layout": {
-        "client_width": 380,
+        "client_width": 390,
+        "scroll_width": 390,
         "overflow_x": 0,
-        "overflowing_elements": [],
-        "scroll_width": 380
+        "overflowing_elements": []
       },
       "console_error_count": 0,
       "console_errors": [],
-      "assets": [
-        {
-          "kind": "script",
-          "name": "index-vRUgntJp.js",
-          "url": "http://127.0.0.1:4177/assets/index-vRUgntJp.js"
-        },
-        {
-          "kind": "stylesheet",
-          "name": "index-CR5wMP_P.css",
-          "url": "http://127.0.0.1:4177/assets/index-CR5wMP_P.css"
-        },
-        {
-          "kind": "script",
-          "name": "workbox-window.prod.es5-BBnX5xw4.js",
-          "url": "http://127.0.0.1:4177/assets/workbox-window.prod.es5-BBnX5xw4.js"
-        },
-        {
-          "kind": "image",
-          "name": "logo.png",
-          "url": "http://127.0.0.1:4177/assets/logo.png"
-        },
-        {
-          "kind": "script",
-          "name": "collectionSearch.worker-DK9M4uxs.js",
-          "url": "http://127.0.0.1:4177/assets/collectionSearch.worker-DK9M4uxs.js"
-        }
-      ],
+      "http_artifact_error_count": 0,
+      "http_artifact_errors": [],
       "passed": true
     }
   ],
@@ -645,42 +320,25 @@
     "name": "desktop-warm-repeat-calendar",
     "query": "校历",
     "viewport": "1280x720",
-    "diagnostics_first": {
-      "phase": "global_exhaustive_complete",
-      "first_result_source": "热查询首屏证书",
-      "query_class": "热查询",
-      "fast_start_visible": true,
-      "new_read_zero": true,
-      "new_read_text": "0 B",
-      "loaded_text": "657 KB",
-      "match_count": 96,
-      "proved_no_match_shards": 864
-    },
-    "diagnostics_second": {
-      "phase": "global_exhaustive_complete",
-      "first_result_source": "热查询首屏证书",
-      "query_class": "热查询",
-      "fast_start_visible": true,
-      "new_read_zero": true,
-      "new_read_text": "0 B",
-      "loaded_text": "657 KB",
-      "match_count": 96,
-      "proved_no_match_shards": 864
-    },
+    "first_immutable_artifact_transfer_bytes": 0,
     "immutable_artifact_transfer_bytes": 0,
     "has_data_error": false,
-    "layout": {
-      "client_width": 1270,
-      "overflow_x": 0,
-      "overflowing_elements": [],
-      "scroll_width": 1270
+    "diagnostics_second": {
+      "fast_start_visible": true,
+      "topk_visible": false,
+      "full_check_visible": true,
+      "cache_visible": true
     },
-    "console_error_count": 0,
+    "layout": {
+      "client_width": 1280,
+      "scroll_width": 1280,
+      "overflow_x": 0,
+      "overflowing_elements": []
+    },
     "passed": true
   },
   "evidence_notes": [
-    "The in-app browser isolated context does not expose ResourceTiming performance entries, so immutable warm transfer bytes are checked through the app diagnostic new-read counter.",
-    "High-DF broad queries are accepted once visible partial results are rendered; proof completion remains asynchronous.",
-    "All scenarios assert no visible data request failure, no artifact HTTP error text, no console error logs, and no horizontal layout overflow."
+    "Generated immutable artifact transfer bytes are measured from browser ResourceTiming transferSize.",
+    "Each scenario asserts expected visible text, no data request error, no generated artifact HTTP error, no console error, and no horizontal overflow."
   ]
 }

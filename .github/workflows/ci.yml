@@ -37,6 +37,17 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
+      - name: Cache Rust build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            tools/wasm/packed-impact-decoder/target
+          key: rust-wasm-${{ runner.os }}-${{ hashFiles('tools/wasm/packed-impact-decoder/Cargo.lock') }}
+          restore-keys: |
+            rust-wasm-${{ runner.os }}-
+
       - name: Install dependencies
         run: |
           uv sync --frozen --extra test

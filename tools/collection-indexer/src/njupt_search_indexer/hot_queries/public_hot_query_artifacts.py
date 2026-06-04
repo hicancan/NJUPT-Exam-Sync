@@ -11,14 +11,15 @@ from ..sitegraph_hot_query_proofs import (
     HOT_QUERY_FAST_START_VERSION,
     HOT_QUERY_INITIAL_CERTIFICATE_VERSION,
     HOT_QUERY_INITIAL_LIMIT,
+    HOT_QUERY_PROOF_DOCUMENT_ENCODING,
     HOT_QUERY_RANK_EVIDENCE_MODEL,
     HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL,
     HOT_QUERY_TOPK_CERTIFICATE_VERSION,
     HOT_QUERY_TOPK_LIMIT,
+    compact_hot_query_proof_documents,
     expand_hot_query_proof_phrases,
     hot_query_document_payload,
     hot_query_phrase_key,
-    hot_query_proof_document_payload,
     hot_query_runtime_rank_score,
     hot_query_runtime_terms,
     hot_query_topk_sort_key,
@@ -205,10 +206,22 @@ def build_hot_query_artifacts(
             top_certificate,
             compact=True,
         )
+        proof_source_documents = [
+            document
+            for document in documents
+            if any(phrase in exhaustive_scan_blob(document) for phrase in match_phrases)
+        ]
+        proof_dictionaries, proof_documents = compact_hot_query_proof_documents(
+            proof_source_documents,
+            query,
+            match_phrases,
+            rank_terms,
+        )
         certificate = {
             "version": HOT_QUERY_COMPLETE_CERTIFICATE_VERSION,
             "proof_payload_model": HOT_QUERY_COMPLETE_PROOF_MODEL,
             "rank_evidence_model": HOT_QUERY_RANK_EVIDENCE_MODEL,
+            "document_encoding": HOT_QUERY_PROOF_DOCUMENT_ENCODING,
             "query": query,
             "normalized_query": normalized_query,
             "match_phrases": match_phrases,
@@ -223,11 +236,8 @@ def build_hot_query_artifacts(
             "matched_shard_bytes": sum(shard_bytes_by_id.get(shard_id, 0) for shard_id in matched_shard_list),
             "matched_shard_document_count": sum(shard_count_by_id.get(shard_id, 0) for shard_id in matched_shard_list),
             "proved_no_match_shards": max(0, len(full_shards) - len(matched_shard_list)),
-            "documents": [
-                hot_query_proof_document_payload(document, query, match_phrases, rank_terms)
-                for document in documents
-                if any(phrase in exhaustive_scan_blob(document) for phrase in match_phrases)
-            ],
+            "document_dictionaries": proof_dictionaries,
+            "documents": proof_documents,
             "match_count": len(matching_documents),
         }
         artifact = write_hashed_json(

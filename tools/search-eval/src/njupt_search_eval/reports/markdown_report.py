@@ -156,19 +156,42 @@ def render_markdown_report(report: dict[str, Any]) -> str:
             "",
             "## Query Measurements",
             "",
-            "| Query | ms | Results | Candidate shards | Loaded shards | Uncached bytes | Pruned postings | Complete | Top result |",
-            "| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |",
+            "| Query | Class | ms | Results | Candidate shards | Loaded shards | Uncached bytes | Pruned postings | Bottleneck | Complete | Top result |",
+            "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |",
         ]
     )
     for item in report["query_measurements"]:
         top = item.get("top_result") or {}
+        bottleneck = item.get("dominant_bottleneck") or {}
         lines.append(
-            f"| `{item['query']}` | {format_ms(item['elapsed_ms'])} | {format_int(item['result_count'])} | "
+            f"| `{item['query']}` | `{item.get('query_class')}` | {format_ms(item['elapsed_ms'])} | {format_int(item['result_count'])} | "
             f"{format_int(item['candidate_shard_count'])} | {format_int(item['loaded_shard_count'])} | "
             f"{format_int(item['coverage']['uncached_loaded_bytes'])} | "
             f"{format_int(item['retrieval']['postings_pruned'])} | "
+            f"`{bottleneck.get('layer')}` | "
             f"`{item['coverage']['exhaustive_complete']}` | {str(top.get('title') or '')[:80]} |"
         )
+
+    class_summary = (report.get("query_measurement_summary") or {}).get("query_class_summary") or {}
+    if class_summary:
+        lines.extend(
+            [
+                "",
+                "## Query Class Summary",
+                "",
+                "| Class | Queries | Max first bytes | Max top bytes | Max proof bytes | Max ms | Dominant bottlenecks |",
+                "| --- | ---: | ---: | ---: | ---: | ---: | --- |",
+            ]
+        )
+        for query_class, summary in sorted(class_summary.items()):
+            lines.append(
+                f"| `{query_class}` | {format_int(summary.get('query_count'))} | "
+                f"{format_int(summary.get('max_first_trusted_uncached_bytes'))} | "
+                f"{format_int(summary.get('max_top_results_uncached_bytes'))} | "
+                f"{format_int(summary.get('max_proof_complete_uncached_bytes'))} | "
+                f"{format_ms(summary.get('max_elapsed_ms'))} | "
+                f"{format_table_text(summary.get('dominant_bottlenecks') or {}, limit=160)} |"
+            )
 
     lines.extend(
         [
@@ -221,8 +244,15 @@ def render_markdown_report(report: dict[str, Any]) -> str:
             f"- First trusted hard gate: `<={format_int(FIRST_TRUSTED_MAX_UNCACHED_BYTES)}` bytes or `<=10%` of proof bytes.",
             f"- Top hydrated hard gate: `<={format_int(TOP_RESULTS_MAX_UNCACHED_BYTES)}` bytes or `<=25%` of proof bytes.",
             f"- Phase gates passed: `{query_measurement_summary.get('phase_gates_passed')}`",
+            f"- High-DF gates passed: `{query_measurement_summary.get('high_df_gates_passed')}` "
+            f"(first `<={format_int(query_measurement_summary.get('high_df_first_trusted_limit_bytes'))}`, "
+            f"top `<={format_int(query_measurement_summary.get('high_df_top_results_limit_bytes'))}`, "
+            f"proof `<={format_int(query_measurement_summary.get('high_df_proof_limit_bytes'))}` bytes).",
         ]
     )
+    high_df_failures = query_measurement_summary.get("high_df_gate_failures") or []
+    if high_df_failures:
+        lines.append(f"- High-DF gate failures: `{json.dumps(high_df_failures, ensure_ascii=False)}`")
 
     cache = report.get("cache_benchmark") or {}
     if not cache.get("skipped"):

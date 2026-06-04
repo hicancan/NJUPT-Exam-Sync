@@ -194,32 +194,63 @@ export const statsFor = (
     resultMap: Map<string, RankedSitegraphDocument>,
     telemetry: SearchTelemetry,
     provenResultCount?: number
-): SitegraphQueryStats => ({
-    phase,
-    coverage,
-    plan,
-    usedBodyIndex: coverage.used_body_index,
-    loadedLocalIndexCount: loadedLocalIndexIds.size,
-    loadedLocalIndexIds: Array.from(loadedLocalIndexIds).sort(),
-    loadedShardCount: loadedShardPaths.size,
-    loadedShardPaths: Array.from(loadedShardPaths).sort(),
-    candidateCount,
-    exhaustiveComplete: coverage.exhaustive_complete,
-    resultCount: provenResultCount ?? resultMap.size,
-    localIndexBytes: coverage.local_index_bytes,
-    hydratedShardBytes: coverage.hydrated_shard_bytes,
-    uncachedLoadedBytes: coverage.uncached_loaded_bytes,
-    cachedArtifactBytes: coverage.cached_artifact_bytes,
-    cache: coverage.cache,
-    fallbacks: {
-        localMetaFallbackDocuments: telemetry.localMetaFallbackDocIndices.size,
-        snippetFallbackResults: Array.from(resultMap.values()).filter(result => result.match_snippet?.fallback === true).length,
-        verifiedFullScanMatches: telemetry.fullScanMatchDocIndices.size,
-    },
-    retrieval: {
-        ...telemetry.retrieval,
-    },
-});
+): SitegraphQueryStats => {
+    const certificateBytes = Math.max(
+        0,
+        coverage.loaded_bytes
+        - coverage.first_screen_bytes
+        - coverage.local_index_bytes
+        - coverage.hydrated_shard_bytes
+    );
+    const pruningLedger = {
+        model: 'block_upper_bound_threshold_v1' as const,
+        dynamicPruning: telemetry.retrieval.dynamicPruning,
+        impactBlocksVisited: telemetry.retrieval.impactBlocksVisited,
+        impactBlocksPruned: telemetry.retrieval.impactBlocksPruned,
+        postingsVisited: telemetry.retrieval.postingsVisited,
+        postingsPruned: telemetry.retrieval.postingsPruned,
+        competitiveThreshold: telemetry.retrieval.competitiveThreshold,
+    };
+    return {
+        phase,
+        coverage,
+        plan,
+        usedBodyIndex: coverage.used_body_index,
+        loadedLocalIndexCount: loadedLocalIndexIds.size,
+        loadedLocalIndexIds: Array.from(loadedLocalIndexIds).sort(),
+        loadedShardCount: loadedShardPaths.size,
+        loadedShardPaths: Array.from(loadedShardPaths).sort(),
+        candidateCount,
+        exhaustiveComplete: coverage.exhaustive_complete,
+        resultCount: provenResultCount ?? resultMap.size,
+        localIndexBytes: coverage.local_index_bytes,
+        hydratedShardBytes: coverage.hydrated_shard_bytes,
+        uncachedLoadedBytes: coverage.uncached_loaded_bytes,
+        cachedArtifactBytes: coverage.cached_artifact_bytes,
+        cache: coverage.cache,
+        proof_pressure: {
+            totalShards: coverage.total_shards,
+            scannedShards: coverage.scanned_shards,
+            provedNoMatchShards: coverage.proved_no_match_shards,
+            pendingShards: coverage.pending_shards,
+            failedShards: coverage.failed_shards,
+            localIndexBytes: coverage.local_index_bytes,
+            hydratedShardBytes: coverage.hydrated_shard_bytes,
+            certificateBytes,
+            loadedBytes: coverage.loaded_bytes,
+            uncachedLoadedBytes: coverage.uncached_loaded_bytes,
+        },
+        fallbacks: {
+            localMetaFallbackDocuments: telemetry.localMetaFallbackDocIndices.size,
+            snippetFallbackResults: Array.from(resultMap.values()).filter(result => result.match_snippet?.fallback === true).length,
+            verifiedFullScanMatches: telemetry.fullScanMatchDocIndices.size,
+        },
+        retrieval: {
+            ...telemetry.retrieval,
+            pruning_ledger_summary: pruningLedger,
+        },
+    };
+};
 
 export const documentMatchesFullScan = (document: SitegraphFullDocument, matchPhrases: string[]): boolean => {
     const blob = fullScanBlob(document);

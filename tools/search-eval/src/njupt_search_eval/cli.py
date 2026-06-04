@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from .sitegraph_search import PUBLIC_INDEX_DIR
+from .browser_verification import run_browser_verification
 from .sitegraph_cache_benchmark import run_cache_benchmark
 from .sitegraph_lower_bound_report import build_lower_bound_report, write_report_files
 from .sitegraph_query_smoke_test import validate_quality
@@ -22,6 +23,9 @@ def main() -> None:
     cache_parser = subparsers.add_parser("run-cache-benchmark", help="Run cold/warm content-hash artifact cache benchmarks.")
     cache_parser.add_argument("--collection", type=Path, default=None, help="Generated collection directory. Reserved for the layout migration.")
     cache_parser.add_argument("--query", action="append", default=None, help="Query to include. Can be passed more than once.")
+    browser_parser = subparsers.add_parser("run-browser-verification", help="Run browser verification against a production preview build.")
+    browser_parser.add_argument("--base-url", default=None, help="Optional already-running app URL. Defaults to a local vite preview server.")
+    browser_parser.add_argument("--output", type=Path, default=None, help="Browser verification JSON output path.")
     report_parser = subparsers.add_parser("run-lower-bound-report", help="Write a lower-bound evidence report with byte, query, cache, and parse/decode metrics.")
     report_parser.add_argument("--collection", type=Path, default=None, help="Generated collection directory. Reserved for the layout migration.")
     report_parser.add_argument("--baseline-ref", default="HEAD", help="Git ref used as the before/baseline artifact set.")
@@ -36,7 +40,8 @@ def main() -> None:
     report_parser.add_argument("--skip-local-body-benchmark", action="store_true", help="Skip full local body JSON-vs-packed parse/decode benchmark.")
     args = parser.parse_args()
 
-    if args.collection is not None and args.collection.resolve() != PUBLIC_INDEX_DIR.resolve():
+    collection = getattr(args, "collection", None)
+    if collection is not None and collection.resolve() != PUBLIC_INDEX_DIR.resolve():
         raise SystemExit(f"Only the generated njupt-public collection is supported: {PUBLIC_INDEX_DIR}")
     if args.command == "run-smoke-queries":
         print(json.dumps(validate_quality(), ensure_ascii=False, indent=2))
@@ -44,6 +49,16 @@ def main() -> None:
         print(json.dumps(validate_task_queries(args.expectations) if args.expectations else validate_task_queries(), ensure_ascii=False, indent=2))
     elif args.command == "run-cache-benchmark":
         result = run_cache_benchmark(args.query)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        if not result["summary"]["passed"]:
+            raise SystemExit(1)
+    elif args.command == "run-browser-verification":
+        kwargs = {}
+        if args.output is not None:
+            kwargs["output"] = args.output
+        if args.base_url is not None:
+            kwargs["base_url"] = args.base_url
+        result = run_browser_verification(**kwargs)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         if not result["summary"]["passed"]:
             raise SystemExit(1)

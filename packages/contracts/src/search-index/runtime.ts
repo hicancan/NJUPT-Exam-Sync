@@ -147,7 +147,31 @@ export type SitegraphQueryClass =
     | 'cold_rare'
     | 'cold_high_df'
     | 'miss'
-    | 'filtered';
+    | 'filtered'
+    | 'time_filtered';
+
+export interface SitegraphProofPressureStats {
+    totalShards: number;
+    scannedShards: number;
+    provedNoMatchShards: number;
+    pendingShards: number;
+    failedShards: number;
+    localIndexBytes: number;
+    hydratedShardBytes: number;
+    certificateBytes: number;
+    loadedBytes: number;
+    uncachedLoadedBytes: number;
+}
+
+export interface SitegraphPruningLedgerSummary {
+    model: 'block_upper_bound_threshold_v1';
+    dynamicPruning: boolean;
+    impactBlocksVisited: number;
+    impactBlocksPruned: number;
+    postingsVisited: number;
+    postingsPruned: number;
+    competitiveThreshold: number;
+}
 
 export interface SitegraphQueryStats {
     phase: SitegraphSearchPhase;
@@ -170,6 +194,7 @@ export interface SitegraphQueryStats {
     first_result_source?: 'hot_query_initial' | 'hot_query_topk' | 'dynamic_retrieval';
     query_class?: SitegraphQueryClass;
     resource_trace_id?: string;
+    proof_pressure?: SitegraphProofPressureStats;
     fallbacks: SitegraphFallbackStats;
     retrieval: {
         dynamicPruning: boolean;
@@ -182,6 +207,7 @@ export interface SitegraphQueryStats {
         wasmCalls?: number;
         typescriptCalls?: number;
         scoreEntriesReturned?: number;
+        pruning_ledger_summary?: SitegraphPruningLedgerSummary;
     };
 }
 
