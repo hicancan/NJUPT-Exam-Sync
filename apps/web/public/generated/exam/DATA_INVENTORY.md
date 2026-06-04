@@ -1,6 +1,6 @@
 # 📊 Data Inventory & Quality Report
 
-> **Generated on:** 2026-06-04 12:17:34 (Beijing Time)
+> **Generated on:** 2026-06-04 18:00:22 (Beijing Time)
 >
 > This report provides complete visibility into raw Excel data and processing results.
 > You do NOT need to open the original Excel files - all information is captured here.
@@ -36,7 +36,7 @@
 | 5 | `班级名称` | object | 100.0% | 742 | B230200, B230205, B220204 |
 | 6 | `任课教师` | object | 100.0% | 617 | 郭艳东/曾红丽, 智婷/汪金, 笪海霞 |
 | 7 | `人数` | int64 | 100.0% | 40 | 28, 2, 1 |
-| 8 | `考试时间` | object | 100.0% | 95 | 第11周周3(2026-05-13) 13:30-15:20, 第11周周2(2026-05-12) |
+| 8 | `考试时间` | object | 100.0% | 96 | 第11周周3(2026-05-13) 13:30-15:20, 第11周周2(2026-05-12) |
 | 9 | `考试教室` | object | 100.0% | 97 | 教2－101, 教2－102, 教2－201 |
 
 #### Column Mapping (Excel → Standard Field)
