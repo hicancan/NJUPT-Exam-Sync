@@ -46,7 +46,9 @@ jobs:
         run: uv run python -m pytest
 
       - name: Source complexity gates
-        run: uv run python tools/quality-gates/scripts/check_source_complexity.py
+        run: |
+          uv run python tools/quality-gates/scripts/check_source_complexity.py
+          uv run python tools/quality-gates/scripts/check_runtime_fast_start.py
 
       - name: Generated artifact gates
         run: |
@@ -74,3 +76,4 @@ jobs:
           npm run typecheck
           npm run lint
           npm run build
+          npm run check:web-bundle-size

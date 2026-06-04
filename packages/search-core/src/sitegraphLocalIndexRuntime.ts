@@ -40,9 +40,34 @@ export const loadPlanningScope = async (
     const plannedIndexOrder = new Map(plan.local_index_ids.map((indexId, index) => [indexId, index]));
     const routeFacetPriors = new Set(plan.route_decisions.flatMap(route => route.likely_facets));
     const routeSourcePriors = new Set(plan.route_decisions.flatMap(route => route.likely_sources));
+    const currentYear = new Date(now).getFullYear();
+    const currentIntent = new Set([
+        'exam_schedule',
+        'academic_calendar',
+        'course_grade_credit',
+        'scholarship_aid',
+        'innovation_entrepreneurship',
+    ]);
     const yearScore = (year: string): number => {
         const numeric = Number(year);
-        if (!Number.isFinite(numeric)) return 0.2;
+        if (!Number.isFinite(numeric)) return plan.intent === 'system_entry' ? 1.2 : 0.25;
+        const distance = currentYear - numeric;
+        if (currentIntent.has(plan.intent)) {
+            if (distance <= 0) return 3.2;
+            if (distance === 1) return 2.7;
+            if (distance === 2) return 2.1;
+            if (distance === 3) return 1.5;
+            if (distance <= 5) return 0.9;
+            return 0.35;
+        }
+        if (plan.intent === 'broad_exploratory') {
+            if (distance <= 0) return 1.8;
+            if (distance === 1) return 1.55;
+            if (distance === 2) return 1.3;
+            if (distance === 3) return 1.05;
+            if (distance <= 5) return 0.8;
+            return 0.45;
+        }
         return Math.max(0.2, Math.min(1.2, (numeric - 2015) / 10));
     };
     const persistedLightBytes = new Map<string, number>();

@@ -96,6 +96,24 @@ function formatBytes(bytes: number): string {
     return `${bytes} B`;
 }
 
+function firstResultSourceLabel(source: SitegraphQueryStats['first_result_source']): string | null {
+    if (source === 'hot_query_initial') return '热查询首屏证书';
+    if (source === 'hot_query_topk') return '热查询 Top-K 证书';
+    if (source === 'dynamic_retrieval') return '动态检索';
+    return null;
+}
+
+function queryClassLabel(queryClass: SitegraphQueryStats['query_class']): string | null {
+    if (queryClass === 'degenerate') return '退化词';
+    if (queryClass === 'hot') return '热查询';
+    if (queryClass === 'hot_alias') return '热别名';
+    if (queryClass === 'cold_high_df') return '高频泛词';
+    if (queryClass === 'cold_rare') return '普通冷查询';
+    if (queryClass === 'miss') return '未命中';
+    if (queryClass === 'filtered') return '筛选查询';
+    return null;
+}
+
 function highlightRangesFromTerms(text: string, terms: string[]): SitegraphMatchHighlight[] {
     const uniqueTerms = Array.from(new Set(terms.filter(term => term.length >= 2)))
         .sort((a, b) => b.length - a.length);
@@ -483,6 +501,13 @@ export function CollectionSearchSection({
                             <span>字段：{fieldLabel(coverage.searched_fields)}</span>
                             {queryStats ? (
                                 <>
+                                    {firstResultSourceLabel(queryStats.first_result_source) ? (
+                                        <span>首屏路径 {firstResultSourceLabel(queryStats.first_result_source)}</span>
+                                    ) : null}
+                                    {queryClassLabel(queryStats.query_class) ? (
+                                        <span>查询类型 {queryClassLabel(queryStats.query_class)}</span>
+                                    ) : null}
+                                    <span>fast-start {queryStats.fast_start_used ? '是' : '否'}</span>
                                     <span>局部元数据兜底 {queryStats.fallbacks.localMetaFallbackDocuments}</span>
                                     <span>摘要兜底 {queryStats.fallbacks.snippetFallbackResults}</span>
                                     <span>验证命中 {queryStats.fallbacks.verifiedFullScanMatches}</span>

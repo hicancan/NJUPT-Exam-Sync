@@ -34,14 +34,19 @@ DEFAULT_LINE_LIMITS = {
 # They freeze current debt so future changes have to extract code instead of
 # making the largest files larger.
 FILE_LINE_LIMITS = {
+    "apps/web/src/features/collection-search/worker/collectionSearch.worker.ts": 500,
+    "packages/search-core/src/sitegraphSearch.ts": 500,
+    "packages/search-core/src/sitegraphCompletionProofRuntime.ts": 500,
+    "packages/search-core/src/sitegraphHotSearchPhases.ts": 500,
+    "packages/search-core/src/sitegraphRecallRuntime.ts": 200,
     "tools/collection-indexer/src/njupt_search_indexer/sitegraph_public_index.py": 1560,
     "tools/search-eval/src/njupt_search_eval/sitegraph_search.py": 1780,
     "tools/search-eval/src/njupt_search_eval/sitegraph_lower_bound_report.py": 1920,
 }
 
 
-def tracked_files() -> list[str]:
-    output = subprocess.check_output(["git", "ls-files"], cwd=REPO_ROOT, text=True)
+def candidate_files() -> list[str]:
+    output = subprocess.check_output(["git", "ls-files", "--cached", "--others", "--exclude-standard"], cwd=REPO_ROOT, text=True)
     return [line.strip().replace("\\", "/") for line in output.splitlines() if line.strip()]
 
 
@@ -59,7 +64,7 @@ def line_count(path: Path) -> int:
 def main() -> int:
     failures: list[str] = []
     checked = 0
-    for relative_path in tracked_files():
+    for relative_path in candidate_files():
         if not should_check(relative_path):
             continue
         checked += 1

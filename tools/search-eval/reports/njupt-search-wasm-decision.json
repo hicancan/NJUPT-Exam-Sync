@@ -3,11 +3,11 @@
   "benchmark": "packed-impact-retrieval-wasm-vs-typescript-v2",
   "collection": "apps/web/public/generated/collections/njupt-public",
   "decision": {
-    "reason": "The browser runtime can consume Rust/WASM stateful score entries directly. On the full packed body workload, the Rust/WASM session score bridge was 0.175x the TypeScript selective retrieval kernel for the same artifact format, query set, and global top-k pruning state.",
+    "reason": "The browser runtime can consume Rust/WASM stateful score entries directly. On the full packed body workload, the Rust/WASM session score bridge was 0.133x the TypeScript selective retrieval kernel for the same artifact format, query set, and global top-k pruning state.",
     "status": "rust_wasm_retrieval_runtime_selected",
     "winner": "wasm_retrieval_session_scores_bridge"
   },
-  "generated_at": "2026-06-01T07:10:51.619Z",
+  "generated_at": "2026-06-04T08:56:28.534Z",
   "runs": 5,
   "toolchain": {
     "node": "v24.16.0",
@@ -16,7 +16,7 @@
     "wasm_pack": "wasm-pack 0.15.0",
     "wasm_tools": "wasm-tools 1.251.0 (a1a178a02 2026-05-28)"
   },
-  "total_bytes": 16850611,
+  "total_bytes": 16865808,
   "retrieval_queries": [
     {
       "query": "校历",
@@ -32,11 +32,11 @@
     },
     {
       "query": "学生相关文件及表格",
-      "term_count": 45
+      "term_count": 42
     },
     {
       "query": "教务管理系统",
-      "term_count": 25
+      "term_count": 80
     },
     {
       "query": "奖学金",
@@ -52,99 +52,99 @@
     }
   ],
   "typescript_decode_to_object": {
-    "max_ms": 737.17,
-    "mean_ms": 645.327,
-    "min_ms": 609.692,
+    "max_ms": 756.561,
+    "mean_ms": 680.869,
+    "min_ms": 617.165,
     "runs": 5,
     "summary": {
-      "field_count": 1164483,
-      "max_doc_id": 10259,
-      "posting_count": 2302002,
-      "term_count": 879433
+      "field_count": 1164834,
+      "max_doc_id": 10264,
+      "posting_count": 2303023,
+      "term_count": 879679
     }
   },
   "wasm_decode_to_json_then_parse": {
-    "max_ms": 702.058,
-    "mean_ms": 685.09,
-    "min_ms": 677.183,
+    "max_ms": 756.316,
+    "mean_ms": 741.618,
+    "min_ms": 729.729,
     "runs": 5,
     "summary": {
-      "field_count": 1164483,
-      "max_doc_id": 10259,
-      "posting_count": 2302002,
-      "term_count": 879433
+      "field_count": 1164834,
+      "max_doc_id": 10264,
+      "posting_count": 2303023,
+      "term_count": 879679
     }
   },
   "wasm_stats_only_decode": {
-    "max_ms": 46.11,
-    "mean_ms": 43.046,
-    "min_ms": 37.65,
+    "max_ms": 46.933,
+    "mean_ms": 44.771,
+    "min_ms": 43.909,
     "runs": 5,
     "summary": {
-      "field_count": 1164483,
-      "max_doc_id": 10259,
-      "posting_count": 2302002,
-      "term_count": 879433
+      "field_count": 1164834,
+      "max_doc_id": 10264,
+      "posting_count": 2303023,
+      "term_count": 879679
     }
   },
   "typescript_retrieval_kernel": {
-    "max_ms": 3422.653,
-    "mean_ms": 3360.691,
-    "min_ms": 3307.103,
+    "max_ms": 4008.336,
+    "mean_ms": 3941.645,
+    "min_ms": 3892.451,
     "runs": 5,
     "summary": {
-      "block_count": 12092,
-      "candidate_count": 19720,
-      "impact_blocks_pruned": 2424,
-      "impact_blocks_visited": 9668,
-      "matched_term_count": 6814,
-      "postings_pruned": 14388,
-      "postings_visited": 61035
+      "block_count": 13556,
+      "candidate_count": 21931,
+      "impact_blocks_pruned": 2631,
+      "impact_blocks_visited": 10925,
+      "matched_term_count": 7747,
+      "postings_pruned": 14176,
+      "postings_visited": 67913
     }
   },
   "wasm_retrieval_kernel": {
-    "max_ms": 518.326,
-    "mean_ms": 470.565,
-    "min_ms": 442.374,
+    "max_ms": 384.302,
+    "mean_ms": 377.284,
+    "min_ms": 373.317,
     "runs": 5,
     "summary": {
-      "block_count": 12092,
-      "candidate_count": 26598,
+      "block_count": 13556,
+      "candidate_count": 28554,
       "impact_blocks_pruned": 0,
-      "impact_blocks_visited": 12092,
-      "matched_term_count": 6814,
+      "impact_blocks_visited": 13556,
+      "matched_term_count": 7747,
       "postings_pruned": 0,
-      "postings_visited": 75423
+      "postings_visited": 82089
     }
   },
   "wasm_retrieval_session": {
-    "max_ms": 626.321,
-    "mean_ms": 587.936,
-    "min_ms": 537.36,
+    "max_ms": 522.358,
+    "mean_ms": 511.046,
+    "min_ms": 497.002,
     "runs": 5,
     "summary": {
-      "block_count": 12092,
-      "candidate_count": 19720,
-      "impact_blocks_pruned": 2424,
-      "impact_blocks_visited": 9668,
-      "matched_term_count": 6814,
-      "postings_pruned": 14388,
-      "postings_visited": 61035
+      "block_count": 13556,
+      "candidate_count": 21931,
+      "impact_blocks_pruned": 2631,
+      "impact_blocks_visited": 10925,
+      "matched_term_count": 7747,
+      "postings_pruned": 14176,
+      "postings_visited": 67913
     }
   },
   "wasm_retrieval_session_scores_bridge": {
-    "max_ms": 597.751,
-    "mean_ms": 587.416,
-    "min_ms": 574.691,
+    "max_ms": 534.024,
+    "mean_ms": 523.395,
+    "min_ms": 515.45,
     "runs": 5,
     "summary": {
-      "block_count": 12092,
-      "candidate_count": 19720,
-      "impact_blocks_pruned": 2424,
-      "impact_blocks_visited": 9668,
-      "matched_term_count": 6814,
-      "postings_pruned": 14388,
-      "postings_visited": 61035
+      "block_count": 13556,
+      "candidate_count": 21931,
+      "impact_blocks_pruned": 2631,
+      "impact_blocks_visited": 10925,
+      "matched_term_count": 7747,
+      "postings_pruned": 14176,
+      "postings_visited": 67913
     }
   }
 }

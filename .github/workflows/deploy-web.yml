@@ -30,10 +30,18 @@ jobs:
       - name: Checkout 🛎️
         uses: actions/checkout@v6
 
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: '.python-version'
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v8.2.0
+
       - name: Setup Node.js ⚙️
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies 📦
@@ -50,6 +58,9 @@ jobs:
 
       - name: Build project 🏗️
         run: npm run build
+
+      - name: Check deployment bundle size
+        run: npm run check:web-bundle-size
 
       - name: Setup Pages
         uses: actions/configure-pages@v6
@@ -69,13 +80,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
-
-      - name: Purge Cloudflare Cache
-        if: success()
-        run: |
-          curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CF_ZONE_ID }}/purge_cache" \
-          -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
-          -H "Content-Type: application/json" \
-          --data '{"purge_everything":true}'
-
 

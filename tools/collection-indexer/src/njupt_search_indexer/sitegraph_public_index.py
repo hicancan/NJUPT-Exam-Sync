@@ -45,6 +45,7 @@ from .sitegraph_package_summary import (
     latest_upstream_generated_at,
     source_truth_counts,
 )
+from .sitegraph_query_config import load_search_query_list_config
 from .sitegraph_shards import build_locality_shards, shard_year
 from .sitegraph_source import package_source_id
 from .sitegraph_text import clean_text, normalize_text, sha256_text, stable_ascii_slug
@@ -143,10 +144,12 @@ SOURCE_AUTHORITY: dict[str, dict[str, Any]] = {
 ATTACHMENT_EVIDENCE_LEVELS = ("metadata_only", "filename_only", "text_extracted", "snippet", "full_content")
 MAX_PUBLIC_JSON_ARTIFACT_BYTES = 1024 * 1024
 SPLIT_PUBLIC_JSON_TARGET_BYTES = 768 * 1024
-HOT_QUERY_PROOF_QUERIES = [
-    str(query)
-    for query in json.loads((BASE_DIR / "config" / "search" / "hot-query-proof-queries.json").read_text(encoding="utf-8"))
-]
+
+
+HOT_QUERY_PROOF_QUERIES = load_search_query_list_config("hot-query-proof-queries.json")
+HOT_QUERY_FAST_START_ONLY_QUERIES = load_search_query_list_config("hot-query-fast-start-only-queries.json")
+HOT_QUERY_FAST_START_QUERIES = list(dict.fromkeys([*HOT_QUERY_PROOF_QUERIES, *HOT_QUERY_FAST_START_ONLY_QUERIES]))
+HOT_QUERY_COMPLETE_NORMALIZED_QUERIES = {normalize_text(query) for query in HOT_QUERY_PROOF_QUERIES}
 
 
 def attachment_evidence_coverage(attachments: list[dict[str, Any]]) -> dict[str, int]:
@@ -173,12 +176,14 @@ def build_hot_query_proof_directory(
     shard_bytes_by_id = {str(shard["shard_id"]): int(shard.get("bytes") or 0) for shard in full_shards}
     shard_count_by_id = {str(shard["shard_id"]): int(shard.get("count") or 0) for shard in full_shards}
     certificate_entries: dict[str, dict[str, Any]] = {}
+    initial_entries: dict[str, dict[str, Any]] = {}
     certificate_bytes_by_query: dict[str, int] = {}
     top_certificate_bytes_by_query: dict[str, int] = {}
     initial_certificate_bytes_by_query: dict[str, int] = {}
 
-    for query in HOT_QUERY_PROOF_QUERIES:
+    for query in HOT_QUERY_FAST_START_QUERIES:
         normalized_query = normalize_text(query)
+        requires_complete_proof = normalized_query in HOT_QUERY_COMPLETE_NORMALIZED_QUERIES
         match_phrases = expand_hot_query_proof_phrases(query, query_aliases)
         rank_terms = hot_query_runtime_terms(query, match_phrases)
         phrase_key = hot_query_phrase_key(match_phrases)
@@ -274,6 +279,24 @@ def build_hot_query_proof_directory(
             initial_certificate,
             compact=True,
         )
+        initial_entry = {
+            **artifact_entry(initial_artifact, role="hot_query_top_initial", count=len(initial_documents), load="fast_start"),
+            "initial_limit": HOT_QUERY_INITIAL_LIMIT,
+            "top_k_limit": HOT_QUERY_INITIAL_LIMIT,
+            "match_count": len(matching_documents),
+        }
+        initial_entries[normalized_query] = {
+            "query": query,
+            "normalized_query": normalized_query,
+            "match_phrases": match_phrases,
+            "phrase_key": phrase_key,
+            "match_count": len(matching_documents),
+            "initial_certificate": initial_entry,
+        }
+        initial_certificate_bytes_by_query[normalized_query] = int(initial_artifact["bytes"])
+        if not requires_complete_proof:
+            continue
+
         top_certificate = {
             "version": HOT_QUERY_TOPK_CERTIFICATE_VERSION,
             "document_payload_model": HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL,
@@ -345,12 +368,7 @@ def build_hot_query_proof_directory(
             "normalized_query": normalized_query,
             "match_phrases": match_phrases,
             "phrase_key": phrase_key,
-            "initial_certificate": {
-                **artifact_entry(initial_artifact, role="hot_query_top_initial", count=len(initial_documents), load="fast_start"),
-                "initial_limit": HOT_QUERY_INITIAL_LIMIT,
-                "top_k_limit": HOT_QUERY_INITIAL_LIMIT,
-                "match_count": len(matching_documents),
-            },
+            "initial_certificate": initial_entry,
             "top_certificate": {
                 **artifact_entry(top_artifact, role="hot_query_topk_certificate", count=len(top_documents), load="query_planned"),
                 "top_k_limit": HOT_QUERY_TOPK_LIMIT,
@@ -364,7 +382,6 @@ def build_hot_query_proof_directory(
         }
         certificate_bytes_by_query[normalized_query] = int(artifact["bytes"])
         top_certificate_bytes_by_query[normalized_query] = int(top_artifact["bytes"])
-        initial_certificate_bytes_by_query[normalized_query] = int(initial_artifact["bytes"])
 
     for entry in list(certificate_entries.values()):
         canonical_query = str(entry["normalized_query"])
@@ -382,8 +399,24 @@ def build_hot_query_proof_directory(
                 "alias_of": canonical_query,
             }
 
+    for entry in list(initial_entries.values()):
+        canonical_query = str(entry["normalized_query"])
+        phrase_key = str(entry["phrase_key"])
+        for alias in entry.get("match_phrases") or []:
+            normalized_alias = normalize_text(alias)
+            if not normalized_alias or normalized_alias in initial_entries:
+                continue
+            alias_phrase_key = hot_query_phrase_key(expand_hot_query_proof_phrases(alias, query_aliases))
+            if alias_phrase_key != phrase_key:
+                continue
+            initial_entries[normalized_alias] = {
+                **entry,
+                "query": str(alias),
+                "alias_of": canonical_query,
+            }
+
     fast_start_entries: dict[str, dict[str, Any]] = {}
-    for normalized_key, entry in certificate_entries.items():
+    for normalized_key, entry in initial_entries.items():
         initial_entry = entry.get("initial_certificate")
         if not isinstance(initial_entry, dict):
             continue

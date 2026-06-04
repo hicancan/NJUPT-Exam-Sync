@@ -7,5 +7,7 @@ export * from './sitegraphSnippet';
 export * from './sitegraphContract';
 export * from './sitegraphBinaryIndex';
 export * from './sitegraphHotQuery';
+export * from './sitegraphQueryClass';
+export * from './sitegraphRecallRuntime';
 export * from './sitegraphSearch';
 export * from './tokenizer';

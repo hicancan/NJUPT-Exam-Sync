@@ -522,7 +522,6 @@ def hot_query_proof_document_payload(
         "facet": str(document["facet"]),
         "record_type": str(document["record_type"]),
         "shard_id": str(shard.get("shard_id") or ""),
-        "hash": str(document["hash"]),
         "rank_base_score": hot_query_rank_base_score(document, rank_terms),
         "match_evidence": hot_query_match_evidence(document, hot_query_proof_needles(query, match_phrases)),
     }

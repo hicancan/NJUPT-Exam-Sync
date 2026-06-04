@@ -10,6 +10,12 @@ from pathlib import Path
 from typing import Any
 
 from njupt_search_indexer.sitegraph_binary_index import unpack_impact_index, unpack_impact_terms
+from .sitegraph_degenerate import degenerate_noop_result, is_degenerate_query
+from .sitegraph_hot_query_eval import (
+    matching_hot_query_fast_start,
+    matching_hot_query_proof,
+    matching_hot_query_top_proof,
+)
 
 
 BASE_DIR = Path(__file__).resolve().parents[4]
@@ -17,9 +23,6 @@ PUBLIC_ROOT = BASE_DIR / "apps" / "web" / "public"
 PUBLIC_INDEX_DIR = PUBLIC_ROOT / "generated" / "collections" / "njupt-public"
 SEARCH_INTENT_CONFIG = json.loads(
     (BASE_DIR / "packages" / "search-core" / "src" / "intent" / "queryIntentProfiles.json").read_text(encoding="utf-8")
-)
-HOT_QUERY_NORMALIZATION_CONFIG = json.loads(
-    (BASE_DIR / "config" / "search" / "hot-query-normalization.json").read_text(encoding="utf-8")
 )
 
 FIELD_WEIGHTS = {key: float(value) for key, value in SEARCH_INTENT_CONFIG["field_weights"].items()}
@@ -31,15 +34,14 @@ TOP_RESULTS_MAX_UNCACHED_BYTES = 10 * ONE_MIB
 TOP_RESULTS_HYDRATION_RESERVE_BYTES = int(2.25 * ONE_MIB)
 MIN_FIRST_TRUSTED_LOCAL_INDEXES = 6
 MIN_TOP_RESULTS_LOCAL_INDEXES = 12
+HIGH_DF_FIRST_TRUSTED_LOCAL_INDEX_BYTES = 384 * 1024
+HIGH_DF_TOP_RESULTS_LOCAL_INDEX_BYTES = ONE_MIB
+HIGH_DF_MIN_FIRST_TRUSTED_LOCAL_INDEXES = 3
+HIGH_DF_MIN_TOP_RESULTS_LOCAL_INDEXES = 6
+DYNAMIC_HIGH_DF_NORMALIZED_QUERIES = {"通知", "学生", "南京邮电大学"}
 LIGHT_SEARCH_FIELDS = ["title", "section", "nav_path", "tags", "attachments", "external", "system"]
 BODY_SEARCH_FIELDS = [*LIGHT_SEARCH_FIELDS, "summary", "content"]
 FULL_SCAN_FIELDS = ["title", "section", "nav_path", "summary", "content", "attachments", "url"]
-HOT_QUERY_CERTIFICATE_MODEL = "hot-query-minimal-complete-proof-v3"
-HOT_QUERY_COMPLETE_CERTIFICATE_VERSION = "sitegraph-hot-query-complete-certificate-v3"
-HOT_QUERY_COMPLETE_PROOF_MODEL = "match-proof-minimal-filter-v1"
-HOT_QUERY_TOPK_CERTIFICATE_VERSION = "sitegraph-hot-query-topk-certificate-v2"
-HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL = "rank-display-match-window-certificate-v2"
-HOT_QUERY_RANK_EVIDENCE_MODEL = "query-token-field-impact-full-document-v1"
 
 
 def new_cache_stats() -> dict[str, Any]:
@@ -144,6 +146,8 @@ def load_index() -> dict[str, Any]:
         "local_body_cache": {},
         "shard_filter_cache": {},
         "proof_catalog_cache": {},
+        "hot_query_fast_start_cache": {},
+        "hot_query_initial_certificate_cache": {},
         "hot_query_proof_directory_cache": {},
         "hot_query_top_proof_cache": {},
         "hot_query_proof_cache": {},
@@ -311,164 +315,6 @@ def load_proof_catalog(index: dict[str, Any], source_manifest: dict[str, Any]) -
     cache[path] = read_json(PUBLIC_ROOT / path)
     record_cache(index, False, bytes_count)
     return cache[path]
-
-
-def hot_query_phrase_key(match_phrases: list[str]) -> str:
-    return "\0".join(sorted(match_phrases, key=lambda text: (-len(text), text)))
-
-
-HOT_QUERY_COMMAND_PREFIXES = tuple(str(item) for item in HOT_QUERY_NORMALIZATION_CONFIG["command_prefixes"])
-HOT_QUERY_COMMAND_SUFFIXES = tuple(str(item) for item in HOT_QUERY_NORMALIZATION_CONFIG["command_suffixes"])
-
-
-def hot_query_intent_candidates(query: str) -> list[str]:
-    candidates: list[str] = []
-    seen: set[str] = set()
-    queue = [normalize_text(query)]
-    while queue and len(seen) < 48:
-        value = queue.pop(0)
-        if len(value) < 2 or value in seen:
-            continue
-        seen.add(value)
-        candidates.append(value)
-        for prefix in HOT_QUERY_COMMAND_PREFIXES:
-            if value.startswith(prefix) and len(value) > len(prefix) + 1:
-                queue.append(value[len(prefix) :])
-        for suffix in HOT_QUERY_COMMAND_SUFFIXES:
-            if value.endswith(suffix) and len(value) > len(suffix) + 1:
-                queue.append(value[: -len(suffix)])
-    return candidates
-
-
-def resolve_hot_query_entry(directory: dict[str, Any], query: str) -> dict[str, Any] | None:
-    queries = directory.get("queries") if isinstance(directory.get("queries"), dict) else {}
-    for candidate in hot_query_intent_candidates(query):
-        entry = queries.get(candidate)
-        if isinstance(entry, dict):
-            return entry
-        for value in queries.values():
-            if isinstance(value, dict) and normalize_text(value.get("query")) == candidate:
-                return value
-    return None
-
-
-def load_hot_query_proof_directory(index: dict[str, Any]) -> dict[str, Any] | None:
-    artifact = (index.get("manifest", {}).get("artifacts", {}) or {}).get("hot_query_proof_directory")
-    if not isinstance(artifact, dict) or not artifact.get("path"):
-        return None
-    path = str(artifact["path"])
-    cache = index["hot_query_proof_directory_cache"]
-    bytes_count = int(artifact.get("bytes") or 0)
-    if path in cache:
-        record_cache(index, True, bytes_count)
-        return cache[path]
-    cache[path] = read_json(PUBLIC_ROOT / path)
-    record_cache(index, False, bytes_count)
-    return cache[path]
-
-
-def load_hot_query_proof_certificate(index: dict[str, Any], entry: dict[str, Any]) -> dict[str, Any] | None:
-    if not isinstance(entry, dict) or not entry.get("path"):
-        return None
-    path = str(entry["path"])
-    cache = index["hot_query_proof_cache"]
-    bytes_count = int(entry.get("bytes") or 0)
-    if path in cache:
-        record_cache(index, True, bytes_count)
-        return cache[path]
-    cache[path] = read_json(PUBLIC_ROOT / path)
-    record_cache(index, False, bytes_count)
-    return cache[path]
-
-
-def load_hot_query_top_proof_certificate(index: dict[str, Any], entry: dict[str, Any]) -> dict[str, Any] | None:
-    top_entry = entry.get("top_certificate") if isinstance(entry.get("top_certificate"), dict) else None
-    if not isinstance(top_entry, dict) or not top_entry.get("path"):
-        return None
-    path = str(top_entry["path"])
-    cache = index["hot_query_top_proof_cache"]
-    bytes_count = int(top_entry.get("bytes") or 0)
-    if path in cache:
-        record_cache(index, True, bytes_count)
-        return cache[path]
-    cache[path] = read_json(PUBLIC_ROOT / path)
-    record_cache(index, False, bytes_count)
-    return cache[path]
-
-
-def matching_hot_query_proof(index: dict[str, Any], query: str, match_phrases: list[str]) -> tuple[dict[str, Any], int] | None:
-    del match_phrases
-    directory = load_hot_query_proof_directory(index)
-    if not isinstance(directory, dict):
-        return None
-    if str(directory.get("certificate_model") or "") != HOT_QUERY_CERTIFICATE_MODEL:
-        return None
-    if str(directory.get("complete_proof_model") or "") != HOT_QUERY_COMPLETE_PROOF_MODEL:
-        return None
-    if str(directory.get("top_document_payload_model") or "") != HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL:
-        return None
-    if str(directory.get("rank_evidence_model") or "") != HOT_QUERY_RANK_EVIDENCE_MODEL:
-        return None
-    entry = resolve_hot_query_entry(directory, query)
-    if not isinstance(entry, dict):
-        return None
-    phrase_key = str(entry.get("phrase_key") or "")
-    if not phrase_key:
-        return None
-    certificate = load_hot_query_proof_certificate(index, entry)
-    if not isinstance(certificate, dict):
-        return None
-    if str(certificate.get("version") or "") != HOT_QUERY_COMPLETE_CERTIFICATE_VERSION:
-        return None
-    if str(certificate.get("proof_payload_model") or "") != HOT_QUERY_COMPLETE_PROOF_MODEL:
-        return None
-    if str(certificate.get("rank_evidence_model") or "") != HOT_QUERY_RANK_EVIDENCE_MODEL:
-        return None
-    if not isinstance(certificate.get("rank_terms"), list):
-        return None
-    if str(certificate.get("phrase_key") or "") != phrase_key:
-        return None
-    proof_bytes = int(((index.get("manifest", {}).get("artifacts", {}) or {}).get("hot_query_proof_directory") or {}).get("bytes") or 0)
-    proof_bytes += int(entry.get("bytes") or 0)
-    return certificate, proof_bytes
-
-
-def matching_hot_query_top_proof(index: dict[str, Any], query: str, match_phrases: list[str]) -> tuple[dict[str, Any], dict[str, Any], int] | None:
-    del match_phrases
-    directory = load_hot_query_proof_directory(index)
-    if not isinstance(directory, dict):
-        return None
-    if str(directory.get("certificate_model") or "") != HOT_QUERY_CERTIFICATE_MODEL:
-        return None
-    if str(directory.get("complete_proof_model") or "") != HOT_QUERY_COMPLETE_PROOF_MODEL:
-        return None
-    if str(directory.get("top_document_payload_model") or "") != HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL:
-        return None
-    if str(directory.get("rank_evidence_model") or "") != HOT_QUERY_RANK_EVIDENCE_MODEL:
-        return None
-    entry = resolve_hot_query_entry(directory, query)
-    if not isinstance(entry, dict):
-        return None
-    phrase_key = str(entry.get("phrase_key") or "")
-    if not phrase_key:
-        return None
-    certificate = load_hot_query_top_proof_certificate(index, entry)
-    if not isinstance(certificate, dict):
-        return None
-    if str(certificate.get("version") or "") != HOT_QUERY_TOPK_CERTIFICATE_VERSION:
-        return None
-    if str(certificate.get("document_payload_model") or "") != HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL:
-        return None
-    if str(certificate.get("rank_evidence_model") or "") != HOT_QUERY_RANK_EVIDENCE_MODEL:
-        return None
-    if str(certificate.get("phrase_key") or "") != phrase_key:
-        return None
-    if not isinstance(certificate.get("rank_terms"), list):
-        return None
-    top_entry = entry.get("top_certificate") if isinstance(entry.get("top_certificate"), dict) else {}
-    proof_bytes = int(((index.get("manifest", {}).get("artifacts", {}) or {}).get("hot_query_proof_directory") or {}).get("bytes") or 0)
-    proof_bytes += int(top_entry.get("bytes") or 0)
-    return certificate, entry, proof_bytes
 
 
 def load_shard(index: dict[str, Any], path: str, bytes_count: int = 0) -> list[dict[str, Any]]:
@@ -1158,10 +1004,61 @@ def recall_documents_with_stats(
         started_perf = time.perf_counter()
     except Exception:
         started_perf = math.nan
+    if is_degenerate_query(query):
+        return degenerate_noop_result(query, started_at)
     terms = tokens_for_query(query, index["aliases"])
     match_phrases = expand_query_phrases(query, index["aliases"])
     plan = build_plan(index, query, terms)
-    hot_top_proof = matching_hot_query_top_proof(index, query, match_phrases)
+    high_df_dynamic_query = str(plan["normalized_query"]) in DYNAMIC_HIGH_DF_NORMALIZED_QUERIES
+    phase_timings_ms: dict[str, float] = {}
+    hot_initial_certificate: dict[str, Any] | None = None
+    hot_initial_stats: dict[str, Any] = {"used": False}
+    hot_initial_ranked: list[dict[str, Any]] = []
+    hot_initial_coverage: dict[str, Any] | None = None
+    hot_initial_proof = matching_hot_query_fast_start(index, query, match_phrases)
+    if hot_initial_proof is not None:
+        hot_initial_certificate, initial_filter_bytes = hot_initial_proof
+        initial_match_phrases = [str(item) for item in hot_initial_certificate.get("match_phrases") or []]
+        initial_documents = [
+            document
+            for document in hot_initial_certificate.get("documents", [])
+            if isinstance(document, dict) and full_scan_matches(document, initial_match_phrases)
+        ]
+        if len(initial_documents) != len(hot_initial_certificate.get("documents") or []) or len(initial_documents) != int(hot_initial_certificate.get("top_k_count") or 0):
+            raise ValueError(f"hot query initial certificate failed self-check: {query}")
+        hot_initial_ranked = sorted_ranked([
+            rank_document(document, query, terms, hot_query_rank_base_score(document))
+            for document in initial_documents
+        ])
+        if math.isfinite(started_perf):
+            import time
+
+            phase_timings_ms["first_trusted_results"] = round((time.perf_counter() - started_perf) * 1000, 3)
+        hot_initial_coverage = coverage(
+            index,
+            phase="first_trusted_results",
+            fields=BODY_SEARCH_FIELDS,
+            proved_no_match_shards=0,
+            scanned_shards=int(hot_initial_certificate.get("matched_shard_count") or 0),
+            searched_documents=len(initial_documents),
+            total_shards=int(hot_initial_certificate.get("total_shards") or index["manifest"]["progressive_search"]["total_shards"]),
+            total_documents=int(hot_initial_certificate.get("total_documents") or index["manifest"]["progressive_search"]["total_documents"]),
+            loaded_paths=set(),
+            local_index_bytes=0,
+            hydrated_shard_bytes=0,
+            filter_bytes=initial_filter_bytes,
+            used_body_index=False,
+            exhaustive_complete=False,
+        )
+        hot_initial_stats = {
+            "used": True,
+            "query": hot_initial_certificate.get("query"),
+            "top_k_count": len(initial_documents),
+            "match_count": int(hot_initial_certificate.get("match_count") or 0),
+            "certificate_bytes": initial_filter_bytes,
+            "dominance": hot_initial_certificate.get("dominance") or {},
+        }
+    hot_top_proof = None if high_df_dynamic_query else matching_hot_query_top_proof(index, query, match_phrases)
     if hot_top_proof is not None:
         top_certificate, _entry, top_filter_bytes = hot_top_proof
         top_match_phrases = [str(item) for item in top_certificate.get("match_phrases") or []]
@@ -1184,17 +1081,15 @@ def recall_documents_with_stats(
             "proof_complete": [],
         }
         plan["estimated_cost_bytes"] = top_filter_bytes
-        phase_timings_ms: dict[str, float] = {}
         if math.isfinite(started_perf):
             import time
 
             elapsed = round((time.perf_counter() - started_perf) * 1000, 3)
-            phase_timings_ms["first_trusted_results"] = elapsed
             phase_timings_ms["top_results_hydrated"] = elapsed
         total_certificate_shards = int(top_certificate.get("total_shards") or index["manifest"]["progressive_search"]["total_shards"])
         total_certificate_documents = int(top_certificate.get("total_documents") or index["manifest"]["progressive_search"]["total_documents"])
         top_matched_shards = int(top_certificate.get("matched_shard_count") or 0)
-        first_trusted_coverage = coverage(
+        first_trusted_coverage = hot_initial_coverage or coverage(
             index,
             phase="first_trusted_results",
             fields=BODY_SEARCH_FIELDS,
@@ -1321,6 +1216,7 @@ def recall_documents_with_stats(
                 "result_count": int(certificate.get("match_count") or len(ranked)),
                 "retrieval": retrieval,
                 "local_meta_fallback_documents": 0,
+                "hot_query_initial_certificate": hot_initial_stats,
                 "hot_query_topk_certificate": {
                     "used": True,
                     "query": top_certificate.get("query"),
@@ -1342,26 +1238,28 @@ def recall_documents_with_stats(
         }
     source_manifests, local_refs, source_manifest_bytes = select_local_refs(index, plan, terms)
     shard_path_by_id, shard_bytes_by_path = local_shard_maps(local_refs, source_manifests)
-    first_local_budget = max(
+    first_local_budget_base = max(
         0,
         FIRST_TRUSTED_MAX_UNCACHED_BYTES
         - first_screen_bytes(index)
         - source_manifest_bytes
         - FIRST_TRUSTED_HYDRATION_RESERVE_BYTES,
     )
-    first_phase_refs = select_local_refs_within_budget(
+    first_local_budget = min(first_local_budget_base, HIGH_DF_FIRST_TRUSTED_LOCAL_INDEX_BYTES) if high_df_dynamic_query else first_local_budget_base
+    first_phase_refs = [] if hot_initial_certificate is not None else select_local_refs_within_budget(
         local_refs,
         first_local_budget,
         lambda ref: int(light_index_artifact(ref)["bytes"]),
-        MIN_FIRST_TRUSTED_LOCAL_INDEXES,
+        HIGH_DF_MIN_FIRST_TRUSTED_LOCAL_INDEXES if high_df_dynamic_query else MIN_FIRST_TRUSTED_LOCAL_INDEXES,
     )
-    top_local_budget = max(
+    top_local_budget_base = max(
         0,
         TOP_RESULTS_MAX_UNCACHED_BYTES
         - first_screen_bytes(index)
         - source_manifest_bytes
         - TOP_RESULTS_HYDRATION_RESERVE_BYTES,
     )
+    top_local_budget = min(top_local_budget_base, HIGH_DF_TOP_RESULTS_LOCAL_INDEX_BYTES) if high_df_dynamic_query else top_local_budget_base
     top_phase_refs = unique_local_refs(
         [
             *first_phase_refs,
@@ -1369,7 +1267,7 @@ def recall_documents_with_stats(
                 local_refs,
                 top_local_budget,
                 lambda ref: int(light_index_artifact(ref)["bytes"]) + int(body_index_artifact(ref)["bytes"]),
-                MIN_TOP_RESULTS_LOCAL_INDEXES,
+                HIGH_DF_MIN_TOP_RESULTS_LOCAL_INDEXES if high_df_dynamic_query else MIN_TOP_RESULTS_LOCAL_INDEXES,
             ),
         ]
     )
@@ -1432,36 +1330,42 @@ def recall_documents_with_stats(
                 docs[int(document["doc_index"])] = document
         return docs
 
-    quick_indices, quick_paths = select_candidates(min(candidate_limit, 48), min(max_shard_loads, 8))
-    loaded_paths = set(quick_paths)
-    quick_docs = load_shards_for_paths(quick_paths)
-    quick_ranked = sorted_ranked([
-        rank_document(quick_docs[doc_index], query, terms, scores.get(doc_index, 0.0))
-        for doc_index in quick_indices
-        if doc_index in quick_docs and full_scan_matches(quick_docs[doc_index], match_phrases)
-    ])
-    quick_hydrated_shard_bytes = sum(shard_bytes_by_path.get(path, 0) for path in loaded_paths)
-    phase_timings_ms: dict[str, float] = {}
-    if math.isfinite(started_perf):
-        import time
+    if hot_initial_coverage is not None:
+        quick_indices: list[int] = []
+        loaded_paths: set[str] = set()
+        quick_docs: dict[int, dict[str, Any]] = {}
+        quick_ranked = hot_initial_ranked
+        first_trusted_coverage = hot_initial_coverage
+    else:
+        quick_indices, quick_paths = select_candidates(min(candidate_limit, 48), min(max_shard_loads, 8))
+        loaded_paths = set(quick_paths)
+        quick_docs = load_shards_for_paths(quick_paths)
+        quick_ranked = sorted_ranked([
+            rank_document(quick_docs[doc_index], query, terms, scores.get(doc_index, 0.0))
+            for doc_index in quick_indices
+            if doc_index in quick_docs and full_scan_matches(quick_docs[doc_index], match_phrases)
+        ])
+        quick_hydrated_shard_bytes = sum(shard_bytes_by_path.get(path, 0) for path in loaded_paths)
+        if math.isfinite(started_perf):
+            import time
 
-        phase_timings_ms["first_trusted_results"] = round((time.perf_counter() - started_perf) * 1000, 3)
-    first_trusted_coverage = coverage(
-        index,
-        phase="first_trusted_results",
-        fields=LIGHT_SEARCH_FIELDS,
-        proved_no_match_shards=0,
-        scanned_shards=len(loaded_paths),
-        searched_documents=len(quick_docs),
-        total_shards=int(index["manifest"]["progressive_search"]["total_shards"]),
-        total_documents=int(index["manifest"]["progressive_search"]["total_documents"]),
-        loaded_paths=loaded_paths,
-        local_index_bytes=local_index_bytes,
-        hydrated_shard_bytes=quick_hydrated_shard_bytes,
-        filter_bytes=0,
-        used_body_index=False,
-        exhaustive_complete=False,
-    )
+            phase_timings_ms["first_trusted_results"] = round((time.perf_counter() - started_perf) * 1000, 3)
+        first_trusted_coverage = coverage(
+            index,
+            phase="first_trusted_results",
+            fields=LIGHT_SEARCH_FIELDS,
+            proved_no_match_shards=0,
+            scanned_shards=len(loaded_paths),
+            searched_documents=len(quick_docs),
+            total_shards=int(index["manifest"]["progressive_search"]["total_shards"]),
+            total_documents=int(index["manifest"]["progressive_search"]["total_documents"]),
+            loaded_paths=loaded_paths,
+            local_index_bytes=local_index_bytes,
+            hydrated_shard_bytes=quick_hydrated_shard_bytes,
+            filter_bytes=0,
+            used_body_index=False,
+            exhaustive_complete=False,
+        )
 
     used_body_index = False
     for ref in top_phase_refs:
@@ -1599,6 +1503,7 @@ def recall_documents_with_stats(
                 "result_count": int(certificate.get("match_count") or len(ranked)),
                 "retrieval": retrieval,
                 "local_meta_fallback_documents": local_meta_fallbacks,
+                "hot_query_initial_certificate": hot_initial_stats,
                 "hot_query_complete_certificate": {
                     "used": True,
                     "query": certificate.get("query"),
@@ -1729,6 +1634,7 @@ def recall_documents_with_stats(
             "exhaustive_complete": True,
             "plan": plan,
             "retrieval": retrieval,
+            "hot_query_initial_certificate": hot_initial_stats,
         },
     }
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from njupt_search_eval.sitegraph_search import expand_query_phrases, resolve_hot_query_entry, shard_filter_proves_no_match
+from njupt_search_eval.sitegraph_hot_query_eval import resolve_hot_query_entry
+from njupt_search_eval.sitegraph_search import expand_query_phrases, shard_filter_proves_no_match
 from njupt_search_eval.sitegraph_lower_bound_report import (
     DEFAULT_REPORT_QUERIES,
     LOWER_BOUND_GAP_LAYER_KEYS,

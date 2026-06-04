@@ -488,6 +488,15 @@ export interface SitegraphQueryPlan {
     };
 }
 
+export type SitegraphQueryClass =
+    | 'degenerate'
+    | 'hot'
+    | 'hot_alias'
+    | 'cold_rare'
+    | 'cold_high_df'
+    | 'miss'
+    | 'filtered';
+
 export interface SitegraphQueryStats {
     phase: SitegraphSearchPhase;
     coverage: SitegraphSearchCoverage;
@@ -507,6 +516,7 @@ export interface SitegraphQueryStats {
     cache: SitegraphArtifactCacheStats;
     fast_start_used?: boolean;
     first_result_source?: 'hot_query_initial' | 'hot_query_topk' | 'dynamic_retrieval';
+    query_class?: SitegraphQueryClass;
     resource_trace_id?: string;
     fallbacks: SitegraphFallbackStats;
     retrieval: {

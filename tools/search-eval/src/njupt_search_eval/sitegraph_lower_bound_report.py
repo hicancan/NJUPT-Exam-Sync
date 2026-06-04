@@ -835,6 +835,7 @@ def measure_queries(queries: list[str]) -> list[dict[str, Any]]:
                 "phase_gate": phase_gate_result(phases),
                 "coverage": coverage_summary(stats.get("coverage") or {}),
                 "proof_scan_pressure": proof_scan_pressure_summary(stats),
+                "hot_query_initial_certificate": stats.get("hot_query_initial_certificate") or {"used": False},
                 "hot_query_topk_certificate": stats.get("hot_query_topk_certificate") or {"used": False},
                 "hot_query_complete_certificate": stats.get("hot_query_complete_certificate") or {"used": False},
             }
@@ -845,6 +846,7 @@ def measure_queries(queries: list[str]) -> list[dict[str, Any]]:
 def query_summary(measurements: list[dict[str, Any]]) -> dict[str, Any]:
     phase_gates = [item.get("phase_gate") or {} for item in measurements]
     pressure_items = [item.get("proof_scan_pressure") or {} for item in measurements]
+    hot_initial_items = [item.get("hot_query_initial_certificate") or {} for item in measurements]
     hot_top_items = [item.get("hot_query_topk_certificate") or {} for item in measurements]
     hot_items = [item.get("hot_query_complete_certificate") or {} for item in measurements]
     max_true_match = max(
@@ -876,6 +878,7 @@ def query_summary(measurements: list[dict[str, Any]]) -> dict[str, Any]:
     max_false_positive_bytes = max((int(item.get("false_positive_bytes") or 0) for item in pressure_items), default=0)
     max_false_positive_ratio_value = max((float(item.get("false_positive_byte_ratio") or 0.0) for item in pressure_items), default=0.0)
     max_hot_certificate_bytes = max((int(item.get("certificate_bytes") or 0) for item in hot_items), default=0)
+    max_hot_initial_certificate_bytes = max((int(item.get("certificate_bytes") or 0) for item in hot_initial_items), default=0)
     max_hot_top_certificate_bytes = max((int(item.get("certificate_bytes") or 0) for item in hot_top_items), default=0)
     max_hot_certificate_avoided_bytes = max((int(item.get("matched_shard_bytes_avoided") or 0) for item in hot_items), default=0)
     return {
@@ -907,6 +910,8 @@ def query_summary(measurements: list[dict[str, Any]]) -> dict[str, Any]:
         "max_proof_false_positive_query": None if max_false_positive_bytes == 0 or max_false_positive is None else max_false_positive.get("query"),
         "max_proof_false_positive_byte_ratio": max_false_positive_ratio_value,
         "max_proof_false_positive_ratio_query": None if max_false_positive_ratio_value == 0.0 or max_false_positive_ratio is None else max_false_positive_ratio.get("query"),
+        "hot_query_initial_certificate_used_count": sum(1 for item in hot_initial_items if item.get("used") is True),
+        "max_hot_query_initial_certificate_bytes": max_hot_initial_certificate_bytes,
         "hot_query_topk_certificate_used_count": sum(1 for item in hot_top_items if item.get("used") is True),
         "max_hot_query_topk_certificate_bytes": max_hot_top_certificate_bytes,
         "hot_query_certificate_used_count": sum(1 for item in hot_items if item.get("used") is True),

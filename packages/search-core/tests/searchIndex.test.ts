@@ -10,7 +10,12 @@ import {
     parseSitegraphSourceManifest,
     recallSitegraphDocuments,
     searchSitegraphProgressively,
+    detectQueryIntent,
     expandSitegraphQueryPhrases,
+    isDegenerateSitegraphQuery,
+    isDynamicHighDocumentFrequencyNormalizedQuery,
+    isHighDocumentFrequencyNormalizedQuery,
+    normalizeSearchText,
     tokenizeSitegraphQuery
 } from '../src';
 import type {
@@ -700,6 +705,13 @@ const createPersistentFixtureCache = (): ArtifactContentCache => {
 };
 
 describe('sitegraph search contract', () => {
+    it('routes generic exam queries to current-term exam intent', () => {
+        const intent = detectQueryIntent('考试');
+        expect(intent.intent).toBe('exam_schedule');
+        expect(intent.authoritySources).toEqual(['jwc']);
+        expect(intent.freshnessMode).toBe('current_term');
+    });
+
     it('resolves hot query command forms without unsafe substring matching', () => {
         const scoreEntry = {
             ...artifact('hot-query-entry-score.json', 'hot_query_complete_certificate'),
@@ -784,6 +796,18 @@ describe('sitegraph search contract', () => {
 
         expect(tokens).toEqual(expect.arrayContaining(['转专业', '专业变更', 'b250403.xlsx']));
         expect(tokens[0]?.length).toBeGreaterThanOrEqual(tokens[tokens.length - 1]?.length ?? 0);
+    });
+
+    it('keeps high-document-frequency query classes explicit', () => {
+        expect(isDegenerateSitegraphQuery('的')).toBe(true);
+        expect(isDegenerateSitegraphQuery('通知')).toBe(false);
+        expect(isHighDocumentFrequencyNormalizedQuery(normalizeSearchText('考试'))).toBe(true);
+        expect(isHighDocumentFrequencyNormalizedQuery(normalizeSearchText('申请'))).toBe(true);
+        expect(isDynamicHighDocumentFrequencyNormalizedQuery(normalizeSearchText('通知'))).toBe(true);
+        expect(isDynamicHighDocumentFrequencyNormalizedQuery(normalizeSearchText('学生'))).toBe(true);
+        expect(isDynamicHighDocumentFrequencyNormalizedQuery(normalizeSearchText('南京邮电大学'))).toBe(true);
+        expect(isDynamicHighDocumentFrequencyNormalizedQuery(normalizeSearchText('考试'))).toBe(false);
+        expect(isDynamicHighDocumentFrequencyNormalizedQuery(normalizeSearchText('申请'))).toBe(false);
     });
 
     it('does not trigger broad reverse aliases from short generic terms inside longer queries', () => {

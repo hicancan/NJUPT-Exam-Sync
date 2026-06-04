@@ -34,6 +34,21 @@ interface HotSearchPhaseContext {
     emit: (event: SitegraphSearchEvent) => void;
 }
 
+type RuntimePhaseEmitter = (
+    type: SitegraphSearchPhase,
+    coverage: SitegraphSearchCoverage,
+    includeResults: boolean,
+    provenResultCount?: number
+) => void;
+
+interface GlobalHotCompletionProofState {
+    localIndexBytes: number;
+    hydratedShardBytes: number;
+    filterBytes: number;
+    usedBodyIndex: boolean;
+    emitResults: RuntimePhaseEmitter;
+}
+
 const emptyLocalIds = new Set<string>();
 const emptyShardPaths = new Set<string>();
 
@@ -297,5 +312,48 @@ export const tryEmitGlobalHotTopProof = async (context: HotSearchPhaseContext, s
         context.cacheStats
     );
     emitHotResults(context, 'global_exhaustive_complete', completeCoverage, resultMap, certificate.match_count, certificate.match_count);
+    return true;
+};
+
+export const tryEmitGlobalHotCompletionProof = async (
+    context: HotSearchPhaseContext,
+    signal: AbortSignal,
+    state: GlobalHotCompletionProofState
+): Promise<boolean> => {
+    const hotProof = await loadMatchingHotQueryProof(
+        context.session as RoutedSessionWithArtifactCache,
+        context.normalizedQuery,
+        signal,
+        context.cacheStats
+    );
+    if (!hotProof) return false;
+
+    const { certificate, bytes } = hotProof;
+    const certificateMatches = certificate.documents;
+    if (certificateMatches.length !== certificate.match_count) {
+        throw new SearchContractError(`Hot query proof certificate ${certificate.normalized_query} match count does not match proof documents`);
+    }
+    const filterBytes = state.filterBytes + bytes;
+    const matchedShardCount = certificate.matched_shard_count;
+    const provedNoMatchShards = Math.max(0, certificate.total_shards - matchedShardCount);
+    const completeCoverage = coverageFor(
+        context.session,
+        'global_exhaustive_complete',
+        FULL_SCAN_FIELDS,
+        provedNoMatchShards,
+        matchedShardCount,
+        certificate.match_count,
+        certificate.total_shards,
+        certificate.total_documents,
+        state.localIndexBytes,
+        state.hydratedShardBytes,
+        filterBytes,
+        state.usedBodyIndex,
+        true,
+        false,
+        null,
+        context.cacheStats
+    );
+    state.emitResults('global_exhaustive_complete', completeCoverage, true, certificate.match_count);
     return true;
 };

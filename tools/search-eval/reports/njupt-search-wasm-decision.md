@@ -1,31 +1,31 @@
 # NJUPT Search Rust/WASM Retrieval Decision
 
-- Generated at: `2026-06-01T07:10:51.619Z`
+- Generated at: `2026-06-04T08:56:28.534Z`
 - Artifact count: `246`
-- Packed body bytes: `16,850,611`
+- Packed body bytes: `16,865,808`
 - Runs: `5`
 
 ## Results
 
 | Path | Mean ms | Min ms | Max ms |
 | --- | ---: | ---: | ---: |
-| TypeScript runtime decoder to JS object | 645.327 | 609.692 | 737.170 |
-| Rust/WASM decode to JSON string, then JS parse | 685.090 | 677.183 | 702.058 |
-| Rust/WASM stats-only decode lower bound | 43.046 | 37.650 | 46.110 |
-| TypeScript selective retrieval kernel | 3360.691 | 3307.103 | 3422.653 |
-| Rust/WASM stateless retrieval kernel | 470.565 | 442.374 | 518.326 |
-| Rust/WASM stateful retrieval session | 587.936 | 537.360 | 626.321 |
-| Rust/WASM stateful retrieval with score bridge | 587.416 | 574.691 | 597.751 |
+| TypeScript runtime decoder to JS object | 680.869 | 617.165 | 756.561 |
+| Rust/WASM decode to JSON string, then JS parse | 741.618 | 729.729 | 756.316 |
+| Rust/WASM stats-only decode lower bound | 44.771 | 43.909 | 46.933 |
+| TypeScript selective retrieval kernel | 3941.645 | 3892.451 | 4008.336 |
+| Rust/WASM stateless retrieval kernel | 377.284 | 373.317 | 384.302 |
+| Rust/WASM stateful retrieval session | 511.046 | 497.002 | 522.358 |
+| Rust/WASM stateful retrieval with score bridge | 523.395 | 515.450 | 534.024 |
 
 ## Decision
 
 - Status: `rust_wasm_retrieval_runtime_selected`
 - Winner for current runtime: `wasm_retrieval_session_scores_bridge`
-- WASM materialized path ratio vs TypeScript: `1.062x`
-- WASM stats-only lower-bound ratio vs TypeScript: `0.067x`
-- WASM stateful retrieval ratio vs TypeScript retrieval kernel: `0.175x`
-- WASM stateful score bridge ratio vs TypeScript retrieval kernel: `0.175x`
-- Reason: The browser runtime can consume Rust/WASM stateful score entries directly. On the full packed body workload, the Rust/WASM session score bridge was 0.175x the TypeScript selective retrieval kernel for the same artifact format, query set, and global top-k pruning state.
+- WASM materialized path ratio vs TypeScript: `1.089x`
+- WASM stats-only lower-bound ratio vs TypeScript: `0.066x`
+- WASM stateful retrieval ratio vs TypeScript retrieval kernel: `0.130x`
+- WASM stateful score bridge ratio vs TypeScript retrieval kernel: `0.133x`
+- Reason: The browser runtime can consume Rust/WASM stateful score entries directly. On the full packed body workload, the Rust/WASM session score bridge was 0.133x the TypeScript selective retrieval kernel for the same artifact format, query set, and global top-k pruning state.
 
 ## Reproduction
 
