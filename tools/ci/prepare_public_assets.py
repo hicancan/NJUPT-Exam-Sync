@@ -24,6 +24,13 @@ EXAM_DIR = PUBLIC_GENERATED / "exam"
 PUBLIC_ASSET_MARKER = PUBLIC_GENERATED / ".asset-locks.json"
 SITEGRAPH_LOCK = REPO_ROOT / "config" / "data-locks" / "sitegraph.lock.json"
 EXAM_LOCK = REPO_ROOT / "config" / "data-locks" / "exam.lock.json"
+BUILDER_FINGERPRINT_INPUTS = (
+    REPO_ROOT / "tools" / "ci" / "prepare_public_assets.py",
+    REPO_ROOT / "tools" / "collection-indexer" / "src",
+    REPO_ROOT / "tools" / "exam-pipeline" / "src",
+    REPO_ROOT / "pyproject.toml",
+    REPO_ROOT / "uv.lock",
+)
 JWC_LIST_URL = "https://jwc.njupt.edu.cn/1594/list.htm"
 JWC_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
@@ -67,6 +74,27 @@ def sha256_file(path: Path) -> str:
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
+    return digest.hexdigest()
+
+
+def public_asset_builder_fingerprint() -> str:
+    digest = hashlib.sha256()
+    for input_path in BUILDER_FINGERPRINT_INPUTS:
+        if input_path.is_file():
+            files = [input_path]
+        elif input_path.is_dir():
+            files = sorted(
+                path
+                for path in input_path.rglob("*")
+                if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc"
+            )
+        else:
+            raise PublicAssetError(f"public asset builder fingerprint input missing: {input_path}")
+        for path in files:
+            digest.update(str(path.relative_to(REPO_ROOT)).replace("\\", "/").encode("utf-8"))
+            digest.update(b"\0")
+            digest.update(sha256_file(path).encode("ascii"))
+            digest.update(b"\0")
     return digest.hexdigest()
 
 
@@ -178,6 +206,7 @@ def build_public_data() -> None:
             "version": "njupt-search-public-asset-marker-v1",
             "sitegraph_lock_sha256": sha256_file(SITEGRAPH_LOCK),
             "exam_lock_sha256": sha256_file(EXAM_LOCK),
+            "builder_fingerprint": public_asset_builder_fingerprint(),
         },
     )
 
@@ -192,6 +221,7 @@ def public_data_current() -> bool:
     return (
         marker.get("sitegraph_lock_sha256") == sha256_file(SITEGRAPH_LOCK)
         and marker.get("exam_lock_sha256") == sha256_file(EXAM_LOCK)
+        and marker.get("builder_fingerprint") == public_asset_builder_fingerprint()
         and (COLLECTION_DIR / "manifest.json").exists()
         and (EXAM_DIR / "all_exams.json").exists()
         and (EXAM_DIR / "data_summary.json").exists()
@@ -231,8 +261,11 @@ def verify_public_assets() -> None:
 
 
 def verify_determinism() -> None:
-    build_public_data()
-    first = hash_tree(PUBLIC_GENERATED)
+    if public_data_current():
+        first = hash_tree(PUBLIC_GENERATED)
+    else:
+        build_public_data()
+        first = hash_tree(PUBLIC_GENERATED)
     build_public_data()
     second = hash_tree(PUBLIC_GENERATED)
     if first != second:

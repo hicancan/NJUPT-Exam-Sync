@@ -9,7 +9,8 @@
   ],
   "scripts": {
     "dev": "node ./node_modules/vite/bin/vite.js --config apps/web/vite.config.ts",
-    "build": "npm run prepare:public-assets && node ./node_modules/typescript/bin/tsc -b && node ./node_modules/vite/bin/vite.js build --config apps/web/vite.config.ts",
+    "build": "npm run prepare:public-assets && npm run build:prepared",
+    "build:prepared": "node ./node_modules/typescript/bin/tsc -b && node ./node_modules/vite/bin/vite.js build --config apps/web/vite.config.ts",
     "build:wasm:web": "node tools/wasm/packed-impact-decoder/scripts/buildWasmWeb.mjs",
     "build:public-data": "uv run python tools/ci/prepare_public_assets.py build-public-data",
     "prepare:public-assets": "npm run build:wasm:web && uv run python tools/ci/prepare_public_assets.py ensure-public-data",
@@ -20,8 +21,10 @@
     "check:web-bundle-size": "uv run python tools/quality-gates/scripts/check_web_bundle_sizes.py",
     "lint": "node ./node_modules/eslint/bin/eslint.js .",
     "preview": "node ./node_modules/vite/bin/vite.js preview --config apps/web/vite.config.ts",
-    "test": "npm run prepare:public-assets && node ./node_modules/vitest/vitest.mjs run --config vitest.config.ts",
-    "typecheck": "npm run build:wasm:web && node ./node_modules/typescript/bin/tsc -b --noEmit"
+    "test": "npm run prepare:public-assets && npm run test:prepared",
+    "test:prepared": "node ./node_modules/vitest/vitest.mjs run --config vitest.config.ts",
+    "typecheck": "npm run build:wasm:web && npm run typecheck:prepared",
+    "typecheck:prepared": "node ./node_modules/typescript/bin/tsc -b --noEmit"
   },
   "dependencies": {
     "lucide-react": "^1.16.0",

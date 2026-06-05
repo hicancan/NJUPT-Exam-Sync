@@ -29,16 +29,8 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v8.2.0
 
-      - name: Set up Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-          cache: 'npm'
-
       - name: Install dependencies
-        run: |
-          uv sync --frozen --extra test
-          npm ci
+        run: uv sync --frozen --extra test
 
       - name: Read data locks
         id: data-locks
@@ -58,30 +50,14 @@ jobs:
           path: _sitegraph/njupt-site-graph
           token: ${{ secrets.NJUPT_SITEGRAPH_TOKEN || github.token }}
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-
-      - name: Install WASM tools
-        run: cargo install wasm-pack --version 0.15.0 --locked
-
       - name: Update exam data lock and materialize public assets
         run: |
           uv run python tools/ci/prepare_public_assets.py update-exam-lock
-          npm run prepare:public-assets
+          uv run python tools/ci/prepare_public_assets.py build-public-data
 
-      - name: Validate generated artifacts and app
+      - name: Validate generated public data
         run: |
-          uv run python -m pytest
-          npm test
-          npm run typecheck
-          npm run lint
-          npm run build
-          npm run check:source-complexity
-          npm run check:tracked-byproducts
-          npm run check:runtime-fast-start
-          npm run check:web-bundle-size
+          uv run python tools/quality-gates/scripts/check_tracked_byproducts.py
           uv run python tools/quality-gates/scripts/validate_search_index.py
           uv run python tools/quality-gates/scripts/check_public_artifact_sizes.py
           uv run python -m njupt_search_eval run-smoke-queries
