@@ -6,7 +6,7 @@ from typing import Any
 from ..sitegraph_artifact_io import artifact_entry, json_bytes, write_hashed_json
 
 
-DEFAULT_SPLIT_PUBLIC_JSON_TARGET_BYTES = 768 * 1024
+DEFAULT_SPLIT_PUBLIC_JSON_TARGET_BYTES = 480 * 1024
 
 
 def chunked_mapping_payloads(

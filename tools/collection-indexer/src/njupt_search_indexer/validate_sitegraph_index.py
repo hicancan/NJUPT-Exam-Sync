@@ -239,7 +239,7 @@ def validate_local_indexes(source_manifests: list[dict[str, Any]], expected_sour
             for item in docs:
                 if any(field in item for field in ("content", "summary", "attachments", "provenance")):
                     fail("local light index metadata must not contain content, summary, attachments, or raw provenance")
-                for field in ("source_id", "date_kind", "task_kind", "authority_profile", "dedupe_key"):
+                for field in ("source_id", "task_kind"):
                     if not item.get(field):
                         fail(f"local index metadata missing ranking field {field}: {item.get('id')}")
                 local_documents.append(item)

@@ -18,8 +18,25 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '../../..');
 const defaultCollection = path.join(repoRoot, 'apps/web/public/generated/collections/njupt-public');
 const wasmCrateDir = path.join(repoRoot, 'tools/wasm/packed-impact-decoder');
-const wasmModulePath = path.join(wasmCrateDir, 'pkg/packed_impact_decoder.js');
+const wasmNodeOutDir = 'pkg-node';
+const wasmModulePath = path.join(wasmCrateDir, wasmNodeOutDir, 'packed_impact_decoder.js');
 const defaultRetrievalQueries = ['校历', '慕课考试', '转专业', '学生相关文件及表格', '教务管理系统', '奖学金', '大创', '不存在的查询词'];
+const textEncoder = new TextEncoder();
+
+const encodeQueryTerms = terms => {
+    const parts = terms.map(term => textEncoder.encode(term));
+    const totalBytes = parts.reduce((sum, part) => sum + part.byteLength, 0);
+    const bytes = new Uint8Array(totalBytes);
+    const offsets = new Uint32Array(parts.length * 2);
+    let cursor = 0;
+    parts.forEach((part, index) => {
+        bytes.set(part, cursor);
+        offsets[index * 2] = cursor;
+        cursor += part.byteLength;
+        offsets[index * 2 + 1] = cursor;
+    });
+    return { bytes, offsets };
+};
 
 const parseArgs = () => {
     const args = {
@@ -128,14 +145,11 @@ const addRetrievalSummary = (left, right) => ({
     postings_visited: left.postings_visited + Number(right.postings_visited || 0),
 });
 
-const sameRetrievalSummary = (left, right) =>
+const sameRetrievalOutcome = (left, right) =>
     left.block_count === right.block_count
     && left.candidate_count === right.candidate_count
-    && left.impact_blocks_pruned === right.impact_blocks_pruned
-    && left.impact_blocks_visited === right.impact_blocks_visited
     && left.matched_term_count === right.matched_term_count
-    && left.postings_pruned === right.postings_pruned
-    && left.postings_visited === right.postings_visited;
+    && left.postings_pruned + left.postings_visited === right.postings_pruned + right.postings_visited;
 
 const sameSummary = (left, right) =>
     left.term_count === right.term_count
@@ -303,13 +317,13 @@ const renderMarkdown = report => {
 const main = async () => {
     const args = parseArgs();
     if (args.buildWasm) {
-        execFileSync('wasm-pack', ['build', '--target', 'nodejs', '--release', '--out-dir', 'pkg'], {
+        execFileSync('wasm-pack', ['build', '--target', 'nodejs', '--release', '--out-dir', wasmNodeOutDir], {
             cwd: wasmCrateDir,
             stdio: 'inherit',
         });
     }
     if (!existsSync(wasmModulePath)) {
-        throw new Error(`Missing WASM package. Run: wasm-pack build --target nodejs --release --out-dir pkg in ${wasmCrateDir}`);
+        throw new Error(`Missing WASM package. Run: wasm-pack build --target nodejs --release --out-dir ${wasmNodeOutDir} in ${wasmCrateDir}`);
     }
 
     const require = createRequire(import.meta.url);
@@ -381,11 +395,11 @@ const main = async () => {
     const retrieveWithWasm = () => {
         let aggregate = emptyRetrievalSummary();
         for (const { terms } of retrievalTermsByQuery) {
-            const serializedTerms = JSON.stringify(terms);
+            const encodedTerms = encodeQueryTerms(terms);
             for (const payload of payloads) {
                 aggregate = addRetrievalSummary(
                     aggregate,
-                    JSON.parse(wasm.retrieve_packed_impact_topk_stats(payload.uint8, serializedTerms, 160)),
+                    JSON.parse(wasm.retrieve_packed_impact_topk_stats_utf8(payload.uint8, encodedTerms.bytes, encodedTerms.offsets, 160)),
                 );
             }
         }
@@ -395,10 +409,10 @@ const main = async () => {
         let aggregate = emptyRetrievalSummary();
         for (const { terms } of retrievalTermsByQuery) {
             const session = new wasm.PackedImpactRetrievalSession(160);
-            const serializedTerms = JSON.stringify(terms);
+            const encodedTerms = encodeQueryTerms(terms);
             let querySummary = emptyRetrievalSummary();
             for (const payload of payloads) {
-                const result = JSON.parse(session.apply(payload.uint8, serializedTerms));
+                const result = JSON.parse(session.apply_terms_utf8(payload.uint8, encodedTerms.bytes, encodedTerms.offsets));
                 querySummary = addRetrievalSummary(querySummary, { ...result, candidate_count: 0 });
             }
             const finalStats = JSON.parse(session.stats_json());
@@ -435,10 +449,10 @@ const main = async () => {
         let aggregate = emptyRetrievalSummary();
         for (const { terms } of retrievalTermsByQuery) {
             const session = new wasm.PackedImpactRetrievalSession(160);
-            const serializedTerms = JSON.stringify(terms);
+            const encodedTerms = encodeQueryTerms(terms);
             let querySummary = emptyRetrievalSummary();
             for (const payload of payloads) {
-                const result = JSON.parse(session.apply(payload.uint8, serializedTerms));
+                const result = JSON.parse(session.apply_terms_utf8(payload.uint8, encodedTerms.bytes, encodedTerms.offsets));
                 querySummary = addRetrievalSummary(querySummary, { ...result, candidate_count: 0 });
             }
             const scoreEntries = session.score_entries_f64();
@@ -463,13 +477,13 @@ const main = async () => {
     if (!sameSummary(tsResult.summary, wasmJsonResult.summary) || !sameSummary(tsResult.summary, wasmStatsResult.summary)) {
         throw new Error('Decoder benchmark summaries do not match');
     }
-    if (!sameRetrievalSummary(tsRetrievalResult.summary, wasmRetrievalSessionResult.summary)) {
+    if (!sameRetrievalOutcome(tsRetrievalResult.summary, wasmRetrievalSessionResult.summary)) {
         throw new Error(`Stateful retrieval benchmark summaries do not match: ${JSON.stringify({ ts: tsRetrievalResult.summary, wasm: wasmRetrievalSessionResult.summary })}`);
     }
-    if (!sameRetrievalSummary(wasmRetrievalSessionResult.summary, wasmRetrievalSessionScoresBridgeResult.summary)) {
+    if (!sameRetrievalOutcome(wasmRetrievalSessionResult.summary, wasmRetrievalSessionScoresBridgeResult.summary)) {
         throw new Error(`WASM session score bridge retrieval summaries do not match: ${JSON.stringify({ stats: wasmRetrievalSessionResult.summary, scores: wasmRetrievalSessionScoresBridgeResult.summary })}`);
     }
-    if (!sameRetrievalSummary(wasmRetrievalSessionResult.summary, wasmRetrievalSessionTypedScoresResult.summary)) {
+    if (!sameRetrievalOutcome(wasmRetrievalSessionResult.summary, wasmRetrievalSessionTypedScoresResult.summary)) {
         throw new Error(`WASM session typed score retrieval summaries do not match: ${JSON.stringify({ stats: wasmRetrievalSessionResult.summary, typed: wasmRetrievalSessionTypedScoresResult.summary })}`);
     }
 

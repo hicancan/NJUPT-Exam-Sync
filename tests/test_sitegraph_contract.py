@@ -330,8 +330,10 @@ def test_light_index_and_shards_have_no_obsolete_fields():
                 assert "attachments" not in item
                 assert "provenance" not in item
                 assert item.get("source_id") == source_manifest["source_id"]
-                assert item.get("date_kind")
                 assert item.get("task_kind")
+                assert isinstance(item.get("shard"), dict)
+                assert item["shard"].get("shard_id")
+                assert "path" not in item["shard"]
 
         proof_catalog = read_artifact(source_manifest["artifacts"]["proof_catalog"])
         shard_filter = read_chunked_mapping_artifact(source_manifest["artifacts"]["shard_filter"])

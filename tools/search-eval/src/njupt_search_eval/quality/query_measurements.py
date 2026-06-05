@@ -141,16 +141,27 @@ def classify_query_measurement(query: str, stats: dict[str, Any], result_count: 
     normalized = normalize_text(query)
     if len(normalized) < 2:
         return "degenerate"
-    hot_initial = stats.get("hot_query_initial_certificate") if isinstance(stats.get("hot_query_initial_certificate"), dict) else {}
-    if hot_initial.get("used") is True:
-        hot_query = normalize_text(hot_initial.get("query"))
-        return "hot" if hot_query == normalized else "hot_alias"
     coverage = stats.get("coverage") if isinstance(stats.get("coverage"), dict) else {}
     if coverage.get("exhaustive_complete") is True and result_count == 0:
         return "miss"
     if normalized in HIGH_DF_NORMALIZED_QUERIES:
         return "cold_high_df"
+    hot_initial = stats.get("hot_query_initial_certificate") if isinstance(stats.get("hot_query_initial_certificate"), dict) else {}
+    if hot_initial.get("used") is True:
+        hot_query = normalize_text(hot_initial.get("query"))
+        return "hot" if hot_query == normalized else "hot_alias"
     return "cold_rare"
+
+def serving_path_for_measurement(query_class: str, stats: dict[str, Any]) -> str:
+    if query_class == "degenerate":
+        return "noop"
+    hot_initial = stats.get("hot_query_initial_certificate") if isinstance(stats.get("hot_query_initial_certificate"), dict) else {}
+    hot_top = stats.get("hot_query_topk_certificate") if isinstance(stats.get("hot_query_topk_certificate"), dict) else {}
+    hot_complete = stats.get("hot_query_complete_certificate") if isinstance(stats.get("hot_query_complete_certificate"), dict) else {}
+    certificate_used = any(item.get("used") is True for item in (hot_initial, hot_top, hot_complete))
+    if certificate_used:
+        return "high_df_certificate" if query_class == "cold_high_df" else "hot_certificate"
+    return "dynamic_retrieval"
 
 def phase_resource_trace(phases: dict[str, Any], stats: dict[str, Any]) -> dict[str, dict[str, Any]]:
     retrieval = stats.get("retrieval") if isinstance(stats.get("retrieval"), dict) else {}
@@ -237,10 +248,12 @@ def measure_queries(queries: list[str]) -> list[dict[str, Any]]:
         phases = phase_measurement_summary(stats)
         result_count = len(payload["results"])
         query_class = classify_query_measurement(query, stats, result_count)
+        serving_path = serving_path_for_measurement(query_class, stats)
         measurement = (
             {
                 "query": query,
                 "query_class": query_class,
+                "serving_path": serving_path,
                 "is_high_df": normalize_text(query) in HIGH_DF_NORMALIZED_QUERIES,
                 "elapsed_ms": round(elapsed_ms, 3),
                 "result_count": result_count,
@@ -306,6 +319,7 @@ def query_summary(measurements: list[dict[str, Any]]) -> dict[str, Any]:
     max_hot_certificate_avoided_bytes = max((int(item.get("matched_shard_bytes_avoided") or 0) for item in hot_items), default=0)
     high_df_measurements = [item for item in measurements if item.get("is_high_df") is True]
     class_summary: dict[str, dict[str, Any]] = {}
+    serving_path_summary: dict[str, dict[str, Any]] = {}
     for item in measurements:
         query_class = str(item.get("query_class") or "unknown")
         entry = class_summary.setdefault(query_class, {
@@ -324,6 +338,21 @@ def query_summary(measurements: list[dict[str, Any]]) -> dict[str, Any]:
         entry["max_elapsed_ms"] = max(float(entry["max_elapsed_ms"]), float(item.get("elapsed_ms") or 0.0))
         bottleneck = str((item.get("dominant_bottleneck") or {}).get("layer") or "unknown")
         entry["dominant_bottlenecks"][bottleneck] = int(entry["dominant_bottlenecks"].get(bottleneck, 0)) + 1
+        serving_path = str(item.get("serving_path") or "unknown")
+        serving_entry = serving_path_summary.setdefault(serving_path, {
+            "query_count": 0,
+            "max_first_trusted_uncached_bytes": 0,
+            "max_top_results_uncached_bytes": 0,
+            "max_proof_complete_uncached_bytes": 0,
+            "total_postings_visited": 0,
+            "total_postings_pruned": 0,
+        })
+        serving_entry["query_count"] += 1
+        serving_entry["max_first_trusted_uncached_bytes"] = max(serving_entry["max_first_trusted_uncached_bytes"], int(gate.get("first_trusted_uncached_bytes") or 0))
+        serving_entry["max_top_results_uncached_bytes"] = max(serving_entry["max_top_results_uncached_bytes"], int(gate.get("top_results_uncached_bytes") or 0))
+        serving_entry["max_proof_complete_uncached_bytes"] = max(serving_entry["max_proof_complete_uncached_bytes"], int(gate.get("proof_complete_uncached_bytes") or 0))
+        serving_entry["total_postings_visited"] += int((item.get("retrieval") or {}).get("postings_visited") or 0)
+        serving_entry["total_postings_pruned"] += int((item.get("retrieval") or {}).get("postings_pruned") or 0)
     high_df_gate_failures = [
         {
             "query": item["query"],
@@ -341,6 +370,17 @@ def query_summary(measurements: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "query_count": len(measurements),
         "query_class_summary": class_summary,
+        "serving_path_summary": serving_path_summary,
+        "has_dynamic_holdout": any(
+            item.get("serving_path") == "dynamic_retrieval"
+            and item.get("query_class") not in ("degenerate", "miss")
+            for item in measurements
+        ),
+        "dynamic_holdout_pruning_present": any(
+            item.get("serving_path") == "dynamic_retrieval"
+            and int((item.get("retrieval") or {}).get("postings_pruned") or 0) > 0
+            for item in measurements
+        ),
         "max_elapsed_ms": max((float(item["elapsed_ms"]) for item in measurements), default=0.0),
         "max_candidate_shard_count": max((int(item["candidate_shard_count"]) for item in measurements), default=0),
         "max_loaded_shard_count": max((int(item["loaded_shard_count"]) for item in measurements), default=0),

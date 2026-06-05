@@ -55,6 +55,8 @@ export function CollectionSearchControls({
                 <Filter size={14} aria-hidden="true" />
                 <span className="sr-only">来源筛选</span>
                 <select
+                    id="collection-search-source-filter"
+                    name="collection-search-source-filter"
                     value={filters.sourceId || 'all'}
                     onChange={event => onFiltersChange({ sourceId: event.target.value })}
                     className="max-w-[210px] bg-transparent text-sm outline-none"
@@ -70,6 +72,8 @@ export function CollectionSearchControls({
                 <ListFilter size={14} aria-hidden="true" />
                 <span className="sr-only">类型筛选</span>
                 <select
+                    id="collection-search-facet-filter"
+                    name="collection-search-facet-filter"
                     value={filters.facet || 'all'}
                     onChange={event => onFiltersChange({ facet: event.target.value as FacetFilter })}
                     className="bg-transparent text-sm outline-none"
@@ -85,6 +89,8 @@ export function CollectionSearchControls({
                 <CalendarDays size={14} aria-hidden="true" />
                 <span className="sr-only">时间筛选</span>
                 <select
+                    id="collection-search-date-filter"
+                    name="collection-search-date-filter"
                     value={filters.dateRange || 'all'}
                     onChange={event => onFiltersChange({ dateRange: event.target.value as NonNullable<SitegraphSearchFilters['dateRange']> })}
                     className="bg-transparent text-sm outline-none"

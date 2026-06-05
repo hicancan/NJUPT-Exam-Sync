@@ -150,6 +150,12 @@ export type SitegraphQueryClass =
     | 'filtered'
     | 'time_filtered';
 
+export type SitegraphServingPath =
+    | 'hot_certificate'
+    | 'high_df_certificate'
+    | 'dynamic_retrieval'
+    | 'noop';
+
 export interface SitegraphProofPressureStats {
     totalShards: number;
     scannedShards: number;
@@ -193,6 +199,7 @@ export interface SitegraphQueryStats {
     fast_start_used?: boolean;
     first_result_source?: 'hot_query_initial' | 'hot_query_topk' | 'dynamic_retrieval';
     query_class?: SitegraphQueryClass;
+    serving_path?: SitegraphServingPath;
     resource_trace_id?: string;
     proof_pressure?: SitegraphProofPressureStats;
     fallbacks: SitegraphFallbackStats;

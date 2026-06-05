@@ -19,27 +19,17 @@ LOCAL_DOC_META_FIELDS = {
     "facet",
     "title",
     "url",
-    "canonical_title",
     "source_id",
     "source",
-    "source_domain",
-    "section_id",
     "section",
-    "nav_path",
     "nav_path_text",
     "published_at",
-    "updated_at",
     "recorded_at",
     "version_date",
-    "date_kind",
-    "date_confidence",
     "academic_year",
     "term",
     "task_kind",
-    "authority_profile",
-    "dedupe_key",
     "attachment_count",
-    "collection_method",
     "shard",
 }
 
@@ -64,12 +54,17 @@ def index_id_for_scope(source_id: str, facet: str, year: str) -> str:
 
 def local_doc_meta(document: dict[str, Any], shard_by_id: dict[str, dict[str, Any]]) -> dict[str, Any]:
     payload = {key: document.get(key) for key in LOCAL_DOC_META_FIELDS if key in document}
+    canonical_title = clean_text(document.get("canonical_title"))
+    if canonical_title and canonical_title != clean_text(document.get("title")):
+        payload["canonical_title"] = canonical_title
+    collection_method = clean_text(document.get("collection_method"))
+    if collection_method and collection_method != "search_record":
+        payload["collection_method"] = collection_method
     shard = payload.get("shard") if isinstance(payload.get("shard"), dict) else {}
     shard_id = str(shard.get("shard_id") or "")
     if shard_id and shard_id in shard_by_id:
         payload["shard"] = {
             "shard_id": shard_id,
-            "path": shard_by_id[shard_id]["path"],
         }
     return payload
 

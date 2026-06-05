@@ -19,8 +19,8 @@ SIZE_BUDGETS = {
     "full_shard_count": 1_000,
     "max_full_shard_bytes": 512 * 1024,
     "avg_full_shard_bytes": 96 * 1024,
-    "max_public_json_artifact_bytes": 1024 * 1024,
-    "hot_query_first_trusted_max_uncached_bytes": 150 * 1024,
+    "max_public_json_artifact_bytes": 512 * 1024,
+    "hot_query_first_trusted_max_uncached_bytes": 128 * 1024,
 }
 
 LOGO_BYTE_BUDGET = 96 * 1024

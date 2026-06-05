@@ -19,7 +19,7 @@ HOT_QUERY_INITIAL_CERTIFICATE_VERSION = "sitegraph-hot-query-initial-certificate
 HOT_QUERY_COMPLETE_CERTIFICATE_VERSION = "sitegraph-hot-query-complete-certificate-v4"
 HOT_QUERY_COMPLETE_PROOF_MODEL = "match-proof-compact-filter-v2"
 HOT_QUERY_TOPK_CERTIFICATE_VERSION = "sitegraph-hot-query-topk-certificate-v2"
-HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL = "rank-display-match-window-certificate-v2"
+HOT_QUERY_TOP_DOCUMENT_PAYLOAD_MODEL = "rank-display-match-window-certificate-v3"
 HOT_QUERY_RANK_EVIDENCE_MODEL = "query-token-field-impact-full-document-v1"
 HOT_QUERY_PROOF_DOCUMENT_ENCODING = "sitegraph-hot-query-proof-doc-tuples-v1"
 

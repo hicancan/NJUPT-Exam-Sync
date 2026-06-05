@@ -5,6 +5,7 @@ export class PackedImpactRetrievalSession {
     free(): void;
     [Symbol.dispose](): void;
     apply(bytes: Uint8Array, query_terms_json: string): string;
+    apply_terms_utf8(bytes: Uint8Array, query_terms_utf8: Uint8Array, query_term_offsets: Uint32Array): string;
     constructor(target_candidates: number);
     score_entries_f64(): Float64Array;
     scores_json(): string;
@@ -15,9 +16,9 @@ export function decode_packed_impact_stats(bytes: Uint8Array): string;
 
 export function decode_packed_impact_to_json(bytes: Uint8Array): string;
 
-export function retrieve_packed_impact_topk_scores(bytes: Uint8Array, query_terms_json: string, target_candidates: number): string;
+export function retrieve_packed_impact_topk_scores_utf8(bytes: Uint8Array, query_terms_utf8: Uint8Array, query_term_offsets: Uint32Array, target_candidates: number): string;
 
-export function retrieve_packed_impact_topk_stats(bytes: Uint8Array, query_terms_json: string, target_candidates: number): string;
+export function retrieve_packed_impact_topk_stats_utf8(bytes: Uint8Array, query_terms_utf8: Uint8Array, query_term_offsets: Uint32Array, target_candidates: number): string;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
@@ -27,12 +28,13 @@ export interface InitOutput {
     readonly decode_packed_impact_stats: (a: number, b: number) => [number, number, number, number];
     readonly decode_packed_impact_to_json: (a: number, b: number) => [number, number, number, number];
     readonly packedimpactretrievalsession_apply: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
+    readonly packedimpactretrievalsession_apply_terms_utf8: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];
     readonly packedimpactretrievalsession_new: (a: number) => number;
     readonly packedimpactretrievalsession_score_entries_f64: (a: number) => [number, number];
     readonly packedimpactretrievalsession_scores_json: (a: number) => [number, number];
     readonly packedimpactretrievalsession_stats_json: (a: number) => [number, number];
-    readonly retrieve_packed_impact_topk_scores: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
-    readonly retrieve_packed_impact_topk_stats: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
+    readonly retrieve_packed_impact_topk_scores_utf8: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];
+    readonly retrieve_packed_impact_topk_stats_utf8: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];
     readonly __wbindgen_externrefs: WebAssembly.Table;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __externref_table_dealloc: (a: number) => void;

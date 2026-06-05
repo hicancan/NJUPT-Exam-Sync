@@ -85,31 +85,60 @@ const typedScoreEntries = typedScores => {
   return entries;
 };
 
+const encodeQueryTerms = terms => {
+  const parts = terms.map(term => textEncoder.encode(term));
+  const totalBytes = parts.reduce((sum, part) => sum + part.byteLength, 0);
+  const bytes = new Uint8Array(totalBytes);
+  const offsets = new Uint32Array(parts.length * 2);
+  let cursor = 0;
+  parts.forEach((part, index) => {
+    bytes.set(part, cursor);
+    offsets[index * 2] = cursor;
+    cursor += part.byteLength;
+    offsets[index * 2 + 1] = cursor;
+  });
+  return { bytes, offsets };
+};
+
 const collectOutputs = decoder => {
   const fixture = makeFixture();
-  const query = JSON.stringify(['考试', '四六级']);
+  const terms = ['考试', '四六级'];
+  const query = JSON.stringify(terms);
+  const encodedQuery = encodeQueryTerms(terms);
+  const encodedExam = encodeQueryTerms(['考试']);
   const session = new decoder.PackedImpactRetrievalSession(4);
+  const typedSession = new decoder.PackedImpactRetrievalSession(4);
   try {
     const firstApply = JSON.parse(session.apply(fixture, JSON.stringify(['考试'])));
     const secondApply = JSON.parse(session.apply(fixture, query));
+    const firstApplyTyped = JSON.parse(typedSession.apply_terms_utf8(fixture, encodedExam.bytes, encodedExam.offsets));
+    const secondApplyTyped = JSON.parse(typedSession.apply_terms_utf8(fixture, encodedQuery.bytes, encodedQuery.offsets));
     const scores = JSON.parse(session.scores_json());
     const typedScores = Array.from(session.score_entries_f64());
+    const typedSessionScores = Array.from(typedSession.score_entries_f64());
     assert.deepEqual(typedScoreEntries(typedScores), scores.score_entries);
+    assert.deepEqual(firstApplyTyped, firstApply);
+    assert.deepEqual(secondApplyTyped, secondApply);
+    assert.deepEqual(typedScoreEntries(typedSessionScores), scores.score_entries);
     return {
       stats: JSON.parse(decoder.decode_packed_impact_stats(fixture)),
       materialized: JSON.parse(decoder.decode_packed_impact_to_json(fixture)),
-      topkStats: JSON.parse(decoder.retrieve_packed_impact_topk_stats(fixture, query, 4)),
-      topkScores: JSON.parse(decoder.retrieve_packed_impact_topk_scores(fixture, query, 4)),
+      topkStatsTyped: JSON.parse(decoder.retrieve_packed_impact_topk_stats_utf8(fixture, encodedQuery.bytes, encodedQuery.offsets, 4)),
+      topkScoresTyped: JSON.parse(decoder.retrieve_packed_impact_topk_scores_utf8(fixture, encodedQuery.bytes, encodedQuery.offsets, 4)),
       session: {
         firstApply,
         secondApply,
+        firstApplyTyped,
+        secondApplyTyped,
         stats: JSON.parse(session.stats_json()),
         scores,
         typedScores,
+        typedSessionScores,
       },
     };
   } finally {
     session.free();
+    typedSession.free();
   }
 };
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
+import subprocess
 from typing import Any
 
 from .benchmarks.parse_decode import (
@@ -28,6 +29,45 @@ from .runtime_mirror.text import tokens_for_query
 from .sitegraph_cache_benchmark import DEFAULT_CACHE_QUERIES, run_cache_benchmark
 from .sitegraph_query_smoke_test import validate_quality
 from .sitegraph_task_query_eval import validate_task_queries
+
+
+def current_git_commit() -> str:
+    return subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+
+
+def dominant_bottlenecks(summary: dict[str, Any]) -> dict[str, Any]:
+    class_summary = summary.get("query_class_summary") if isinstance(summary.get("query_class_summary"), dict) else {}
+    serving_summary = summary.get("serving_path_summary") if isinstance(summary.get("serving_path_summary"), dict) else {}
+    return {
+        "query_classes": {
+            key: value.get("dominant_bottlenecks") or {}
+            for key, value in class_summary.items()
+            if isinstance(value, dict)
+        },
+        "serving_paths": {
+            key: {
+                "max_proof_complete_uncached_bytes": value.get("max_proof_complete_uncached_bytes"),
+                "total_postings_visited": value.get("total_postings_visited"),
+                "total_postings_pruned": value.get("total_postings_pruned"),
+            }
+            for key, value in serving_summary.items()
+            if isinstance(value, dict)
+        },
+    }
+
+
+def stop_conditions(summary: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "dynamic_holdout": "At least one non-degenerate non-miss query must use dynamic_retrieval in the report corpus.",
+        "dynamic_pruning": "Dynamic retrieval holdout queries must show non-zero legal postings_pruned before claiming retrieval-kernel lower-bound progress.",
+        "high_df_certificate": "High-DF queries must stay under first/top/proof byte gates while preserving task quality and exhaustive proof.",
+        "browser": "Chrome DevTools evidence must show no console errors/issues, no generated artifact 4xx/5xx, and zero warm immutable network bytes.",
+        "current_state": {
+            "has_dynamic_holdout": summary.get("has_dynamic_holdout"),
+            "dynamic_holdout_pruning_present": summary.get("dynamic_holdout_pruning_present"),
+            "high_df_gates_passed": summary.get("high_df_gates_passed"),
+        },
+    }
 
 
 def build_lower_bound_report(
@@ -75,9 +115,14 @@ def build_lower_bound_report(
         parse_runs=parse_runs,
     )
 
+    query_measurement_summary = query_summary(query_measurements)
+    if not query_measurement_summary.get("has_dynamic_holdout"):
+        raise ValueError("lower-bound report must include at least one real dynamic_retrieval holdout query")
+
     report: dict[str, Any] = {
         "report": "njupt-search-lower-bound-evidence-v1",
         "generated_at": datetime.now(timezone.utc).isoformat(),
+        "git_commit": current_git_commit(),
         "collection": repo_relative(collection),
         "baseline": {
             "ref": baseline_ref,
@@ -103,7 +148,9 @@ def build_lower_bound_report(
         "runtime_parse_decode_summary": runtime_parse_decode_summary(parse_decode),
         "query_path_parse_decode_benchmark": query_path_decode,
         "query_measurements": query_measurements,
-        "query_measurement_summary": query_summary(query_measurements),
+        "query_measurement_summary": query_measurement_summary,
+        "dominant_bottlenecks": dominant_bottlenecks(query_measurement_summary),
+        "stop_conditions": stop_conditions(query_measurement_summary),
         "attachment_evidence": attachment_evidence_summary(manifest),
         "quality_eval": validate_quality() if include_quality else {"skipped": True},
         "task_eval": validate_task_queries() if include_task else {"skipped": True},

@@ -9,6 +9,7 @@ import {
     firstResultSourceLabel,
     formatBytes,
     queryClassLabel,
+    servingPathLabel,
 } from './collectionSearchLabels';
 
 interface CollectionSearchStatusProps {
@@ -68,7 +69,7 @@ export function CollectionSearchStatus({
             </div>
             {coverage && showDiagnostics ? (
                 <div className="mt-2 max-w-[880px] rounded-md border border-[#dadce0] dark:border-[#3c4043] bg-[#f8fafc] dark:bg-[#2d2e30] px-3 py-2 text-[13px] text-[#4d5156] dark:text-[#bdc1c6]">
-                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 [&>span]:max-w-full [&>span]:break-all">
                         <span>已证明跳过 {coverage.proved_no_match_shards}</span>
                         <span>筛选排除 {coverage.excluded_by_filter_shards}</span>
                         <span>待证明 {coverage.pending_shards}</span>
@@ -91,9 +92,12 @@ export function CollectionSearchStatus({
                                 {queryClassLabel(queryStats.query_class) ? (
                                     <span>查询类型 {queryClassLabel(queryStats.query_class)}</span>
                                 ) : null}
+                                {servingPathLabel(queryStats.serving_path) ? (
+                                    <span>服务路径 {servingPathLabel(queryStats.serving_path)}</span>
+                                ) : null}
                                 <span>fast-start {queryStats.fast_start_used ? '是' : '否'}</span>
-                                <span>局部元数据兜底 {queryStats.fallbacks.localMetaFallbackDocuments}</span>
-                                <span>摘要兜底 {queryStats.fallbacks.snippetFallbackResults}</span>
+                                <span>局部元数据补充 {queryStats.fallbacks.localMetaFallbackDocuments}</span>
+                                <span>摘要补充 {queryStats.fallbacks.snippetFallbackResults}</span>
                                 <span>验证命中 {queryStats.fallbacks.verifiedFullScanMatches}</span>
                                 <span>局部索引 {queryStats.loadedLocalIndexCount}</span>
                                 {queryStats.retrieval.engine ? (

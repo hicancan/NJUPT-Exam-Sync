@@ -1,17 +1,13 @@
 use std::cmp::Ordering;
-use std::collections::HashMap;
 
-pub(crate) fn top_doc_ids(scores: &HashMap<u64, f64>, limit: usize) -> Vec<u64> {
+pub(crate) fn top_doc_ids(scores: &[(u64, f64)], limit: usize) -> Vec<u64> {
     let mut entries = sorted_score_entries(scores);
     entries.truncate(limit);
     entries.into_iter().map(|(doc_id, _score)| doc_id).collect()
 }
 
-pub(crate) fn sorted_score_entries(scores: &HashMap<u64, f64>) -> Vec<(u64, f64)> {
-    let mut entries: Vec<(u64, f64)> = scores
-        .iter()
-        .map(|(doc_id, score)| (*doc_id, *score))
-        .collect();
+pub(crate) fn sorted_score_entries(scores: &[(u64, f64)]) -> Vec<(u64, f64)> {
+    let mut entries: Vec<(u64, f64)> = scores.to_vec();
     entries.sort_by(|left, right| {
         right
             .1

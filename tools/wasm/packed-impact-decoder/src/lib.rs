@@ -2,113 +2,17 @@ use std::collections::{HashMap, HashSet};
 use std::str;
 use wasm_bindgen::prelude::*;
 
+mod dense_scores;
+mod packed_format;
 mod score_entries;
+use dense_scores::DenseScores;
+use packed_format::{Cursor, PackedFormat, Stats};
 use score_entries::{score_entries_to_f64, sorted_score_entries, top_doc_ids};
-
-const MAGIC_V1: &[u8] = b"SGIXB001";
-const MAGIC_V2: &[u8] = b"SGIXB002";
-
-enum PackedFormat {
-    V1,
-    V2,
-}
-
-struct Cursor<'a> {
-    data: &'a [u8],
-    offset: usize,
-}
-
-impl<'a> Cursor<'a> {
-    fn new(data: &'a [u8]) -> Self {
-        Self { data, offset: 0 }
-    }
-
-    fn read_byte(&mut self) -> Result<u8, JsValue> {
-        let byte = self
-            .data
-            .get(self.offset)
-            .copied()
-            .ok_or_else(|| JsValue::from_str("truncated byte"))?;
-        self.offset += 1;
-        Ok(byte)
-    }
-
-    fn read_bytes(&mut self, length: usize) -> Result<&'a [u8], JsValue> {
-        let end = self
-            .offset
-            .checked_add(length)
-            .ok_or_else(|| JsValue::from_str("length overflow"))?;
-        if end > self.data.len() {
-            return Err(JsValue::from_str("truncated bytes"));
-        }
-        let bytes = &self.data[self.offset..end];
-        self.offset = end;
-        Ok(bytes)
-    }
-
-    fn read_u32_le(&mut self) -> Result<u32, JsValue> {
-        let b0 = self.read_byte()? as u32;
-        let b1 = self.read_byte()? as u32;
-        let b2 = self.read_byte()? as u32;
-        let b3 = self.read_byte()? as u32;
-        Ok(b0 | (b1 << 8) | (b2 << 16) | (b3 << 24))
-    }
-
-    fn read_varint(&mut self) -> Result<u64, JsValue> {
-        let mut shift = 0_u32;
-        let mut value = 0_u64;
-        loop {
-            let byte = self.read_byte()?;
-            value = value
-                .checked_add(((byte & 0x7f) as u64) << shift)
-                .ok_or_else(|| JsValue::from_str("varint overflow"))?;
-            if byte & 0x80 == 0 {
-                return Ok(value);
-            }
-            shift += 7;
-            if shift > 63 {
-                return Err(JsValue::from_str("varint exceeds u64"));
-            }
-        }
-    }
-
-    fn read_magic(&mut self) -> Result<PackedFormat, JsValue> {
-        let magic = self.read_bytes(MAGIC_V1.len())?;
-        if magic == MAGIC_V2 {
-            Ok(PackedFormat::V2)
-        } else if magic == MAGIC_V1 {
-            Ok(PackedFormat::V1)
-        } else {
-            Err(JsValue::from_str("invalid packed impact index header"))
-        }
-    }
-
-    fn is_done(&self) -> bool {
-        self.offset == self.data.len()
-    }
-}
-
-struct Stats {
-    field_count: u64,
-    posting_count: u64,
-    max_doc_id: u64,
-}
 
 struct ImpactBlock {
     key: String,
     impact: f64,
     ids: Vec<u64>,
-}
-
-struct RetrievalResult {
-    matched_term_count: u64,
-    block_count: usize,
-    scores: HashMap<u64, f64>,
-    impact_blocks_visited: u64,
-    impact_blocks_pruned: u64,
-    postings_visited: u64,
-    postings_pruned: u64,
-    competitive_threshold: f64,
 }
 
 struct ApplyStats {
@@ -286,15 +190,6 @@ fn push_term_blocks(
     }
 }
 
-fn competitive_threshold(scores: &HashMap<u64, f64>, target: usize) -> f64 {
-    if scores.len() < target {
-        return f64::NEG_INFINITY;
-    }
-    let mut values: Vec<f64> = scores.values().copied().collect();
-    values.sort_by(|a, b| b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal));
-    values[target.saturating_sub(1)]
-}
-
 fn suffix_unique_impact(blocks: &[ImpactBlock]) -> Vec<f64> {
     let mut suffix = vec![0.0; blocks.len() + 1];
     let mut seen = HashSet::new();
@@ -314,7 +209,47 @@ fn collect_packed_impact_blocks(
 ) -> Result<(Vec<ImpactBlock>, u64), JsValue> {
     let query_terms: Vec<String> = serde_json::from_str(query_terms_json)
         .map_err(|error| JsValue::from_str(&error.to_string()))?;
-    let selected_terms: HashSet<String> = query_terms.iter().cloned().collect();
+    let selected_terms: HashSet<&str> = query_terms.iter().map(String::as_str).collect();
+    collect_packed_impact_blocks_for_terms(bytes, &selected_terms)
+}
+
+fn collect_query_terms_utf8<'a>(
+    query_terms_utf8: &'a [u8],
+    query_term_offsets: &[u32],
+) -> Result<Vec<&'a str>, JsValue> {
+    if query_term_offsets.len() % 2 != 0 {
+        return Err(JsValue::from_str("query term offsets must contain start/end pairs"));
+    }
+    let mut terms = Vec::with_capacity(query_term_offsets.len() / 2);
+    for pair in query_term_offsets.chunks(2) {
+        let start = pair[0] as usize;
+        let end = pair[1] as usize;
+        if start > end || end > query_terms_utf8.len() {
+            return Err(JsValue::from_str("query term offset is out of bounds"));
+        }
+        let term = str::from_utf8(&query_terms_utf8[start..end])
+            .map_err(|error| JsValue::from_str(&error.to_string()))?;
+        if !term.is_empty() {
+            terms.push(term);
+        }
+    }
+    Ok(terms)
+}
+
+fn collect_packed_impact_blocks_utf8(
+    bytes: &[u8],
+    query_terms_utf8: &[u8],
+    query_term_offsets: &[u32],
+) -> Result<(Vec<ImpactBlock>, u64), JsValue> {
+    let query_terms = collect_query_terms_utf8(query_terms_utf8, query_term_offsets)?;
+    let selected_terms: HashSet<&str> = query_terms.into_iter().collect();
+    collect_packed_impact_blocks_for_terms(bytes, &selected_terms)
+}
+
+fn collect_packed_impact_blocks_for_terms(
+    bytes: &[u8],
+    selected_terms: &HashSet<&str>,
+) -> Result<(Vec<ImpactBlock>, u64), JsValue> {
     let mut cursor = Cursor::new(bytes);
     let format = cursor.read_magic()?;
     let metadata_length = cursor.read_u32_le()? as usize;
@@ -333,7 +268,7 @@ fn collect_packed_impact_blocks(
                 let term = str::from_utf8(cursor.read_bytes(term_length)?)
                     .map_err(|error| JsValue::from_str(&error.to_string()))?
                     .to_string();
-                if selected_terms.contains(&term) {
+                if selected_terms.contains(term.as_str()) {
                     matched_term_count += 1;
                     let fields = collect_fields(&mut cursor)?;
                     push_term_blocks(&mut blocks, &term, fields, block_size, &field_impacts);
@@ -347,7 +282,7 @@ fn collect_packed_impact_blocks(
             for (term, payload_length) in directory {
                 let end = cursor.offset + payload_length;
                 let mut payload_cursor = Cursor::new(&cursor.data[cursor.offset..end]);
-                if selected_terms.contains(&term) {
+                if selected_terms.contains(term.as_str()) {
                     matched_term_count += 1;
                     let fields = collect_fields(&mut payload_cursor)?;
                     push_term_blocks(&mut blocks, &term, fields, block_size, &field_impacts);
@@ -379,27 +314,26 @@ fn collect_packed_impact_blocks(
 fn apply_impact_blocks_to_scores(
     blocks: &[ImpactBlock],
     target_candidates: usize,
-    scores: &mut HashMap<u64, f64>,
-) -> ApplyStats {
+    scores: &mut DenseScores,
+) -> Result<ApplyStats, JsValue> {
     let suffix = suffix_unique_impact(blocks);
     let mut impact_blocks_visited = 0_u64;
     let mut impact_blocks_pruned = 0_u64;
     let mut postings_visited = 0_u64;
     let mut postings_pruned = 0_u64;
-    let mut competitive = 0.0_f64;
+    let mut competitive = f64::NEG_INFINITY;
     let target = target_candidates.max(1);
 
     for (index, block) in blocks.iter().enumerate() {
-        let threshold = competitive_threshold(&scores, target);
-        if threshold.is_finite() {
-            competitive = threshold;
+        if scores.len() >= target && (!competitive.is_finite() || index % 32 == 0) {
+            competitive = scores.competitive_threshold(target);
         }
         let max_possible_for_unseen_doc =
             block.impact + suffix.get(index + 1).copied().unwrap_or(0.0);
-        let has_known_candidate = block.ids.iter().any(|doc_id| scores.contains_key(doc_id));
+        let has_known_candidate = block.ids.iter().any(|doc_id| scores.contains(*doc_id));
         if !has_known_candidate
             && scores.len() >= target
-            && max_possible_for_unseen_doc <= threshold
+            && max_possible_for_unseen_doc <= competitive
         {
             impact_blocks_pruned += 1;
             postings_pruned += block.ids.len() as u64;
@@ -408,44 +342,23 @@ fn apply_impact_blocks_to_scores(
         impact_blocks_visited += 1;
         for doc_id in &block.ids {
             postings_visited += 1;
-            *scores.entry(*doc_id).or_insert(0.0) += block.impact;
+            scores.add(*doc_id, block.impact)?;
         }
     }
 
-    ApplyStats {
+    Ok(ApplyStats {
         impact_blocks_visited,
         impact_blocks_pruned,
         postings_visited,
         postings_pruned,
-        competitive_threshold: competitive,
-    }
-}
-
-fn retrieve_packed_impact(
-    bytes: &[u8],
-    query_terms_json: &str,
-    target_candidates: usize,
-) -> Result<RetrievalResult, JsValue> {
-    let (blocks, matched_term_count) = collect_packed_impact_blocks(bytes, query_terms_json)?;
-    let mut scores: HashMap<u64, f64> = HashMap::new();
-    let stats = apply_impact_blocks_to_scores(&blocks, target_candidates, &mut scores);
-
-    Ok(RetrievalResult {
-        matched_term_count,
-        block_count: blocks.len(),
-        scores,
-        impact_blocks_visited: stats.impact_blocks_visited,
-        impact_blocks_pruned: stats.impact_blocks_pruned,
-        postings_visited: stats.postings_visited,
-        postings_pruned: stats.postings_pruned,
-        competitive_threshold: stats.competitive_threshold,
+        competitive_threshold: if competitive.is_finite() { competitive } else { 0.0 },
     })
 }
 
 #[wasm_bindgen]
 pub struct PackedImpactRetrievalSession {
     target_candidates: usize,
-    scores: HashMap<u64, f64>,
+    scores: DenseScores,
     matched_term_count: u64,
     block_count: usize,
     impact_blocks_visited: u64,
@@ -461,7 +374,7 @@ impl PackedImpactRetrievalSession {
     pub fn new(target_candidates: usize) -> PackedImpactRetrievalSession {
         PackedImpactRetrievalSession {
             target_candidates: target_candidates.max(1),
-            scores: HashMap::new(),
+            scores: DenseScores::default(),
             matched_term_count: 0,
             block_count: 0,
             impact_blocks_visited: 0,
@@ -475,7 +388,38 @@ impl PackedImpactRetrievalSession {
     pub fn apply(&mut self, bytes: &[u8], query_terms_json: &str) -> Result<String, JsValue> {
         let (blocks, matched_term_count) = collect_packed_impact_blocks(bytes, query_terms_json)?;
         let stats =
-            apply_impact_blocks_to_scores(&blocks, self.target_candidates, &mut self.scores);
+            apply_impact_blocks_to_scores(&blocks, self.target_candidates, &mut self.scores)?;
+        self.matched_term_count += matched_term_count;
+        self.block_count += blocks.len();
+        self.impact_blocks_visited += stats.impact_blocks_visited;
+        self.impact_blocks_pruned += stats.impact_blocks_pruned;
+        self.postings_visited += stats.postings_visited;
+        self.postings_pruned += stats.postings_pruned;
+        self.competitive_threshold = stats.competitive_threshold;
+
+        Ok(serde_json::json!({
+            "matched_term_count": matched_term_count,
+            "block_count": blocks.len(),
+            "candidate_count": self.scores.len(),
+            "impact_blocks_visited": stats.impact_blocks_visited,
+            "impact_blocks_pruned": stats.impact_blocks_pruned,
+            "postings_visited": stats.postings_visited,
+            "postings_pruned": stats.postings_pruned,
+            "competitive_threshold": stats.competitive_threshold,
+        })
+        .to_string())
+    }
+
+    pub fn apply_terms_utf8(
+        &mut self,
+        bytes: &[u8],
+        query_terms_utf8: &[u8],
+        query_term_offsets: &[u32],
+    ) -> Result<String, JsValue> {
+        let (blocks, matched_term_count) =
+            collect_packed_impact_blocks_utf8(bytes, query_terms_utf8, query_term_offsets)?;
+        let stats =
+            apply_impact_blocks_to_scores(&blocks, self.target_candidates, &mut self.scores)?;
         self.matched_term_count += matched_term_count;
         self.block_count += blocks.len();
         self.impact_blocks_visited += stats.impact_blocks_visited;
@@ -514,13 +458,13 @@ impl PackedImpactRetrievalSession {
     pub fn scores_json(&self) -> String {
         serde_json::json!({
             "candidate_count": self.scores.len(),
-            "score_entries": sorted_score_entries(&self.scores),
+            "score_entries": sorted_score_entries(&self.scores.entries()),
         })
         .to_string()
     }
 
     pub fn score_entries_f64(&self) -> Vec<f64> {
-        let entries = sorted_score_entries(&self.scores);
+        let entries = sorted_score_entries(&self.scores.entries());
         score_entries_to_f64(&entries)
     }
 }
@@ -639,46 +583,55 @@ pub fn decode_packed_impact_stats(bytes: &[u8]) -> Result<String, JsValue> {
 }
 
 #[wasm_bindgen]
-pub fn retrieve_packed_impact_topk_stats(
+pub fn retrieve_packed_impact_topk_stats_utf8(
     bytes: &[u8],
-    query_terms_json: &str,
+    query_terms_utf8: &[u8],
+    query_term_offsets: &[u32],
     target_candidates: usize,
 ) -> Result<String, JsValue> {
-    let result = retrieve_packed_impact(bytes, query_terms_json, target_candidates)?;
+    let (blocks, matched_term_count) =
+        collect_packed_impact_blocks_utf8(bytes, query_terms_utf8, query_term_offsets)?;
+    let mut scores = DenseScores::default();
+    let stats = apply_impact_blocks_to_scores(&blocks, target_candidates, &mut scores)?;
 
     Ok(serde_json::json!({
-        "matched_term_count": result.matched_term_count,
-        "block_count": result.block_count,
-        "candidate_count": result.scores.len(),
-        "impact_blocks_visited": result.impact_blocks_visited,
-        "impact_blocks_pruned": result.impact_blocks_pruned,
-        "postings_visited": result.postings_visited,
-        "postings_pruned": result.postings_pruned,
-        "competitive_threshold": result.competitive_threshold,
-        "top_doc_ids": top_doc_ids(&result.scores, 20),
+        "matched_term_count": matched_term_count,
+        "block_count": blocks.len(),
+        "candidate_count": scores.len(),
+        "impact_blocks_visited": stats.impact_blocks_visited,
+        "impact_blocks_pruned": stats.impact_blocks_pruned,
+        "postings_visited": stats.postings_visited,
+        "postings_pruned": stats.postings_pruned,
+        "competitive_threshold": stats.competitive_threshold,
+        "top_doc_ids": top_doc_ids(&scores.entries(), 20),
     })
     .to_string())
 }
 
 #[wasm_bindgen]
-pub fn retrieve_packed_impact_topk_scores(
+pub fn retrieve_packed_impact_topk_scores_utf8(
     bytes: &[u8],
-    query_terms_json: &str,
+    query_terms_utf8: &[u8],
+    query_term_offsets: &[u32],
     target_candidates: usize,
 ) -> Result<String, JsValue> {
-    let result = retrieve_packed_impact(bytes, query_terms_json, target_candidates)?;
+    let (blocks, matched_term_count) =
+        collect_packed_impact_blocks_utf8(bytes, query_terms_utf8, query_term_offsets)?;
+    let mut scores = DenseScores::default();
+    let stats = apply_impact_blocks_to_scores(&blocks, target_candidates, &mut scores)?;
+    let entries = scores.entries();
 
     Ok(serde_json::json!({
-        "matched_term_count": result.matched_term_count,
-        "block_count": result.block_count,
-        "candidate_count": result.scores.len(),
-        "impact_blocks_visited": result.impact_blocks_visited,
-        "impact_blocks_pruned": result.impact_blocks_pruned,
-        "postings_visited": result.postings_visited,
-        "postings_pruned": result.postings_pruned,
-        "competitive_threshold": result.competitive_threshold,
-        "top_doc_ids": top_doc_ids(&result.scores, 20),
-        "score_entries": sorted_score_entries(&result.scores),
+        "matched_term_count": matched_term_count,
+        "block_count": blocks.len(),
+        "candidate_count": scores.len(),
+        "impact_blocks_visited": stats.impact_blocks_visited,
+        "impact_blocks_pruned": stats.impact_blocks_pruned,
+        "postings_visited": stats.postings_visited,
+        "postings_pruned": stats.postings_pruned,
+        "competitive_threshold": stats.competitive_threshold,
+        "top_doc_ids": top_doc_ids(&entries, 20),
+        "score_entries": sorted_score_entries(&entries),
     })
     .to_string())
 }

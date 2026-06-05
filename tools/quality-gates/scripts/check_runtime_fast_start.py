@@ -80,11 +80,16 @@ def main() -> None:
 
     require_contains(contract, "export type SitegraphQueryClass", "query-class contract")
     require_contains(contract, "query_class?: SitegraphQueryClass", "query stats contract")
+    require_contains(contract, "export type SitegraphServingPath", "serving-path contract")
+    require_contains(contract, "serving_path?: SitegraphServingPath", "query stats serving-path contract")
     require_contains(contract, "proof_pressure?: SitegraphProofPressureStats", "proof-pressure stats contract")
     require_contains(contract, "pruning_ledger_summary?: SitegraphPruningLedgerSummary", "pruning-ledger stats contract")
+    require_contains(telemetry, "servingPathForQueryClass", "telemetry serving-path derivation")
+    require_contains(telemetry, "inferCertificateServingPath", "telemetry certificate serving-path derivation")
     require_contains(telemetry, "time_filtered", "time-filtered query-class telemetry")
     require_contains(ui, "首屏路径", "browser-visible fast-start diagnostics")
     require_contains(ui, "查询类型", "browser-visible query-class diagnostics")
+    require_contains(ui, "服务路径", "browser-visible serving-path diagnostics")
     print("[check_runtime_fast_start] ok")
 
 

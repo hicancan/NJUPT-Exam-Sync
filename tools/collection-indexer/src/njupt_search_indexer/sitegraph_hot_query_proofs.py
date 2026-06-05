@@ -147,14 +147,11 @@ def attachment_matches_needles(attachment: dict[str, Any], needles: list[str]) -
 def compact_attachment_payload(attachment: dict[str, Any]) -> dict[str, Any]:
     payload: dict[str, Any] = {}
     for key in (
-        "attachment_id", "name", "url", "extension", "parent_url", "parent_doc_id",
-        "section_id", "section", "nav_path", "metadata_only", "evidence_level",
-        "available_evidence", "unavailable_evidence", "text_extracted",
-        "snippet_available", "full_content_available", "coverage_note", "position",
+        "attachment_id", "name", "url", "extension", "parent_url", "section",
     ):
         if key in attachment and attachment.get(key) is not None:
             payload[key] = attachment.get(key)
-    payload.setdefault("metadata_only", True)
+    payload["metadata_only"] = True
     return payload
 
 
@@ -341,11 +338,9 @@ def compact_hot_query_proof_documents(
         ]
         optional_tail = [
             _compact_date_index(dictionaries, indexes, "published_at", document),
-            _compact_date_index(dictionaries, indexes, "updated_at", document),
-            _compact_date_index(dictionaries, indexes, "recorded_at", document),
+            -1,
+            -1,
             _compact_date_index(dictionaries, indexes, "version_date", document),
-            _compact_optional_string_index(dictionaries, indexes, "date_kinds", "date_kind", document),
-            _compact_optional_string_index(dictionaries, indexes, "date_confidences", "date_confidence", document),
         ]
         while optional_tail and optional_tail[-1] < 0:
             optional_tail.pop()
@@ -392,11 +387,6 @@ def hot_query_document_payload(
         ),
         "attachment_count": int(document.get("attachment_count") or len(document.get("attachments") or [])),
         "hash": str(document["hash"]),
-        "tags": [
-            tag
-            for tag in (document.get("tags") if isinstance(document.get("tags"), list) else [])
-            if any(needle in normalize_text(tag) for needle in proof_needles)
-        ],
         "collection_method": str(document["collection_method"]),
         "provenance": compact_hot_query_provenance(document),
         "content": content,
@@ -405,9 +395,8 @@ def hot_query_document_payload(
         "attachments": compact_hot_query_attachments(document, proof_needles),
     }
     for key in (
-        "canonical_title", "section_id", "published_at", "updated_at", "recorded_at",
-        "version_date", "date_kind", "date_confidence", "academic_year", "term",
-        "task_kind", "authority_profile", "dedupe_key", "publisher",
+        "published_at", "updated_at", "recorded_at",
+        "version_date", "academic_year", "term", "task_kind", "publisher",
     ):
         if key in document and document.get(key) is not None:
             payload[key] = document.get(key)

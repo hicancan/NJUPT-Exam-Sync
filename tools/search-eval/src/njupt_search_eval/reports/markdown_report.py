@@ -158,15 +158,15 @@ def render_markdown_report(report: dict[str, Any]) -> str:
             "",
             "## Query Measurements",
             "",
-            "| Query | Class | ms | Results | Candidate shards | Loaded shards | Uncached bytes | Pruned postings | Bottleneck | Complete | Top result |",
-            "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |",
+            "| Query | Class | Serving path | ms | Results | Candidate shards | Loaded shards | Uncached bytes | Pruned postings | Bottleneck | Complete | Top result |",
+            "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |",
         ]
     )
     for item in report["query_measurements"]:
         top = item.get("top_result") or {}
         bottleneck = item.get("dominant_bottleneck") or {}
         lines.append(
-            f"| `{item['query']}` | `{item.get('query_class')}` | {format_ms(item['elapsed_ms'])} | {format_int(item['result_count'])} | "
+            f"| `{item['query']}` | `{item.get('query_class')}` | `{item.get('serving_path')}` | {format_ms(item['elapsed_ms'])} | {format_int(item['result_count'])} | "
             f"{format_int(item['candidate_shard_count'])} | {format_int(item['loaded_shard_count'])} | "
             f"{format_int(item['coverage']['uncached_loaded_bytes'])} | "
             f"{format_int(item['retrieval']['postings_pruned'])} | "
@@ -193,6 +193,26 @@ def render_markdown_report(report: dict[str, Any]) -> str:
                 f"{format_int(summary.get('max_proof_complete_uncached_bytes'))} | "
                 f"{format_ms(summary.get('max_elapsed_ms'))} | "
                 f"{format_table_text(summary.get('dominant_bottlenecks') or {}, limit=160)} |"
+            )
+    serving_path_summary = (report.get("query_measurement_summary") or {}).get("serving_path_summary") or {}
+    if serving_path_summary:
+        lines.extend(
+            [
+                "",
+                "## Serving Path Summary",
+                "",
+                "| Serving path | Queries | Max first bytes | Max top bytes | Max proof bytes | Postings visited | Postings pruned |",
+                "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+            ]
+        )
+        for serving_path, summary in sorted(serving_path_summary.items()):
+            lines.append(
+                f"| `{serving_path}` | {format_int(summary.get('query_count'))} | "
+                f"{format_int(summary.get('max_first_trusted_uncached_bytes'))} | "
+                f"{format_int(summary.get('max_top_results_uncached_bytes'))} | "
+                f"{format_int(summary.get('max_proof_complete_uncached_bytes'))} | "
+                f"{format_int(summary.get('total_postings_visited'))} | "
+                f"{format_int(summary.get('total_postings_pruned'))} |"
             )
 
     lines.extend(

@@ -67,7 +67,7 @@ PUBLIC_EXTERNAL_DIR = PUBLIC_SITEGRAPH_DIR / "external_indexes"
 PUBLIC_SHARD_DIR = PUBLIC_FULL_SHARD_DIR
 OBSOLETE_INDEX_DIR = PUBLIC_ROOT / "index"
 
-MAX_PUBLIC_JSON_ARTIFACT_BYTES = 1024 * 1024
+MAX_PUBLIC_JSON_ARTIFACT_BYTES = 512 * 1024
 
 
 def configure_collection_output(collection_id: str = COLLECTION_ID, output_dir: Path | None = None) -> None:

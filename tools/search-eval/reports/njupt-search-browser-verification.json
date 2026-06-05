@@ -1,7 +1,7 @@
 {
   "report": "njupt-search-browser-verification-v21-compact-proof",
-  "generated_at": "2026-06-05T02:23:42.301176+00:00",
-  "base_url": "http://127.0.0.1:54075/",
+  "generated_at": "2026-06-05T04:56:28.318301+00:00",
+  "base_url": "http://127.0.0.1:59885/",
   "summary": {
     "passed": true,
     "scenario_count": 11,
@@ -19,7 +19,7 @@
       "query": "校历",
       "viewport": "1280x720",
       "filters": null,
-      "elapsed_ms": 897.649,
+      "elapsed_ms": 932.37,
       "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
@@ -46,7 +46,7 @@
       "query": "四六级",
       "viewport": "1280x720",
       "filters": null,
-      "elapsed_ms": 779.177,
+      "elapsed_ms": 787.692,
       "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
@@ -73,7 +73,7 @@
       "query": "成绩",
       "viewport": "1280x720",
       "filters": null,
-      "elapsed_ms": 801.246,
+      "elapsed_ms": 785.121,
       "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
@@ -100,7 +100,7 @@
       "query": "通知",
       "viewport": "1280x720",
       "filters": null,
-      "elapsed_ms": 801.62,
+      "elapsed_ms": 770.896,
       "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
@@ -127,7 +127,7 @@
       "query": "学生",
       "viewport": "1280x720",
       "filters": null,
-      "elapsed_ms": 792.474,
+      "elapsed_ms": 794.097,
       "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
@@ -154,7 +154,7 @@
       "query": "南京邮电大学",
       "viewport": "1280x720",
       "filters": null,
-      "elapsed_ms": 815.644,
+      "elapsed_ms": 794.997,
       "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
@@ -181,7 +181,7 @@
       "query": "缓考申请表",
       "viewport": "1280x720",
       "filters": null,
-      "elapsed_ms": 770.745,
+      "elapsed_ms": 736.99,
       "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
@@ -208,7 +208,7 @@
       "query": "不存在的查询词",
       "viewport": "1280x720",
       "filters": null,
-      "elapsed_ms": 735.92,
+      "elapsed_ms": 769.591,
       "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
@@ -235,7 +235,7 @@
       "query": "a",
       "viewport": "1280x720",
       "filters": null,
-      "elapsed_ms": 610.354,
+      "elapsed_ms": 629.084,
       "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
@@ -266,7 +266,7 @@
         "facet": "notice_article",
         "dateRange": "past_year"
       },
-      "elapsed_ms": 803.48,
+      "elapsed_ms": 788.904,
       "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {
@@ -293,7 +293,7 @@
       "query": "大创",
       "viewport": "390x844",
       "filters": null,
-      "elapsed_ms": 805.349,
+      "elapsed_ms": 795.638,
       "has_expected_text": true,
       "has_data_error": false,
       "diagnostics": {

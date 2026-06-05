@@ -16,7 +16,7 @@ from ..sitegraph_hot_query_proofs import (
 from .public_artifacts import artifact_path, ensure_public_hashed_path, fail, read_json
 
 
-HOT_QUERY_FIRST_TRUSTED_BYTE_BUDGET = 150 * 1024
+HOT_QUERY_FIRST_TRUSTED_BYTE_BUDGET = 128 * 1024
 REQUIRED_FAST_START_QUERIES = (
     "四六级",
     "成绩",

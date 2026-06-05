@@ -5,11 +5,27 @@ import type {
 } from '@njupt-search/search-core';
 import initPackedImpactDecoder, {
     PackedImpactRetrievalSession as WasmPackedImpactRetrievalSession,
-    retrieve_packed_impact_topk_scores,
+    retrieve_packed_impact_topk_scores_utf8,
 } from '../../wasm/packed_impact_decoder.js';
 import packedImpactDecoderUrl from '../../wasm/packed_impact_decoder_bg.wasm?url';
 
 const numeric = (value: unknown): number => typeof value === 'number' && Number.isFinite(value) ? value : 0;
+const textEncoder = new TextEncoder();
+
+const encodeQueryTerms = (terms: string[]): { bytes: Uint8Array; offsets: Uint32Array } => {
+    const parts = terms.map(term => textEncoder.encode(term));
+    const totalBytes = parts.reduce((sum, part) => sum + part.byteLength, 0);
+    const bytes = new Uint8Array(totalBytes);
+    const offsets = new Uint32Array(parts.length * 2);
+    let cursor = 0;
+    parts.forEach((part, index) => {
+        bytes.set(part, cursor);
+        offsets[index * 2] = cursor;
+        cursor += part.byteLength;
+        offsets[index * 2 + 1] = cursor;
+    });
+    return { bytes, offsets };
+};
 
 const parseScoreEntries = (value: unknown): Array<readonly [number, number]> => {
     if (!Array.isArray(value)) return [];
@@ -75,9 +91,11 @@ export const createPackedImpactRetriever = (): PackedImpactRetriever => {
             const wasmSession = new WasmPackedImpactRetrievalSession(targetCandidates);
             return {
                 async applyPackedImpactScores(input) {
-                    const payload = wasmSession.apply(
+                    const terms = encodeQueryTerms(input.terms);
+                    const payload = wasmSession.apply_terms_utf8(
                         new Uint8Array(input.bytes),
-                        JSON.stringify(input.terms),
+                        terms.bytes,
+                        terms.offsets,
                     );
                     return parsePackedImpactMetrics(JSON.parse(payload) as unknown);
                 },
@@ -88,9 +106,11 @@ export const createPackedImpactRetriever = (): PackedImpactRetriever => {
         },
         async retrievePackedImpactScores(input) {
             await ensureDecoder();
-            const payload = retrieve_packed_impact_topk_scores(
+            const terms = encodeQueryTerms(input.terms);
+            const payload = retrieve_packed_impact_topk_scores_utf8(
                 new Uint8Array(input.bytes),
-                JSON.stringify(input.terms),
+                terms.bytes,
+                terms.offsets,
                 input.targetCandidates,
             );
             return parsePackedImpactRetrieval(JSON.parse(payload) as unknown);

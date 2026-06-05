@@ -2,6 +2,7 @@ import type {
     RankedSitegraphDocument,
     SitegraphArtifactCacheStats,
     SitegraphQueryClass,
+    SitegraphServingPath,
     SitegraphQueryStats,
     SitegraphSearchCoverage,
     SitegraphSearchFilters,
@@ -51,7 +52,15 @@ export const isDegenerateQuery = (queryText: string): boolean => {
 export const classifyFastStartQuery = (queryText: string, match: FastStartMatch): SitegraphQueryClass => {
     const normalizedInput = normalizeSearchText(queryText);
     const normalizedCanonical = normalizeSearchText(match.entry.normalized_query || match.entry.query || match.matchedQuery);
+    if (isHighDocumentFrequencyNormalizedQuery(normalizedInput)) return 'cold_high_df';
     return normalizedInput === normalizedCanonical && match.matchKind === 'exact' ? 'hot' : 'hot_alias';
+};
+
+export const servingPathForQueryClass = (queryClass: SitegraphQueryClass): SitegraphServingPath => {
+    if (queryClass === 'degenerate') return 'noop';
+    if (queryClass === 'hot' || queryClass === 'hot_alias') return 'hot_certificate';
+    if (queryClass === 'cold_high_df') return 'high_df_certificate';
+    return 'dynamic_retrieval';
 };
 
 export const inferHotProofEvent = (event: SearchTelemetryEvent): boolean => {
@@ -68,6 +77,17 @@ export const inferHotProofEvent = (event: SearchTelemetryEvent): boolean => {
         && stats.plan.phase_local_index_ids.first_trusted_results.length === 0
         && stats.plan.phase_local_index_ids.top_results_hydrated.length === 0
     );
+};
+
+export const inferCertificateServingPath = (
+    queryClass: SitegraphQueryClass,
+    event: SearchTelemetryEvent
+): SitegraphServingPath => {
+    if (queryClass === 'degenerate') return 'noop';
+    if (inferHotProofEvent(event)) {
+        return queryClass === 'cold_high_df' ? 'high_df_certificate' : 'hot_certificate';
+    }
+    return 'dynamic_retrieval';
 };
 
 export const classifyDynamicQuery = (
@@ -175,6 +195,7 @@ export const makeDegenerateStats = (
     cache: coverage.cache,
     fast_start_used: false,
     query_class: 'degenerate',
+    serving_path: 'noop',
     fallbacks: {
         localMetaFallbackDocuments: 0,
         snippetFallbackResults: 0,

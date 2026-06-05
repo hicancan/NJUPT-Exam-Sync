@@ -15,6 +15,7 @@ import { createPackedImpactRetriever } from './session/packedImpactRetriever';
 import { createSearchWorkerSession, publicPath } from './session/searchWorkerSession';
 import {
     classifyDynamicQuery,
+    inferCertificateServingPath,
     inferHotProofEvent,
     isDegenerateQuery,
     makeDegenerateCoverage,
@@ -84,14 +85,16 @@ const patchRuntimeEvent = (
     emittedFastStart: boolean,
     fastStartQueryClass: SitegraphQueryClass | undefined
 ): SitegraphSearchEvent => {
+    const queryClass = event.stats?.query_class
+        ?? (emittedFastStart && fastStartQueryClass ? fastStartQueryClass : classifyDynamicQuery(queryText, filters, event));
     const stats = event.stats
         ? {
             ...event.stats,
             fast_start_used: emittedFastStart || event.stats.fast_start_used,
             first_result_source: event.stats.first_result_source
                 ?? (emittedFastStart ? 'hot_query_initial' : inferHotProofEvent(event) ? 'hot_query_topk' : 'dynamic_retrieval'),
-            query_class: event.stats.query_class
-                ?? (emittedFastStart && fastStartQueryClass ? fastStartQueryClass : classifyDynamicQuery(queryText, filters, event)),
+            query_class: queryClass,
+            serving_path: event.stats.serving_path ?? inferCertificateServingPath(queryClass, event),
         }
         : event.stats;
     const results = event.results && stats

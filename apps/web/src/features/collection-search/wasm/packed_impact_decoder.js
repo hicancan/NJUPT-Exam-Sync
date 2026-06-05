@@ -39,6 +39,36 @@ export class PackedImpactRetrievalSession {
         }
     }
     /**
+     * @param {Uint8Array} bytes
+     * @param {Uint8Array} query_terms_utf8
+     * @param {Uint32Array} query_term_offsets
+     * @returns {string}
+     */
+    apply_terms_utf8(bytes, query_terms_utf8, query_term_offsets) {
+        let deferred5_0;
+        let deferred5_1;
+        try {
+            const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ptr1 = passArray8ToWasm0(query_terms_utf8, wasm.__wbindgen_malloc);
+            const len1 = WASM_VECTOR_LEN;
+            const ptr2 = passArray32ToWasm0(query_term_offsets, wasm.__wbindgen_malloc);
+            const len2 = WASM_VECTOR_LEN;
+            const ret = wasm.packedimpactretrievalsession_apply_terms_utf8(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2);
+            var ptr4 = ret[0];
+            var len4 = ret[1];
+            if (ret[3]) {
+                ptr4 = 0; len4 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred5_0 = ptr4;
+            deferred5_1 = len4;
+            return getStringFromWasm0(ptr4, len4);
+        } finally {
+            wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
+        }
+    }
+    /**
      * @param {number} target_candidates
      */
     constructor(target_candidates) {
@@ -141,59 +171,65 @@ export function decode_packed_impact_to_json(bytes) {
 
 /**
  * @param {Uint8Array} bytes
- * @param {string} query_terms_json
+ * @param {Uint8Array} query_terms_utf8
+ * @param {Uint32Array} query_term_offsets
  * @param {number} target_candidates
  * @returns {string}
  */
-export function retrieve_packed_impact_topk_scores(bytes, query_terms_json, target_candidates) {
-    let deferred4_0;
-    let deferred4_1;
+export function retrieve_packed_impact_topk_scores_utf8(bytes, query_terms_utf8, query_term_offsets, target_candidates) {
+    let deferred5_0;
+    let deferred5_1;
     try {
         const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(query_terms_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const ptr1 = passArray8ToWasm0(query_terms_utf8, wasm.__wbindgen_malloc);
         const len1 = WASM_VECTOR_LEN;
-        const ret = wasm.retrieve_packed_impact_topk_scores(ptr0, len0, ptr1, len1, target_candidates);
-        var ptr3 = ret[0];
-        var len3 = ret[1];
+        const ptr2 = passArray32ToWasm0(query_term_offsets, wasm.__wbindgen_malloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ret = wasm.retrieve_packed_impact_topk_scores_utf8(ptr0, len0, ptr1, len1, ptr2, len2, target_candidates);
+        var ptr4 = ret[0];
+        var len4 = ret[1];
         if (ret[3]) {
-            ptr3 = 0; len3 = 0;
+            ptr4 = 0; len4 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred4_0 = ptr3;
-        deferred4_1 = len3;
-        return getStringFromWasm0(ptr3, len3);
+        deferred5_0 = ptr4;
+        deferred5_1 = len4;
+        return getStringFromWasm0(ptr4, len4);
     } finally {
-        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+        wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
     }
 }
 
 /**
  * @param {Uint8Array} bytes
- * @param {string} query_terms_json
+ * @param {Uint8Array} query_terms_utf8
+ * @param {Uint32Array} query_term_offsets
  * @param {number} target_candidates
  * @returns {string}
  */
-export function retrieve_packed_impact_topk_stats(bytes, query_terms_json, target_candidates) {
-    let deferred4_0;
-    let deferred4_1;
+export function retrieve_packed_impact_topk_stats_utf8(bytes, query_terms_utf8, query_term_offsets, target_candidates) {
+    let deferred5_0;
+    let deferred5_1;
     try {
         const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(query_terms_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const ptr1 = passArray8ToWasm0(query_terms_utf8, wasm.__wbindgen_malloc);
         const len1 = WASM_VECTOR_LEN;
-        const ret = wasm.retrieve_packed_impact_topk_stats(ptr0, len0, ptr1, len1, target_candidates);
-        var ptr3 = ret[0];
-        var len3 = ret[1];
+        const ptr2 = passArray32ToWasm0(query_term_offsets, wasm.__wbindgen_malloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ret = wasm.retrieve_packed_impact_topk_stats_utf8(ptr0, len0, ptr1, len1, ptr2, len2, target_candidates);
+        var ptr4 = ret[0];
+        var len4 = ret[1];
         if (ret[3]) {
-            ptr3 = 0; len3 = 0;
+            ptr4 = 0; len4 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred4_0 = ptr3;
-        deferred4_1 = len3;
-        return getStringFromWasm0(ptr3, len3);
+        deferred5_0 = ptr4;
+        deferred5_1 = len4;
+        return getStringFromWasm0(ptr4, len4);
     } finally {
-        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+        wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
     }
 }
 function __wbg_get_imports() {
@@ -244,12 +280,27 @@ function getStringFromWasm0(ptr, len) {
     return decodeText(ptr >>> 0, len);
 }
 
+let cachedUint32ArrayMemory0 = null;
+function getUint32ArrayMemory0() {
+    if (cachedUint32ArrayMemory0 === null || cachedUint32ArrayMemory0.byteLength === 0) {
+        cachedUint32ArrayMemory0 = new Uint32Array(wasm.memory.buffer);
+    }
+    return cachedUint32ArrayMemory0;
+}
+
 let cachedUint8ArrayMemory0 = null;
 function getUint8ArrayMemory0() {
     if (cachedUint8ArrayMemory0 === null || cachedUint8ArrayMemory0.byteLength === 0) {
         cachedUint8ArrayMemory0 = new Uint8Array(wasm.memory.buffer);
     }
     return cachedUint8ArrayMemory0;
+}
+
+function passArray32ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 4, 4) >>> 0;
+    getUint32ArrayMemory0().set(arg, ptr / 4);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
 }
 
 function passArray8ToWasm0(arg, malloc) {
@@ -337,6 +388,7 @@ function __wbg_finalize_init(instance, module) {
     wasm = instance.exports;
     wasmModule = module;
     cachedFloat64ArrayMemory0 = null;
+    cachedUint32ArrayMemory0 = null;
     cachedUint8ArrayMemory0 = null;
     wasm.__wbindgen_start();
     return wasm;

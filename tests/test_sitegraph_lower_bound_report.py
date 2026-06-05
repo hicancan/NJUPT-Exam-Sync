@@ -110,7 +110,7 @@ def test_shard_filter_supports_plus_operator_phrase_without_false_negative() -> 
 def test_lower_bound_report_contains_rerunnable_evidence() -> None:
     report = build_lower_bound_report(
         baseline_ref="1a0996e",
-        queries=["校历"],
+        queries=["校历", "图像采集码"],
         cache_queries=["校历"],
         include_quality=False,
         include_task=False,

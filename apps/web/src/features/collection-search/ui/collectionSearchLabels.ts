@@ -99,6 +99,14 @@ export function queryClassLabel(queryClass: SitegraphQueryStats['query_class']):
     return null;
 }
 
+export function servingPathLabel(servingPath: SitegraphQueryStats['serving_path']): string | null {
+    if (servingPath === 'hot_certificate') return '热查询证书';
+    if (servingPath === 'high_df_certificate') return '高频词证书';
+    if (servingPath === 'dynamic_retrieval') return '动态检索';
+    if (servingPath === 'noop') return '无需检索';
+    return null;
+}
+
 export function hasActiveFilters(filters: SitegraphSearchFilters): boolean {
     return (filters.sourceId || 'all') !== 'all'
         || (filters.facet || 'all') !== 'all'

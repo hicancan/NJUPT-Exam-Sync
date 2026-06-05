@@ -27,6 +27,7 @@ import {
     classifyFastStartQuery,
     isDegenerateQuery,
     isFilteredSearch,
+    servingPathForQueryClass,
 } from '../telemetry/searchWorkerTelemetry';
 
 type LoadManifest = (controller: AbortController) => Promise<SitegraphSearchManifest>;
@@ -192,6 +193,7 @@ const makeFastStartStats = (
     fast_start_used: true,
     first_result_source: 'hot_query_initial',
     query_class: queryClass,
+    serving_path: servingPathForQueryClass(queryClass),
     resource_trace_id: traceId,
     fallbacks: {
         localMetaFallbackDocuments: 0,
