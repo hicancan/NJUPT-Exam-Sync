@@ -327,7 +327,7 @@ def compact_hot_query_proof_documents(
         phrases = evidence["phrases"][:1]
         if not phrases:
             raise ValueError(f"hot query proof document has no matching phrase for query {query!r}")
-        fields = evidence["fields"][:4] or ["content"]
+        fields = evidence["fields"][:1] or ["content"]
         shard = document.get("shard") if isinstance(document.get("shard"), dict) else {}
         row: list[Any] = [
             int(document["doc_index"]),

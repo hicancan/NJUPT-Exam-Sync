@@ -143,14 +143,14 @@ def classify_query_measurement(query: str, stats: dict[str, Any], result_count: 
         return "degenerate"
     coverage = stats.get("coverage") if isinstance(stats.get("coverage"), dict) else {}
     if coverage.get("exhaustive_complete") is True and result_count == 0:
-        return "miss"
+        return "miss_dynamic_holdout"
     if normalized in HIGH_DF_NORMALIZED_QUERIES:
         return "cold_high_df"
     hot_initial = stats.get("hot_query_initial_certificate") if isinstance(stats.get("hot_query_initial_certificate"), dict) else {}
     if hot_initial.get("used") is True:
         hot_query = normalize_text(hot_initial.get("query"))
         return "hot" if hot_query == normalized else "hot_alias"
-    return "cold_rare"
+    return "cold_rare_dynamic_holdout"
 
 def serving_path_for_measurement(query_class: str, stats: dict[str, Any]) -> str:
     if query_class == "degenerate":
@@ -373,11 +373,12 @@ def query_summary(measurements: list[dict[str, Any]]) -> dict[str, Any]:
         "serving_path_summary": serving_path_summary,
         "has_dynamic_holdout": any(
             item.get("serving_path") == "dynamic_retrieval"
-            and item.get("query_class") not in ("degenerate", "miss")
+            and item.get("query_class") == "cold_rare_dynamic_holdout"
             for item in measurements
         ),
         "dynamic_holdout_pruning_present": any(
             item.get("serving_path") == "dynamic_retrieval"
+            and item.get("query_class") == "cold_rare_dynamic_holdout"
             and int((item.get("retrieval") or {}).get("postings_pruned") or 0) > 0
             for item in measurements
         ),

@@ -47,7 +47,7 @@ TEST_LINE_LIMITS = {
 
 FILE_LINE_LIMITS = {
     "apps/web/src/features/collection-search/worker/collectionSearch.worker.ts": 500,
-    "packages/search-core/src/sitegraphSearch.ts": 500,
+    "packages/search-core/src/sitegraphSearch.ts": 350,
     "packages/search-core/src/sitegraphCompletionProofRuntime.ts": 500,
     "packages/search-core/src/sitegraphHotSearchPhases.ts": 500,
     "packages/search-core/src/sitegraphRecallRuntime.ts": 200,

@@ -1,34 +1,24 @@
 from __future__ import annotations
 
 import os
+import json
+from pathlib import Path
 from collections.abc import Mapping, Sequence
 from typing import Any
 
 
-ARTIFACT_ROLES = [
-    "bootstrap_manifest",
-    "source_registry",
-    "global_query_directory",
-    "query_aliases",
-    "source_manifest",
-    "local_impact_light_index_meta",
-    "local_impact_light_index_packed",
-    "local_impact_body_index_packed",
-    "proof_catalog",
-    "shard_filter",
-    "hot_query_fast_start",
-    "hot_query_top_initial",
-    "hot_query_topk_certificate",
-    "hot_query_complete_certificate",
-    "full_shards",
-    "attachment_meta_index",
-    "attachment_filename_index",
-    "attachment_text_shards",
-    "quality_report",
-    "size_report",
-    "query_eval_report",
-    "outcomes",
-]
+REPO_ROOT = Path(__file__).resolve().parents[5]
+ARTIFACT_ROLE_REGISTRY = REPO_ROOT / "packages" / "contracts" / "src" / "search-index" / "artifact-roles.json"
+
+
+def load_artifact_roles() -> list[str]:
+    payload = json.loads(ARTIFACT_ROLE_REGISTRY.read_text(encoding="utf-8"))
+    if not isinstance(payload, list) or not payload or not all(isinstance(item, str) and item for item in payload):
+        raise ValueError(f"invalid artifact role registry: {ARTIFACT_ROLE_REGISTRY}")
+    return payload
+
+
+ARTIFACT_ROLES = load_artifact_roles()
 
 
 def build_public_manifest(
@@ -115,7 +105,6 @@ def build_public_manifest(
         "verification_contract": {
             "shard_filter_supported": True,
             "proved_skip_supported": True,
-            "scan_fallback_supported": True,
             "filter_artifact_family": "shard_filters",
             "proof_catalog_artifact_family": "proof_catalogs",
             "hot_query_proof_supported": True,

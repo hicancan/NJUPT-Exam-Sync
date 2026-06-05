@@ -66,7 +66,10 @@ impl DenseScores {
             .filter_map(|doc_id| usize::try_from(*doc_id).ok())
             .filter_map(|index| self.values.get(index).copied())
             .collect();
-        values.sort_by(|a, b| b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal));
-        values[target.saturating_sub(1)]
+        let target_index = target.saturating_sub(1);
+        let (_top, threshold, _rest) = values.select_nth_unstable_by(target_index, |left, right| {
+            right.partial_cmp(left).unwrap_or(std::cmp::Ordering::Equal)
+        });
+        *threshold
     }
 }

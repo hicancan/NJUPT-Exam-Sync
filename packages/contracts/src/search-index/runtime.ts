@@ -144,9 +144,9 @@ export type SitegraphQueryClass =
     | 'degenerate'
     | 'hot'
     | 'hot_alias'
-    | 'cold_rare'
+    | 'cold_rare_dynamic_holdout'
     | 'cold_high_df'
-    | 'miss'
+    | 'miss_dynamic_holdout'
     | 'filtered'
     | 'time_filtered';
 

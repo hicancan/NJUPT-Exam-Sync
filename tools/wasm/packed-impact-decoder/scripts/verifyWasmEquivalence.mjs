@@ -84,6 +84,20 @@ const typedScoreEntries = typedScores => {
   return entries;
 };
 
+const typedMetrics = typedStats => {
+  assert.equal(typedStats.length, 8);
+  return {
+    matched_term_count: typedStats[0],
+    block_count: typedStats[1],
+    candidate_count: typedStats[2],
+    impact_blocks_visited: typedStats[3],
+    impact_blocks_pruned: typedStats[4],
+    postings_visited: typedStats[5],
+    postings_pruned: typedStats[6],
+    competitive_threshold: typedStats[7],
+  };
+};
+
 const encodeQueryTerms = terms => {
   const parts = terms.map(term => textEncoder.encode(term));
   const totalBytes = parts.reduce((sum, part) => sum + part.byteLength, 0);
@@ -106,8 +120,8 @@ const collectOutputs = decoder => {
   const encodedExam = encodeQueryTerms(['考试']);
   const typedSession = new decoder.PackedImpactRetrievalSession(4);
   try {
-    const firstApplyTyped = JSON.parse(typedSession.apply_terms_utf8(fixture, encodedExam.bytes, encodedExam.offsets));
-    const secondApplyTyped = JSON.parse(typedSession.apply_terms_utf8(fixture, encodedQuery.bytes, encodedQuery.offsets));
+    const firstApplyTyped = typedMetrics(typedSession.apply_terms_utf8_stats_f64(fixture, encodedExam.bytes, encodedExam.offsets));
+    const secondApplyTyped = typedMetrics(typedSession.apply_terms_utf8_stats_f64(fixture, encodedQuery.bytes, encodedQuery.offsets));
     const typedSessionScores = Array.from(typedSession.score_entries_f64());
     assert.deepEqual(typedScoreEntries(typedSessionScores), [
       [3, 37],
@@ -128,7 +142,7 @@ const collectOutputs = decoder => {
       session: {
         firstApplyTyped,
         secondApplyTyped,
-        stats: JSON.parse(typedSession.stats_json()),
+        stats: typedMetrics(typedSession.stats_f64()),
         typedSessionScores,
       },
     };

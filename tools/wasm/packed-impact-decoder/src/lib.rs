@@ -23,6 +23,21 @@ struct ApplyStats {
     competitive_threshold: f64,
 }
 
+impl ApplyStats {
+    fn to_f64(&self, matched_term_count: u64, block_count: usize, candidate_count: usize) -> Vec<f64> {
+        vec![
+            matched_term_count as f64,
+            block_count as f64,
+            candidate_count as f64,
+            self.impact_blocks_visited as f64,
+            self.impact_blocks_pruned as f64,
+            self.postings_visited as f64,
+            self.postings_pruned as f64,
+            self.competitive_threshold,
+        ]
+    }
+}
+
 fn json_string(value: &str) -> Result<String, JsValue> {
     serde_json::to_string(value).map_err(|error| JsValue::from_str(&error.to_string()))
 }
@@ -412,6 +427,7 @@ impl PackedImpactRetrievalSession {
         .to_string())
     }
 
+    #[cfg(feature = "benchmark-json-bridge")]
     pub fn apply_terms_utf8(
         &mut self,
         bytes: &[u8],
@@ -443,6 +459,28 @@ impl PackedImpactRetrievalSession {
         .to_string())
     }
 
+    pub fn apply_terms_utf8_stats_f64(
+        &mut self,
+        bytes: &[u8],
+        query_terms_utf8: &[u8],
+        query_term_offsets: &[u32],
+    ) -> Result<Vec<f64>, JsValue> {
+        let (blocks, matched_term_count) =
+            collect_packed_impact_blocks_utf8(bytes, query_terms_utf8, query_term_offsets)?;
+        let stats =
+            apply_impact_blocks_to_scores(&blocks, self.target_candidates, &mut self.scores)?;
+        self.matched_term_count += matched_term_count;
+        self.block_count += blocks.len();
+        self.impact_blocks_visited += stats.impact_blocks_visited;
+        self.impact_blocks_pruned += stats.impact_blocks_pruned;
+        self.postings_visited += stats.postings_visited;
+        self.postings_pruned += stats.postings_pruned;
+        self.competitive_threshold = stats.competitive_threshold;
+
+        Ok(stats.to_f64(matched_term_count, blocks.len(), self.scores.len()))
+    }
+
+    #[cfg(feature = "benchmark-json-bridge")]
     pub fn stats_json(&self) -> String {
         serde_json::json!({
             "matched_term_count": self.matched_term_count,
@@ -455,6 +493,19 @@ impl PackedImpactRetrievalSession {
             "competitive_threshold": self.competitive_threshold,
         })
         .to_string()
+    }
+
+    pub fn stats_f64(&self) -> Vec<f64> {
+        vec![
+            self.matched_term_count as f64,
+            self.block_count as f64,
+            self.scores.len() as f64,
+            self.impact_blocks_visited as f64,
+            self.impact_blocks_pruned as f64,
+            self.postings_visited as f64,
+            self.postings_pruned as f64,
+            self.competitive_threshold,
+        ]
     }
 
     #[cfg(feature = "benchmark-json-bridge")]

@@ -49,6 +49,14 @@ OBSOLETE_FIELDS = {
 }
 LEGACY_RUNTIME_ARTIFACTS = {"doc_meta_light", "light_inverted_index"}
 ATTACHMENT_EVIDENCE_LEVELS = {"metadata_only", "filename_only", "text_extracted", "snippet", "full_content"}
+ARTIFACT_ROLE_REGISTRY = Path(__file__).resolve().parents[4] / "packages" / "contracts" / "src" / "search-index" / "artifact-roles.json"
+
+
+def artifact_role_registry() -> set[str]:
+    payload = json.loads(ARTIFACT_ROLE_REGISTRY.read_text(encoding="utf-8"))
+    if not isinstance(payload, list) or not all(isinstance(item, str) and item for item in payload):
+        fail(f"invalid artifact role registry: {ARTIFACT_ROLE_REGISTRY}")
+    return set(payload)
 
 
 def ensure_no_obsolete_fields(payload: Any, path: str = "$") -> None:
@@ -393,9 +401,14 @@ def validate_generated_index(packages: list[dict[str, Any]] | dict[str, Any]) ->
         fail("manifest.progressive_search.full_scan_supported must be true")
     if progressive_search.get("progressive_events") is not True:
         fail("manifest.progressive_search.progressive_events must be true")
-    for role in ("hot_query_fast_start", "hot_query_top_initial", "hot_query_topk_certificate", "hot_query_complete_certificate"):
-        if role not in set(progressive_search.get("artifact_roles") or []):
+    declared_roles = set(progressive_search.get("artifact_roles") or [])
+    expected_roles = artifact_role_registry()
+    for role in expected_roles:
+        if role not in declared_roles:
             fail(f"manifest.progressive_search.artifact_roles missing {role}")
+    unknown_roles = sorted(declared_roles.difference(expected_roles))
+    if unknown_roles:
+        fail(f"manifest.progressive_search.artifact_roles contains unknown roles: {unknown_roles[:8]}")
     for state in ("first_trusted_results", "top_results_hydrated", "partial_verified", "scoped_exhaustive_complete", "global_exhaustive_complete"):
         if state not in (coverage_contract.get("states") or []):
             fail(f"manifest.coverage_contract.states missing {state}")
@@ -407,8 +420,8 @@ def validate_generated_index(packages: list[dict[str, Any]] | dict[str, Any]) ->
         fail("manifest.verification_contract.shard_filter_supported must be true")
     if verification_contract.get("proved_skip_supported") is not True:
         fail("manifest.verification_contract.proved_skip_supported must be true")
-    if verification_contract.get("scan_fallback_supported") is not True:
-        fail("manifest.verification_contract.scan_fallback_supported must be true")
+    if "scan_fallback_supported" in verification_contract:
+        fail("manifest.verification_contract.scan_fallback_supported is removed; proof completion must use certificate streams")
     if verification_contract.get("filter_artifact_family") != "shard_filters":
         fail("manifest.verification_contract.filter_artifact_family must be shard_filters")
     if verification_contract.get("proof_catalog_artifact_family") != "proof_catalogs":

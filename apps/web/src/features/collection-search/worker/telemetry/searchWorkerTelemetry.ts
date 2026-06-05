@@ -108,9 +108,9 @@ export const classifyDynamicQuery = (
             || event.type === 'global_exhaustive_complete'
         )
     ) {
-        return 'miss';
+        return 'miss_dynamic_holdout';
     }
-    return 'cold_rare';
+    return 'cold_rare_dynamic_holdout';
 };
 
 export const makeDegenerateCoverage = (

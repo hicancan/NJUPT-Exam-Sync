@@ -92,8 +92,8 @@ export function queryClassLabel(queryClass: SitegraphQueryStats['query_class']):
     if (queryClass === 'hot') return '热查询';
     if (queryClass === 'hot_alias') return '热别名';
     if (queryClass === 'cold_high_df') return '高频泛词';
-    if (queryClass === 'cold_rare') return '普通冷查询';
-    if (queryClass === 'miss') return '未命中';
+    if (queryClass === 'cold_rare_dynamic_holdout') return '动态冷查询';
+    if (queryClass === 'miss_dynamic_holdout') return '动态未命中';
     if (queryClass === 'filtered') return '筛选查询';
     if (queryClass === 'time_filtered') return '时间筛选';
     return null;

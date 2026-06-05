@@ -197,7 +197,7 @@ def test_public_index_is_pure_sitegraph_contract():
     assert set(["metadata_only", "filename_only", "text_extracted", "snippet", "full_content"]) <= set(manifest["coverage_contract"]["attachment_evidence_levels"])
     assert manifest["verification_contract"]["shard_filter_supported"] is True
     assert manifest["verification_contract"]["proved_skip_supported"] is True
-    assert manifest["verification_contract"]["scan_fallback_supported"] is True
+    assert "scan_fallback_supported" not in manifest["verification_contract"]
     assert manifest["verification_contract"]["filter_artifact_family"] == "shard_filters"
     assert manifest["verification_contract"]["proof_catalog_artifact_family"] == "proof_catalogs"
     assert manifest["verification_contract"]["completion_requires_ledger"] is True

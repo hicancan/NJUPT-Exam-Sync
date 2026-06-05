@@ -6,6 +6,7 @@ import {
 import type {
     SitegraphDocMeta
 } from './schema-parts';
+import { SITEGRAPH_ARTIFACT_ROLES, isSitegraphArtifactRole } from './artifactRoles';
 
 export const SitegraphImpactTermSchema = z.record(z.string(), z.array(z.number()));
 export const SitegraphImpactIndexSchema = z.object({
@@ -270,7 +271,25 @@ export const SitegraphSearchManifestSchema = z.object({
         total_documents: z.number(),
         full_scan_supported: z.literal(true),
         progressive_events: z.literal(true),
-        artifact_roles: z.array(z.string())
+        artifact_roles: z.array(z.string()).superRefine((roles, ctx) => {
+            const declared = new Set(roles);
+            for (const role of SITEGRAPH_ARTIFACT_ROLES) {
+                if (!declared.has(role)) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: `artifact_roles missing contract role ${role}`
+                    });
+                }
+            }
+            for (const role of roles) {
+                if (!isSitegraphArtifactRole(role)) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: `artifact_roles contains unknown role ${role}`
+                    });
+                }
+            }
+        })
     }).passthrough(),
     coverage_contract: z.object({
         states: z.array(z.string()),
@@ -287,11 +306,17 @@ export const SitegraphSearchManifestSchema = z.object({
     verification_contract: z.object({
         shard_filter_supported: z.literal(true),
         proved_skip_supported: z.literal(true),
-        scan_fallback_supported: z.literal(true),
         filter_artifact_family: z.literal('shard_filters'),
         proof_catalog_artifact_family: z.literal('proof_catalogs'),
         completion_requires_ledger: z.literal(true)
-    }).passthrough(),
+    }).passthrough().superRefine((contract, ctx) => {
+        if ('scan_fallback_supported' in contract) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'scan_fallback_supported is a removed transition contract; publish proof certificate streams instead'
+            });
+        }
+    }),
     routing_contract: z.object({
         planner: z.string().min(1),
         directory_contains_doc_postings: z.literal(false),

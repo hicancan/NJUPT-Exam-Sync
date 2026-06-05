@@ -12,6 +12,7 @@ import type {
     SitegraphSourceManifest,
     SitegraphSourceRegistry
 } from '@njupt-search/contracts';
+import { SITEGRAPH_ARTIFACT_ROLES } from '@njupt-search/contracts';
 import type { ArtifactContentCache } from '../src';
 import {
     artifact,
@@ -105,7 +106,7 @@ export const makeRoutedFixture = (
             total_documents: documents.length,
             full_scan_supported: true,
             progressive_events: true,
-            artifact_roles: ['source_registry', 'global_query_directory', 'hot_query_fast_start', 'hot_query_top_initial', 'local_impact_light_index_meta', 'local_impact_light_index_packed', 'local_impact_body_index_packed', 'proof_catalog', 'full_shards']
+            artifact_roles: [...SITEGRAPH_ARTIFACT_ROLES]
         },
         coverage_contract: {
             states: ['plan_started', 'local_index_started', 'first_trusted_results', 'body_index_started', 'top_results_hydrated', 'verification_started', 'partial_verified', 'global_exhaustive_complete'],
@@ -123,7 +124,6 @@ export const makeRoutedFixture = (
         verification_contract: {
             shard_filter_supported: true,
             proved_skip_supported: true,
-            scan_fallback_supported: true,
             filter_artifact_family: 'shard_filters',
             proof_catalog_artifact_family: 'proof_catalogs',
             completion_requires_ledger: true

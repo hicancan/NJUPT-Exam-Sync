@@ -58,7 +58,7 @@ def dominant_bottlenecks(summary: dict[str, Any]) -> dict[str, Any]:
 
 def stop_conditions(summary: dict[str, Any]) -> dict[str, Any]:
     return {
-        "dynamic_holdout": "At least one non-degenerate non-miss query must use dynamic_retrieval in the report corpus.",
+        "dynamic_holdout": "At least one cold_rare_dynamic_holdout query must use dynamic_retrieval in the report corpus.",
         "dynamic_pruning": "Dynamic retrieval holdout queries must show non-zero legal postings_pruned before claiming retrieval-kernel lower-bound progress.",
         "high_df_certificate": "High-DF queries must stay under first/top/proof byte gates while preserving task quality and exhaustive proof.",
         "browser": "Chrome DevTools evidence must show no console errors/issues, no generated artifact 4xx/5xx, and zero warm immutable network bytes.",

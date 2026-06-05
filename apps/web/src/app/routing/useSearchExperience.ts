@@ -122,7 +122,7 @@ export function useSearchExperience() {
     const displayedError = activeSearchError || activeExamError;
     const isLoading = needsExamData
         ? examLoading
-        : shouldSearchSitegraph && (searchLoading || (searching && recalledResults.length === 0));
+        : shouldSearchSitegraph && searchLoading;
     const blockingError = activeExamError && activeSearchError
         ? { examError: activeExamError, searchError: activeSearchError }
         : null;

@@ -69,6 +69,22 @@ const parsePackedImpactMetrics = (payload: unknown): PackedImpactRetrievalMetric
     };
 };
 
+const parsePackedImpactMetricsBuffer = (value: ArrayLike<number>): PackedImpactRetrievalMetrics => {
+    if (value.length !== 8) {
+        throw new Error(`Invalid typed packed-impact metric buffer length: ${value.length}`);
+    }
+    return {
+        matchedTermCount: numeric(value[0]),
+        blockCount: numeric(value[1]),
+        candidateCount: numeric(value[2]),
+        impactBlocksVisited: numeric(value[3]),
+        impactBlocksPruned: numeric(value[4]),
+        postingsVisited: numeric(value[5]),
+        postingsPruned: numeric(value[6]),
+        competitiveThreshold: numeric(value[7]),
+    };
+};
+
 const parsePackedImpactRetrieval = (payload: unknown): PackedImpactRetrievalResult => {
     const record = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
     return {
@@ -80,7 +96,7 @@ const parsePackedImpactRetrieval = (payload: unknown): PackedImpactRetrievalResu
 export const createPackedImpactRetriever = (): PackedImpactRetriever => {
     let decoderReady: Promise<unknown> | null = null;
     const ensureDecoder = (): Promise<unknown> => {
-        decoderReady ??= initPackedImpactDecoder(packedImpactDecoderUrl);
+        decoderReady ??= initPackedImpactDecoder({ module_or_path: packedImpactDecoderUrl });
         return decoderReady;
     };
 
@@ -92,12 +108,12 @@ export const createPackedImpactRetriever = (): PackedImpactRetriever => {
             return {
                 async applyPackedImpactScores(input) {
                     const terms = encodeQueryTerms(input.terms);
-                    const payload = wasmSession.apply_terms_utf8(
+                    const payload = wasmSession.apply_terms_utf8_stats_f64(
                         new Uint8Array(input.bytes),
                         terms.bytes,
                         terms.offsets,
                     );
-                    return parsePackedImpactMetrics(JSON.parse(payload) as unknown);
+                    return parsePackedImpactMetricsBuffer(payload);
                 },
                 async readScoreEntries() {
                     return parseTypedScoreEntries(wasmSession.score_entries_f64());

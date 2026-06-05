@@ -26,9 +26,9 @@ SCENARIOS: list[dict[str, Any]] = [
     {"name": "desktop-high-df-notice", "query": "通知", "viewport": {"width": 1280, "height": 720}, "expect": "通知"},
     {"name": "desktop-high-df-student", "query": "学生", "viewport": {"width": 1280, "height": 720}, "expect": "学生"},
     {"name": "desktop-high-df-njupt", "query": "南京邮电大学", "viewport": {"width": 1280, "height": 720}, "expect": "南京邮电大学"},
-    {"name": "desktop-cold-rare", "query": "缓考申请表", "viewport": {"width": 1280, "height": 720}, "expect": "缓考"},
-    {"name": "desktop-miss", "query": "不存在的查询词", "viewport": {"width": 1280, "height": 720}, "expect": "没有找到"},
-    {"name": "desktop-degenerate", "query": "a", "viewport": {"width": 1280, "height": 720}, "expect": "没有找到"},
+    {"name": "desktop-cold-dynamic-holdout", "query": "物理实验科技作品", "viewport": {"width": 1280, "height": 720}, "expect": "匹配"},
+    {"name": "desktop-miss-dynamic-holdout", "query": "不存在的物理实验科技作品zzzz", "viewport": {"width": 1280, "height": 720}, "expect": "没有找到"},
+    {"name": "desktop-degenerate", "query": "a", "viewport": {"width": 1280, "height": 720}, "expect": "输入至少两个字符"},
     {
         "name": "desktop-filter-time",
         "query": "奖学金",
@@ -160,6 +160,16 @@ def run_scenario(page: Any, base_url: str, scenario: dict[str, Any], run_id: str
     started = time.perf_counter()
     page.goto(scenario_url(base_url, scenario, run_id), wait_until="domcontentloaded")
     page.wait_for_load_state("networkidle", timeout=15_000)
+    page.wait_for_function(
+        """() => {
+            const text = document.body.innerText;
+            return text.includes('全量核查完毕')
+                || text.includes('筛选范围核查完毕')
+                || text.includes('输入至少两个字符')
+                || text.includes('数据请求失败');
+        }""",
+        timeout=30_000,
+    )
     try:
         details = page.get_by_text("技术细节", exact=True)
         if details.count() > 0:

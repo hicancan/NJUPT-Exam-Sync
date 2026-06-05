@@ -81,6 +81,7 @@ export function CollectionSearchSection({
             ? `${summary}${phaseText}。`
             : summary;
     const activeFilters = hasActiveFilters(filters);
+    const showSearchingEmptyState = searching && trimmedQuery.length >= 2 && !coverage?.exhaustive_complete;
 
     return (
         <section>
@@ -119,6 +120,11 @@ export function CollectionSearchSection({
                             </button>
                         </div>
                     ) : null}
+                </div>
+            ) : showSearchingEmptyState ? (
+                <div className="min-h-32 max-w-[692px] rounded-md border border-[#dadce0] bg-white p-6 text-[#4d5156] dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#bdc1c6]">
+                    <p>正在搜索南邮官网信息。</p>
+                    <p className="mt-2 text-sm">首批可信结果返回后会立即显示，后续继续全量核查。</p>
                 </div>
             ) : (
                 <div className="border border-[#dadce0] dark:border-[#3c4043] rounded-md bg-white dark:bg-[#202124] p-6 text-[#4d5156] dark:text-[#bdc1c6] max-w-[692px]">
