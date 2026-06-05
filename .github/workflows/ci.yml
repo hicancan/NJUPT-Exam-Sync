@@ -71,17 +71,10 @@ jobs:
 
       - name: Verify WASM release artifacts
         run: |
-          curl -fsSL -o /tmp/binaryen.tar.gz https://github.com/WebAssembly/binaryen/releases/download/version_129/binaryen-version_129-x86_64-linux.tar.gz
-          tar -xzf /tmp/binaryen.tar.gz -C /tmp
-          export PATH="/tmp/binaryen-version_129/bin:$PATH"
-          wasm-opt --version
-          cargo install wasm-pack --version 0.15.0 --locked
-          (cd tools/wasm/packed-impact-decoder && wasm-pack build --target web --release --out-dir pkg)
+          docker run --rm -v "$PWD:/work" -w /work rust@sha256:13c186980fa33cc12759b429662a1322939dbe697484b7c33b47dd2698d28460 /bin/bash -lc 'set -euo pipefail; export PATH="/usr/local/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"; rustc --version; cargo --version; rustup target add wasm32-unknown-unknown; curl -fsSL -o /tmp/binaryen.tar.gz https://github.com/WebAssembly/binaryen/releases/download/version_129/binaryen-version_129-x86_64-linux.tar.gz; tar -xzf /tmp/binaryen.tar.gz -C /tmp; export PATH="/tmp/binaryen-version_129/bin:$PATH"; wasm-opt --version; cargo install wasm-pack --version 0.15.0 --locked; cd tools/wasm/packed-impact-decoder; wasm-pack build --target web --release --out-dir pkg'
           cmp tools/wasm/packed-impact-decoder/pkg/packed_impact_decoder.js apps/web/src/features/collection-search/wasm/packed_impact_decoder.js
           cmp tools/wasm/packed-impact-decoder/pkg/packed_impact_decoder.d.ts apps/web/src/features/collection-search/wasm/packed_impact_decoder.d.ts
-          wasm-opt --strip-debug --strip-producers --strip-target-features --strip-toolchain-annotations tools/wasm/packed-impact-decoder/pkg/packed_impact_decoder_bg.wasm -o /tmp/generated-packed-impact-decoder.wasm
-          wasm-opt --strip-debug --strip-producers --strip-target-features --strip-toolchain-annotations apps/web/src/features/collection-search/wasm/packed_impact_decoder_bg.wasm -o /tmp/committed-packed-impact-decoder.wasm
-          cmp /tmp/generated-packed-impact-decoder.wasm /tmp/committed-packed-impact-decoder.wasm
+          cmp tools/wasm/packed-impact-decoder/pkg/packed_impact_decoder_bg.wasm apps/web/src/features/collection-search/wasm/packed_impact_decoder_bg.wasm
           node tools/wasm/packed-impact-decoder/scripts/verifyWasmEquivalence.mjs
           cmp tools/wasm/packed-impact-decoder/pkg/packed_impact_decoder_bg.wasm.d.ts apps/web/src/features/collection-search/wasm/packed_impact_decoder_bg.wasm.d.ts
 
