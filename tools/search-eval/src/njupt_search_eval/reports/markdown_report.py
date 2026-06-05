@@ -133,6 +133,7 @@ def render_markdown_report(report: dict[str, Any]) -> str:
         wasm_retrieval = wasm_decision.get("wasm_retrieval_kernel") or {}
         wasm_session = wasm_decision.get("wasm_retrieval_session") or {}
         wasm_score_bridge = wasm_decision.get("wasm_retrieval_session_scores_bridge") or {}
+        wasm_typed_scores = wasm_decision.get("wasm_retrieval_session_typed_scores") or {}
         lines.extend(
             [
                 "",
@@ -146,7 +147,8 @@ def render_markdown_report(report: dict[str, Any]) -> str:
                 f"- TypeScript retrieval kernel mean ms: `{format_ms(ts_retrieval.get('mean_ms'))}`",
                 f"- WASM stateless retrieval kernel mean ms: `{format_ms(wasm_retrieval.get('mean_ms'))}`",
                 f"- WASM stateful retrieval session mean ms: `{format_ms(wasm_session.get('mean_ms'))}`",
-                f"- WASM stateful retrieval score bridge mean ms: `{format_ms(wasm_score_bridge.get('mean_ms'))}`",
+                f"- WASM stateful retrieval JSON score bridge mean ms: `{format_ms(wasm_score_bridge.get('mean_ms'))}`",
+                f"- WASM stateful retrieval typed score buffer mean ms: `{format_ms(wasm_typed_scores.get('mean_ms'))}`",
                 f"- Reason: {decision.get('reason')}",
             ]
         )

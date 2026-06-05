@@ -258,6 +258,7 @@ const renderMarkdown = report => {
     const materialized = report.wasm_decode_to_json_then_parse.mean_ms / report.typescript_decode_to_object.mean_ms;
     const statsOnly = report.wasm_stats_only_decode.mean_ms / report.typescript_decode_to_object.mean_ms;
     const retrievalRatio = report.wasm_retrieval_session.mean_ms / report.typescript_retrieval_kernel.mean_ms;
+    const typedScoreRatio = report.wasm_retrieval_session_typed_scores.mean_ms / report.typescript_retrieval_kernel.mean_ms;
     return [
         '# NJUPT Search Rust/WASM Retrieval Decision',
         '',
@@ -276,7 +277,8 @@ const renderMarkdown = report => {
         `| TypeScript selective retrieval kernel | ${report.typescript_retrieval_kernel.mean_ms.toFixed(3)} | ${report.typescript_retrieval_kernel.min_ms.toFixed(3)} | ${report.typescript_retrieval_kernel.max_ms.toFixed(3)} |`,
         `| Rust/WASM stateless retrieval kernel | ${report.wasm_retrieval_kernel.mean_ms.toFixed(3)} | ${report.wasm_retrieval_kernel.min_ms.toFixed(3)} | ${report.wasm_retrieval_kernel.max_ms.toFixed(3)} |`,
         `| Rust/WASM stateful retrieval session | ${report.wasm_retrieval_session.mean_ms.toFixed(3)} | ${report.wasm_retrieval_session.min_ms.toFixed(3)} | ${report.wasm_retrieval_session.max_ms.toFixed(3)} |`,
-        `| Rust/WASM stateful retrieval with score bridge | ${report.wasm_retrieval_session_scores_bridge.mean_ms.toFixed(3)} | ${report.wasm_retrieval_session_scores_bridge.min_ms.toFixed(3)} | ${report.wasm_retrieval_session_scores_bridge.max_ms.toFixed(3)} |`,
+        `| Rust/WASM stateful retrieval with JSON score bridge | ${report.wasm_retrieval_session_scores_bridge.mean_ms.toFixed(3)} | ${report.wasm_retrieval_session_scores_bridge.min_ms.toFixed(3)} | ${report.wasm_retrieval_session_scores_bridge.max_ms.toFixed(3)} |`,
+        `| Rust/WASM stateful retrieval with typed score buffer | ${report.wasm_retrieval_session_typed_scores.mean_ms.toFixed(3)} | ${report.wasm_retrieval_session_typed_scores.min_ms.toFixed(3)} | ${report.wasm_retrieval_session_typed_scores.max_ms.toFixed(3)} |`,
         '',
         '## Decision',
         '',
@@ -285,7 +287,8 @@ const renderMarkdown = report => {
         `- WASM materialized path ratio vs TypeScript: \`${materialized.toFixed(3)}x\``,
         `- WASM stats-only lower-bound ratio vs TypeScript: \`${statsOnly.toFixed(3)}x\``,
         `- WASM stateful retrieval ratio vs TypeScript retrieval kernel: \`${retrievalRatio.toFixed(3)}x\``,
-        `- WASM stateful score bridge ratio vs TypeScript retrieval kernel: \`${(report.wasm_retrieval_session_scores_bridge.mean_ms / report.typescript_retrieval_kernel.mean_ms).toFixed(3)}x\``,
+        `- WASM stateful JSON score bridge ratio vs TypeScript retrieval kernel: \`${(report.wasm_retrieval_session_scores_bridge.mean_ms / report.typescript_retrieval_kernel.mean_ms).toFixed(3)}x\``,
+        `- WASM stateful typed score buffer ratio vs TypeScript retrieval kernel: \`${typedScoreRatio.toFixed(3)}x\``,
         `- Reason: ${report.decision.reason}`,
         '',
         '## Reproduction',
@@ -428,6 +431,26 @@ const main = async () => {
         }
         return aggregate;
     };
+    const retrieveWithWasmSessionTypedScores = () => {
+        let aggregate = emptyRetrievalSummary();
+        for (const { terms } of retrievalTermsByQuery) {
+            const session = new wasm.PackedImpactRetrievalSession(160);
+            const serializedTerms = JSON.stringify(terms);
+            let querySummary = emptyRetrievalSummary();
+            for (const payload of payloads) {
+                const result = JSON.parse(session.apply(payload.uint8, serializedTerms));
+                querySummary = addRetrievalSummary(querySummary, { ...result, candidate_count: 0 });
+            }
+            const scoreEntries = session.score_entries_f64();
+            if (scoreEntries.length % 2 !== 0) {
+                throw new Error(`WASM typed score buffer has odd length ${scoreEntries.length}`);
+            }
+            querySummary.candidate_count = scoreEntries.length / 2;
+            aggregate = addRetrievalSummary(aggregate, querySummary);
+            session.free();
+        }
+        return aggregate;
+    };
 
     const tsResult = timed(args.runs, decodeWithTypescript);
     const wasmJsonResult = timed(args.runs, decodeWithWasmJson);
@@ -436,6 +459,7 @@ const main = async () => {
     const wasmRetrievalResult = timedRetrieval(args.runs, retrieveWithWasm);
     const wasmRetrievalSessionResult = timedRetrieval(args.runs, retrieveWithWasmSession);
     const wasmRetrievalSessionScoresBridgeResult = timedRetrieval(args.runs, retrieveWithWasmSessionScoresBridge);
+    const wasmRetrievalSessionTypedScoresResult = timedRetrieval(args.runs, retrieveWithWasmSessionTypedScores);
     if (!sameSummary(tsResult.summary, wasmJsonResult.summary) || !sameSummary(tsResult.summary, wasmStatsResult.summary)) {
         throw new Error('Decoder benchmark summaries do not match');
     }
@@ -445,18 +469,21 @@ const main = async () => {
     if (!sameRetrievalSummary(wasmRetrievalSessionResult.summary, wasmRetrievalSessionScoresBridgeResult.summary)) {
         throw new Error(`WASM session score bridge retrieval summaries do not match: ${JSON.stringify({ stats: wasmRetrievalSessionResult.summary, scores: wasmRetrievalSessionScoresBridgeResult.summary })}`);
     }
+    if (!sameRetrievalSummary(wasmRetrievalSessionResult.summary, wasmRetrievalSessionTypedScoresResult.summary)) {
+        throw new Error(`WASM session typed score retrieval summaries do not match: ${JSON.stringify({ stats: wasmRetrievalSessionResult.summary, typed: wasmRetrievalSessionTypedScoresResult.summary })}`);
+    }
 
     const tsWinsCurrentRuntime = tsResult.mean_ms <= wasmJsonResult.mean_ms;
     const retrievalRatio = wasmRetrievalSessionResult.mean_ms / tsRetrievalResult.mean_ms;
-    const scoreBridgeRatio = wasmRetrievalSessionScoresBridgeResult.mean_ms / tsRetrievalResult.mean_ms;
+    const typedScoreRatio = wasmRetrievalSessionTypedScoresResult.mean_ms / tsRetrievalResult.mean_ms;
     const ratio = wasmJsonResult.mean_ms / tsResult.mean_ms;
-    const tsRetrievalWins = tsRetrievalResult.mean_ms <= wasmRetrievalSessionScoresBridgeResult.mean_ms;
-    const wasmScoreBridgeWins = wasmRetrievalSessionScoresBridgeResult.mean_ms < tsRetrievalResult.mean_ms;
-    const decision = wasmScoreBridgeWins
+    const tsRetrievalWins = tsRetrievalResult.mean_ms <= wasmRetrievalSessionTypedScoresResult.mean_ms;
+    const wasmTypedScoreWins = wasmRetrievalSessionTypedScoresResult.mean_ms < tsRetrievalResult.mean_ms;
+    const decision = wasmTypedScoreWins
         ? {
-            reason: `The browser runtime can consume Rust/WASM stateful score entries directly. On the full packed body workload, the Rust/WASM session score bridge was ${scoreBridgeRatio.toFixed(3)}x the TypeScript selective retrieval kernel for the same artifact format, query set, and global top-k pruning state.`,
+            reason: `The browser runtime consumes Rust/WASM stateful score entries through a typed buffer, without the JSON score bridge. On the full packed body workload, the typed score buffer path was ${typedScoreRatio.toFixed(3)}x the TypeScript selective retrieval kernel for the same artifact format, query set, and global top-k pruning state.`,
             status: 'rust_wasm_retrieval_runtime_selected',
-            winner: 'wasm_retrieval_session_scores_bridge',
+            winner: 'wasm_retrieval_session_typed_scores',
         }
         : tsWinsCurrentRuntime && tsRetrievalWins
         ? {
@@ -493,6 +520,7 @@ const main = async () => {
         wasm_retrieval_kernel: wasmRetrievalResult,
         wasm_retrieval_session: wasmRetrievalSessionResult,
         wasm_retrieval_session_scores_bridge: wasmRetrievalSessionScoresBridgeResult,
+        wasm_retrieval_session_typed_scores: wasmRetrievalSessionTypedScoresResult,
     };
 
     await writeJson(args.output, report);

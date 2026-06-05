@@ -22,6 +22,47 @@ const attachmentBlob = (document: SitegraphFullDocument): string => normalize(
         .join(' ')
 );
 
+const structuralNeedles = (normalizedQuery: string, terms: string[]): string[] => {
+    const needles = normalizedQuery.length >= 3 ? [normalizedQuery] : [];
+    for (const term of terms) {
+        if (term.length >= 4) needles.push(term);
+    }
+    return Array.from(new Set(needles));
+};
+
+const structuralMatchLength = (text: string, needles: string[]): number => {
+    let longest = 0;
+    for (const needle of needles) {
+        if (text.includes(needle)) longest = Math.max(longest, needle.length);
+    }
+    return longest;
+};
+
+const structuralRelevanceBoost = (
+    normalizedQuery: string,
+    terms: string[],
+    fields: { attachment: string; section: string; tags: string; title: string; url: string }
+): { score: number; reasons: string[] } => {
+    const needles = structuralNeedles(normalizedQuery, terms);
+    const hits = [
+        [fields.title, (length: number) => 1600 + Math.min(length, 10) * 400, '标题命中'],
+        [fields.section, (length: number) => 1600 + Math.min(length, 10) * 400, '栏目路径命中'],
+        [fields.attachment, (length: number) => 1200 + Math.min(length, 10) * 250, '附件名命中'],
+        [fields.url, (length: number) => 600 + Math.min(length, 10) * 120, 'URL 命中'],
+        [fields.tags, (length: number) => 450 + Math.min(length, 10) * 90, '标签命中'],
+    ] as const;
+    let score = 0;
+    const reasons: string[] = [];
+    for (const [text, boostForLength, reason] of hits) {
+        const matchLength = structuralMatchLength(text, needles);
+        if (matchLength > 0) {
+            score += boostForLength(matchLength);
+            reasons.push(reason);
+        }
+    }
+    return { score, reasons };
+};
+
 export { dateSortValue };
 
 export const rankingDateSortValue = (document: SitegraphFullDocument): number => {
@@ -164,6 +205,11 @@ export const rankSitegraphDocument = (
     }
     if (matchedTerms.length > 0) {
         reasons.push(`词项：${Array.from(new Set(matchedTerms)).sort((a, b) => b.length - a.length).slice(0, 6).join('、')}`);
+    }
+    const structuralBoost = structuralRelevanceBoost(normalizedQuery, terms, { attachment, section, tags, title, url });
+    score += structuralBoost.score;
+    for (const reason of structuralBoost.reasons) {
+        if (!reasons.includes(reason)) reasons.push(reason);
     }
 
     if (profile.authoritySources.includes(sourceId)) {

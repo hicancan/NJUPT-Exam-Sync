@@ -7,7 +7,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from .sitegraph_search import BASE_DIR, recall_documents_with_stats
+from .runtime_mirror.config import BASE_DIR
+from .sitegraph_search import recall_documents_with_stats
 
 
 QUERY_DIR = BASE_DIR / "tools" / "search-eval" / "queries"

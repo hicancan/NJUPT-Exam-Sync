@@ -3,7 +3,8 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from .sitegraph_search import load_index, recall_documents_with_stats
+from .runtime_mirror.cache_io import load_index
+from .sitegraph_search import recall_documents_with_stats
 
 
 DEFAULT_CACHE_QUERIES = [

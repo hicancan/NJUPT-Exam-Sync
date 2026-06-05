@@ -76,6 +76,15 @@ const loadDecoder = async (baseDir, cacheKey) => {
   return decoder;
 };
 
+const typedScoreEntries = typedScores => {
+  assert.equal(typedScores.length % 2, 0);
+  const entries = [];
+  for (let index = 0; index < typedScores.length; index += 2) {
+    entries.push([typedScores[index], typedScores[index + 1]]);
+  }
+  return entries;
+};
+
 const collectOutputs = decoder => {
   const fixture = makeFixture();
   const query = JSON.stringify(['考试', '四六级']);
@@ -83,6 +92,9 @@ const collectOutputs = decoder => {
   try {
     const firstApply = JSON.parse(session.apply(fixture, JSON.stringify(['考试'])));
     const secondApply = JSON.parse(session.apply(fixture, query));
+    const scores = JSON.parse(session.scores_json());
+    const typedScores = Array.from(session.score_entries_f64());
+    assert.deepEqual(typedScoreEntries(typedScores), scores.score_entries);
     return {
       stats: JSON.parse(decoder.decode_packed_impact_stats(fixture)),
       materialized: JSON.parse(decoder.decode_packed_impact_to_json(fixture)),
@@ -92,7 +104,8 @@ const collectOutputs = decoder => {
         firstApply,
         secondApply,
         stats: JSON.parse(session.stats_json()),
-        scores: JSON.parse(session.scores_json()),
+        scores,
+        typedScores,
       },
     };
   } finally {

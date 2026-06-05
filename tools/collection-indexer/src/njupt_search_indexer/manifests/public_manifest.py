@@ -80,7 +80,7 @@ def build_public_manifest(
             "local_index_loading": "query_planned_on_demand",
             "body_index_loading": "query_planned_on_demand",
             "full_text_loading": "lazy_candidate_hydration_then_verified_scope_scan",
-            "hot_path_runtime": "stateful_rust_wasm_packed_impact_score_bridge",
+            "hot_path_runtime": "stateful_rust_wasm_packed_impact_typed_scores",
             "retrieval_kernel": "rust_wasm_global_topk_pruning_v1",
             "search_worker": True,
         },

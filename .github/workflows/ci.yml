@@ -59,6 +59,7 @@ jobs:
       - name: Source complexity gates
         run: |
           uv run python tools/quality-gates/scripts/check_source_complexity.py
+          uv run python tools/quality-gates/scripts/check_tracked_byproducts.py
           uv run python tools/quality-gates/scripts/check_runtime_fast_start.py
 
       - name: Generated artifact gates

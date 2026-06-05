@@ -4,8 +4,8 @@ import argparse
 import json
 from pathlib import Path
 
-from .sitegraph_search import PUBLIC_INDEX_DIR
 from .browser_verification import run_browser_verification
+from .runtime_mirror.config import PUBLIC_INDEX_DIR
 from .sitegraph_cache_benchmark import run_cache_benchmark
 from .sitegraph_lower_bound_report import build_lower_bound_report, write_report_files
 from .sitegraph_query_smoke_test import validate_quality

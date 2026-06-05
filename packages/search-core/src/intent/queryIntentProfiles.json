@@ -178,7 +178,7 @@
       }
     },
     "stale_penalty": {
-      "modes": ["current_notice", "current_term", "current_policy"],
+      "modes": ["current_notice", "current_term", "current_policy", "form_version"],
       "thresholds": [
         {
           "older_than_days": 3650,
@@ -196,6 +196,16 @@
           "older_than_days": 365,
           "score": 2600,
           "modes": ["current_term"]
+        },
+        {
+          "older_than_days": 730,
+          "score": 1800,
+          "modes": ["form_version"]
+        },
+        {
+          "older_than_days": 365,
+          "score": 600,
+          "modes": ["form_version"]
         },
         {
           "older_than_days": 180,

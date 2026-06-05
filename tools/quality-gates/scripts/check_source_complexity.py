@@ -19,6 +19,14 @@ SOURCE_PREFIXES = (
     "tools/wasm/packed-impact-decoder/src/",
 )
 
+TEST_PREFIXES = (
+    "apps/web/tests/",
+    "packages/contracts/tests/",
+    "packages/exam-core/tests/",
+    "packages/search-core/tests/",
+    "tests/",
+)
+
 GENERATED_PREFIXES = (
     "apps/web/src/features/collection-search/wasm/",
 )
@@ -26,8 +34,15 @@ GENERATED_PREFIXES = (
 DEFAULT_LINE_LIMITS = {
     ".ts": 500,
     ".tsx": 500,
-    ".py": 800,
-    ".rs": 800,
+    ".py": 600,
+    ".rs": 700,
+}
+
+TEST_LINE_LIMITS = {
+    ".ts": 700,
+    ".tsx": 700,
+    ".py": 700,
+    ".rs": 700,
 }
 
 FILE_LINE_LIMITS = {
@@ -47,7 +62,17 @@ def candidate_files() -> list[str]:
 def should_check(path: str) -> bool:
     if path.startswith(GENERATED_PREFIXES):
         return False
-    return path.endswith(tuple(DEFAULT_LINE_LIMITS)) and path.startswith(SOURCE_PREFIXES)
+    if not path.endswith(tuple(DEFAULT_LINE_LIMITS)):
+        return False
+    return path.startswith(SOURCE_PREFIXES) or path.startswith(TEST_PREFIXES) or "/tests/" in path
+
+
+def line_limit(relative_path: str, suffix: str) -> int:
+    if relative_path in FILE_LINE_LIMITS:
+        return FILE_LINE_LIMITS[relative_path]
+    if relative_path.startswith(TEST_PREFIXES) or "/tests/" in relative_path:
+        return TEST_LINE_LIMITS[suffix]
+    return DEFAULT_LINE_LIMITS[suffix]
 
 
 def line_count(path: Path) -> int:
@@ -61,9 +86,11 @@ def main() -> int:
     for relative_path in candidate_files():
         if not should_check(relative_path):
             continue
-        checked += 1
         absolute_path = REPO_ROOT / relative_path
-        limit = FILE_LINE_LIMITS.get(relative_path, DEFAULT_LINE_LIMITS[absolute_path.suffix])
+        if not absolute_path.exists():
+            continue
+        checked += 1
+        limit = line_limit(relative_path, absolute_path.suffix)
         lines = line_count(absolute_path)
         if lines > limit:
             failures.append(f"{relative_path}: {lines} lines exceeds budget {limit}")

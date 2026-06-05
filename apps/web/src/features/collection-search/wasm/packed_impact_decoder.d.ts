@@ -6,6 +6,7 @@ export class PackedImpactRetrievalSession {
     [Symbol.dispose](): void;
     apply(bytes: Uint8Array, query_terms_json: string): string;
     constructor(target_candidates: number);
+    score_entries_f64(): Float64Array;
     scores_json(): string;
     stats_json(): string;
 }
@@ -27,6 +28,7 @@ export interface InitOutput {
     readonly decode_packed_impact_to_json: (a: number, b: number) => [number, number, number, number];
     readonly packedimpactretrievalsession_apply: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly packedimpactretrievalsession_new: (a: number) => number;
+    readonly packedimpactretrievalsession_score_entries_f64: (a: number) => [number, number];
     readonly packedimpactretrievalsession_scores_json: (a: number) => [number, number];
     readonly packedimpactretrievalsession_stats_json: (a: number) => [number, number];
     readonly retrieve_packed_impact_topk_scores: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];

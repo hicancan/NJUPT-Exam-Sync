@@ -2,6 +2,9 @@ use std::collections::{HashMap, HashSet};
 use std::str;
 use wasm_bindgen::prelude::*;
 
+mod score_entries;
+use score_entries::{score_entries_to_f64, sorted_score_entries, top_doc_ids};
+
 const MAGIC_V1: &[u8] = b"SGIXB001";
 const MAGIC_V2: &[u8] = b"SGIXB002";
 
@@ -305,40 +308,6 @@ fn suffix_unique_impact(blocks: &[ImpactBlock]) -> Vec<f64> {
     suffix
 }
 
-fn top_doc_ids(scores: &HashMap<u64, f64>, limit: usize) -> Vec<u64> {
-    let mut entries: Vec<(u64, f64)> = scores
-        .iter()
-        .map(|(doc_id, score)| (*doc_id, *score))
-        .collect();
-    entries.sort_by(|left, right| {
-        right
-            .1
-            .partial_cmp(&left.1)
-            .unwrap_or(std::cmp::Ordering::Equal)
-            .then_with(|| left.0.cmp(&right.0))
-    });
-    entries
-        .into_iter()
-        .take(limit)
-        .map(|(doc_id, _score)| doc_id)
-        .collect()
-}
-
-fn sorted_score_entries(scores: &HashMap<u64, f64>) -> Vec<(u64, f64)> {
-    let mut entries: Vec<(u64, f64)> = scores
-        .iter()
-        .map(|(doc_id, score)| (*doc_id, *score))
-        .collect();
-    entries.sort_by(|left, right| {
-        right
-            .1
-            .partial_cmp(&left.1)
-            .unwrap_or(std::cmp::Ordering::Equal)
-            .then_with(|| left.0.cmp(&right.0))
-    });
-    entries
-}
-
 fn collect_packed_impact_blocks(
     bytes: &[u8],
     query_terms_json: &str,
@@ -548,6 +517,11 @@ impl PackedImpactRetrievalSession {
             "score_entries": sorted_score_entries(&self.scores),
         })
         .to_string()
+    }
+
+    pub fn score_entries_f64(&self) -> Vec<f64> {
+        let entries = sorted_score_entries(&self.scores);
+        score_entries_to_f64(&entries)
     }
 }
 

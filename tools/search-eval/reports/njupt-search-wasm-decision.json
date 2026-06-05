@@ -3,11 +3,11 @@
   "benchmark": "packed-impact-retrieval-wasm-vs-typescript-v2",
   "collection": "apps/web/public/generated/collections/njupt-public",
   "decision": {
-    "reason": "The browser runtime can consume Rust/WASM stateful score entries directly. On the full packed body workload, the Rust/WASM session score bridge was 0.133x the TypeScript selective retrieval kernel for the same artifact format, query set, and global top-k pruning state.",
+    "reason": "The browser runtime consumes Rust/WASM stateful score entries through a typed buffer, without the JSON score bridge. On the full packed body workload, the typed score buffer path was 0.130x the TypeScript selective retrieval kernel for the same artifact format, query set, and global top-k pruning state.",
     "status": "rust_wasm_retrieval_runtime_selected",
-    "winner": "wasm_retrieval_session_scores_bridge"
+    "winner": "wasm_retrieval_session_typed_scores"
   },
-  "generated_at": "2026-06-04T08:56:28.534Z",
+  "generated_at": "2026-06-05T01:03:41.314Z",
   "runs": 5,
   "toolchain": {
     "node": "v24.16.0",
@@ -16,7 +16,7 @@
     "wasm_pack": "wasm-pack 0.15.0",
     "wasm_tools": "wasm-tools 1.251.0 (a1a178a02 2026-05-28)"
   },
-  "total_bytes": 16865808,
+  "total_bytes": 16866162,
   "retrieval_queries": [
     {
       "query": "校历",
@@ -52,99 +52,114 @@
     }
   ],
   "typescript_decode_to_object": {
-    "max_ms": 756.561,
-    "mean_ms": 680.869,
-    "min_ms": 617.165,
+    "max_ms": 1107.643,
+    "mean_ms": 680.576,
+    "min_ms": 547.788,
     "runs": 5,
     "summary": {
       "field_count": 1164834,
-      "max_doc_id": 10264,
-      "posting_count": 2303023,
+      "max_doc_id": 10267,
+      "posting_count": 2303377,
       "term_count": 879679
     }
   },
   "wasm_decode_to_json_then_parse": {
-    "max_ms": 756.316,
-    "mean_ms": 741.618,
-    "min_ms": 729.729,
+    "max_ms": 1231.032,
+    "mean_ms": 1159.932,
+    "min_ms": 1080.677,
     "runs": 5,
     "summary": {
       "field_count": 1164834,
-      "max_doc_id": 10264,
-      "posting_count": 2303023,
+      "max_doc_id": 10267,
+      "posting_count": 2303377,
       "term_count": 879679
     }
   },
   "wasm_stats_only_decode": {
-    "max_ms": 46.933,
-    "mean_ms": 44.771,
-    "min_ms": 43.909,
+    "max_ms": 72.909,
+    "mean_ms": 67.945,
+    "min_ms": 59.294,
     "runs": 5,
     "summary": {
       "field_count": 1164834,
-      "max_doc_id": 10264,
-      "posting_count": 2303023,
+      "max_doc_id": 10267,
+      "posting_count": 2303377,
       "term_count": 879679
     }
   },
   "typescript_retrieval_kernel": {
-    "max_ms": 4008.336,
-    "mean_ms": 3941.645,
-    "min_ms": 3892.451,
+    "max_ms": 6669.738,
+    "mean_ms": 6421.168,
+    "min_ms": 6202.794,
     "runs": 5,
     "summary": {
       "block_count": 13556,
-      "candidate_count": 21931,
+      "candidate_count": 21940,
       "impact_blocks_pruned": 2631,
       "impact_blocks_visited": 10925,
       "matched_term_count": 7747,
-      "postings_pruned": 14176,
-      "postings_visited": 67913
+      "postings_pruned": 14180,
+      "postings_visited": 67939
     }
   },
   "wasm_retrieval_kernel": {
-    "max_ms": 384.302,
-    "mean_ms": 377.284,
-    "min_ms": 373.317,
+    "max_ms": 662.901,
+    "mean_ms": 593.197,
+    "min_ms": 548.018,
     "runs": 5,
     "summary": {
       "block_count": 13556,
-      "candidate_count": 28554,
+      "candidate_count": 28565,
       "impact_blocks_pruned": 0,
       "impact_blocks_visited": 13556,
       "matched_term_count": 7747,
       "postings_pruned": 0,
-      "postings_visited": 82089
+      "postings_visited": 82119
     }
   },
   "wasm_retrieval_session": {
-    "max_ms": 522.358,
-    "mean_ms": 511.046,
-    "min_ms": 497.002,
+    "max_ms": 872.958,
+    "mean_ms": 822.471,
+    "min_ms": 750.465,
     "runs": 5,
     "summary": {
       "block_count": 13556,
-      "candidate_count": 21931,
+      "candidate_count": 21940,
       "impact_blocks_pruned": 2631,
       "impact_blocks_visited": 10925,
       "matched_term_count": 7747,
-      "postings_pruned": 14176,
-      "postings_visited": 67913
+      "postings_pruned": 14180,
+      "postings_visited": 67939
     }
   },
   "wasm_retrieval_session_scores_bridge": {
-    "max_ms": 534.024,
-    "mean_ms": 523.395,
-    "min_ms": 515.45,
+    "max_ms": 910.94,
+    "mean_ms": 841.366,
+    "min_ms": 781.311,
     "runs": 5,
     "summary": {
       "block_count": 13556,
-      "candidate_count": 21931,
+      "candidate_count": 21940,
       "impact_blocks_pruned": 2631,
       "impact_blocks_visited": 10925,
       "matched_term_count": 7747,
-      "postings_pruned": 14176,
-      "postings_visited": 67913
+      "postings_pruned": 14180,
+      "postings_visited": 67939
+    }
+  },
+  "wasm_retrieval_session_typed_scores": {
+    "max_ms": 894.513,
+    "mean_ms": 832.437,
+    "min_ms": 755.511,
+    "runs": 5,
+    "summary": {
+      "block_count": 13556,
+      "candidate_count": 21940,
+      "impact_blocks_pruned": 2631,
+      "impact_blocks_visited": 10925,
+      "matched_term_count": 7747,
+      "postings_pruned": 14180,
+      "postings_visited": 67939
     }
   }
 }

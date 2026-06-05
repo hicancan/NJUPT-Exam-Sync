@@ -85,6 +85,51 @@ def is_short_landing_page(document: dict[str, Any], normalized_query: str, title
         and int(content_length) < 220
     )
 
+def structural_needles(normalized_query: str, terms: list[str]) -> list[str]:
+    needles = [normalized_query] if len(normalized_query) >= 3 else []
+    needles.extend(term for term in terms if len(term) >= 4)
+    return list(dict.fromkeys(needles))
+
+def structural_match_length(text: str, needles: list[str]) -> int:
+    return max((len(needle) for needle in needles if needle in text), default=0)
+
+def structural_boost(field: str, length: int) -> float:
+    capped = min(length, 10)
+    if field == "attachment":
+        return 1200.0 + capped * 250.0
+    if field == "url":
+        return 600.0 + capped * 120.0
+    if field == "tags":
+        return 450.0 + capped * 90.0
+    return 1600.0 + capped * 400.0
+
+def structural_relevance_boost(
+    normalized_query: str,
+    terms: list[str],
+    *,
+    attachment: str,
+    section: str,
+    tags: str,
+    title: str,
+    url: str,
+) -> tuple[float, list[str]]:
+    needles = structural_needles(normalized_query, terms)
+    hits = (
+        ("title", title, "标题命中"),
+        ("section", section, "栏目路径命中"),
+        ("attachment", attachment, "附件名命中"),
+        ("url", url, "URL 命中"),
+        ("tags", tags, "标签命中"),
+    )
+    score = 0.0
+    reasons: list[str] = []
+    for field, text, reason in hits:
+        match_length = structural_match_length(text, needles)
+        if match_length > 0:
+            score += structural_boost(field, match_length)
+            reasons.append(reason)
+    return score, reasons
+
 def rank_document(document: dict[str, Any], query: str, terms: list[str], light_score: float) -> dict[str, Any]:
     profile = detect_query_intent(query)
     normalized_query = normalize_text(query)
@@ -156,6 +201,19 @@ def rank_document(document: dict[str, Any], query: str, terms: list[str], light_
             matched_terms.append(term)
     if matched_terms:
         reasons.append("词项: " + "、".join(sorted(set(matched_terms), key=len, reverse=True)[:6]))
+    structural_score, structural_reasons = structural_relevance_boost(
+        normalized_query,
+        terms,
+        attachment=attachment,
+        section=section,
+        tags=tags,
+        title=title,
+        url=url,
+    )
+    score += structural_score
+    for reason in structural_reasons:
+        if reason not in reasons:
+            reasons.append(reason)
 
     source_id = source_id_for(document)
     if source_id in profile["authority_sources"]:

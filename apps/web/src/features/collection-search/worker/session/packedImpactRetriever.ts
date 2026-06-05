@@ -23,6 +23,22 @@ const parseScoreEntries = (value: unknown): Array<readonly [number, number]> => 
     return entries;
 };
 
+const parseTypedScoreEntries = (value: ArrayLike<number>): Array<readonly [number, number]> => {
+    if (value.length % 2 !== 0) {
+        throw new Error(`Invalid typed score entry buffer length: ${value.length}`);
+    }
+    const entries: Array<readonly [number, number]> = [];
+    for (let index = 0; index < value.length; index += 2) {
+        const docIndex = value[index];
+        const score = value[index + 1];
+        if (typeof docIndex !== 'number' || typeof score !== 'number') {
+            throw new Error(`Invalid typed score entry at offset ${index}`);
+        }
+        if (Number.isInteger(docIndex) && score > 0) entries.push([docIndex, score]);
+    }
+    return entries;
+};
+
 const parsePackedImpactMetrics = (payload: unknown): PackedImpactRetrievalMetrics => {
     const record = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
     return {
@@ -66,9 +82,7 @@ export const createPackedImpactRetriever = (): PackedImpactRetriever => {
                     return parsePackedImpactMetrics(JSON.parse(payload) as unknown);
                 },
                 async readScoreEntries() {
-                    const payload = JSON.parse(wasmSession.scores_json()) as unknown;
-                    const record = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
-                    return parseScoreEntries(record.score_entries);
+                    return parseTypedScoreEntries(wasmSession.score_entries_f64());
                 },
             };
         },

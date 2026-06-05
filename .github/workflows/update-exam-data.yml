@@ -51,6 +51,7 @@ jobs:
           npm run lint
           npm run build
           npm run check:source-complexity
+          npm run check:tracked-byproducts
           npm run check:runtime-fast-start
           npm run check:web-bundle-size
           uv run python tools/quality-gates/scripts/validate_search_index.py

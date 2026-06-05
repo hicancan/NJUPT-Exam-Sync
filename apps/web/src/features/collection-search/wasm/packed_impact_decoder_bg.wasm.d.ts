@@ -6,6 +6,7 @@ export const decode_packed_impact_stats: (a: number, b: number) => [number, numb
 export const decode_packed_impact_to_json: (a: number, b: number) => [number, number, number, number];
 export const packedimpactretrievalsession_apply: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
 export const packedimpactretrievalsession_new: (a: number) => number;
+export const packedimpactretrievalsession_score_entries_f64: (a: number) => [number, number];
 export const packedimpactretrievalsession_scores_json: (a: number) => [number, number];
 export const packedimpactretrievalsession_stats_json: (a: number) => [number, number];
 export const retrieve_packed_impact_topk_scores: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
