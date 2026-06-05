@@ -6,7 +6,6 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, '../../../..');
 const generatedDir = resolve(repoRoot, 'tools/wasm/packed-impact-decoder/pkg');
-const committedDir = resolve(repoRoot, 'apps/web/src/features/collection-search/wasm');
 const textEncoder = new TextEncoder();
 
 const encodeVarint = value => {
@@ -103,46 +102,52 @@ const encodeQueryTerms = terms => {
 const collectOutputs = decoder => {
   const fixture = makeFixture();
   const terms = ['考试', '四六级'];
-  const query = JSON.stringify(terms);
   const encodedQuery = encodeQueryTerms(terms);
   const encodedExam = encodeQueryTerms(['考试']);
-  const session = new decoder.PackedImpactRetrievalSession(4);
   const typedSession = new decoder.PackedImpactRetrievalSession(4);
   try {
-    const firstApply = JSON.parse(session.apply(fixture, JSON.stringify(['考试'])));
-    const secondApply = JSON.parse(session.apply(fixture, query));
     const firstApplyTyped = JSON.parse(typedSession.apply_terms_utf8(fixture, encodedExam.bytes, encodedExam.offsets));
     const secondApplyTyped = JSON.parse(typedSession.apply_terms_utf8(fixture, encodedQuery.bytes, encodedQuery.offsets));
-    const scores = JSON.parse(session.scores_json());
-    const typedScores = Array.from(session.score_entries_f64());
     const typedSessionScores = Array.from(typedSession.score_entries_f64());
-    assert.deepEqual(typedScoreEntries(typedScores), scores.score_entries);
-    assert.deepEqual(firstApplyTyped, firstApply);
-    assert.deepEqual(secondApplyTyped, secondApply);
-    assert.deepEqual(typedScoreEntries(typedSessionScores), scores.score_entries);
+    assert.deepEqual(typedScoreEntries(typedSessionScores), [
+      [3, 37],
+      [1, 24],
+      [10, 24],
+      [5, 13],
+      [2, 12],
+      [4, 12],
+      [8, 7],
+      [13, 7],
+      [21, 7],
+    ]);
     return {
       stats: JSON.parse(decoder.decode_packed_impact_stats(fixture)),
       materialized: JSON.parse(decoder.decode_packed_impact_to_json(fixture)),
       topkStatsTyped: JSON.parse(decoder.retrieve_packed_impact_topk_stats_utf8(fixture, encodedQuery.bytes, encodedQuery.offsets, 4)),
       topkScoresTyped: JSON.parse(decoder.retrieve_packed_impact_topk_scores_utf8(fixture, encodedQuery.bytes, encodedQuery.offsets, 4)),
       session: {
-        firstApply,
-        secondApply,
         firstApplyTyped,
         secondApplyTyped,
-        stats: JSON.parse(session.stats_json()),
-        scores,
-        typedScores,
+        stats: JSON.parse(typedSession.stats_json()),
         typedSessionScores,
       },
     };
   } finally {
-    session.free();
     typedSession.free();
   }
 };
 
 const generated = await loadDecoder(generatedDir, 'generated');
-const committed = await loadDecoder(committedDir, 'committed');
-assert.deepEqual(collectOutputs(generated), collectOutputs(committed));
+const output = collectOutputs(generated);
+assert.deepEqual(output.stats, { term_count: 2, field_count: 4, posting_count: 10, max_doc_id: 21 });
+assert.equal(output.topkStatsTyped.candidate_count, 7);
+assert.equal(output.topkStatsTyped.impact_blocks_pruned, 1);
+assert.equal(output.topkStatsTyped.postings_pruned, 2);
+assert.deepEqual(output.topkStatsTyped.top_doc_ids, [3, 5, 1, 10, 8, 13, 21]);
+assert.deepEqual(output.topkScoresTyped.score_entries.slice(0, 4), [
+  [3, 25],
+  [5, 13],
+  [1, 12],
+  [10, 12],
+]);
 console.log('[verifyWasmEquivalence] ok');

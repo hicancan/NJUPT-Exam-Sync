@@ -203,6 +203,7 @@ fn suffix_unique_impact(blocks: &[ImpactBlock]) -> Vec<f64> {
     suffix
 }
 
+#[cfg(feature = "benchmark-json-bridge")]
 fn collect_packed_impact_blocks(
     bytes: &[u8],
     query_terms_json: &str,
@@ -385,6 +386,7 @@ impl PackedImpactRetrievalSession {
         }
     }
 
+    #[cfg(feature = "benchmark-json-bridge")]
     pub fn apply(&mut self, bytes: &[u8], query_terms_json: &str) -> Result<String, JsValue> {
         let (blocks, matched_term_count) = collect_packed_impact_blocks(bytes, query_terms_json)?;
         let stats =
@@ -455,6 +457,7 @@ impl PackedImpactRetrievalSession {
         .to_string()
     }
 
+    #[cfg(feature = "benchmark-json-bridge")]
     pub fn scores_json(&self) -> String {
         serde_json::json!({
             "candidate_count": self.scores.len(),

@@ -29,7 +29,6 @@ jobs:
       DISPATCH_REASON: ${{ github.event.client_payload.dispatch_reason || '' }}
       SITEGRAPH_CHANGED: ${{ github.event.client_payload.sitegraph_changed || '' }}
       NJUPT_SITEGRAPH_REPO: _sitegraph/njupt-site-graph
-      COLLECTION_DIR: apps/web/public/generated/collections/njupt-public
 
     steps:
       - name: Checkout njupt-search
@@ -91,16 +90,23 @@ jobs:
           node-version: '24'
           cache: 'npm'
 
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install WASM tools
+        run: cargo install wasm-pack --version 0.15.0 --locked
+
       - name: Install dependencies
         run: |
           uv sync --frozen --extra test
           npm ci
 
-      - name: Build collection artifacts
+      - name: Update sitegraph data lock
         run: |
-          uv run python -m njupt_search_indexer validate --skip-output
-          uv run python -m njupt_search_indexer build --collection-id njupt-public --out "$COLLECTION_DIR"
-          uv run python -m njupt_search_indexer validate --collection "$COLLECTION_DIR"
+          uv run python tools/ci/prepare_public_assets.py update-sitegraph-lock --sitegraph-ref "$SITEGRAPH_REF"
+          uv run python tools/ci/prepare_public_assets.py build-public-data
 
       - name: Validate generated collection artifacts
         run: |
@@ -108,8 +114,8 @@ jobs:
           uv run python tools/quality-gates/scripts/check_tracked_byproducts.py
           uv run python tools/quality-gates/scripts/validate_search_index.py
           uv run python tools/quality-gates/scripts/check_public_artifact_sizes.py
-          uv run python -m njupt_search_eval run-smoke-queries --collection "$COLLECTION_DIR"
-          uv run python -m njupt_search_eval run-task-queries --collection "$COLLECTION_DIR"
+          uv run python -m njupt_search_eval run-smoke-queries
+          uv run python -m njupt_search_eval run-task-queries
 
       - name: Frontend checks
         run: |
@@ -117,8 +123,8 @@ jobs:
           npm run typecheck
           npm run build
 
-      - name: Commit collection artifact changes
+      - name: Commit sitegraph lock changes
         run: |
           uv run python tools/ci/commit_generated_changes.py \
-            --message "Auto-update collection index" \
-            --add apps/web/public/generated/collections/njupt-public/
+            --message "Auto-update sitegraph data lock" \
+            --add config/data-locks/sitegraph.lock.json

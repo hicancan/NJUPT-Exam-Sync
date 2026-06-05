@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main, 'milestone/**' ]
     paths:
-      - 'apps/web/public/generated/**'
+      - 'config/data-locks/**'
       - 'tools/**'
       - 'packages/contracts/**'
       - '.python-version'
@@ -31,8 +31,32 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v8.2.0
 
+      - name: Read data locks
+        id: data-locks
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          lock = json.loads(Path("config/data-locks/sitegraph.lock.json").read_text(encoding="utf-8"))
+          print(f"sitegraph_ref={lock['sitegraph_ref']}")
+          PY
+
+      - name: Checkout sitegraph source packages
+        uses: actions/checkout@v6
+        with:
+          repository: hicancan/njupt-site-graph
+          ref: ${{ steps.data-locks.outputs.sitegraph_ref }}
+          path: _sitegraph/njupt-site-graph
+          token: ${{ secrets.NJUPT_SITEGRAPH_TOKEN || github.token }}
+
       - name: Install Python tools
         run: uv sync --frozen --extra test
+
+      - name: Build CI-only public data
+        run: uv run python tools/ci/prepare_public_assets.py build-public-data
+
+      - name: Verify CI-only public data determinism
+        run: uv run python tools/ci/prepare_public_assets.py verify-determinism
 
       - name: Validate generated artifacts
         run: |

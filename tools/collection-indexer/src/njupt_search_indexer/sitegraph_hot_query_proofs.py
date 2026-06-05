@@ -50,7 +50,10 @@ def expand_hot_query_proof_phrases(query: str, aliases: dict[str, Any]) -> list[
         ]
         if (normalized_key and normalized_key in normalized_query) or alias_hits:
             candidates.extend([key, *alias_terms])
-    return sorted({normalize_text(item) for item in candidates if len(normalize_text(item)) >= 2}, key=len, reverse=True)
+    return sorted(
+        {normalize_text(item) for item in candidates if len(normalize_text(item)) >= 2},
+        key=lambda text: (-len(text), text),
+    )
 
 
 def hot_query_phrase_key(match_phrases: list[str]) -> str:

@@ -12,7 +12,7 @@ from ..sitegraph_source import document_source_id
 from ..sitegraph_text import clean_text, stable_ascii_slug
 
 
-LOCAL_DOC_META_FIELDS = {
+LOCAL_DOC_META_FIELDS = (
     "doc_index",
     "id",
     "record_type",
@@ -31,7 +31,7 @@ LOCAL_DOC_META_FIELDS = {
     "task_kind",
     "attachment_count",
     "shard",
-}
+)
 
 
 def index_scope_for_document(document: dict[str, Any]) -> tuple[str, str, str]:

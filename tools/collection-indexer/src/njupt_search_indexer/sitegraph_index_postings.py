@@ -70,7 +70,7 @@ def query_alias_payload() -> dict[str, dict[str, list[str]]]:
 
 
 def add_postings(index: dict[str, dict[str, set[int]]], doc_index: int, field_code: str, tokens: set[str]) -> None:
-    for token in tokens:
+    for token in sorted(tokens):
         if not token:
             continue
         index[token][field_code].add(doc_index)
@@ -78,9 +78,9 @@ def add_postings(index: dict[str, dict[str, set[int]]], doc_index: int, field_co
 
 def compact_impact_terms(raw_index: dict[str, dict[str, set[int]]]) -> dict[str, dict[str, Any]]:
     terms: dict[str, dict[str, Any]] = {}
-    for token, fields in raw_index.items():
+    for token, fields in sorted(raw_index.items()):
         postings: dict[str, list[int]] = {}
-        for field, ids in fields.items():
+        for field, ids in sorted(fields.items()):
             doc_ids = sorted(ids)
             if not doc_ids:
                 continue

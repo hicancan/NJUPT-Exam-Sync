@@ -1,0 +1,418 @@
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+PUBLIC_ROOT = REPO_ROOT / "apps" / "web" / "public"
+PUBLIC_GENERATED = PUBLIC_ROOT / "generated"
+COLLECTION_DIR = PUBLIC_GENERATED / "collections" / "njupt-public"
+EXAM_DIR = PUBLIC_GENERATED / "exam"
+PUBLIC_ASSET_MARKER = PUBLIC_GENERATED / ".asset-locks.json"
+SITEGRAPH_LOCK = REPO_ROOT / "config" / "data-locks" / "sitegraph.lock.json"
+EXAM_LOCK = REPO_ROOT / "config" / "data-locks" / "exam.lock.json"
+JWC_LIST_URL = "https://jwc.njupt.edu.cn/1594/list.htm"
+JWC_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
+    "Referer": "https://jwc.njupt.edu.cn/",
+}
+REQUIRED_EXAM_TITLE_KEYWORDS = ("学年", "学期")
+TARGET_EXAM_TITLE_KEYWORDS = ("考试安排表", "期末考试", "课程结束考试")
+EXCLUDED_EXAM_TITLE_KEYWORDS = ("阶段性", "补考", "清欠", "分级", "补学", "换证", "重修", "选拔", "竞赛", "发车", "监考")
+
+
+class PublicAssetError(RuntimeError):
+    pass
+
+
+def read_json(path: Path) -> dict[str, Any]:
+    with path.open("r", encoding="utf-8") as handle:
+        value = json.load(handle)
+    if not isinstance(value, dict):
+        raise PublicAssetError(f"{path} must contain a JSON object")
+    return value
+
+
+def write_json(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        json.dump(payload, handle, ensure_ascii=False, indent=2)
+        handle.write("\n")
+
+
+def run(args: list[str], *, env: dict[str, str] | None = None) -> None:
+    print("+", " ".join(args), flush=True)
+    subprocess.run(args, cwd=REPO_ROOT, env=env, check=True)
+
+
+def capture(args: list[str], *, cwd: Path = REPO_ROOT) -> str:
+    return subprocess.check_output(args, cwd=cwd, text=True).strip()
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def materialize_exam_data() -> None:
+    lock = read_json(EXAM_LOCK)
+    generated_at = str(lock.get("generated_at") or "").strip()
+    if not generated_at:
+        raise PublicAssetError(f"{EXAM_LOCK} missing generated_at")
+    files = lock.get("files")
+    if not isinstance(files, list) or not files:
+        raise PublicAssetError(f"{EXAM_LOCK} files must be a non-empty list")
+
+    if EXAM_DIR.exists():
+        shutil.rmtree(EXAM_DIR)
+    EXAM_DIR.mkdir(parents=True, exist_ok=True)
+
+    downloaded_names: list[str] = []
+    verify_tls = str(lock.get("tls_verify", True)).strip().lower() not in {"0", "false", "no"}
+    for item in files:
+        if not isinstance(item, dict):
+            raise PublicAssetError(f"{EXAM_LOCK} files entries must be objects")
+        name = str(item.get("name") or "").strip()
+        url = str(item.get("url") or "").strip()
+        expected_sha256 = str(item.get("sha256") or "").strip().lower()
+        if not name or not url or not expected_sha256:
+            raise PublicAssetError(f"{EXAM_LOCK} file entry missing name/url/sha256")
+        target = EXAM_DIR / name
+        response = requests.get(url, timeout=60, verify=verify_tls)
+        response.raise_for_status()
+        target.write_bytes(response.content)
+        actual_sha256 = sha256_file(target)
+        if actual_sha256 != expected_sha256:
+            raise PublicAssetError(
+                f"exam lock hash mismatch for {name}: expected {expected_sha256}, got {actual_sha256}"
+            )
+        downloaded_names.append(name)
+
+    write_json(
+        EXAM_DIR / "source_metadata.json",
+        {
+            "source_url": lock.get("source_url"),
+            "source_title": lock.get("source_title"),
+            "downloaded_files": downloaded_names,
+            "updated_at": generated_at,
+        },
+    )
+
+    env = os.environ.copy()
+    env["NJUPT_SEARCH_GENERATED_AT"] = generated_at
+    run([sys.executable, "-m", "njupt_exam_pipeline", "process"], env=env)
+
+
+def resolve_sitegraph_repo(lock: dict[str, Any]) -> Path:
+    env_value = os.environ.get("NJUPT_SITEGRAPH_REPO")
+    candidates = []
+    if env_value:
+        candidates.append(Path(env_value))
+    checkout_path = lock.get("checkout_path")
+    if isinstance(checkout_path, str) and checkout_path:
+        candidates.append(REPO_ROOT / checkout_path)
+    candidates.append(REPO_ROOT.parent / "njupt-site-graph")
+    for candidate in candidates:
+        resolved = candidate.resolve()
+        if (resolved / ".git").exists():
+            return resolved
+    raise PublicAssetError("Cannot find njupt-site-graph checkout for sitegraph.lock.json")
+
+
+def materialize_collection_data() -> None:
+    lock = read_json(SITEGRAPH_LOCK)
+    generated_at = str(lock.get("generated_at") or "").strip()
+    sitegraph_ref = str(lock.get("sitegraph_ref") or "").strip()
+    if not generated_at or not sitegraph_ref:
+        raise PublicAssetError(f"{SITEGRAPH_LOCK} missing generated_at or sitegraph_ref")
+    sitegraph_repo = resolve_sitegraph_repo(lock)
+    actual_ref = capture(["git", "rev-parse", "HEAD"], cwd=sitegraph_repo)
+    if actual_ref != sitegraph_ref:
+        raise PublicAssetError(
+            f"sitegraph checkout ref mismatch: expected {sitegraph_ref}, got {actual_ref} at {sitegraph_repo}"
+        )
+
+    env = os.environ.copy()
+    env["NJUPT_SITEGRAPH_REPO"] = str(sitegraph_repo)
+    env["NJUPT_SEARCH_GENERATED_AT"] = generated_at
+    run([sys.executable, "-m", "njupt_search_indexer", "validate", "--skip-output"], env=env)
+    run(
+        [
+            sys.executable,
+            "-m",
+            "njupt_search_indexer",
+            "build",
+            "--collection-id",
+            "njupt-public",
+            "--out",
+            str(COLLECTION_DIR),
+        ],
+        env=env,
+    )
+    run([sys.executable, "-m", "njupt_search_indexer", "validate", "--collection", str(COLLECTION_DIR)], env=env)
+
+
+def build_public_data() -> None:
+    PUBLIC_GENERATED.mkdir(parents=True, exist_ok=True)
+    materialize_collection_data()
+    materialize_exam_data()
+    write_json(
+        PUBLIC_ASSET_MARKER,
+        {
+            "version": "njupt-search-public-asset-marker-v1",
+            "sitegraph_lock_sha256": sha256_file(SITEGRAPH_LOCK),
+            "exam_lock_sha256": sha256_file(EXAM_LOCK),
+        },
+    )
+
+
+def public_data_current() -> bool:
+    if not PUBLIC_ASSET_MARKER.exists():
+        return False
+    try:
+        marker = read_json(PUBLIC_ASSET_MARKER)
+    except PublicAssetError:
+        return False
+    return (
+        marker.get("sitegraph_lock_sha256") == sha256_file(SITEGRAPH_LOCK)
+        and marker.get("exam_lock_sha256") == sha256_file(EXAM_LOCK)
+        and (COLLECTION_DIR / "manifest.json").exists()
+        and (EXAM_DIR / "all_exams.json").exists()
+        and (EXAM_DIR / "data_summary.json").exists()
+    )
+
+
+def ensure_public_data() -> None:
+    if public_data_current():
+        print("[prepare_public_assets] public data is current")
+        return
+    build_public_data()
+
+
+def ensure_public_assets_exist() -> None:
+    required = [
+        COLLECTION_DIR / "manifest.json",
+        EXAM_DIR / "all_exams.json",
+        EXAM_DIR / "data_summary.json",
+    ]
+    missing = [str(path.relative_to(REPO_ROOT)) for path in required if not path.exists()]
+    if missing:
+        raise PublicAssetError("missing generated public assets: " + ", ".join(missing))
+
+
+def hash_tree(root: Path) -> dict[str, str]:
+    if not root.exists():
+        return {}
+    result: dict[str, str] = {}
+    for path in sorted(item for item in root.rglob("*") if item.is_file()):
+        result[str(path.relative_to(root)).replace("\\", "/")] = sha256_file(path)
+    return result
+
+
+def verify_public_assets() -> None:
+    ensure_public_assets_exist()
+    print(json.dumps({"public_generated_files": len(hash_tree(PUBLIC_GENERATED))}, ensure_ascii=False, indent=2))
+
+
+def verify_determinism() -> None:
+    build_public_data()
+    first = hash_tree(PUBLIC_GENERATED)
+    build_public_data()
+    second = hash_tree(PUBLIC_GENERATED)
+    if first != second:
+        changed = sorted(set(first) ^ set(second))
+        common_changed = sorted(path for path in set(first) & set(second) if first[path] != second[path])
+        raise PublicAssetError(
+            "public asset generation is not deterministic: "
+            + json.dumps({"changed_paths": changed[:20], "content_changed": common_changed[:20]}, ensure_ascii=False)
+        )
+    print(json.dumps({"deterministic_public_generated_files": len(second)}, ensure_ascii=False, indent=2))
+
+
+def is_valid_exam_title(title: str) -> bool:
+    return (
+        all(keyword in title for keyword in REQUIRED_EXAM_TITLE_KEYWORDS)
+        and any(keyword in title for keyword in TARGET_EXAM_TITLE_KEYWORDS)
+        and not any(keyword in title for keyword in EXCLUDED_EXAM_TITLE_KEYWORDS)
+    )
+
+
+def is_student_exam_file(name: str) -> bool:
+    return "学生" in name
+
+
+def is_teacher_exam_file(name: str) -> bool:
+    return any(keyword in name for keyword in ("监考", "教师", "巡考", "教务员"))
+
+
+def discover_latest_exam_notice(*, tls_verify: bool) -> tuple[str, str]:
+    response = requests.get(JWC_LIST_URL, headers=JWC_HEADERS, timeout=30, verify=tls_verify)
+    response.raise_for_status()
+    response.encoding = "utf-8"
+    soup = BeautifulSoup(response.text, "html.parser")
+    container = soup.select_one("div.col_news_con")
+    if container is None:
+        raise PublicAssetError("exam notice list container div.col_news_con was not found")
+    for item in container.select("li.news"):
+        title_span = item.select_one("span.news_title")
+        link = title_span.find("a") if title_span else item.find("a")
+        if link is None:
+            continue
+        title = str(link.get("title") or link.get_text(strip=True)).strip()
+        href = str(link.get("href") or "").strip()
+        if href and is_valid_exam_title(title):
+            return urljoin(JWC_LIST_URL, href), title
+    raise PublicAssetError("no valid current exam schedule notice found")
+
+
+def discover_exam_files(source_url: str, *, tls_verify: bool) -> list[dict[str, str]]:
+    response = requests.get(source_url, headers=JWC_HEADERS, timeout=30, verify=tls_verify)
+    response.raise_for_status()
+    response.encoding = "utf-8"
+    soup = BeautifulSoup(response.text, "html.parser")
+    candidates: list[dict[str, str]] = []
+    for link in soup.find_all("a"):
+        href = str(link.get("href") or "").strip()
+        if not href.lower().endswith((".xls", ".xlsx")):
+            continue
+        name = str(link.get_text(strip=True) or Path(href).name).strip()
+        if not name.lower().endswith((".xls", ".xlsx")):
+            name = Path(href).name
+        candidates.append({"name": name, "url": urljoin(source_url, href)})
+    if not candidates:
+        raise PublicAssetError(f"no Excel attachments found in {source_url}")
+    student_files = [item for item in candidates if is_student_exam_file(item["name"])]
+    selected = student_files or [item for item in candidates if not is_teacher_exam_file(item["name"])]
+    if not selected:
+        raise PublicAssetError(f"no student/non-teacher Excel attachments found in {source_url}")
+    return selected
+
+
+def update_exam_lock() -> None:
+    existing = read_json(EXAM_LOCK) if EXAM_LOCK.exists() else {}
+    tls_verify = str(existing.get("tls_verify", True)).strip().lower() not in {"0", "false", "no"}
+    source_url, source_title = discover_latest_exam_notice(tls_verify=tls_verify)
+    files = []
+    for item in discover_exam_files(source_url, tls_verify=tls_verify):
+        response = requests.get(item["url"], headers=JWC_HEADERS, timeout=60, verify=tls_verify)
+        response.raise_for_status()
+        digest = hashlib.sha256(response.content).hexdigest()
+        files.append(
+            {
+                "name": item["name"],
+                "url": item["url"],
+                "sha256": digest,
+                "etag": response.headers.get("etag"),
+                "last_modified": response.headers.get("last-modified"),
+            }
+        )
+    existing_files = existing.get("files") if isinstance(existing.get("files"), list) else []
+    changed = (
+        existing.get("source_url") != source_url
+        or existing.get("source_title") != source_title
+        or existing_files != files
+    )
+    generated_at = (
+        datetime.now(timezone.utc).isoformat()
+        if changed
+        else str(existing.get("generated_at") or files[0].get("last_modified") or "")
+    )
+    payload = {
+        "version": "njupt-search-exam-lock-v1",
+        "source_url": source_url,
+        "source_title": source_title,
+        "generated_at": generated_at,
+        "tls_verify": tls_verify,
+        "files": files,
+    }
+    write_json(EXAM_LOCK, payload)
+    print(json.dumps({"updated": str(EXAM_LOCK.relative_to(REPO_ROOT)), "file_count": len(files)}, ensure_ascii=False, indent=2))
+
+
+def update_sitegraph_lock(sitegraph_ref: str | None) -> None:
+    existing = read_json(SITEGRAPH_LOCK) if SITEGRAPH_LOCK.exists() else {}
+    lock_for_repo = dict(existing)
+    if sitegraph_ref:
+        lock_for_repo["sitegraph_ref"] = sitegraph_ref
+    sitegraph_repo = resolve_sitegraph_repo(lock_for_repo)
+    actual_ref = capture(["git", "rev-parse", "HEAD"], cwd=sitegraph_repo)
+    expected_ref = str(lock_for_repo.get("sitegraph_ref") or actual_ref)
+    if actual_ref != expected_ref:
+        raise PublicAssetError(f"sitegraph checkout ref mismatch while updating lock: expected {expected_ref}, got {actual_ref}")
+
+    source_packages = existing.get("source_packages") or [
+        "data/sites/jwc/index",
+        "data/sites/xsc/index",
+        "data/sites/cxcy/index",
+    ]
+    upstream_times: list[str] = []
+    for source_package in source_packages:
+        manifest_path = sitegraph_repo / str(source_package) / "manifest.json"
+        manifest = read_json(manifest_path)
+        generated_at = str(manifest.get("generated_at") or "").strip()
+        if generated_at:
+            upstream_times.append(generated_at)
+    payload = {
+        "version": "njupt-search-sitegraph-lock-v1",
+        "sitegraph_repo": existing.get("sitegraph_repo") or "hicancan/njupt-site-graph",
+        "checkout_path": existing.get("checkout_path") or "_sitegraph/njupt-site-graph",
+        "sitegraph_ref": actual_ref,
+        "generated_at": max(upstream_times) if upstream_times else existing.get("generated_at"),
+        "collection_id": "njupt-public",
+        "source_packages": source_packages,
+    }
+    if not payload["generated_at"]:
+        raise PublicAssetError("cannot update sitegraph lock without generated_at")
+    write_json(SITEGRAPH_LOCK, payload)
+    print(json.dumps({"updated": str(SITEGRAPH_LOCK.relative_to(REPO_ROOT)), "sitegraph_ref": actual_ref}, ensure_ascii=False, indent=2))
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Prepare CI-only public assets for njupt-search.")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers.add_parser("build-public-data")
+    subparsers.add_parser("ensure-public-data")
+    subparsers.add_parser("verify-public-assets")
+    subparsers.add_parser("verify-determinism")
+    sitegraph_lock_parser = subparsers.add_parser("update-sitegraph-lock")
+    sitegraph_lock_parser.add_argument("--sitegraph-ref", default=None)
+    subparsers.add_parser("update-exam-lock")
+    args = parser.parse_args()
+
+    try:
+        if args.command == "build-public-data":
+            build_public_data()
+        elif args.command == "ensure-public-data":
+            ensure_public_data()
+        elif args.command == "verify-public-assets":
+            verify_public_assets()
+        elif args.command == "verify-determinism":
+            verify_determinism()
+        elif args.command == "update-sitegraph-lock":
+            update_sitegraph_lock(args.sitegraph_ref)
+        elif args.command == "update-exam-lock":
+            update_exam_lock()
+    except PublicAssetError as error:
+        print(f"[prepare_public_assets] {error}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

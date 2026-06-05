@@ -34,6 +34,11 @@ eval/reports/eval-*.json
 *.tmp
 cache/
 tools/wasm/packed-impact-decoder/pkg-node/
+tools/wasm/packed-impact-decoder/pkg/
+apps/web/src/features/collection-search/wasm/
+apps/web/public/generated/
+tools/search-eval/reports/
+_sitegraph/
 # Generated files
 project_structure.txt
 project_files.txt

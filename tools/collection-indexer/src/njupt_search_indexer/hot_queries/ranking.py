@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
 from typing import Any
 
@@ -80,8 +81,18 @@ def hot_query_date_sort_value(raw: Any) -> float:
     return parsed.timestamp()
 
 
+def hot_query_locked_now_timestamp() -> float:
+    locked_value = os.environ.get("NJUPT_SEARCH_GENERATED_AT")
+    if locked_value:
+        parsed = datetime.fromisoformat(locked_value.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.timestamp()
+    return datetime.now(timezone.utc).timestamp()
+
+
 def hot_query_age_days(timestamp: float) -> float:
-    return max(0.0, (datetime.now(timezone.utc).timestamp() - timestamp) / 86_400)
+    return max(0.0, (hot_query_locked_now_timestamp() - timestamp) / 86_400)
 
 
 def hot_query_decayed_freshness(timestamp: float, max_score: float, horizon_days: float) -> float:

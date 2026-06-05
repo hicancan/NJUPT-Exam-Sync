@@ -40,8 +40,36 @@ jobs:
           uv sync --frozen --extra test
           npm ci
 
-      - name: Update exam artifacts
-        run: uv run python -m njupt_exam_pipeline run
+      - name: Read data locks
+        id: data-locks
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          lock = json.loads(Path("config/data-locks/sitegraph.lock.json").read_text(encoding="utf-8"))
+          print(f"sitegraph_ref={lock['sitegraph_ref']}")
+          PY
+
+      - name: Checkout sitegraph source packages
+        uses: actions/checkout@v6
+        with:
+          repository: hicancan/njupt-site-graph
+          ref: ${{ steps.data-locks.outputs.sitegraph_ref }}
+          path: _sitegraph/njupt-site-graph
+          token: ${{ secrets.NJUPT_SITEGRAPH_TOKEN || github.token }}
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install WASM tools
+        run: cargo install wasm-pack --version 0.15.0 --locked
+
+      - name: Update exam data lock and materialize public assets
+        run: |
+          uv run python tools/ci/prepare_public_assets.py update-exam-lock
+          npm run prepare:public-assets
 
       - name: Validate generated artifacts and app
         run: |
@@ -59,8 +87,8 @@ jobs:
           uv run python -m njupt_search_eval run-smoke-queries
           uv run python -m njupt_search_eval run-task-queries
 
-      - name: Commit exam artifact changes
+      - name: Commit exam lock changes
         run: |
           uv run python tools/ci/commit_generated_changes.py \
-            --message "Auto-update exam data" \
-            --add apps/web/public/generated/exam/
+            --message "Auto-update exam data lock" \
+            --add config/data-locks/exam.lock.json

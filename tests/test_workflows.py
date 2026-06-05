@@ -20,7 +20,10 @@ def test_collection_update_is_triggered_by_sitegraph_dispatch():
     assert "repos/hicancan/njupt-site-graph/commits/$SITEGRAPH_REF" in text
     assert "sitegraph_ref $SITEGRAPH_REF is not a commit visible in hicancan/njupt-site-graph" in text
     assert "python tools/ci/commit_generated_changes.py" in text
-    assert "--add apps/web/public/generated/collections/njupt-public/" in text
+    assert "prepare_public_assets.py update-sitegraph-lock" in text
+    assert "prepare_public_assets.py build-public-data" in text
+    assert "--add config/data-locks/sitegraph.lock.json" in text
+    assert "--add apps/web/public/generated/collections/njupt-public/" not in text
     assert "git push" not in text
 
 
@@ -29,7 +32,7 @@ def test_collection_update_uses_configured_source_packages():
     text = workflow.read_text(encoding="utf-8")
     assert "NJUPT_SITEGRAPH_REPO: _sitegraph/njupt-site-graph" in text
     assert "--source-package \"$SITEGRAPH_JWC_INDEX\"" not in text
-    assert "python -m njupt_search_indexer validate --skip-output" in text
+    assert "prepare_public_assets.py build-public-data" in text
 
 
 def test_exam_update_uses_retrying_generated_commit_helper():
@@ -37,7 +40,9 @@ def test_exam_update_uses_retrying_generated_commit_helper():
     assert workflow.exists()
     text = workflow.read_text(encoding="utf-8")
     assert "python tools/ci/commit_generated_changes.py" in text
-    assert "--add apps/web/public/generated/exam/" in text
+    assert "prepare_public_assets.py update-exam-lock" in text
+    assert "--add config/data-locks/exam.lock.json" in text
+    assert "--add apps/web/public/generated/exam/" not in text
     assert "git push" not in text
 
 

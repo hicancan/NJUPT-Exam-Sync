@@ -21,7 +21,6 @@ from .sitegraph_documents import section_label, site_display_name
 from .sitegraph_index_postings import (
     QUERY_SYNONYMS,
     exhaustive_scan_blob,
-    measure_representative_full_scan_ms,
     query_alias_payload,
 )
 from .hot_queries.public_hot_query_artifacts import build_hot_query_artifacts
@@ -119,6 +118,9 @@ def producer_ref() -> str:
 
 
 def now_iso() -> str:
+    locked_value = os.environ.get("NJUPT_SEARCH_GENERATED_AT")
+    if locked_value:
+        return locked_value
     return datetime.now(timezone.utc).isoformat()
 
 
@@ -371,7 +373,7 @@ def write_public_index(packages: list[dict[str, Any]], built: dict[str, Any], *,
     total_full_scan_bytes = sum(int(item["bytes"]) for item in full_shards)
     max_full_shard_bytes = max((int(item["bytes"]) for item in full_shards), default=0)
     avg_full_shard_bytes = round(total_full_scan_bytes / max(1, len(full_shards)), 2)
-    representative_full_scan_ms = measure_representative_full_scan_ms(documents, "校历")
+    representative_full_scan_ms = 0.0
 
     quality_report = {
         "generated_at": now_iso(),

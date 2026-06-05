@@ -32,6 +32,24 @@ jobs:
           node-version: '24'
           cache: 'npm'
 
+      - name: Read data locks
+        id: data-locks
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          lock = json.loads(Path("config/data-locks/sitegraph.lock.json").read_text(encoding="utf-8"))
+          print(f"sitegraph_ref={lock['sitegraph_ref']}")
+          PY
+
+      - name: Checkout sitegraph source packages
+        uses: actions/checkout@v6
+        with:
+          repository: hicancan/njupt-site-graph
+          ref: ${{ steps.data-locks.outputs.sitegraph_ref }}
+          path: _sitegraph/njupt-site-graph
+          token: ${{ secrets.NJUPT_SITEGRAPH_TOKEN || github.token }}
+
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -48,10 +66,19 @@ jobs:
           restore-keys: |
             rust-wasm-${{ runner.os }}-
 
+      - name: Install WASM tools
+        run: cargo install wasm-pack --version 0.15.0 --locked
+
       - name: Install dependencies
         run: |
           uv sync --frozen --extra test
           npm ci
+
+      - name: Prepare CI-only public assets
+        run: npm run prepare:public-assets
+
+      - name: Verify CI-only public asset determinism
+        run: uv run python tools/ci/prepare_public_assets.py verify-determinism
 
       - name: Python tests
         run: uv run python -m pytest
@@ -69,14 +96,22 @@ jobs:
           uv run python -m njupt_search_eval run-smoke-queries
           uv run python -m njupt_search_eval run-task-queries
 
-      - name: Verify WASM release artifacts
+      - name: Generate CI evidence reports
         run: |
-          docker run --rm -v "$PWD:/work" -w /work rust@sha256:13c186980fa33cc12759b429662a1322939dbe697484b7c33b47dd2698d28460 /bin/bash -lc 'set -euo pipefail; export PATH="/usr/local/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"; rustc --version; cargo --version; rustup target add wasm32-unknown-unknown; curl -fsSL -o /tmp/binaryen.tar.gz https://github.com/WebAssembly/binaryen/releases/download/version_129/binaryen-version_129-x86_64-linux.tar.gz; tar -xzf /tmp/binaryen.tar.gz -C /tmp; export PATH="/tmp/binaryen-version_129/bin:$PATH"; wasm-opt --version; cargo install wasm-pack --version 0.15.0 --locked; cd tools/wasm/packed-impact-decoder; wasm-pack build --target web --release --out-dir pkg'
-          cmp tools/wasm/packed-impact-decoder/pkg/packed_impact_decoder.js apps/web/src/features/collection-search/wasm/packed_impact_decoder.js
-          cmp tools/wasm/packed-impact-decoder/pkg/packed_impact_decoder.d.ts apps/web/src/features/collection-search/wasm/packed_impact_decoder.d.ts
-          cmp tools/wasm/packed-impact-decoder/pkg/packed_impact_decoder_bg.wasm apps/web/src/features/collection-search/wasm/packed_impact_decoder_bg.wasm
+          mkdir -p tools/search-eval/reports
+          uv run python -m njupt_search_eval run-cache-benchmark > tools/search-eval/reports/cache-benchmark.json
+          uv run python -m njupt_search_eval run-lower-bound-report --output tools/search-eval/reports/njupt-search-lower-bound-report.json --markdown tools/search-eval/reports/njupt-search-lower-bound-report.md --skip-local-body-benchmark
+
+      - name: Upload CI evidence reports
+        uses: actions/upload-artifact@v7
+        with:
+          name: njupt-search-ci-evidence
+          path: tools/search-eval/reports/
+
+      - name: Verify WASM semantics
+        run: |
+          npm run build:wasm:web
           node tools/wasm/packed-impact-decoder/scripts/verifyWasmEquivalence.mjs
-          cmp tools/wasm/packed-impact-decoder/pkg/packed_impact_decoder_bg.wasm.d.ts apps/web/src/features/collection-search/wasm/packed_impact_decoder_bg.wasm.d.ts
 
       - name: Frontend checks
         run: |

@@ -317,7 +317,17 @@ const renderMarkdown = report => {
 const main = async () => {
     const args = parseArgs();
     if (args.buildWasm) {
-        execFileSync('wasm-pack', ['build', '--target', 'nodejs', '--release', '--out-dir', wasmNodeOutDir], {
+        execFileSync('wasm-pack', [
+            'build',
+            '--target',
+            'nodejs',
+            '--release',
+            '--out-dir',
+            wasmNodeOutDir,
+            '--',
+            '--features',
+            'benchmark-json-bridge',
+        ], {
             cwd: wasmCrateDir,
             stdio: 'inherit',
         });

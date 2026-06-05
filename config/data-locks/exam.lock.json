@@ -1,0 +1,30 @@
+{
+  "version": "njupt-search-exam-lock-v1",
+  "source_url": "https://jwc.njupt.edu.cn/2026/0604/c1594a303399/page.htm",
+  "source_title": "【教务管理办公室】2025-2026学年第二学期考试安排表2026-06-04",
+  "generated_at": "2026-06-04T18:00:21.507734+08:00",
+  "tls_verify": true,
+  "files": [
+    {
+      "name": "2025-2026学年第二学期集中考试周1安排表（学校组织）-学生用表.xlsx",
+      "url": "https://jwc.njupt.edu.cn/_upload/article/files/b2/31/0aacb5fa4ddc959ddc682768f2f5/ee81dc42-cabc-470b-929b-29d122a53005.xlsx",
+      "sha256": "9a2496c051019590d81fa2226ec6eef5c331f9d81aee2b505556cbba967f6d0c",
+      "etag": "\"6a12-6536963cc0967-gzip\"",
+      "last_modified": "Thu, 04 Jun 2026 08:32:51 GMT"
+    },
+    {
+      "name": "2025-2026学年第二学期考试安排表（学校组织17-18周）-学生用表.xlsx",
+      "url": "https://jwc.njupt.edu.cn/_upload/article/files/b2/31/0aacb5fa4ddc959ddc682768f2f5/6ae64dcd-627a-4585-b31e-80d49932a12d.xlsx",
+      "sha256": "027cea89b5a8bafe6f91862e80be42a08910dfd4ca0db6117089b66d2bd28a6d",
+      "etag": "\"56b47-6536963cc0d4f-gzip\"",
+      "last_modified": "Thu, 04 Jun 2026 08:32:51 GMT"
+    },
+    {
+      "name": "2025-2026学年第二学期考试安排表（学院组织）-学生用表.xlsx",
+      "url": "https://jwc.njupt.edu.cn/_upload/article/files/b2/31/0aacb5fa4ddc959ddc682768f2f5/40168299-0133-446e-8522-298669ce2d7a.xlsx",
+      "sha256": "c87cfaa16c54823a466d2a30f75200d333e752cdbeaec389cd285c5cdf3e598c",
+      "etag": "\"295c3-6536963cc1137-gzip\"",
+      "last_modified": "Thu, 04 Jun 2026 08:32:51 GMT"
+    }
+  ]
+}

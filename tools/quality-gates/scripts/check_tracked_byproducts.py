@@ -25,7 +25,10 @@ BLOCKED_PARTS = {
 
 BLOCKED_PREFIXES = (
     "apps/web/dist/",
+    "apps/web/public/generated/",
+    "apps/web/src/features/collection-search/wasm/",
     "coverage/",
+    "tools/search-eval/reports/",
     "tmp/",
 )
 

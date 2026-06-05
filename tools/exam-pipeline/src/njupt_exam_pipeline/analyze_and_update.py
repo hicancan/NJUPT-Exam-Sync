@@ -70,6 +70,9 @@ REGEX_ISO = re.compile(r'\(?(\d{4}-\d{1,2}-\d{1,2})\)?.*?(\d{1,2}:\d{2})\s*[-~è‡
 
 def get_beijing_time() -> datetime:
     """Get current time in Beijing Timezone (UTC+8)"""
+    locked_value = os.environ.get("NJUPT_SEARCH_GENERATED_AT")
+    if locked_value:
+        return datetime.fromisoformat(locked_value).astimezone(timezone(timedelta(hours=8)))
     utc_dt = datetime.now(timezone.utc)
     beijing_tz = timezone(timedelta(hours=8))
     return utc_dt.astimezone(beijing_tz)
