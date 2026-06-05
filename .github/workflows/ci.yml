@@ -8,11 +8,15 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   ci:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -71,38 +75,64 @@ jobs:
       - name: Install WASM tools
         run: cargo install wasm-pack --version 0.15.0 --locked
 
+      - name: Initialize CI timing summary
+        run: |
+          {
+            echo "### CI phase timings"
+            echo
+            echo "| Phase | Duration |"
+            echo "| --- | ---: |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Install dependencies
         run: |
+          start=$SECONDS
           uv sync --frozen --extra test
           npm ci
+          printf '| Install dependencies | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Prepare CI-only public assets
-        run: npm run prepare:public-assets
+        run: |
+          start=$SECONDS
+          npm run prepare:public-assets
+          printf '| Prepare CI-only public assets | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Verify CI-only public asset determinism
-        run: uv run python tools/ci/prepare_public_assets.py verify-determinism
+        run: |
+          start=$SECONDS
+          uv run python tools/ci/prepare_public_assets.py verify-determinism
+          printf '| Verify public asset determinism | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Python tests
-        run: uv run python -m pytest tests
+        run: |
+          start=$SECONDS
+          uv run python -m pytest tests
+          printf '| Python tests | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Source complexity gates
         run: |
+          start=$SECONDS
           uv run python tools/quality-gates/scripts/check_source_complexity.py
           uv run python tools/quality-gates/scripts/check_tracked_byproducts.py
           uv run python tools/quality-gates/scripts/check_runtime_fast_start.py
+          printf '| Source complexity gates | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Generated artifact gates
         run: |
+          start=$SECONDS
           uv run python tools/quality-gates/scripts/validate_search_index.py
           uv run python tools/quality-gates/scripts/check_public_artifact_sizes.py
           uv run python -m njupt_search_eval run-smoke-queries
           uv run python -m njupt_search_eval run-task-queries
+          printf '| Generated artifact gates | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Generate CI evidence reports
         run: |
+          start=$SECONDS
           mkdir -p tools/search-eval/reports
           uv run python -m njupt_search_eval run-cache-benchmark > tools/search-eval/reports/cache-benchmark.json
           uv run python -m njupt_search_eval run-lower-bound-report --output tools/search-eval/reports/njupt-search-lower-bound-report.json --markdown tools/search-eval/reports/njupt-search-lower-bound-report.md --skip-local-body-benchmark
+          printf '| Generate CI evidence reports | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload CI evidence reports
         uses: actions/upload-artifact@v7
@@ -112,16 +142,20 @@ jobs:
 
       - name: Verify WASM semantics
         run: |
+          start=$SECONDS
           npm run build:wasm:web
           node tools/wasm/packed-impact-decoder/scripts/verifyWasmEquivalence.mjs
+          printf '| Verify WASM semantics | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Frontend checks
         run: |
+          start=$SECONDS
           npm run test:prepared
           npm run typecheck:prepared
           npm run lint
           npm run build:prepared
           npm run check:web-bundle-size
+          printf '| Frontend checks | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload deployment build artifact
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -133,6 +167,9 @@ jobs:
 
   pages-build:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      pages: write
     runs-on: ubuntu-latest
     needs: ci
     steps:
@@ -152,6 +189,9 @@ jobs:
 
   pages-deploy:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

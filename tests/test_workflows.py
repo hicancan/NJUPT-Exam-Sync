@@ -1,6 +1,25 @@
 from pathlib import Path
 
 
+def test_ci_is_single_authoritative_pages_gate():
+    assert not Path(".github/workflows/deploy-web.yml").exists()
+    assert not Path(".github/workflows/validate-generated-artifacts.yml").exists()
+    workflow = Path(".github/workflows/ci.yml")
+    assert workflow.exists()
+    text = workflow.read_text(encoding="utf-8")
+    assert "concurrency:\n  group: ci-${{ github.ref }}\n  cancel-in-progress: true" in text
+    assert "permissions:\n  contents: read\n\nconcurrency:" in text
+    assert "  ci:\n    permissions:\n      contents: read" in text
+    assert "  pages-build:" in text
+    assert "    permissions:\n      contents: read\n      pages: write" in text
+    assert "  pages-deploy:" in text
+    assert "    permissions:\n      pages: write\n      id-token: write" in text
+    assert "GITHUB_STEP_SUMMARY" in text
+    assert "npm run test:prepared" in text
+    assert "npm run typecheck:prepared" in text
+    assert "npm run build:prepared" in text
+
+
 def test_collection_update_is_triggered_by_sitegraph_dispatch():
     workflow = Path(".github/workflows/update-collection-index.yml")
     assert workflow.exists()
@@ -24,6 +43,9 @@ def test_collection_update_is_triggered_by_sitegraph_dispatch():
     assert "prepare_public_assets.py build-public-data" in text
     assert "--add config/data-locks/sitegraph.lock.json" in text
     assert "--add apps/web/public/generated/collections/njupt-public/" not in text
+    assert "npm test" not in text
+    assert "npm run typecheck" not in text
+    assert "npm run build" not in text
     assert "git push" not in text
 
 
@@ -43,7 +65,27 @@ def test_exam_update_uses_retrying_generated_commit_helper():
     assert "prepare_public_assets.py update-exam-lock" in text
     assert "--add config/data-locks/exam.lock.json" in text
     assert "--add apps/web/public/generated/exam/" not in text
+    assert "uv run python -m pytest" not in text
+    assert "npm test" not in text
+    assert "npm run typecheck" not in text
+    assert "npm run build" not in text
     assert "git push" not in text
+
+
+def test_android_release_is_hardened():
+    workflow = Path(".github/workflows/release-android.yml")
+    assert workflow.exists()
+    text = workflow.read_text(encoding="utf-8")
+    assert "concurrency:\n  group: release-android-${{ github.ref }}\n  cancel-in-progress: true" in text
+    assert "permissions:\n  contents: read" in text
+    assert "  build-apk:\n    permissions:\n      contents: read" in text
+    assert "  publish-release:" in text
+    assert "    permissions:\n      contents: write" in text
+    assert "Validate release inputs" in text
+    assert "KEYSTORE_BASE64 secret is required" in text
+    assert "tag $RELEASE_TAG does not match package.json version v$VERSION" in text
+    assert "if-no-files-found: error" in text
+    assert "actions/download-artifact@v7" in text
 
 
 def test_generated_commit_helper_retries_push_after_rebase():
