@@ -81,7 +81,7 @@ jobs:
         run: uv run python tools/ci/prepare_public_assets.py verify-determinism
 
       - name: Python tests
-        run: uv run python -m pytest
+        run: uv run python -m pytest tests
 
       - name: Source complexity gates
         run: |
