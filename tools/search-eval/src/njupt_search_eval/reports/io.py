@@ -20,7 +20,11 @@ def public_artifact_repo_path(path_from_public_root: str) -> str:
     return f"apps/web/public/{path_from_public_root}"
 
 def git_show_bytes(ref: str, repo_path: str) -> bytes:
-    return subprocess.check_output(["git", "show", f"{ref}:{repo_path}"], cwd=BASE_DIR)
+    return subprocess.check_output(
+        ["git", "show", f"{ref}:{repo_path}"],
+        cwd=BASE_DIR,
+        stderr=subprocess.DEVNULL,
+    )
 
 def git_show_json(ref: str, repo_path: str) -> Any:
     return json.loads(git_show_bytes(ref, repo_path))

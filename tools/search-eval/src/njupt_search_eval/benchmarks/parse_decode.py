@@ -151,11 +151,16 @@ def parse_decode_benchmark(
     current: dict[str, Any],
     baseline: dict[str, Any],
     *,
-    baseline_ref: str,
+    baseline_ref: str | None,
     parse_runs: int,
     runtime_terms: list[str],
     include_local_body: bool = True,
 ) -> dict[str, Any]:
+    def baseline_artifact_bytes(path_from_public_root: str) -> bytes:
+        if baseline_ref is None:
+            return current_artifact_bytes(path_from_public_root)
+        return git_show_bytes(baseline_ref, public_artifact_repo_path(path_from_public_root))
+
     current_bootstrap = [
         (PUBLIC_INDEX_DIR / "manifest.json").read_bytes(),
         *[
@@ -164,9 +169,11 @@ def parse_decode_benchmark(
         ],
     ]
     baseline_bootstrap = [
-        git_show_bytes(baseline_ref, repo_relative(PUBLIC_INDEX_DIR / "manifest.json")),
+        (PUBLIC_INDEX_DIR / "manifest.json").read_bytes()
+        if baseline_ref is None
+        else git_show_bytes(baseline_ref, repo_relative(PUBLIC_INDEX_DIR / "manifest.json")),
         *[
-            git_show_bytes(baseline_ref, public_artifact_repo_path(str(baseline["artifacts"][name]["path"])))
+            baseline_artifact_bytes(str(baseline["artifacts"][name]["path"]))
             for name in ("source_registry", "global_query_directory", "query_aliases")
         ],
     ]
@@ -290,7 +297,7 @@ def query_path_phase_parse_decode(
     index_ids: list[str],
     terms: list[str],
     parse_runs: int,
-    baseline_ref: str,
+    baseline_ref: str | None,
     include_body: bool,
 ) -> dict[str, Any]:
     current_light_meta = local_index_payloads_by_ids(current_refs, index_ids, "light_index_meta")
@@ -417,7 +424,7 @@ def query_path_parse_decode_benchmark(
     current: dict[str, Any],
     baseline: dict[str, Any],
     *,
-    baseline_ref: str,
+    baseline_ref: str | None,
     query_measurements: list[dict[str, Any]],
     aliases: dict[str, list[str]],
     parse_runs: int,

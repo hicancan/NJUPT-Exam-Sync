@@ -85,9 +85,16 @@ def build_lower_bound_report(
     if collection.resolve() != PUBLIC_INDEX_DIR.resolve():
         raise ValueError(f"Only the generated njupt-public collection is supported: {PUBLIC_INDEX_DIR}")
     manifest = current_manifest(collection)
-    baseline_manifest = git_show_json(baseline_ref, repo_relative(collection / "manifest.json"))
+    baseline_artifact_ref: str | None = baseline_ref
+    baseline_mode = "git_tracked_generated_artifacts"
+    try:
+        baseline_manifest = git_show_json(baseline_ref, repo_relative(collection / "manifest.json"))
+    except subprocess.CalledProcessError:
+        baseline_manifest = manifest
+        baseline_artifact_ref = None
+        baseline_mode = "current_generated_self_baseline"
     size_report = manifest_size_report(manifest)
-    baseline_size_report = manifest_size_report(baseline_manifest, baseline_ref=baseline_ref)
+    baseline_size_report = manifest_size_report(baseline_manifest, baseline_ref=baseline_artifact_ref)
     current_sizes = size_snapshot(manifest, size_report)
     baseline_sizes = size_snapshot(baseline_manifest, baseline_size_report)
     report_queries = queries or DEFAULT_REPORT_QUERIES
@@ -101,7 +108,7 @@ def build_lower_bound_report(
     parse_decode = parse_decode_benchmark(
         manifest,
         baseline_manifest,
-        baseline_ref=baseline_ref,
+        baseline_ref=baseline_artifact_ref,
         parse_runs=parse_runs,
         runtime_terms=runtime_terms,
         include_local_body=include_local_body_benchmark,
@@ -109,7 +116,7 @@ def build_lower_bound_report(
     query_path_decode = query_path_parse_decode_benchmark(
         manifest,
         baseline_manifest,
-        baseline_ref=baseline_ref,
+        baseline_ref=baseline_artifact_ref,
         query_measurements=query_measurements,
         aliases=alias_index["aliases"],
         parse_runs=parse_runs,
@@ -126,6 +133,7 @@ def build_lower_bound_report(
         "collection": repo_relative(collection),
         "baseline": {
             "ref": baseline_ref,
+            "mode": baseline_mode,
             "generated_at": baseline_manifest.get("generated_at"),
             "producer_ref": baseline_manifest.get("producer_ref"),
         },
