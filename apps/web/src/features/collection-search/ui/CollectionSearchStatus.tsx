@@ -43,7 +43,7 @@ export function CollectionSearchStatus({
                         </span>
                         {coverageProgress.showBar ? (
                             <div
-                                className="h-1.5 w-28 overflow-hidden rounded-full bg-[#e8eaed] dark:bg-[#3c4043]"
+                                className={`h-1.5 w-28 overflow-hidden rounded-full bg-[#e8eaed] dark:bg-[#3c4043] ${coverageProgress.complete ? 'complete-progress-hold' : ''}`}
                                 aria-label={`官网信息核查进度 ${coverageProgress.percent}%`}
                                 role="progressbar"
                                 aria-valuemin={0}

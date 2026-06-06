@@ -265,6 +265,54 @@
       }
     },
     {
+      "query": "校历",
+      "top1": {
+        "source_id": "jwc",
+        "title_contains_any": ["校历"],
+        "min_effective_date": "2025-01-01"
+      },
+      "forbid_top_n": {
+        "n": 1,
+        "title_contains_any": ["选课通知"]
+      }
+    },
+    {
+      "query": "四六级",
+      "top_n": {
+        "n": 3,
+        "source_id": "jwc",
+        "facet": "exam",
+        "title_contains_any": ["四六级", "四、六级"],
+        "min_effective_date": "2026-01-01"
+      }
+    },
+    {
+      "query": "成绩",
+      "top1": {
+        "source_id": "jwc",
+        "facet": "download",
+        "title_contains_any": ["成绩复核", "成绩"]
+      }
+    },
+    {
+      "query": "物理实验科技作品",
+      "top1": {
+        "title_contains_any": ["物理与实验科技作品", "物理实验科技作品"],
+        "min_effective_date": "2024-01-01"
+      }
+    },
+    {
+      "query": "授课计划表",
+      "top1": {
+        "source_id": "jwc",
+        "title_contains_any": ["授课计划表"]
+      }
+    },
+    {
+      "query": "不存在的查询词",
+      "allow_empty": true
+    },
+    {
       "query": "B250403",
       "expected_vertical": "exam",
       "exam_mode": "DETAIL",

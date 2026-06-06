@@ -19,6 +19,40 @@ type SearchState = {
     settled: boolean;
 };
 
+type ProgressiveSearchMessage = {
+    results?: RankedSitegraphDocument[];
+    stats?: SitegraphQueryStats;
+    coverage?: SitegraphSearchCoverage;
+};
+
+const emptySearchState = (key = ''): SearchState => ({
+    key,
+    results: [],
+    stats: null,
+    coverage: null,
+    phase: null,
+    error: null,
+    settled: true
+});
+
+export const mergeProgressiveSearchState = (
+    previous: SearchState,
+    requestKey: string,
+    phase: SitegraphSearchPhase,
+    message: ProgressiveSearchMessage
+): SearchState => {
+    const sameKey = previous.key === requestKey;
+    return {
+        key: requestKey,
+        results: message.results ?? (sameKey ? previous.results : []),
+        stats: message.stats ?? (sameKey ? previous.stats : null),
+        coverage: message.coverage ?? (sameKey ? previous.coverage : null),
+        phase,
+        error: null,
+        settled: phase === 'scoped_exhaustive_complete' || phase === 'global_exhaustive_complete' || phase === 'cancelled'
+    };
+};
+
 interface ProgressiveSearchControls {
     sortMode?: SitegraphSortMode;
     filters?: SitegraphSearchFilters;
@@ -35,15 +69,7 @@ export function useProgressiveSearch(
     const facet = controls.filters?.facet ?? 'all';
     const dateRange = controls.filters?.dateRange ?? 'all';
     const searchKey = `${searchQuery.trim()}\u0000${sortMode}\u0000${sourceId}\u0000${facet}\u0000${dateRange}`;
-    const [searchState, setSearchState] = useState<SearchState>({
-        key: '',
-        results: [],
-        stats: null,
-        coverage: null,
-        phase: null,
-        error: null,
-        settled: true
-    });
+    const [searchState, setSearchState] = useState<SearchState>(() => emptySearchState());
     const trimmed = searchQuery.trim();
     const canSearch = Boolean(enabled && worker && trimmed.length >= 2);
 
@@ -80,15 +106,7 @@ export function useProgressiveSearch(
                 'global_exhaustive_complete',
                 'cancelled'
             ].includes(phase)) {
-                setSearchState(previous => ({
-                    key: requestKey,
-                    results: message.results || previous.results,
-                    stats: message.stats || previous.stats,
-                    coverage: message.coverage || previous.coverage,
-                    phase,
-                    error: null,
-                    settled: phase === 'scoped_exhaustive_complete' || phase === 'global_exhaustive_complete' || phase === 'cancelled'
-                }));
+                setSearchState(previous => mergeProgressiveSearchState(previous, requestKey, phase, message));
             } else if (message.type === 'error') {
                 setSearchState({
                     key: requestKey,

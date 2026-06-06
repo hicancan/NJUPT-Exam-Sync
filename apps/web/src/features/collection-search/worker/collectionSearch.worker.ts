@@ -125,7 +125,7 @@ const query = async (
     let fastStartQueryClass: SitegraphQueryClass | undefined;
 
     const runSearch = async () => {
-        if (!sessionRuntime.getSession() && !emittedFastStart) {
+        if (!emittedFastStart) {
             const fastStart = await tryBuildFastStartEvent({
                 requestId,
                 queryText,

@@ -160,6 +160,9 @@ def rank_document(document: dict[str, Any], query: str, terms: list[str], light_
         if len(normalized_query) >= int(text_weights["long_query_min_length"]):
             score += float(text_weights["long_query_title_contains_extra"])
             reasons.append("标题短语命中")
+        else:
+            score += float(text_weights["short_query_title_contains_extra"])
+            reasons.append("短词标题命中")
     if normalized_query and normalized_query in attachment:
         score += float(text_weights["attachment_contains"])
         reasons.append("附件名命中")

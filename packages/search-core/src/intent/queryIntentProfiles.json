@@ -93,6 +93,7 @@
       "title_contains": 2400,
       "long_query_min_length": 4,
       "long_query_title_contains_extra": 1400,
+      "short_query_title_contains_extra": 1200,
       "attachment_contains": 520,
       "external_contains": 440,
       "url_contains": 220,

@@ -64,7 +64,7 @@ describe('getSearchCoverageProgress', () => {
         });
     });
 
-    it('uses a compact complete state without a redundant progress bar', () => {
+    it('keeps a complete progress bar frame for perceptible completion feedback', () => {
         expect(getSearchCoverageProgress(coverage({
             proved_no_match_shards: 70,
             scanned_shards: 50,
@@ -76,7 +76,7 @@ describe('getSearchCoverageProgress', () => {
             percent: 100,
             label: '全量核查完毕',
             complete: true,
-            showBar: false,
+            showBar: true,
         });
     });
 

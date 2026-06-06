@@ -119,4 +119,22 @@
             transform: translateX(120%);
         }
     }
+
+    .complete-progress-hold {
+        animation: complete-progress-hold 0.7s ease-out forwards;
+        transform-origin: left center;
+    }
+
+    @keyframes complete-progress-hold {
+        0%,
+        72% {
+            opacity: 1;
+            width: 7rem;
+        }
+
+        100% {
+            opacity: 0;
+            width: 0;
+        }
+    }
 }

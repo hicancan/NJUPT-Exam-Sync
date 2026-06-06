@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useProgressiveSearch } from '@/features/collection-search/model/useProgressiveSearch';
 import { useSearchIndexWorker } from '@/features/collection-search/model/useSearchIndexWorker';
 import { useClassSearch } from '@/features/exam-search/model/useClassSearch';
@@ -82,13 +82,7 @@ export function useSearchExperience() {
         setInputValue(value);
     };
 
-    const handleOpenClass = (className: string) => {
-        if (!className) return;
-        localStorage.setItem('SAVED_CLASS', className.toUpperCase());
-        navigate({ class: className.toUpperCase(), q: null });
-    };
-
-    const handleSearchSubmit = (value: string) => {
+    const handleSearchSubmit = useCallback((value: string) => {
         const trimmed = value.trim();
         if (trimmed.length >= 2) {
             if (isCompleteClassQuery(trimmed)) {
@@ -99,6 +93,21 @@ export function useSearchExperience() {
         } else {
             navigate({ q: null, class: null });
         }
+    }, [navigate]);
+
+    const routeQueryDraft = shouldSearchSitegraph && inputValue.trim() !== searchQuery.trim();
+
+    useEffect(() => {
+        const trimmed = inputValue.trim();
+        if (!routeQueryDraft || trimmed.length < 2) return;
+        const timeoutId = window.setTimeout(() => handleSearchSubmit(trimmed), 380);
+        return () => window.clearTimeout(timeoutId);
+    }, [handleSearchSubmit, inputValue, routeQueryDraft]);
+
+    const handleOpenClass = (className: string) => {
+        if (!className) return;
+        localStorage.setItem('SAVED_CLASS', className.toUpperCase());
+        navigate({ class: className.toUpperCase(), q: null });
     };
 
     const handleQuickSearch = (nextQuery: string) => {
@@ -146,12 +155,12 @@ export function useSearchExperience() {
         results: {
             isLoading,
             loadingKind,
-            query: initialQuery,
-            results: recalledResults,
-            queryStats,
-            queryCoverage,
-            searchPhase,
-            searching,
+            query: routeQueryDraft ? inputValue : initialQuery,
+            results: routeQueryDraft ? [] : recalledResults,
+            queryStats: routeQueryDraft ? null : queryStats,
+            queryCoverage: routeQueryDraft ? null : queryCoverage,
+            searchPhase: routeQueryDraft ? null : searchPhase,
+            searching: routeQueryDraft ? inputValue.trim().length >= 2 : searching,
             sortMode: collectionSortMode,
             filters: collectionFilters,
             filterOptions,

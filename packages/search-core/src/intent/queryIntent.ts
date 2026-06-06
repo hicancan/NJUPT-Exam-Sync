@@ -37,6 +37,7 @@ interface TextMatchWeights {
     title_contains: number;
     long_query_min_length: number;
     long_query_title_contains_extra: number;
+    short_query_title_contains_extra: number;
     attachment_contains: number;
     external_contains: number;
     url_contains: number;

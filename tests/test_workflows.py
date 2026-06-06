@@ -9,7 +9,9 @@ def test_ci_is_single_authoritative_pages_gate():
     text = workflow.read_text(encoding="utf-8")
     assert "concurrency:\n  group: ci-${{ github.ref }}\n  cancel-in-progress: true" in text
     assert "permissions:\n  contents: read\n\nconcurrency:" in text
-    assert "  ci:\n    permissions:\n      contents: read" in text
+    assert "workflow_run:" in text
+    assert "workflows: [ 'Update Collection Index', 'Update Exam Data' ]" in text
+    assert "  ci:\n    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'\n    permissions:\n      contents: read" in text
     assert "  pages-build:" in text
     assert "    permissions:\n      contents: read\n      pages: write" in text
     assert "  pages-deploy:" in text

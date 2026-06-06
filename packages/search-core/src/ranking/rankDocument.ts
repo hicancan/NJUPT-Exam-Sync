@@ -154,6 +154,9 @@ export const rankSitegraphDocument = (
         if (normalizedQuery.length >= textWeights.long_query_min_length) {
             score += textWeights.long_query_title_contains_extra;
             reasons.push('标题短语命中');
+        } else {
+            score += textWeights.short_query_title_contains_extra;
+            reasons.push('短词标题命中');
         }
     }
     if (normalizedQuery && attachment.includes(normalizedQuery)) {

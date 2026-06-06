@@ -33,6 +33,6 @@ export function getSearchCoverageProgress(coverage: SitegraphSearchCoverage): Se
         percent: coverage.exhaustive_complete ? 100 : percent,
         label: coverage.exhaustive_complete ? completeLabel : activeLabel,
         complete: coverage.exhaustive_complete,
-        showBar: !coverage.exhaustive_complete,
+        showBar: !coverage.exhaustive_complete || totalShards > 0,
     };
 }
