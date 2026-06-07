@@ -78,8 +78,14 @@ jobs:
 
       - name: Install WASM tools
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends binaryen
+          mkdir -p .ci-tools
+          curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 \
+            https://github.com/WebAssembly/binaryen/releases/download/version_129/binaryen-version_129-x86_64-linux.tar.gz \
+            --output .ci-tools/binaryen-version_129-x86_64-linux.tar.gz
+          tar -xzf .ci-tools/binaryen-version_129-x86_64-linux.tar.gz -C .ci-tools
+          binaryen_bin="$PWD/.ci-tools/binaryen-version_129/bin"
+          echo "$binaryen_bin" >> "$GITHUB_PATH"
+          export PATH="$binaryen_bin:$PATH"
           cargo install wasm-pack --version 0.15.0 --locked
           wasm-pack --version
           wasm-opt --version
