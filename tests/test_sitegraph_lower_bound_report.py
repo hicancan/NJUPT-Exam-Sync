@@ -160,7 +160,8 @@ def test_lower_bound_report_contains_rerunnable_evidence() -> None:
     assert query_path_summary["passed"] is True
     assert query_path_summary["first_trusted_results"]["bytes_passed"] is True
     assert query_path_summary["top_results_hydrated"]["bytes_passed"] is True
-    assert query_path_summary["first_trusted_results"]["decode_improved"] is True
+    assert query_path_summary["first_trusted_results"]["decode_within_tolerance"] is True
+    assert query_path_summary["top_results_hydrated"]["decode_within_tolerance"] is True
 
     assert report["cache_benchmark"]["summary"]["passed"] is True
     assert report["cache_benchmark"]["summary"]["max_warm_uncached_bytes"] == 0

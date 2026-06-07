@@ -119,8 +119,9 @@ def render_markdown_report(report: dict[str, Any]) -> str:
                 f"`{phase_summary.get('decode_within_tolerance')}` |"
             )
         lines.append(
-            f"- Query-path byte gate passed: `{query_path_summary.get('passed')}`. "
-            f"Decode timing is reported separately with tolerance `{QUERY_PATH_DECODE_REGRESSION_TOLERANCE_PERCENT}%`."
+            f"- Query-path performance gate passed: `{query_path_summary.get('passed')}`. "
+            f"Bytes must not regress, and decode timing must stay within "
+            f"`{QUERY_PATH_DECODE_REGRESSION_TOLERANCE_PERCENT}%` tolerance."
         )
 
     wasm_decision = report.get("rust_wasm_decision") if isinstance(report.get("rust_wasm_decision"), dict) else {}

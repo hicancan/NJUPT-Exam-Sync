@@ -492,7 +492,7 @@ def query_path_parse_decode_benchmark(
             "bytes_passed": bytes_passed,
             "decode_within_tolerance": decode_within_tolerance,
             "decode_improved": zero_decode_path or (decode_change is not None and decode_change < 0),
-            "passed": bytes_passed,
+            "passed": bytes_passed and decode_within_tolerance,
         }
 
     summary = {
