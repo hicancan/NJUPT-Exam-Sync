@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -39,6 +40,13 @@ JWC_HEADERS = {
 REQUIRED_EXAM_TITLE_KEYWORDS = ("学年", "学期")
 TARGET_EXAM_TITLE_KEYWORDS = ("考试安排表", "期末考试", "课程结束考试")
 EXCLUDED_EXAM_TITLE_KEYWORDS = ("阶段性", "补考", "清欠", "分级", "补学", "换证", "重修", "选拔", "竞赛", "发车", "监考")
+RETRYABLE_HTTP_STATUS_CODES = frozenset({408, 409, 425, 429, 500, 502, 503, 504})
+RETRYABLE_REQUEST_EXCEPTIONS = (
+    requests.exceptions.ChunkedEncodingError,
+    requests.exceptions.ConnectionError,
+    requests.exceptions.SSLError,
+    requests.exceptions.Timeout,
+)
 
 
 class PublicAssetError(RuntimeError):
@@ -67,6 +75,56 @@ def run(args: list[str], *, env: dict[str, str] | None = None) -> None:
 
 def capture(args: list[str], *, cwd: Path = REPO_ROOT) -> str:
     return subprocess.check_output(args, cwd=cwd, text=True).strip()
+
+
+def get_url_with_retries(
+    url: str,
+    *,
+    headers: dict[str, str] | None = None,
+    timeout: int,
+    verify: bool,
+    purpose: str,
+    attempts: int = 4,
+) -> requests.Response:
+    if attempts < 1:
+        raise PublicAssetError("download attempts must be positive")
+    for attempt in range(1, attempts + 1):
+        try:
+            response = requests.get(url, headers=headers, timeout=timeout, verify=verify)
+            if response.status_code in RETRYABLE_HTTP_STATUS_CODES and attempt < attempts:
+                print(
+                    f"[prepare_public_assets] {purpose} returned HTTP {response.status_code}; "
+                    f"retrying {attempt}/{attempts}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                time.sleep(min(2 ** (attempt - 1), 8))
+                continue
+            response.raise_for_status()
+            return response
+        except RETRYABLE_REQUEST_EXCEPTIONS as exc:
+            if attempt >= attempts:
+                raise PublicAssetError(f"{purpose} failed after {attempts} attempts: {url}") from exc
+            print(
+                f"[prepare_public_assets] {purpose} failed with {exc.__class__.__name__}; "
+                f"retrying {attempt}/{attempts}",
+                file=sys.stderr,
+                flush=True,
+            )
+            time.sleep(min(2 ** (attempt - 1), 8))
+        except requests.exceptions.HTTPError as exc:
+            status_code = exc.response.status_code if exc.response is not None else None
+            if status_code in RETRYABLE_HTTP_STATUS_CODES and attempt < attempts:
+                print(
+                    f"[prepare_public_assets] {purpose} returned HTTP {status_code}; "
+                    f"retrying {attempt}/{attempts}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                time.sleep(min(2 ** (attempt - 1), 8))
+                continue
+            raise PublicAssetError(f"{purpose} returned HTTP {status_code}: {url}") from exc
+    raise PublicAssetError(f"{purpose} failed without returning a response: {url}")
 
 
 def sha256_file(path: Path) -> str:
@@ -122,8 +180,13 @@ def materialize_exam_data() -> None:
         if not name or not url or not expected_sha256:
             raise PublicAssetError(f"{EXAM_LOCK} file entry missing name/url/sha256")
         target = EXAM_DIR / name
-        response = requests.get(url, timeout=60, verify=verify_tls)
-        response.raise_for_status()
+        response = get_url_with_retries(
+            url,
+            headers=JWC_HEADERS,
+            timeout=60,
+            verify=verify_tls,
+            purpose=f"download exam file {name}",
+        )
         target.write_bytes(response.content)
         actual_sha256 = sha256_file(target)
         if actual_sha256 != expected_sha256:
@@ -295,8 +358,13 @@ def is_teacher_exam_file(name: str) -> bool:
 
 
 def discover_latest_exam_notice(*, tls_verify: bool) -> tuple[str, str]:
-    response = requests.get(JWC_LIST_URL, headers=JWC_HEADERS, timeout=30, verify=tls_verify)
-    response.raise_for_status()
+    response = get_url_with_retries(
+        JWC_LIST_URL,
+        headers=JWC_HEADERS,
+        timeout=30,
+        verify=tls_verify,
+        purpose="discover latest exam notice list",
+    )
     response.encoding = "utf-8"
     soup = BeautifulSoup(response.text, "html.parser")
     container = soup.select_one("div.col_news_con")
@@ -315,8 +383,13 @@ def discover_latest_exam_notice(*, tls_verify: bool) -> tuple[str, str]:
 
 
 def discover_exam_files(source_url: str, *, tls_verify: bool) -> list[dict[str, str]]:
-    response = requests.get(source_url, headers=JWC_HEADERS, timeout=30, verify=tls_verify)
-    response.raise_for_status()
+    response = get_url_with_retries(
+        source_url,
+        headers=JWC_HEADERS,
+        timeout=30,
+        verify=tls_verify,
+        purpose="discover exam files",
+    )
     response.encoding = "utf-8"
     soup = BeautifulSoup(response.text, "html.parser")
     candidates: list[dict[str, str]] = []
@@ -343,8 +416,13 @@ def update_exam_lock() -> None:
     source_url, source_title = discover_latest_exam_notice(tls_verify=tls_verify)
     files = []
     for item in discover_exam_files(source_url, tls_verify=tls_verify):
-        response = requests.get(item["url"], headers=JWC_HEADERS, timeout=60, verify=tls_verify)
-        response.raise_for_status()
+        response = get_url_with_retries(
+            item["url"],
+            headers=JWC_HEADERS,
+            timeout=60,
+            verify=tls_verify,
+            purpose=f"download exam lock candidate {item['name']}",
+        )
         digest = hashlib.sha256(response.content).hexdigest()
         files.append(
             {

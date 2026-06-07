@@ -77,7 +77,12 @@ jobs:
             rust-wasm-${{ runner.os }}-
 
       - name: Install WASM tools
-        run: cargo install wasm-pack --version 0.15.0 --locked
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends binaryen
+          cargo install wasm-pack --version 0.15.0 --locked
+          wasm-pack --version
+          wasm-opt --version
 
       - name: Initialize CI timing summary
         run: |

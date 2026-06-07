@@ -1,4 +1,4 @@
-import { closeSync, copyFileSync, existsSync, mkdirSync, openSync, rmSync, statSync, unlinkSync } from 'node:fs';
+import { closeSync, copyFileSync, existsSync, mkdirSync, openSync, renameSync, rmSync, statSync, unlinkSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -48,7 +48,16 @@ function acquireLock() {
 
 const lock = acquireLock();
 try {
-  run('wasm-pack', ['build', '--target', 'web', '--release', '--out-dir', 'pkg'], { cwd: crateDir });
+  run('wasm-pack', ['build', '--target', 'web', '--release', '--out-dir', 'pkg', '--no-opt'], { cwd: crateDir });
+
+  const wasmFile = resolve(packageDir, 'packed_impact_decoder_bg.wasm');
+  if (!existsSync(wasmFile)) {
+    throw new Error(`Missing generated WASM binary before optimization: ${wasmFile}`);
+  }
+  const optimizedWasmFile = resolve(packageDir, 'packed_impact_decoder_bg.wasm.opt');
+  rmSync(optimizedWasmFile, { force: true });
+  run('wasm-opt', ['-Oz', wasmFile, '-o', optimizedWasmFile], { cwd: crateDir });
+  renameSync(optimizedWasmFile, wasmFile);
 
   rmSync(runtimeDir, { recursive: true, force: true });
   mkdirSync(runtimeDir, { recursive: true });
