@@ -78,6 +78,36 @@ def source_entries_by_id(index: dict[str, Any]) -> dict[str, dict[str, Any]]:
         for item in index["source_registry"]["sources"]
     }
 
+def expand_chunked_local_indexes(index: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
+    if payload.get("local_indexes"):
+        return payload
+    artifact = (payload.get("artifacts") or {}).get("local_indexes")
+    if not isinstance(artifact, dict) or not artifact.get("path"):
+        return payload
+    manifest = read_json(PUBLIC_ROOT / str(artifact["path"]))
+    record_cache(index, False, int(artifact.get("bytes") or 0))
+    if manifest.get("version") != "sitegraph-local-index-parts-v1":
+        raise ValueError(f"invalid local index manifest version: {artifact['path']}")
+    if manifest.get("source_id") != payload.get("source_id"):
+        raise ValueError(f"local index manifest source_id mismatch: {artifact['path']}")
+    refs: list[dict[str, Any]] = []
+    for part in manifest.get("parts") or []:
+        if not isinstance(part, dict) or not part.get("path"):
+            raise ValueError(f"invalid local index part reference: {artifact['path']}")
+        part_payload = read_json(PUBLIC_ROOT / str(part["path"]))
+        record_cache(index, False, int(part.get("bytes") or 0))
+        if part_payload.get("version") != "sitegraph-local-index-part-v1":
+            raise ValueError(f"invalid local index part version: {part['path']}")
+        if part_payload.get("source_id") != payload.get("source_id"):
+            raise ValueError(f"local index part source_id mismatch: {part['path']}")
+        records = part_payload.get("records")
+        if not isinstance(records, list):
+            raise ValueError(f"local index part records must be a list: {part['path']}")
+        refs.extend(item for item in records if isinstance(item, dict))
+    if len(refs) != int(manifest.get("record_count") or -1):
+        raise ValueError(f"local index part count mismatch: {artifact['path']}")
+    return {**payload, "local_indexes": refs}
+
 def load_source_manifest(index: dict[str, Any], source_id: str) -> dict[str, Any] | None:
     cache = index["source_manifest_cache"]
     if source_id in cache:
@@ -88,7 +118,7 @@ def load_source_manifest(index: dict[str, Any], source_id: str) -> dict[str, Any
     if not entry:
         return None
     path = PUBLIC_ROOT / str(entry["artifact_manifest"]["path"])
-    payload = read_json(path)
+    payload = expand_chunked_local_indexes(index, read_json(path))
     cache[source_id] = payload
     record_cache(index, False, int(entry["artifact_manifest"].get("bytes") or 0))
     return payload
@@ -216,8 +246,34 @@ def load_proof_catalog(index: dict[str, Any], source_manifest: dict[str, Any]) -
     if path in cache:
         record_cache(index, True, bytes_count)
         return cache[path]
-    cache[path] = read_json(PUBLIC_ROOT / path)
+    payload = read_json(PUBLIC_ROOT / path)
     record_cache(index, False, bytes_count)
+    if isinstance(payload, dict) and payload.get("version") == "sitegraph-proof-ledger-catalog-parts-v1":
+        shards: list[dict[str, Any]] = []
+        for part in payload.get("parts") or []:
+            if not isinstance(part, dict) or not part.get("path"):
+                raise ValueError(f"invalid proof_catalog part reference: {path}")
+            part_payload = read_json(PUBLIC_ROOT / str(part["path"]))
+            record_cache(index, False, int(part.get("bytes") or 0))
+            if part_payload.get("version") != "sitegraph-proof-ledger-catalog-part-v1":
+                raise ValueError(f"invalid proof_catalog part version: {part['path']}")
+            if part_payload.get("source_id") != source_manifest.get("source_id"):
+                raise ValueError(f"proof_catalog part source_id mismatch: {part['path']}")
+            part_shards = part_payload.get("shards")
+            if not isinstance(part_shards, list):
+                raise ValueError(f"proof_catalog part shards must be a list: {part['path']}")
+            shards.extend(item for item in part_shards if isinstance(item, dict))
+        if len(shards) != int(payload.get("shard_count") or -1):
+            raise ValueError(f"proof_catalog part count mismatch: {path}")
+        payload = {
+            "version": payload.get("catalog_version"),
+            "source_id": payload.get("source_id"),
+            "state_model": payload.get("state_model"),
+            "complete_requires_no_states": payload.get("complete_requires_no_states"),
+            "covered_fields": payload.get("covered_fields"),
+            "shards": shards,
+        }
+    cache[path] = payload
     return cache[path]
 
 def load_shard(index: dict[str, Any], path: str, bytes_count: int = 0) -> list[dict[str, Any]]:

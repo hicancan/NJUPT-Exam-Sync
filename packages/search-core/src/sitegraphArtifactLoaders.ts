@@ -2,18 +2,99 @@ import type {
     SitegraphArtifactCacheStats,
     SitegraphFullDocument,
     SitegraphFullShard,
+    SitegraphLocalIndexRef,
     SitegraphProofCatalog,
     SitegraphProofCatalogShard,
     SitegraphSourceManifest,
     SourceRegistryEntry
 } from '@njupt-search/contracts';
 import type { ArtifactContentCache } from './fetchJson';
-import { parseSitegraphFullDocuments, parseSitegraphProofCatalog, parseSitegraphSourceManifest, SearchContractError } from './sitegraphContract';
+import { parseSitegraphFullDocuments, parseSitegraphLocalIndexRefs, parseSitegraphProofCatalog, parseSitegraphSourceManifest, SearchContractError } from './sitegraphContract';
 import { parseShardFilterPartEntries, parseShardFilterPartsManifest, type ShardFilterMap } from './sitegraphShardFilter';
 import type { RoutedSessionWithArtifactCache, VerificationShard } from './sitegraphSearchTypes';
 import { proofCatalogCache, shardCache, shardFilterCache, sourceManifestCache } from './sitegraphRuntimeCaches';
 import { fetchJsonArtifactPayload, recordArtifactCache } from './sitegraphRuntimeFetch';
 import { sourceEntriesById } from './sitegraphQueryPlanning';
+
+const asRecord = (value: unknown, source: string): Record<string, unknown> => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        throw new SearchContractError(`${source} must be an object`);
+    }
+    return value as Record<string, unknown>;
+};
+
+const expandChunkedLocalIndexes = async (
+    payload: unknown,
+    source: string,
+    signal: AbortSignal,
+    cacheStats?: SitegraphArtifactCacheStats,
+    artifactCache?: ArtifactContentCache
+): Promise<unknown> => {
+    const record = asRecord(payload, source);
+    if (Array.isArray(record.local_indexes) && record.local_indexes.length > 0) return payload;
+    const artifacts = asRecord(record.artifacts, `${source}.artifacts`);
+    const localIndexArtifact = artifacts.local_indexes;
+    if (!localIndexArtifact || typeof localIndexArtifact !== 'object' || Array.isArray(localIndexArtifact)) return payload;
+    const artifact = localIndexArtifact as { path?: string; bytes?: number };
+    if (!artifact.path) {
+        throw new SearchContractError(`${source}.artifacts.local_indexes.path is missing`);
+    }
+    const manifest = asRecord(
+        await fetchJsonArtifactPayload(
+            artifact.path,
+            signal,
+            'index',
+            cacheStats,
+            Number(artifact.bytes || 0),
+            artifactCache
+        ),
+        `${source}.artifacts.local_indexes`
+    );
+    if (manifest.version !== 'sitegraph-local-index-parts-v1') {
+        throw new SearchContractError(`${source}.artifacts.local_indexes has invalid version`);
+    }
+    if (manifest.source_id !== record.source_id) {
+        throw new SearchContractError(`${source}.artifacts.local_indexes source_id mismatch`);
+    }
+    const parts = manifest.parts;
+    if (!Array.isArray(parts)) {
+        throw new SearchContractError(`${source}.artifacts.local_indexes.parts must be an array`);
+    }
+    const refs: SitegraphLocalIndexRef[] = [];
+    for (const part of parts) {
+        const partRecord = asRecord(part, `${source}.artifacts.local_indexes.part`);
+        const partPath = String(partRecord.path || '');
+        if (!partPath) throw new SearchContractError(`${source}.artifacts.local_indexes part path is missing`);
+        const partPayload = asRecord(
+            await fetchJsonArtifactPayload(
+                partPath,
+                signal,
+                'index',
+                cacheStats,
+                Number(partRecord.bytes || 0),
+                artifactCache
+            ),
+            `${source}.artifacts.local_indexes part ${partPath}`
+        );
+        if (partPayload.version !== 'sitegraph-local-index-part-v1') {
+            throw new SearchContractError(`${source}.artifacts.local_indexes part has invalid version: ${partPath}`);
+        }
+        if (partPayload.source_id !== record.source_id) {
+            throw new SearchContractError(`${source}.artifacts.local_indexes part source_id mismatch: ${partPath}`);
+        }
+        if (!Array.isArray(partPayload.records)) {
+            throw new SearchContractError(`${source}.artifacts.local_indexes part records must be an array: ${partPath}`);
+        }
+        refs.push(...parseSitegraphLocalIndexRefs(partPayload.records, `${source}.artifacts.local_indexes part ${partPath}`));
+    }
+    if (refs.length !== Number(manifest.record_count || -1)) {
+        throw new SearchContractError(`${source}.artifacts.local_indexes record_count mismatch`);
+    }
+    return {
+        ...record,
+        local_indexes: refs,
+    };
+};
 
 export const loadSourceManifest = async (
     entry: SourceRegistryEntry,
@@ -35,7 +116,8 @@ export const loadSourceManifest = async (
         entry.artifact_manifest.bytes,
         artifactCache
     );
-    const parsed = parseSitegraphSourceManifest(payload, path);
+    const expandedPayload = await expandChunkedLocalIndexes(payload, path, signal, cacheStats, artifactCache);
+    const parsed = parseSitegraphSourceManifest(expandedPayload, path);
     sourceManifestCache.set(path, parsed);
     return parsed;
 };
@@ -57,12 +139,70 @@ export const loadProofCatalog = async (
         return existing;
     }
     const payload = await fetchJsonArtifactPayload(path, signal, 'index', cacheStats, artifact.bytes, artifactCache);
-    const parsed = parseSitegraphProofCatalog(payload, path);
+    const expandedPayload = await expandChunkedProofCatalog(payload, path, sourceManifest.source_id, signal, cacheStats, artifactCache);
+    const parsed = parseSitegraphProofCatalog(expandedPayload, path);
     if (parsed.source_id !== sourceManifest.source_id) {
         throw new SearchContractError(`Validation failed for ${path}: proof catalog source_id does not match ${sourceManifest.source_id}`);
     }
     proofCatalogCache.set(path, parsed);
     return parsed;
+};
+
+const expandChunkedProofCatalog = async (
+    payload: unknown,
+    source: string,
+    sourceId: string,
+    signal: AbortSignal,
+    cacheStats?: SitegraphArtifactCacheStats,
+    artifactCache?: ArtifactContentCache
+): Promise<unknown> => {
+    const record = asRecord(payload, source);
+    if (record.version !== 'sitegraph-proof-ledger-catalog-parts-v1') return payload;
+    if (record.source_id !== sourceId) {
+        throw new SearchContractError(`${source} source_id mismatch`);
+    }
+    const parts = record.parts;
+    if (!Array.isArray(parts)) {
+        throw new SearchContractError(`${source}.parts must be an array`);
+    }
+    const shards: unknown[] = [];
+    for (const part of parts) {
+        const partRecord = asRecord(part, `${source}.part`);
+        const partPath = String(partRecord.path || '');
+        if (!partPath) throw new SearchContractError(`${source} proof_catalog part path is missing`);
+        const partPayload = asRecord(
+            await fetchJsonArtifactPayload(
+                partPath,
+                signal,
+                'index',
+                cacheStats,
+                Number(partRecord.bytes || 0),
+                artifactCache
+            ),
+            `${source} proof_catalog part ${partPath}`
+        );
+        if (partPayload.version !== 'sitegraph-proof-ledger-catalog-part-v1') {
+            throw new SearchContractError(`${source} proof_catalog part has invalid version: ${partPath}`);
+        }
+        if (partPayload.source_id !== sourceId) {
+            throw new SearchContractError(`${source} proof_catalog part source_id mismatch: ${partPath}`);
+        }
+        if (!Array.isArray(partPayload.shards)) {
+            throw new SearchContractError(`${source} proof_catalog part shards must be an array: ${partPath}`);
+        }
+        shards.push(...partPayload.shards);
+    }
+    if (shards.length !== Number(record.shard_count || -1)) {
+        throw new SearchContractError(`${source} proof_catalog shard_count mismatch`);
+    }
+    return {
+        version: record.catalog_version,
+        source_id: record.source_id,
+        state_model: record.state_model,
+        complete_requires_no_states: record.complete_requires_no_states,
+        covered_fields: record.covered_fields,
+        shards,
+    };
 };
 
 

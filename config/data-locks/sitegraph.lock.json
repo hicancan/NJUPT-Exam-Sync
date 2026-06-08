@@ -2,12 +2,24 @@
   "version": "njupt-search-sitegraph-lock-v1",
   "sitegraph_repo": "hicancan/njupt-site-graph",
   "checkout_path": "_sitegraph/njupt-site-graph",
-  "sitegraph_ref": "78984c9709073c6ffa7b5da59161c187c128fd61",
-  "generated_at": "2026-06-08T02:28:58.686825+00:00",
+  "sitegraph_ref": "068a505fa92d7f8c800d2d980eb3edd960581062",
+  "generated_at": "2026-06-08T06:42:23.127932+00:00",
   "collection_id": "njupt-public",
   "source_packages": [
     "data/sites/jwc/index",
     "data/sites/xsc/index",
-    "data/sites/cxcy/index"
+    "data/sites/cxcy/index",
+    "data/sites/lib/index",
+    "data/sites/xxb/index",
+    "data/sites/www/index",
+    "data/sites/job91/index",
+    "data/sites/tyb/index",
+    "data/sites/bwc/index",
+    "data/sites/fwlc/index",
+    "data/sites/gzzd/index",
+    "data/sites/xxgk/index",
+    "data/sites/cs/index",
+    "data/sites/scie/index",
+    "data/sites/bhs/index"
   ]
 }

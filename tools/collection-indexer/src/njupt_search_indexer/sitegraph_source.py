@@ -12,7 +12,23 @@ BASE_DIR = Path(__file__).resolve().parents[4]
 COLLECTION_ID = "njupt-public"
 DEFAULT_COLLECTION_CONFIG = BASE_DIR / "config" / "collections" / "njupt-public.sitegraph.json"
 DEFAULT_SITEGRAPH_REPO = BASE_DIR.parent / "njupt-site-graph"
-DEFAULT_SOURCE_PACKAGE_PATHS = ("data/sites/jwc/index", "data/sites/xsc/index", "data/sites/cxcy/index")
+DEFAULT_SOURCE_PACKAGE_PATHS = (
+    "data/sites/jwc/index",
+    "data/sites/xsc/index",
+    "data/sites/cxcy/index",
+    "data/sites/lib/index",
+    "data/sites/xxb/index",
+    "data/sites/www/index",
+    "data/sites/job91/index",
+    "data/sites/tyb/index",
+    "data/sites/bwc/index",
+    "data/sites/fwlc/index",
+    "data/sites/gzzd/index",
+    "data/sites/xxgk/index",
+    "data/sites/cs/index",
+    "data/sites/scie/index",
+    "data/sites/bhs/index",
+)
 DEFAULT_SITEGRAPH_INDEXES = tuple((DEFAULT_SITEGRAPH_REPO / source_path).resolve() for source_path in DEFAULT_SOURCE_PACKAGE_PATHS)
 DEFAULT_SITEGRAPH_INDEX = DEFAULT_SITEGRAPH_INDEXES[0]
 UNKNOWN_ALLOWLIST_FILE = "unknown_url_allowlist.json"

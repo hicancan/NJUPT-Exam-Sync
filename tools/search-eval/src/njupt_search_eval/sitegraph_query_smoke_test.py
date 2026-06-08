@@ -73,7 +73,19 @@ QUERY_EXPECTATIONS = (
         "栏目路径命中",
         ResultExpectation("管理办法", "policy", "规章制度", r"jwc\.njupt\.edu\.cn/.+/page\.htm$", "政策制度"),
     ),
-    expect("办事流程", "申请", "workflow", "服务指南", r"xsc\.njupt\.edu\.cn/.+/page\.htm$", "词项"),
+    expect("办事流程", "办事流程", "workflow", "信息化服务", r"fwlc\.njupt\.edu\.cn/.+/page\.htm$", "权威来源"),
+    expect("服务流程", "服务流程", "workflow", "信息化服务", r"fwlc\.njupt\.edu\.cn/.+/page\.htm$", "权威来源"),
+    expect("图书馆开放时间", "开放时间", "news", "通知公告", r"lib\.njupt\.edu\.cn/.+/page\.htm$", "标题"),
+    expect("VPN", "VPN", "policy", "VPN", r"xxb\.njupt\.edu\.cn/.+/list\.htm$", "权威来源"),
+    expect("校园网", "校园网", "system", "首页", r"zfw\.njupt\.edu\.cn", "系统入口"),
+    expect("就业协议", "就业协议", "workflow", "操作指南", r"njupt\.91job\.org\.cn/sub-station/news/", "办事流程"),
+    expect("招聘会", "招聘会", "notice_article", "招聘会", r"njupt\.91job\.org\.cn/sub-station/job-fair/", "权威来源"),
+    expect("体育补测", "体测补测", "download", "首页", r"tyb\.njupt\.edu\.cn/.+/page\.htm$", "权威来源"),
+    expect("校园通行证", "通行证", "policy", "首页", r"bwc\.njupt\.edu\.cn/.+/page\.htm$", "权威来源"),
+    expect("信息公开", "信息公开", "notice_article", "信息公开工作年度报告", r"xxgk\.njupt\.edu\.cn/.+/page\.htm$", "权威来源"),
+    expect("计算机学院", "计算机学院", "news", "学院新闻", r"cs\.njupt\.edu\.cn/.+/page\.htm$", "权威来源"),
+    expect("通信学院", "通信学院", "news", "学院新闻", r"scie\.njupt\.edu\.cn/.+/page\.htm$", "权威来源"),
+    expect("贝尔英才", "贝尔英才", "notice_article", "首页", r"bhs\.njupt\.edu\.cn/.+/page\.htm$", "权威来源"),
     expect("学生相关文件及表格", "学生", "download", "学生相关文件及表格", r"jwc\.njupt\.edu\.cn/.+", "下载资源"),
     expect("教务管理系统", "教务管理系统", "system", "首页", r"jwxt\.njupt\.edu\.cn/?$", "系统入口"),
     expect(
@@ -95,14 +107,10 @@ QUERY_EXPECTATIONS = (
     expect("互联网+", "互联网+", "notice_article", "通知公告", r"cxcy\.njupt\.edu\.cn/.+/page\.htm$", "标题包含"),
 )
 
-SIZE_BUDGETS = {
+ABSOLUTE_SIZE_BUDGETS = {
     "routed_first_screen_total_bytes": 1_000_000,
-    "global_query_directory_bytes": 300_000,
     "source_registry_bytes": 50_000,
     "query_aliases_bytes": 20_000,
-    "local_index_count": 300,
-    "artifact_count": 1_600,
-    "full_shard_count": 1_000,
     "max_full_shard_bytes": 512 * 1024,
     "avg_full_shard_bytes": 96 * 1024,
     "max_candidate_shards_per_query": 32,
@@ -119,6 +127,24 @@ def fail(message: str, payload: Any | None = None) -> None:
     if payload is not None:
         print(json.dumps(payload, ensure_ascii=False, indent=2), file=sys.stderr)
     raise SystemExit(1)
+
+
+def source_count_for(manifest: dict[str, Any]) -> int:
+    source_registry = read_json(PUBLIC_ROOT / manifest["artifacts"]["source_registry"]["path"])
+    sources = source_registry.get("sources")
+    if not isinstance(sources, list) or not sources:
+        fail("source_registry must contain a non-empty sources list")
+    return len(sources)
+
+
+def derived_count_budgets(manifest: dict[str, Any]) -> dict[str, int]:
+    source_count = source_count_for(manifest)
+    return {
+        "global_query_directory_bytes": max(300_000, source_count * 32_000),
+        "local_index_count": max(300, source_count * 80),
+        "artifact_count": max(1_600, source_count * 280),
+        "full_shard_count": max(1_000, source_count * 300),
+    }
 
 
 def result_matches(result: dict[str, Any], expectation: ResultExpectation) -> bool:
@@ -187,7 +213,7 @@ def validate_quality() -> dict[str, Any]:
         covered_shards = int(coverage.get("proved_no_match_shards", 0)) + int(coverage.get("scanned_shards", 0))
         if covered_shards != int(coverage.get("total_shards", -2)):
             failures[f"{expectation.query}:shard_coverage"] = coverage
-        if int(stats.get("candidate_shard_count", 0)) > SIZE_BUDGETS["max_candidate_shards_per_query"]:
+        if int(stats.get("candidate_shard_count", 0)) > ABSOLUTE_SIZE_BUDGETS["max_candidate_shards_per_query"]:
             failures[f"{expectation.query}:candidate_shards"] = stats
     if failures:
         fail("representative query quality checks failed", failures)
@@ -231,9 +257,10 @@ def validate_size_budget() -> dict[str, Any]:
         "max_full_shard_documents": size_report["max_full_shard_documents"],
         "avg_full_shard_documents": size_report["avg_full_shard_documents"],
     }
+    budgets = {**ABSOLUTE_SIZE_BUDGETS, **derived_count_budgets(manifest)}
     failures = {
         key: {"actual": budget_summary[key], "budget": budget}
-        for key, budget in SIZE_BUDGETS.items()
+        for key, budget in budgets.items()
         if key in budget_summary and float(budget_summary[key]) > float(budget)
     }
     if failures:
@@ -249,7 +276,7 @@ def main() -> None:
             {
                 "quality": quality_summary,
                 "size_budget": size_summary,
-                "budgets": SIZE_BUDGETS,
+                "budgets": {**ABSOLUTE_SIZE_BUDGETS, **derived_count_budgets(read_json(PUBLIC_INDEX_DIR / "manifest.json"))},
             },
             ensure_ascii=False,
             indent=2,

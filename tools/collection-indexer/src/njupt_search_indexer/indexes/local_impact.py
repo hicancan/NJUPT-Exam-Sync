@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -32,22 +33,30 @@ LOCAL_DOC_META_FIELDS = (
     "attachment_count",
     "shard",
 )
+LOCAL_INDEX_BUCKET_COUNT = 4
 
 
-def index_scope_for_document(document: dict[str, Any]) -> tuple[str, str, str]:
+def local_index_bucket(document: dict[str, Any], bucket_count: int = LOCAL_INDEX_BUCKET_COUNT) -> str:
+    digest = hashlib.sha1(str(document.get("id") or "").encode("utf-8")).hexdigest()
+    return f"lb{int(digest[:2], 16) % bucket_count}"
+
+
+def index_scope_for_document(document: dict[str, Any]) -> tuple[str, str, str, str]:
     return (
         document_source_id(document),
         clean_text(document.get("facet")) or "unknown",
         shard_year(document),
+        local_index_bucket(document),
     )
 
 
-def index_id_for_scope(source_id: str, facet: str, year: str) -> str:
+def index_id_for_scope(source_id: str, facet: str, year: str, bucket: str = "lb0") -> str:
     return "__".join(
         [
             stable_ascii_slug(source_id, fallback="source"),
             stable_ascii_slug(facet, fallback="facet"),
             stable_ascii_slug(year, fallback="year"),
+            stable_ascii_slug(bucket, fallback="bucket"),
         ]
     )
 
@@ -95,14 +104,14 @@ def build_local_impact_indexes(
     light_packed_dir: Path,
     body_packed_dir: Path,
 ) -> tuple[list[dict[str, Any]], dict[str, list[dict[str, Any]]]]:
-    grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    grouped: dict[tuple[str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
     for document in documents:
         grouped[index_scope_for_document(document)].append(document)
 
     local_refs: list[dict[str, Any]] = []
     refs_by_source: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for (source_id, facet, year), docs in sorted(grouped.items()):
-        index_id = index_id_for_scope(source_id, facet, year)
+    for (source_id, facet, year, bucket), docs in sorted(grouped.items()):
+        index_id = index_id_for_scope(source_id, facet, year, bucket)
         sorted_docs = sorted(docs, key=lambda item: int(item.get("doc_index") or 0))
         shard_ids = sorted(
             {
@@ -116,6 +125,7 @@ def build_local_impact_indexes(
             "source_id": source_id,
             "facet": facet,
             "year": year,
+            "bucket": bucket,
             "shard_ids": shard_ids,
         }
         light_payload = {

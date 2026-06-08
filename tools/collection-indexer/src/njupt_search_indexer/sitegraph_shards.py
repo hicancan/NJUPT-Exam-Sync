@@ -85,7 +85,7 @@ def shard_section(document: dict[str, Any]) -> str:
     return stable_ascii_slug(section, fallback="root", max_length=32)
 
 
-def shard_bucket(document: dict[str, Any], bucket_count: int = 4) -> str:
+def shard_bucket(document: dict[str, Any], bucket_count: int = 8) -> str:
     digest = hashlib.sha1(str(document.get("id") or "").encode("utf-8")).hexdigest()
     return f"b{int(digest[:2], 16) % bucket_count}"
 

@@ -12,7 +12,7 @@
     "c": 10
   },
   "intent_detection": {
-    "default_authority_sources": ["jwc", "xsc", "cxcy"],
+    "default_authority_sources": ["jwc", "xsc", "cxcy", "lib", "xxb", "www", "job91", "tyb", "bwc", "fwlc", "gzzd", "xxgk", "cs", "scie", "bhs"],
     "system_authority_rules": [
       {
         "source_id": "cxcy",
@@ -20,16 +20,64 @@
       },
       {
         "source_id": "xsc",
-        "match_any": ["心理", "学工", "资助", "就业", "征兵", "奖学金", "助学金", "困难认定", "辅导员", "宿舍"]
+        "match_any": ["心理", "学工", "资助", "征兵", "奖学金", "助学金", "困难认定", "辅导员", "宿舍"]
+      },
+      {
+        "source_id": "lib",
+        "match_any": ["图书馆", "开放时间", "借阅", "馆藏", "数据库", "研读室", "查收查引", "论文提交", "文献"]
+      },
+      {
+        "source_id": "xxb",
+        "match_any": ["校园网", "VPN", "vpn", "统一身份认证", "信息门户", "邮箱", "正版软件", "网络安全", "智慧校园", "一卡通"]
+      },
+      {
+        "source_id": "job91",
+        "match_any": ["就业", "就业协议", "招聘会", "宣讲会", "双选会", "岗位", "招聘", "求职", "用人单位"]
+      },
+      {
+        "source_id": "tyb",
+        "match_any": ["体育", "体测", "体育补测", "晨跑", "阳光长跑", "运动会", "体育课"]
+      },
+      {
+        "source_id": "bwc",
+        "match_any": ["保卫", "校园通行证", "通行证", "户籍", "消防", "交通", "报警", "安全"]
+      },
+      {
+        "source_id": "fwlc",
+        "match_any": ["服务流程", "办事流程", "办理流程", "学生证", "助学贷款", "医疗费用", "医保", "公费医疗"]
+      },
+      {
+        "source_id": "gzzd",
+        "match_any": ["规章制度", "规章", "制度", "管理规定", "办法"]
+      },
+      {
+        "source_id": "xxgk",
+        "match_any": ["信息公开", "采购", "招标", "预算", "决算", "招生章程"]
+      },
+      {
+        "source_id": "cs",
+        "match_any": ["计算机学院", "软件学院", "网络空间安全学院", "计软网安", "课程替代", "图像采集码"]
+      },
+      {
+        "source_id": "scie",
+        "match_any": ["通信学院", "通信与信息工程学院", "通院", "教材研究课题"]
+      },
+      {
+        "source_id": "bhs",
+        "match_any": ["贝尔英才", "贝尔英才学院", "英才学院", "强化班"]
+      },
+      {
+        "source_id": "www",
+        "match_any": ["南京邮电大学", "南邮动态", "学校新闻", "校园新闻", "校级通知"]
       }
     ],
-    "system_default_authority_sources": ["jwc"],
+    "system_default_authority_sources": ["xxb", "jwc", "www"],
     "profiles": [
       {
         "intent": "system_entry",
         "authority_sources": "dynamic_system",
         "freshness_mode": "official_entry",
-        "match_any": ["教务管理系统", "正方教务", "jwxt", "双创信息管理系统", "心理健康", "心理咨询", "信息门户", "系统", "门户"]
+        "match_any": ["教务管理系统", "正方教务", "jwxt", "双创信息管理系统", "心理健康", "心理咨询", "信息门户", "校园网", "VPN", "统一身份认证", "邮箱", "系统", "门户"]
       },
       {
         "intent": "exam_schedule",
@@ -51,7 +99,7 @@
       },
       {
         "intent": "academic_policy",
-        "authority_sources": ["jwc"],
+        "authority_sources": "dynamic_system",
         "freshness_mode": "current_policy",
         "match_any": ["转专业", "推免", "推荐免试", "免试攻读", "培养方案", "学籍", "管理办法", "规章制度", "政策文件"]
       },
@@ -69,20 +117,80 @@
       },
       {
         "intent": "student_affairs",
-        "authority_sources": ["xsc"],
+        "authority_sources": "dynamic_system",
         "freshness_mode": "balanced",
-        "match_any": ["辅导员", "心理", "宿舍", "征兵", "就业", "学工", "一站式", "防诈骗", "消防"]
+        "match_any": ["辅导员", "心理", "宿舍", "征兵", "学工", "一站式", "防诈骗", "消防", "校园通行证"]
       },
       {
         "intent": "innovation_entrepreneurship",
         "authority_sources": ["cxcy"],
         "freshness_mode": "current_term",
         "match_any": ["大创", "创新创业", "双创", "互联网+", "挑战杯", "竞赛报名", "竞赛", "创业", "学科竞赛"]
+      },
+      {
+        "intent": "library_hours",
+        "authority_sources": ["lib"],
+        "freshness_mode": "current_notice",
+        "match_any": ["开放时间", "图书馆开放时间", "临时延长图书馆开放时间"]
+      },
+      {
+        "intent": "library_service",
+        "authority_sources": ["lib"],
+        "freshness_mode": "official_entry",
+        "match_any": ["图书馆", "开放时间", "借阅", "馆藏", "数据库", "研读室", "论文提交", "查收查引"]
+      },
+      {
+        "intent": "campus_it",
+        "authority_sources": ["xxb"],
+        "freshness_mode": "official_entry",
+        "match_any": ["校园网", "VPN", "统一身份认证", "邮箱", "正版软件", "网络安全", "智慧校园", "信息门户"]
+      },
+      {
+        "intent": "employment_workflow",
+        "authority_sources": ["job91"],
+        "freshness_mode": "official_entry",
+        "match_any": ["就业协议", "就业协议书", "就业推荐表", "协议书打印", "协议书补办", "就业手续"]
+      },
+      {
+        "intent": "employment",
+        "authority_sources": ["job91", "xsc"],
+        "freshness_mode": "current_notice",
+        "match_any": ["就业", "就业协议", "招聘会", "宣讲会", "双选会", "岗位", "招聘", "求职"]
+      },
+      {
+        "intent": "sports_affairs",
+        "authority_sources": ["tyb"],
+        "freshness_mode": "current_notice",
+        "match_any": ["体育", "体测", "体育补测", "晨跑", "阳光长跑", "运动会", "体育课"]
+      },
+      {
+        "intent": "security_service",
+        "authority_sources": ["bwc"],
+        "freshness_mode": "official_entry",
+        "match_any": ["保卫", "校园通行证", "通行证", "户籍", "消防", "交通", "报警"]
+      },
+      {
+        "intent": "service_workflow",
+        "authority_sources": ["fwlc"],
+        "freshness_mode": "official_entry",
+        "match_any": ["服务流程", "办事流程", "办理流程", "学生证", "助学贷款", "医疗费用", "医保"]
+      },
+      {
+        "intent": "public_disclosure",
+        "authority_sources": ["xxgk"],
+        "freshness_mode": "current_notice",
+        "match_any": ["信息公开", "采购", "招标", "预算", "决算", "招生章程"]
+      },
+      {
+        "intent": "school_department",
+        "authority_sources": "dynamic_system",
+        "freshness_mode": "balanced",
+        "match_any": ["计算机学院", "软件学院", "网络空间安全学院", "通信学院", "通信与信息工程学院", "贝尔英才学院", "贝尔英才"]
       }
     ],
     "fallback_profile": {
       "intent": "broad_exploratory",
-      "authority_sources": ["jwc", "xsc", "cxcy"],
+      "authority_sources": ["jwc", "xsc", "cxcy", "lib", "xxb", "www", "job91", "tyb", "bwc", "fwlc", "gzzd", "xxgk", "cs", "scie", "bhs"],
       "freshness_mode": "balanced"
     }
   },
@@ -135,8 +243,8 @@
       },
       {
         "facet": "workflow",
-        "intents": ["form_download", "course_grade_credit"],
-        "score": 520,
+        "intents": ["form_download", "course_grade_credit", "employment_workflow", "service_workflow"],
+        "score": 1450,
         "reason": "办事流程"
       },
       {

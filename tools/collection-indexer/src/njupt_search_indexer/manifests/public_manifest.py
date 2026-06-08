@@ -151,14 +151,14 @@ def build_public_manifest(
                     "attachment_text_extracted": payload["attachment_evidence_coverage"]["text_extracted"],
                     "attachment_full_content": payload["attachment_evidence_coverage"]["full_content"],
                     "shard_count": int(payload["artifacts"]["proof_catalog"]["count"]),
-                    "local_index_count": len(payload["local_indexes"]),
+                    "local_index_count": int(payload["artifacts"]["local_indexes"]["count"]),
                 }
                 for source_id, payload in source_manifest_payloads.items()
             },
             "shard_strategy": {
                 "version": "locality-source-facet-record-year-section-hash-routed",
                 "dimensions": ["source_id", "facet", "record_type", "year", "top_nav_section", "hash_bucket"],
-                "hash_bucket_count": 4,
+                "hash_bucket_count": 8,
                 "sequential_fixed_size_shards": False,
             },
             "indexes": dict(artifacts),

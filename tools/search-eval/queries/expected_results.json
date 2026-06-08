@@ -164,9 +164,9 @@
       "query": "转专业",
       "top1": {
         "source_id": "jwc",
-        "facet": "exam",
+        "facet": "policy",
         "title_contains_any": ["转专业"],
-        "min_effective_date": "2026-01-01"
+        "min_effective_date": "2025-01-01"
       },
       "forbid_top_n": {
         "n": 3,
@@ -241,8 +241,8 @@
     {
       "query": "信息门户",
       "top1": {
-        "source_id": "jwc",
-        "title_contains_any": ["综合信息服务", "教务管理系统", "考试信息查询"]
+        "source_id": "xxb",
+        "title_contains_any": ["信息门户", "统一身份认证", "智慧校园"]
       },
       "forbid_top_n": {
         "n": 5,
@@ -258,9 +258,112 @@
       }
     },
     {
+      "query": "办事流程",
+      "top1": {
+        "source_id": "fwlc",
+        "facet": "workflow",
+        "title_contains_any": ["办事流程", "申请流程", "服务流程"]
+      }
+    },
+    {
+      "query": "服务流程",
+      "top1": {
+        "source_id": "fwlc",
+        "facet": "workflow",
+        "title_contains_any": ["服务流程"]
+      }
+    },
+    {
+      "query": "图书馆开放时间",
+      "top_n": {
+        "n": 5,
+        "source_id": "lib",
+        "title_contains_any": ["开放时间"],
+        "min_effective_date": "2024-01-01"
+      }
+    },
+    {
+      "query": "VPN",
+      "top1": {
+        "source_id": "xxb",
+        "title_contains_any": ["VPN", "WebVPN"]
+      }
+    },
+    {
+      "query": "校园网",
+      "top1": {
+        "source_id": "xxb",
+        "facet": "system",
+        "title_contains_any": ["校园网"]
+      }
+    },
+    {
+      "query": "就业协议",
+      "top1": {
+        "source_id": "job91",
+        "facet": "workflow",
+        "title_contains_any": ["就业协议"]
+      }
+    },
+    {
+      "query": "招聘会",
+      "top1": {
+        "source_id": "job91",
+        "title_contains_any": ["招聘会"],
+        "min_effective_date": "2026-01-01"
+      }
+    },
+    {
+      "query": "体育补测",
+      "top_n": {
+        "n": 5,
+        "source_id": "tyb",
+        "title_contains_any": ["体测补测", "补测"]
+      }
+    },
+    {
+      "query": "校园通行证",
+      "top1": {
+        "source_id": "bwc",
+        "title_contains_any": ["通行证"]
+      }
+    },
+    {
+      "query": "信息公开",
+      "top1": {
+        "source_id": "xxgk",
+        "title_contains_any": ["信息公开"],
+        "min_effective_date": "2025-01-01"
+      }
+    },
+    {
+      "query": "计算机学院",
+      "top1": {
+        "source_id": "cs",
+        "title_contains_any": ["计算机学院"],
+        "min_effective_date": "2026-01-01"
+      }
+    },
+    {
+      "query": "通信学院",
+      "top_n": {
+        "n": 5,
+        "source_id": "scie",
+        "title_contains_any": ["通信学院"]
+      }
+    },
+    {
+      "query": "贝尔英才",
+      "top_n": {
+        "n": 5,
+        "source_id": "bhs",
+        "title_contains_any": ["贝尔英才"]
+      }
+    },
+    {
       "query": "xlsx",
       "top1": {
-        "facet": "download",
+        "task_kind": "form_download",
         "min_effective_date": "2025-01-01"
       }
     },

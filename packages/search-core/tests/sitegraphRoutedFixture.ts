@@ -95,7 +95,7 @@ export const makeRoutedFixture = (
             legacy_global_first_screen: false,
             first_screen_artifacts: ['source_registry', 'global_query_directory', 'query_aliases'],
             fast_start_artifacts: ['hot_query_fast_start'],
-            hot_query_initial_results: 20,
+            hot_query_initial_results: 16,
             local_index_loading: 'query_planned_on_demand',
             body_index_loading: 'query_planned_on_demand',
             full_text_loading: 'lazy_candidate_hydration_then_verified_scope_scan',

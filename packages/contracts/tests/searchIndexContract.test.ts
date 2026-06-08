@@ -18,6 +18,73 @@ const required = <T>(value: T | undefined, message: string): T => {
     return value;
 };
 
+const EXPECTED_SOURCE_IDS = [
+    'bhs',
+    'bwc',
+    'cs',
+    'cxcy',
+    'fwlc',
+    'gzzd',
+    'job91',
+    'jwc',
+    'lib',
+    'scie',
+    'tyb',
+    'www',
+    'xsc',
+    'xxb',
+    'xxgk'
+];
+
+const asRecord = (value: unknown, message: string): Record<string, unknown> => {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new Error(message);
+    return value as Record<string, unknown>;
+};
+
+const asRecords = (value: unknown, message: string): Record<string, unknown>[] => {
+    if (!Array.isArray(value) || value.some(item => typeof item !== 'object' || item === null || Array.isArray(item))) {
+        throw new Error(message);
+    }
+    return value as Record<string, unknown>[];
+};
+
+const loadArtifactRecord = (path: string): Record<string, unknown> => {
+    return asRecord(loadPublicJson(`../../../apps/web/public/${path}`), `expected artifact object: ${path}`);
+};
+
+const expandLocalIndexes = (sourceManifest: { artifacts: { local_indexes?: { path: string } } }): Record<string, unknown>[] => {
+    const localIndexes = loadArtifactRecord(required(sourceManifest.artifacts.local_indexes, 'expected local index manifest').path);
+    expect(localIndexes.version).toBe('sitegraph-local-index-parts-v1');
+    const parts = asRecords(localIndexes.parts, 'expected local index parts');
+    const records = parts.flatMap(part => {
+        const payload = loadArtifactRecord(String(required(part.path as string | undefined, 'expected local index part path')));
+        expect(payload.version).toBe('sitegraph-local-index-part-v1');
+        return asRecords(payload.records, 'expected local index part records');
+    });
+    expect(records.length).toBe(localIndexes.record_count);
+    return records;
+};
+
+const expandProofCatalog = (sourceManifest: { source_id: string; artifacts: { proof_catalog?: { path: string } } }): Record<string, unknown> => {
+    const proofCatalog = loadArtifactRecord(required(sourceManifest.artifacts.proof_catalog, 'expected proof catalog').path);
+    if (proofCatalog.version !== 'sitegraph-proof-ledger-catalog-parts-v1') return proofCatalog;
+    const parts = asRecords(proofCatalog.parts, 'expected proof catalog parts');
+    const shards = parts.flatMap(part => {
+        const payload = loadArtifactRecord(String(required(part.path as string | undefined, 'expected proof catalog part path')));
+        expect(payload.version).toBe('sitegraph-proof-ledger-catalog-part-v1');
+        return asRecords(payload.shards, 'expected proof catalog part shards');
+    });
+    expect(shards.length).toBe(proofCatalog.shard_count);
+    return {
+        version: proofCatalog.catalog_version,
+        source_id: sourceManifest.source_id,
+        state_model: proofCatalog.state_model,
+        complete_requires_no_states: proofCatalog.complete_requires_no_states,
+        covered_fields: proofCatalog.covered_fields,
+        shards
+    };
+};
+
 describe('search index contracts package', () => {
     it('accepts the committed public search manifest', () => {
         const manifest = SitegraphSearchManifestSchema.parse(
@@ -51,23 +118,27 @@ describe('search index contracts package', () => {
             loadPublicJson(`../../../apps/web/public/${manifest.sitegraph.source_manifests.jwc.path}`)
         );
 
-        expect(sourceRegistry.sources.map(source => source.source_id).sort()).toEqual(['cxcy', 'jwc', 'xsc']);
+        expect(sourceRegistry.sources.map(source => source.source_id).sort()).toEqual(EXPECTED_SOURCE_IDS);
         expect(queryDirectory.entry_count).toBe(Object.keys(queryDirectory.entries).length);
         expect(queryDirectory.entries['大创']?.local_index_ids.length).toBeGreaterThan(0);
-        expect(sourceManifest.local_indexes.length).toBeGreaterThan(0);
+        const localIndexes = expandLocalIndexes(sourceManifest);
+        expect(localIndexes.length).toBeGreaterThan(0);
         expect(sourceManifest.full_shards.length).toBe(0);
         expect(sourceManifest.attachment_evidence_coverage?.filename_only).toBe(sourceManifest.attachment_count);
         expect(sourceManifest.attachment_evidence_coverage?.text_extracted).toBe(0);
-        expect(sourceManifest.local_indexes[0]?.shards.length).toBeGreaterThan(0);
-        expect(sourceManifest.local_indexes[0]?.light_index_meta?.role).toBe('local_impact_light_index_meta');
-        expect(sourceManifest.local_indexes[0]?.light_index_packed?.role).toBe('local_impact_light_index_packed');
-        expect(sourceManifest.local_indexes[0]?.light_index_packed?.path.endsWith('.bin')).toBe(true);
-        expect(sourceManifest.local_indexes[0]?.body_index).toBeUndefined();
-        expect(sourceManifest.local_indexes[0]?.body_index_packed?.role).toBe('local_impact_body_index_packed');
-        expect(sourceManifest.local_indexes[0]?.body_index_packed?.path.endsWith('.bin')).toBe(true);
+        const firstLocalIndex = localIndexes[0] ?? {};
+        expect(asRecords(firstLocalIndex.shards, 'expected local index shards').length).toBeGreaterThan(0);
+        expect(asRecord(firstLocalIndex.light_index_meta, 'expected light meta').role).toBe('local_impact_light_index_meta');
+        const lightIndexPacked = asRecord(firstLocalIndex.light_index_packed, 'expected packed light index');
+        expect(lightIndexPacked.role).toBe('local_impact_light_index_packed');
+        expect(String(lightIndexPacked.path).endsWith('.bin')).toBe(true);
+        expect(firstLocalIndex.body_index).toBeUndefined();
+        const bodyIndexPacked = asRecord(firstLocalIndex.body_index_packed, 'expected packed body index');
+        expect(bodyIndexPacked.role).toBe('local_impact_body_index_packed');
+        expect(String(bodyIndexPacked.path).endsWith('.bin')).toBe(true);
         expect(sourceManifest.artifacts.proof_catalog?.role).toBe('proof_catalog');
         const proofCatalog = SitegraphProofCatalogSchema.parse(
-            loadPublicJson(`../../../apps/web/public/${sourceManifest.artifacts.proof_catalog.path}`)
+            expandProofCatalog(sourceManifest)
         );
         expect(proofCatalog.shards.length).toBeGreaterThan(0);
         expect(proofCatalog.complete_requires_no_states).toEqual(expect.arrayContaining(['pending', 'failed']));
@@ -80,9 +151,9 @@ describe('search index contracts package', () => {
         const sourceManifest = SitegraphSourceManifestSchema.parse(
             loadPublicJson(`../../../apps/web/public/${manifest.sitegraph.source_manifests.jwc.path}`)
         );
-        const firstLocalIndex = required(sourceManifest.local_indexes[0], 'expected a local light index fixture');
+        const firstLocalIndex = required(expandLocalIndexes(sourceManifest)[0], 'expected a local light index fixture');
         const localLightIndex = loadPublicJson(
-            `../../../apps/web/public/${required(firstLocalIndex.light_index_meta, 'expected light metadata artifact').path}`
+            `../../../apps/web/public/${String(required(asRecord(firstLocalIndex.light_index_meta, 'expected light metadata artifact').path as string | undefined, 'expected light metadata path'))}`
         ) as Record<string, unknown>;
         const documents = required(localLightIndex.documents as unknown[] | undefined, 'expected local metadata documents');
         const firstDoc = required(documents[0] as Record<string, unknown> | undefined, 'expected local metadata');
@@ -96,7 +167,7 @@ describe('search index contracts package', () => {
         expect('tokens' in localLightIndex).toBe(false);
         expect('terms' in localLightIndex).toBe(false);
         expect(localLightIndex.scoring_model).toBe('impact-ordered-block-max-bm25f-lite-v2');
-        expect(required(firstLocalIndex.light_index_packed, 'expected packed light terms artifact').path.endsWith('.bin')).toBe(true);
+        expect(String(required(asRecord(firstLocalIndex.light_index_packed, 'expected packed light terms artifact').path as string | undefined, 'expected packed light path')).endsWith('.bin')).toBe(true);
 
         const docMeta = {
             doc_index: 0,

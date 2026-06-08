@@ -10,6 +10,10 @@ from njupt_search_indexer.sitegraph_source import (
     package_source_id,
     validate_sitegraph_package,
 )
+from njupt_search_indexer.validation.source_manifest_expansion import (
+    expand_local_index_parts,
+    expand_proof_catalog_parts,
+)
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -48,7 +52,23 @@ REQUIRED_QUERIES = [
     "互联网+",
 ]
 
-EXPECTED_SOURCE_IDS = {"jwc", "xsc", "cxcy"}
+EXPECTED_SOURCE_IDS = {
+    "jwc",
+    "xsc",
+    "cxcy",
+    "lib",
+    "xxb",
+    "www",
+    "job91",
+    "tyb",
+    "bwc",
+    "fwlc",
+    "gzzd",
+    "xxgk",
+    "cs",
+    "scie",
+    "bhs",
+}
 
 
 def read_json(path: Path):
@@ -99,14 +119,17 @@ def load_source_registry(manifest: dict) -> dict:
 
 def load_source_manifests(manifest: dict) -> list[dict]:
     return [
-        read_artifact(manifest["sitegraph"]["source_manifests"][source_id])
+        expand_local_index_parts(read_artifact(manifest["sitegraph"]["source_manifests"][source_id]))
         for source_id in sorted(manifest["sitegraph"]["source_manifests"])
     ]
 
 
 def load_proof_catalogs(source_manifests: list[dict]) -> list[dict]:
     return [
-        read_artifact(source_manifest["artifacts"]["proof_catalog"])
+        expand_proof_catalog_parts(
+            source_manifest["source_id"],
+            read_artifact(source_manifest["artifacts"]["proof_catalog"]),
+        )
         for source_manifest in source_manifests
     ]
 
@@ -186,7 +209,7 @@ def test_public_index_is_pure_sitegraph_contract():
     assert "full_shards" not in manifest["sitegraph"]
     source_manifests = load_source_manifests(manifest)
     source_registry = load_source_registry(manifest)
-    assert {item["source_id"] for item in source_registry["sources"]} == {"jwc", "xsc", "cxcy"}
+    assert {item["source_id"] for item in source_registry["sources"]} == EXPECTED_SOURCE_IDS
     proof_catalogs = load_proof_catalogs(source_manifests)
     total_shards = len(proof_catalog_shards(proof_catalogs))
     assert manifest["progressive_search"]["total_shards"] == total_shards
@@ -335,7 +358,10 @@ def test_light_index_and_shards_have_no_obsolete_fields():
                 assert item["shard"].get("shard_id")
                 assert "path" not in item["shard"]
 
-        proof_catalog = read_artifact(source_manifest["artifacts"]["proof_catalog"])
+        proof_catalog = expand_proof_catalog_parts(
+            source_manifest["source_id"],
+            read_artifact(source_manifest["artifacts"]["proof_catalog"]),
+        )
         shard_filter = read_chunked_mapping_artifact(source_manifest["artifacts"]["shard_filter"])
         for shard in proof_catalog["shards"]:
             documents = read_json(PUBLIC_ROOT / shard["path"])

@@ -4,7 +4,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
-from ..artifacts.chunked_json import write_chunked_list_entry, write_chunked_mapping_entry
+from ..artifacts.chunked_json import chunked_list_payloads, write_chunked_list_entry, write_chunked_mapping_entry
 from ..sitegraph_artifact_io import artifact_entry, write_hashed_json
 from ..sitegraph_documents import site_display_name
 from ..sitegraph_shards import shard_year
@@ -13,6 +13,9 @@ from ..sitegraph_text import clean_text
 
 
 ATTACHMENT_EVIDENCE_LEVELS = ("metadata_only", "filename_only", "text_extracted", "snippet", "full_content")
+PROOF_CATALOG_VERSION = "sitegraph-proof-ledger-catalog-v2"
+PROOF_CATALOG_PARTS_VERSION = "sitegraph-proof-ledger-catalog-parts-v1"
+PROOF_CATALOG_PART_VERSION = "sitegraph-proof-ledger-catalog-part-v1"
 
 SOURCE_AUTHORITY: dict[str, dict[str, Any]] = {
     "jwc": {
@@ -47,6 +50,78 @@ SOURCE_AUTHORITY: dict[str, dict[str, Any]] = {
             "system_entry": "high",
         },
         "freshness_policy": "latest_notice_with_project_history",
+    },
+    "lib": {
+        "owner_unit": "图书馆",
+        "authority_domains": ["library", "reading", "database", "research_support"],
+        "priority_by_intent": {"library_hours": "high", "library_service": "high"},
+        "freshness_policy": "latest_notice_with_service_backstop",
+    },
+    "xxb": {
+        "owner_unit": "信息化建设与管理办公室",
+        "authority_domains": ["campus_it", "network", "identity", "portal"],
+        "priority_by_intent": {"campus_it": "high", "system_entry": "high"},
+        "freshness_policy": "official_service_entry",
+    },
+    "www": {
+        "owner_unit": "南京邮电大学",
+        "authority_domains": ["university_news", "campus_notice", "official_links"],
+        "priority_by_intent": {"broad_exploratory": "medium"},
+        "freshness_policy": "latest_notice",
+    },
+    "job91": {
+        "owner_unit": "就业创业指导服务中心",
+        "authority_domains": ["employment", "job_fair", "career_service"],
+        "priority_by_intent": {"employment": "high", "employment_workflow": "high"},
+        "freshness_policy": "latest_notice_with_workflow_backstop",
+    },
+    "tyb": {
+        "owner_unit": "体育部",
+        "authority_domains": ["sports", "physical_test", "sports_course"],
+        "priority_by_intent": {"sports_affairs": "high"},
+        "freshness_policy": "latest_notice",
+    },
+    "bwc": {
+        "owner_unit": "保卫处",
+        "authority_domains": ["security", "campus_pass", "traffic", "fire_safety"],
+        "priority_by_intent": {"security_service": "high", "student_affairs": "medium"},
+        "freshness_policy": "official_service_entry",
+    },
+    "fwlc": {
+        "owner_unit": "服务流程平台",
+        "authority_domains": ["service_workflow", "student_service", "staff_service"],
+        "priority_by_intent": {"service_workflow": "high", "form_download": "medium"},
+        "freshness_policy": "official_service_entry",
+    },
+    "gzzd": {
+        "owner_unit": "规章制度库",
+        "authority_domains": ["policy", "rules", "governance"],
+        "priority_by_intent": {"academic_policy": "medium", "broad_exploratory": "medium"},
+        "freshness_policy": "current_policy",
+    },
+    "xxgk": {
+        "owner_unit": "信息公开网",
+        "authority_domains": ["public_disclosure", "procurement", "budget"],
+        "priority_by_intent": {"public_disclosure": "high"},
+        "freshness_policy": "latest_notice",
+    },
+    "cs": {
+        "owner_unit": "计算机学院、软件学院、网络空间安全学院",
+        "authority_domains": ["school_department", "computer_science", "software", "cyber_security"],
+        "priority_by_intent": {"school_department": "high"},
+        "freshness_policy": "latest_notice",
+    },
+    "scie": {
+        "owner_unit": "通信与信息工程学院",
+        "authority_domains": ["school_department", "communication_engineering"],
+        "priority_by_intent": {"school_department": "high"},
+        "freshness_policy": "latest_notice",
+    },
+    "bhs": {
+        "owner_unit": "贝尔英才学院",
+        "authority_domains": ["school_department", "honors_college"],
+        "priority_by_intent": {"school_department": "high"},
+        "freshness_policy": "latest_notice",
     },
 }
 
@@ -89,10 +164,56 @@ def attachment_filename_index(attachments: list[dict[str, Any]]) -> list[dict[st
     ]
 
 
+def write_proof_catalog_entry(
+    *,
+    public_root: Path,
+    proof_catalog_dir: Path,
+    source_id: str,
+    proof_catalog: dict[str, Any],
+) -> dict[str, Any]:
+    shards = proof_catalog.get("shards")
+    if not isinstance(shards, list):
+        raise ValueError(f"proof catalog shards must be a list: {source_id}")
+    part_entries: list[dict[str, Any]] = []
+    for index, chunk in enumerate(
+        chunked_list_payloads(
+            shards,
+            wrapper={"version": PROOF_CATALOG_PART_VERSION, "source_id": source_id},
+            payload_key="shards",
+        )
+    ):
+        part_artifact = write_hashed_json(
+            public_root,
+            proof_catalog_dir,
+            f"proof_catalog.{source_id}.part{index:03d}",
+            {"version": PROOF_CATALOG_PART_VERSION, "source_id": source_id, "shards": chunk},
+            compact=True,
+        )
+        part_entries.append(artifact_entry(part_artifact, role="proof_catalog_part", count=len(chunk), load="verify"))
+    manifest_payload = {
+        "version": PROOF_CATALOG_PARTS_VERSION,
+        "catalog_version": proof_catalog.get("version") or PROOF_CATALOG_VERSION,
+        "source_id": source_id,
+        "encoding": "chunked-proof-catalog-v1",
+        "state_model": proof_catalog.get("state_model"),
+        "complete_requires_no_states": proof_catalog.get("complete_requires_no_states"),
+        "covered_fields": proof_catalog.get("covered_fields"),
+        "shard_count": len(shards),
+        "part_count": len(part_entries),
+        "parts": part_entries,
+    }
+    manifest_artifact = write_hashed_json(public_root, proof_catalog_dir, f"proof_catalog.{source_id}", manifest_payload, compact=True)
+    entry = artifact_entry(manifest_artifact, role="proof_catalog", count=len(shards), load="verify")
+    entry["part_count"] = len(part_entries)
+    entry["runtime_bytes"] = int(entry["bytes"]) + sum(int(part["bytes"]) for part in part_entries)
+    return entry
+
+
 def build_source_manifests(
     *,
     public_root: Path,
     source_manifest_dir: Path,
+    local_index_ref_dir: Path,
     proof_catalog_dir: Path,
     shard_filter_dir: Path,
     attachment_meta_dir: Path,
@@ -176,7 +297,24 @@ def build_source_manifests(
                 for shard in source_shards
             ],
         }
-        proof_catalog_artifact = write_hashed_json(public_root, proof_catalog_dir, f"proof_catalog.{source_id}", proof_catalog, compact=True)
+        proof_catalog_entry = write_proof_catalog_entry(
+            public_root=public_root,
+            proof_catalog_dir=proof_catalog_dir,
+            source_id=source_id,
+            proof_catalog=proof_catalog,
+        )
+        local_index_entry = write_chunked_list_entry(
+            public_root=public_root,
+            directory=local_index_ref_dir,
+            logical_prefix="local_indexes",
+            source_id=source_id,
+            records=local_refs_by_source.get(source_id, []),
+            manifest_version="sitegraph-local-index-parts-v1",
+            part_version="sitegraph-local-index-part-v1",
+            manifest_role="local_index_manifest",
+            part_role="local_index_part",
+            load="query_planned",
+        )
         shard_filter_entry = write_chunked_mapping_entry(
             public_root=public_root,
             directory=shard_filter_dir,
@@ -233,9 +371,10 @@ def build_source_manifests(
             "facet_counts": source_field_counts(documents, source_id, "facet"),
             "record_counts": source_field_counts(documents, source_id, "record_type"),
             "year_counts": Counter(shard_year(document) for document in source_docs),
-            "local_indexes": local_refs_by_source.get(source_id, []),
+            "local_indexes": [],
             "artifacts": {
-                "proof_catalog": artifact_entry(proof_catalog_artifact, role="proof_catalog", count=len(source_shards), load="verify"),
+                "local_indexes": local_index_entry,
+                "proof_catalog": proof_catalog_entry,
                 "shard_filter": shard_filter_entry,
                 "attachment_meta_index": attachment_meta_entry,
                 "attachment_filename_index": attachment_filename_entry,

@@ -55,6 +55,7 @@ PUBLIC_LOCAL_LIGHT_PACKED_DIR = PUBLIC_SITEGRAPH_DIR / "local_impact_light_packe
 PUBLIC_LOCAL_BODY_DIR = PUBLIC_SITEGRAPH_DIR / "local_impact_body_indexes"
 PUBLIC_LOCAL_BODY_PACKED_DIR = PUBLIC_SITEGRAPH_DIR / "local_impact_body_packed_indexes"
 PUBLIC_PROOF_CATALOG_DIR = PUBLIC_SITEGRAPH_DIR / "proof_catalogs"
+PUBLIC_LOCAL_INDEX_REF_DIR = PUBLIC_SITEGRAPH_DIR / "local_index_refs"
 PUBLIC_SHARD_FILTER_DIR = PUBLIC_SITEGRAPH_DIR / "shard_filters"
 PUBLIC_HOT_QUERY_PROOF_DIR = PUBLIC_SITEGRAPH_DIR / "hot_query_proofs"
 PUBLIC_FULL_SHARD_DIR = PUBLIC_SITEGRAPH_DIR / "full_shards"
@@ -71,7 +72,7 @@ MAX_PUBLIC_JSON_ARTIFACT_BYTES = 512 * 1024
 
 def configure_collection_output(collection_id: str = COLLECTION_ID, output_dir: Path | None = None) -> None:
     global COLLECTION_ID, PUBLIC_INDEX_DIR, PUBLIC_SITEGRAPH_DIR, PUBLIC_ARTIFACT_DIR
-    global PUBLIC_SOURCE_MANIFEST_DIR, PUBLIC_LOCAL_LIGHT_META_DIR, PUBLIC_LOCAL_LIGHT_PACKED_DIR
+    global PUBLIC_SOURCE_MANIFEST_DIR, PUBLIC_LOCAL_INDEX_REF_DIR, PUBLIC_LOCAL_LIGHT_META_DIR, PUBLIC_LOCAL_LIGHT_PACKED_DIR
     global PUBLIC_LOCAL_BODY_DIR, PUBLIC_LOCAL_BODY_PACKED_DIR
     global PUBLIC_PROOF_CATALOG_DIR, PUBLIC_SHARD_FILTER_DIR, PUBLIC_HOT_QUERY_PROOF_DIR, PUBLIC_FULL_SHARD_DIR, PUBLIC_SHARD_DIR
     global PUBLIC_ATTACHMENT_META_DIR, PUBLIC_ATTACHMENT_FILENAME_DIR, PUBLIC_ATTACHMENT_TEXT_DIR
@@ -90,6 +91,7 @@ def configure_collection_output(collection_id: str = COLLECTION_ID, output_dir: 
     PUBLIC_SITEGRAPH_DIR = PUBLIC_INDEX_DIR / "sitegraph"
     PUBLIC_ARTIFACT_DIR = PUBLIC_SITEGRAPH_DIR / "artifacts"
     PUBLIC_SOURCE_MANIFEST_DIR = PUBLIC_SITEGRAPH_DIR / "source_manifests"
+    PUBLIC_LOCAL_INDEX_REF_DIR = PUBLIC_SITEGRAPH_DIR / "local_index_refs"
     PUBLIC_LOCAL_LIGHT_META_DIR = PUBLIC_SITEGRAPH_DIR / "local_impact_light_meta_indexes"
     PUBLIC_LOCAL_LIGHT_PACKED_DIR = PUBLIC_SITEGRAPH_DIR / "local_impact_light_packed_indexes"
     PUBLIC_LOCAL_BODY_DIR = PUBLIC_SITEGRAPH_DIR / "local_impact_body_indexes"
@@ -330,6 +332,7 @@ def write_public_index(packages: list[dict[str, Any]], built: dict[str, Any], *,
     source_manifest_artifacts, source_manifest_payloads = build_source_manifests(
         public_root=PUBLIC_ROOT,
         source_manifest_dir=PUBLIC_SOURCE_MANIFEST_DIR,
+        local_index_ref_dir=PUBLIC_LOCAL_INDEX_REF_DIR,
         proof_catalog_dir=PUBLIC_PROOF_CATALOG_DIR,
         shard_filter_dir=PUBLIC_SHARD_FILTER_DIR,
         attachment_meta_dir=PUBLIC_ATTACHMENT_META_DIR,

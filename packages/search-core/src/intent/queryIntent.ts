@@ -12,6 +12,16 @@ export type CampusSearchIntent =
     | 'scholarship_aid'
     | 'student_affairs'
     | 'innovation_entrepreneurship'
+    | 'library_hours'
+    | 'library_service'
+    | 'campus_it'
+    | 'employment_workflow'
+    | 'employment'
+    | 'sports_affairs'
+    | 'security_service'
+    | 'service_workflow'
+    | 'public_disclosure'
+    | 'school_department'
     | 'broad_exploratory';
 
 export type FreshnessMode = 'current_notice' | 'current_term' | 'official_entry' | 'form_version' | 'current_policy' | 'balanced';

@@ -25,6 +25,7 @@ EXAM_DIR = PUBLIC_GENERATED / "exam"
 PUBLIC_ASSET_MARKER = PUBLIC_GENERATED / ".asset-locks.json"
 SITEGRAPH_LOCK = REPO_ROOT / "config" / "data-locks" / "sitegraph.lock.json"
 EXAM_LOCK = REPO_ROOT / "config" / "data-locks" / "exam.lock.json"
+SITEGRAPH_COLLECTION_CONFIG = REPO_ROOT / "config" / "collections" / "njupt-public.sitegraph.json"
 BUILDER_FINGERPRINT_INPUTS = (
     REPO_ROOT / "tools" / "ci" / "prepare_public_assets.py",
     REPO_ROOT / "tools" / "collection-indexer" / "src",
@@ -219,15 +220,54 @@ def resolve_sitegraph_repo(lock: dict[str, Any]) -> Path:
     if isinstance(checkout_path, str) and checkout_path:
         candidates.append(REPO_ROOT / checkout_path)
     candidates.append(REPO_ROOT.parent / "njupt-site-graph")
+    expected_ref = str(lock.get("sitegraph_ref") or "").strip()
+    existing: list[Path] = []
     for candidate in candidates:
         resolved = candidate.resolve()
-        if (resolved / ".git").exists():
+        if not (resolved / ".git").exists():
+            continue
+        existing.append(resolved)
+        if not expected_ref:
             return resolved
+        try:
+            if capture(["git", "rev-parse", "HEAD"], cwd=resolved) == expected_ref:
+                return resolved
+        except subprocess.CalledProcessError:
+            continue
+    if existing:
+        return existing[0]
     raise PublicAssetError("Cannot find njupt-site-graph checkout for sitegraph.lock.json")
+
+
+def configured_source_packages() -> list[str]:
+    config = read_json(SITEGRAPH_COLLECTION_CONFIG)
+    if config.get("collection_id") != "njupt-public":
+        raise PublicAssetError(f"{SITEGRAPH_COLLECTION_CONFIG} collection_id must be njupt-public")
+    source_packages = config.get("source_packages")
+    if not isinstance(source_packages, list) or not source_packages:
+        raise PublicAssetError(f"{SITEGRAPH_COLLECTION_CONFIG} source_packages must be a non-empty list")
+    normalized: list[str] = []
+    for item in source_packages:
+        if not isinstance(item, str) or not item:
+            raise PublicAssetError(f"{SITEGRAPH_COLLECTION_CONFIG} source_packages entries must be non-empty strings")
+        normalized.append(item)
+    return normalized
+
+
+def assert_sitegraph_lock_matches_collection_config(lock: dict[str, Any]) -> list[str]:
+    configured = configured_source_packages()
+    locked = lock.get("source_packages")
+    if locked != configured:
+        raise PublicAssetError(
+            "sitegraph lock source_packages must match collection config: "
+            + json.dumps({"lock": locked, "config": configured}, ensure_ascii=False)
+        )
+    return configured
 
 
 def materialize_collection_data() -> None:
     lock = read_json(SITEGRAPH_LOCK)
+    assert_sitegraph_lock_matches_collection_config(lock)
     generated_at = str(lock.get("generated_at") or "").strip()
     sitegraph_ref = str(lock.get("sitegraph_ref") or "").strip()
     if not generated_at or not sitegraph_ref:
@@ -467,11 +507,7 @@ def update_sitegraph_lock(sitegraph_ref: str | None) -> None:
     if actual_ref != expected_ref:
         raise PublicAssetError(f"sitegraph checkout ref mismatch while updating lock: expected {expected_ref}, got {actual_ref}")
 
-    source_packages = existing.get("source_packages") or [
-        "data/sites/jwc/index",
-        "data/sites/xsc/index",
-        "data/sites/cxcy/index",
-    ]
+    source_packages = configured_source_packages()
     upstream_times: list[str] = []
     for source_package in source_packages:
         manifest_path = sitegraph_repo / str(source_package) / "manifest.json"

@@ -111,6 +111,26 @@ def infer_task_kind(
         return "academic_policy"
     if any(term in text for term in ("选课", "成绩", "学分", "课程")):
         return "course_grade_credit"
+    if source_id == "lib" and any(term in text for term in ("开放时间", "图书馆开放时间")):
+        return "library_hours"
+    if source_id == "lib":
+        return "library_service"
+    if source_id == "xxb":
+        return "campus_it"
+    if source_id == "job91" and any(term in text for term in ("就业协议", "就业协议书", "就业推荐表", "协议书打印", "协议书补办")):
+        return "employment_workflow"
+    if source_id == "job91" or any(term in text for term in ("就业", "招聘会", "宣讲会", "就业协议", "岗位", "求职")):
+        return "employment"
+    if source_id == "tyb" or any(term in text for term in ("体育", "体测", "晨跑", "运动会", "体育补测", "补测")):
+        return "sports_affairs"
+    if source_id == "bwc" or any(term in text for term in ("保卫", "通行证", "户籍", "消防", "交通", "报警")):
+        return "security_service"
+    if source_id == "fwlc" or any(term in text for term in ("服务流程", "办事流程", "办理流程", "学生证", "医保")):
+        return "service_workflow"
+    if source_id == "xxgk" or any(term in text for term in ("信息公开", "采购", "招标", "预算", "决算")):
+        return "public_disclosure"
+    if source_id in {"cs", "scie", "bhs"}:
+        return "school_department"
     if source_id == "xsc" and any(term in text for term in ("奖学金", "助学金", "资助", "家庭经济困难", "困难学生认定", "评奖评优")):
         return "scholarship_aid"
     if source_id == "xsc":

@@ -10,6 +10,8 @@ import {
     SitegraphGlobalQueryDirectorySchema,
     SitegraphImpactIndex,
     SitegraphImpactIndexSchema,
+    SitegraphLocalIndexRef,
+    SitegraphLocalIndexRefSchema,
     SitegraphLocalBodyIndex,
     SitegraphLocalBodyIndexSchema,
     SitegraphLocalLightIndex,
@@ -143,6 +145,18 @@ export const parseSitegraphSourceManifest = (payload: unknown, source = 'sitegra
     try {
         assertNoLegacyFields(payload, source);
         return SitegraphSourceManifestSchema.parse(payload);
+    } catch (e) {
+        if (e instanceof z.ZodError) {
+            throw new SearchContractError(`Validation failed for ${source}: ${formatZodIssues(payload, e)}`);
+        }
+        throw new SearchContractError(`Validation failed for ${source}: ${e instanceof Error ? e.message : String(e)}`);
+    }
+};
+
+export const parseSitegraphLocalIndexRefs = (payload: unknown, source = 'sitegraph local index refs'): SitegraphLocalIndexRef[] => {
+    try {
+        assertNoLegacyFields(payload, source);
+        return parseArray(SitegraphLocalIndexRefSchema, payload, source);
     } catch (e) {
         if (e instanceof z.ZodError) {
             throw new SearchContractError(`Validation failed for ${source}: ${formatZodIssues(payload, e)}`);
