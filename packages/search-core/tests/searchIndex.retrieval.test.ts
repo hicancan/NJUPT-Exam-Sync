@@ -57,6 +57,99 @@ describe('sitegraph routed retrieval', () => {
         });
     });
 
+    it('does not load unrelated source manifests before routed first trusted results', async () => {
+        const fixture = makeRoutedFixture('route-source-scope', [makeDocument()], {
+            queryTerms: ['转专业申请表'],
+            lightTerms: impactTerms({ 转专业: { t: [0] }, 申请表: { a: [0] } }),
+            bodyTerms: impactTerms({ 转专业: { c: [0] }, 申请表: { c: [0] } })
+        });
+        const unrelatedManifestArtifact = {
+            path: 'route-source-scope/lib-source-manifest.json',
+            sha256: '0123456789abcdef0123456789abcdef',
+            bytes: 128,
+            role: 'source_manifest',
+            load: 'query_planned',
+            count: 0
+        };
+        const unrelatedProofCatalogArtifact = {
+            path: 'route-source-scope/lib-proof-catalog.json',
+            sha256: '0123456789abcdef0123456789abcdef',
+            bytes: 128,
+            role: 'proof_catalog',
+            load: 'proof',
+            count: 0
+        };
+        const unrelatedShardFilterArtifact = {
+            path: 'route-source-scope/lib-shard-filter.json',
+            sha256: '0123456789abcdef0123456789abcdef',
+            bytes: 128,
+            role: 'shard_filter',
+            load: 'proof',
+            count: 0
+        };
+        const session = {
+            ...fixture.session,
+            sourceRegistry: {
+                ...fixture.session.sourceRegistry,
+                sources: [
+                    ...fixture.session.sourceRegistry.sources,
+                    {
+                        ...required(fixture.session.sourceRegistry.sources[0], 'expected source entry'),
+                        source_id: 'lib',
+                        display_name: '图书馆',
+                        owner_unit: '图书馆',
+                        domain: 'lib.njupt.edu.cn',
+                        authority_domains: [],
+                        priority_by_intent: {},
+                        artifact_manifest: unrelatedManifestArtifact,
+                        doc_count: 0,
+                        attachment_count: 0,
+                        facet_counts: {},
+                        record_counts: {},
+                        truth_counts: {},
+                    },
+                ],
+            },
+        };
+        const unrelatedSourceManifest = {
+            ...fixture.sourceManifest,
+            source_id: 'lib',
+            display_name: '图书馆',
+            domain: 'lib.njupt.edu.cn',
+            doc_count: 0,
+            attachment_count: 0,
+            facet_counts: {},
+            record_counts: {},
+            year_counts: {},
+            local_indexes: [],
+            full_shards: [],
+            artifacts: {
+                proof_catalog: unrelatedProofCatalogArtifact,
+                shard_filter: unrelatedShardFilterArtifact,
+            },
+        };
+        const requestedPaths: string[] = [];
+        let firstTrustedRequestedPaths: string[] = [];
+
+        await withMockFetch({ ...fixture, session }, async () => {
+            await searchSitegraphProgressively(session, '转专业申请表', new AbortController().signal, event => {
+                if (event.type === 'first_trusted_results') {
+                    firstTrustedRequestedPaths = [...requestedPaths];
+                }
+            });
+        }, {
+            requestedPaths,
+            extraResponses: {
+                [unrelatedManifestArtifact.path]: unrelatedSourceManifest,
+                [unrelatedProofCatalogArtifact.path]: { ...fixture.proofCatalog, source_id: 'lib', shards: [] },
+                [unrelatedShardFilterArtifact.path]: {},
+            },
+        });
+
+        expect(firstTrustedRequestedPaths.some(path => path.endsWith(unrelatedManifestArtifact.path))).toBe(false);
+        expect(requestedPaths.some(path => path.endsWith(unrelatedManifestArtifact.path))).toBe(true);
+    });
+
     it('uses version and recorded dates for display and scoped date sorting', async () => {
         const oldNotice = makeDocument({
             doc_index: 0,

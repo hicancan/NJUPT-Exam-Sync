@@ -38,6 +38,9 @@ def unique_ordered(values: list[str]) -> list[str]:
         result.append(value)
     return result
 
+def source_ids_from_local_index_ids(index_ids: list[str]) -> list[str]:
+    return [source_id for index_id in index_ids if (source_id := str(index_id).split("__", 1)[0])]
+
 def build_plan(index: dict[str, Any], query: str, terms: list[str]) -> dict[str, Any]:
     profile = detect_query_intent(query)
     routes = route_for_terms(index, terms, profile["intent"])
@@ -45,6 +48,11 @@ def build_plan(index: dict[str, Any], query: str, terms: list[str]) -> dict[str,
     route_sources = [str(source) for route in routes for source in route.get("likely_sources", [])]
     local_index_ids = [str(item) for route in routes for item in route.get("local_index_ids", [])]
     result_types = [str(item) for route in routes for item in route.get("expected_result_types", [])]
+    routed_source_ids = [
+        source_id
+        for source_id in unique_ordered([*profile["authority_sources"], *route_sources, *source_ids_from_local_index_ids(local_index_ids)])
+        if source_id in all_sources
+    ]
     route_decisions = [
         {
             "term": str(route.get("term") or profile["intent"]),
@@ -62,7 +70,7 @@ def build_plan(index: dict[str, Any], query: str, terms: list[str]) -> dict[str,
         "intent": profile["intent"],
         "authority_sources": profile["authority_sources"],
         "expected_result_types": unique_ordered(result_types),
-        "source_ids": [source_id for source_id in unique_ordered([*profile["authority_sources"], *route_sources, *all_sources]) if source_id in all_sources],
+        "source_ids": routed_source_ids or all_sources,
         "local_index_ids": unique_ordered(local_index_ids),
         "verification_source_ids": all_sources,
         "declared_completion_scope": "global",

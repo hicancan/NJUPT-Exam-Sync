@@ -180,6 +180,7 @@ jobs:
                   rows.append((
                       int(measurement.get("uncached_loaded_bytes") or 0),
                       float(measurement.get("elapsed_ms") or 0.0),
+                      int(measurement.get("network_misses") or measurement.get("artifact_misses") or 0),
                       str(phase),
                       str(query),
                   ))
@@ -187,10 +188,10 @@ jobs:
           print("")
           print("### Slowest search evidence phases")
           print("")
-          print("| Query | Phase | Uncached bytes | Elapsed ms |")
-          print("| --- | --- | ---: | ---: |")
-          for uncached, elapsed, phase, query in rows[:8]:
-              print(f"| `{query}` | `{phase}` | {uncached} | {elapsed:.3f} |")
+          print("| Query | Phase | Uncached bytes | Artifact misses | Elapsed ms |")
+          print("| --- | --- | ---: | ---: | ---: |")
+          for uncached, elapsed, misses, phase, query in rows[:8]:
+              print(f"| `{query}` | `{phase}` | {uncached} | {misses} | {elapsed:.3f} |")
           PY
           printf '| Generate CI evidence reports | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 

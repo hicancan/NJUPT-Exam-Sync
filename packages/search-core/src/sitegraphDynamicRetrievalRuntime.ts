@@ -23,8 +23,11 @@ import {
     HIGH_DF_TOP_RESULTS_LOCAL_INDEX_BYTES,
     HYDRATE_MAX_SHARD_LOADS,
     LIGHT_SEARCH_FIELDS,
-    MIN_FIRST_TRUSTED_LOCAL_INDEXES,
-    MIN_TOP_RESULTS_LOCAL_INDEXES,
+    RARE_DYNAMIC_FIRST_TRUSTED_LOCAL_INDEX_BYTES,
+    RARE_DYNAMIC_MIN_FIRST_TRUSTED_LOCAL_INDEXES,
+    RARE_DYNAMIC_MIN_TOP_RESULTS_LOCAL_INDEXES,
+    RARE_DYNAMIC_QUICK_MAX_SHARD_LOADS,
+    RARE_DYNAMIC_TOP_RESULTS_LOCAL_INDEX_BYTES,
     QUICK_MAX_SHARD_LOADS,
     TOP_RESULTS_HYDRATION_RESERVE_BYTES,
     TOP_RESULTS_MAX_UNCACHED_BYTES,
@@ -150,19 +153,32 @@ export const runDynamicRetrieval = async ({
     plan.selected_local_indexes = planningScope.selectedLocalIndexes;
     plan.estimated_cost_bytes = planningScope.selectedLocalIndexes.reduce((sum, item) => sum + item.expected_uncached_bytes, plan.estimated_cost_bytes);
     const highDfDynamicQuery = !scoped && isDynamicHighDocumentFrequencyNormalizedQuery(plan.normalized_query);
+    const dynamicLocalFirstCap = highDfDynamicQuery
+        ? HIGH_DF_FIRST_TRUSTED_LOCAL_INDEX_BYTES
+        : RARE_DYNAMIC_FIRST_TRUSTED_LOCAL_INDEX_BYTES;
+    const dynamicLocalTopCap = highDfDynamicQuery
+        ? HIGH_DF_TOP_RESULTS_LOCAL_INDEX_BYTES
+        : RARE_DYNAMIC_TOP_RESULTS_LOCAL_INDEX_BYTES;
+    const dynamicFirstMinimum = highDfDynamicQuery
+        ? HIGH_DF_MIN_FIRST_TRUSTED_LOCAL_INDEXES
+        : RARE_DYNAMIC_MIN_FIRST_TRUSTED_LOCAL_INDEXES;
+    const dynamicTopMinimum = highDfDynamicQuery
+        ? HIGH_DF_MIN_TOP_RESULTS_LOCAL_INDEXES
+        : RARE_DYNAMIC_MIN_TOP_RESULTS_LOCAL_INDEXES;
+    const quickShardLimit = highDfDynamicQuery ? QUICK_MAX_SHARD_LOADS : RARE_DYNAMIC_QUICK_MAX_SHARD_LOADS;
     const firstTrustedLocalBudget = Math.min(
         Math.max(0, FIRST_TRUSTED_MAX_UNCACHED_BYTES - firstScreenBytes(session) - planningScope.sourceManifestBytes - FIRST_TRUSTED_HYDRATION_RESERVE_BYTES),
-        highDfDynamicQuery ? HIGH_DF_FIRST_TRUSTED_LOCAL_INDEX_BYTES : Number.POSITIVE_INFINITY
+        dynamicLocalFirstCap
     );
     const firstTrustedRefs = selectLocalRefsWithinBudget(
         planningScope.localRefs,
         firstTrustedLocalBudget,
         lightIndexRuntimeBytes,
-        highDfDynamicQuery ? HIGH_DF_MIN_FIRST_TRUSTED_LOCAL_INDEXES : MIN_FIRST_TRUSTED_LOCAL_INDEXES
+        dynamicFirstMinimum
     );
     const topResultsLocalBudget = Math.min(
         Math.max(0, TOP_RESULTS_MAX_UNCACHED_BYTES - firstScreenBytes(session) - planningScope.sourceManifestBytes - TOP_RESULTS_HYDRATION_RESERVE_BYTES),
-        highDfDynamicQuery ? HIGH_DF_TOP_RESULTS_LOCAL_INDEX_BYTES : Number.POSITIVE_INFINITY
+        dynamicLocalTopCap
     );
     const topResultsRefs = uniqueLocalRefs([
         ...firstTrustedRefs,
@@ -170,7 +186,7 @@ export const runDynamicRetrieval = async ({
             planningScope.localRefs,
             topResultsLocalBudget,
             ref => lightIndexRuntimeBytes(ref) + bodyIndexArtifact(ref).bytes,
-            highDfDynamicQuery ? HIGH_DF_MIN_TOP_RESULTS_LOCAL_INDEXES : MIN_TOP_RESULTS_LOCAL_INDEXES
+            dynamicTopMinimum
         ),
     ]);
     plan.phase_local_index_ids = {
@@ -203,7 +219,7 @@ export const runDynamicRetrieval = async ({
     }
     for (const docIndex of applyLocalMetaFallback(docsByIndex, scores, normalizedQuery, filters, now)) telemetry.localMetaFallbackDocIndices.add(docIndex);
 
-    const quick = await hydrateCandidatePhase(docsByIndex, planningScope.shardPathById, scores, trimmed, terms, signal, loadedShardPaths, fullDocsByIndex, planningScope.shardBytesByPath, cacheStats, Math.min(candidateLimit, 48), Math.min(maxShardLoads, QUICK_MAX_SHARD_LOADS), matchPhrases, filters, now, artifactCache);
+    const quick = await hydrateCandidatePhase(docsByIndex, planningScope.shardPathById, scores, trimmed, terms, signal, loadedShardPaths, fullDocsByIndex, planningScope.shardBytesByPath, cacheStats, Math.min(candidateLimit, 48), Math.min(maxShardLoads, quickShardLimit), matchPhrases, filters, now, artifactCache);
     candidateCount = quick.candidateCount;
     hydratedShardBytes += addHydratedBytes(loadedShardPaths, planningScope.shardBytesByPath);
     mergeRankedResults(resultMap, quick.ranked);

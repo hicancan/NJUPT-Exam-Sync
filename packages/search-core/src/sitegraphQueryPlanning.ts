@@ -103,6 +103,12 @@ export const uniqueOrdered = (values: string[]): string[] => {
     return result;
 };
 
+const sourceIdsFromLocalIndexIds = (indexIds: string[]): string[] => {
+    return indexIds
+        .map(indexId => indexId.split('__')[0] || '')
+        .filter(sourceId => sourceId.length > 0);
+};
+
 export const buildQueryPlan = (
     session: SitegraphRoutedSession,
     query: string,
@@ -126,12 +132,13 @@ export const buildQueryPlan = (
     const estimatedUtility = routeDecisions.reduce((sum, route) => sum + route.expected_utility_per_kb, 0);
     const allSources = session.sourceRegistry.sources.map(source => source.source_id);
     const filteredSource = filters.sourceId && filters.sourceId !== 'all' ? [filters.sourceId] : [];
-    const sourceIds = uniqueOrdered([
+    const routedSourceIds = uniqueOrdered([
         ...filteredSource,
         ...profile.authoritySources,
         ...routeSources,
-        ...allSources,
+        ...sourceIdsFromLocalIndexIds(routeLocalIndexes),
     ]).filter(sourceId => allSources.includes(sourceId));
+    const sourceIds = routedSourceIds.length > 0 ? routedSourceIds : allSources;
     const verificationSourceIds = filteredSource.length > 0 ? filteredSource : allSources;
     return {
         normalized_query: normalize(query),

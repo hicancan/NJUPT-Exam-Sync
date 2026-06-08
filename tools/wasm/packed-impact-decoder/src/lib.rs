@@ -10,7 +10,7 @@ use packed_format::{Cursor, PackedFormat, Stats};
 use score_entries::{score_entries_to_f64, sorted_score_entries, top_doc_ids};
 
 struct ImpactBlock {
-    key: String,
+    key: u64,
     impact: f64,
     ids: Vec<u64>,
 }
@@ -117,11 +117,11 @@ fn scan_fields(cursor: &mut Cursor<'_>) -> Result<Stats, JsValue> {
     Ok(stats)
 }
 
-fn collect_fields(cursor: &mut Cursor<'_>) -> Result<HashMap<String, Vec<u64>>, JsValue> {
+fn collect_fields(cursor: &mut Cursor<'_>) -> Result<Vec<(u8, Vec<u64>)>, JsValue> {
     let field_count = cursor.read_varint()?;
-    let mut fields = HashMap::new();
+    let mut fields = Vec::with_capacity(field_count as usize);
     for _ in 0..field_count {
-        let field = (cursor.read_byte()? as char).to_string();
+        let field = cursor.read_byte()?;
         let doc_count = cursor.read_varint()?;
         let mut doc_ids = Vec::with_capacity(doc_count as usize);
         let mut previous = 0_u64;
@@ -137,7 +137,7 @@ fn collect_fields(cursor: &mut Cursor<'_>) -> Result<HashMap<String, Vec<u64>>, 
             doc_ids.push(doc_id);
             previous = doc_id;
         }
-        fields.insert(field, doc_ids);
+        fields.push((field, doc_ids));
     }
     Ok(fields)
 }
@@ -165,13 +165,16 @@ fn read_directory(cursor: &mut Cursor<'_>) -> Result<Vec<(String, usize)>, JsVal
     Ok(directory)
 }
 
-fn field_impacts_from_metadata(metadata: &str) -> Result<(HashMap<String, f64>, usize), JsValue> {
+fn field_impacts_from_metadata(metadata: &str) -> Result<(HashMap<u8, f64>, usize), JsValue> {
     let value: serde_json::Value =
         serde_json::from_str(metadata).map_err(|error| JsValue::from_str(&error.to_string()))?;
     let mut impacts = HashMap::new();
     if let Some(object) = value.get("field_impacts").and_then(|item| item.as_object()) {
         for (field, impact) in object {
-            impacts.insert(field.to_string(), impact.as_f64().unwrap_or(8.0));
+            let Some(field_byte) = field.as_bytes().first().copied() else {
+                return Err(JsValue::from_str("field impact key cannot be empty"));
+            };
+            impacts.insert(field_byte, impact.as_f64().unwrap_or(8.0));
         }
     }
     let block_size = value
@@ -182,22 +185,24 @@ fn field_impacts_from_metadata(metadata: &str) -> Result<(HashMap<String, f64>, 
     Ok((impacts, block_size))
 }
 
-fn term_impact(term: &str, field: &str, field_impacts: &HashMap<String, f64>) -> f64 {
-    field_impacts.get(field).copied().unwrap_or(8.0) + (term.chars().count().min(8) as f64)
+fn term_impact(term: &str, field: u8, field_impacts: &HashMap<u8, f64>) -> f64 {
+    field_impacts.get(&field).copied().unwrap_or(8.0) + (term.chars().count().min(8) as f64)
 }
 
 fn push_term_blocks(
     blocks: &mut Vec<ImpactBlock>,
     term: &str,
-    fields: HashMap<String, Vec<u64>>,
+    term_ordinal: u64,
+    fields: Vec<(u8, Vec<u64>)>,
     block_size: usize,
-    field_impacts: &HashMap<String, f64>,
+    field_impacts: &HashMap<u8, f64>,
 ) {
     for (field, ids) in fields {
-        let impact = term_impact(term, &field, field_impacts);
+        let impact = term_impact(term, field, field_impacts);
+        let key = (term_ordinal << 8) | u64::from(field);
         for chunk in ids.chunks(block_size) {
             blocks.push(ImpactBlock {
-                key: format!("{term}\0{field}"),
+                key,
                 impact,
                 ids: chunk.to_vec(),
             });
@@ -210,7 +215,7 @@ fn suffix_unique_impact(blocks: &[ImpactBlock]) -> Vec<f64> {
     let mut seen = HashSet::new();
     let mut total = 0.0;
     for index in (0..blocks.len()).rev() {
-        if seen.insert(blocks[index].key.clone()) {
+        if seen.insert(blocks[index].key) {
             total += blocks[index].impact;
         }
         suffix[index] = total;
@@ -279,7 +284,7 @@ fn collect_packed_impact_blocks_for_terms(
     match format {
         PackedFormat::V1 => {
             let term_count = cursor.read_varint()?;
-            for _ in 0..term_count {
+            for term_ordinal in 0..term_count {
                 let term_length = cursor.read_varint()? as usize;
                 let term = str::from_utf8(cursor.read_bytes(term_length)?)
                     .map_err(|error| JsValue::from_str(&error.to_string()))?
@@ -287,7 +292,7 @@ fn collect_packed_impact_blocks_for_terms(
                 if selected_terms.contains(term.as_str()) {
                     matched_term_count += 1;
                     let fields = collect_fields(&mut cursor)?;
-                    push_term_blocks(&mut blocks, &term, fields, block_size, &field_impacts);
+                    push_term_blocks(&mut blocks, &term, term_ordinal, fields, block_size, &field_impacts);
                 } else {
                     scan_fields(&mut cursor)?;
                 }
@@ -295,13 +300,13 @@ fn collect_packed_impact_blocks_for_terms(
         }
         PackedFormat::V2 => {
             let directory = read_directory(&mut cursor)?;
-            for (term, payload_length) in directory {
+            for (term_ordinal, (term, payload_length)) in directory.into_iter().enumerate() {
                 let end = cursor.offset + payload_length;
                 let mut payload_cursor = Cursor::new(&cursor.data[cursor.offset..end]);
                 if selected_terms.contains(term.as_str()) {
                     matched_term_count += 1;
                     let fields = collect_fields(&mut payload_cursor)?;
-                    push_term_blocks(&mut blocks, &term, fields, block_size, &field_impacts);
+                    push_term_blocks(&mut blocks, &term, term_ordinal as u64, fields, block_size, &field_impacts);
                     if !payload_cursor.is_done() {
                         return Err(JsValue::from_str(
                             "trailing bytes in packed impact term payload",

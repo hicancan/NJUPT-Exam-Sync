@@ -5,6 +5,10 @@ from typing import Any
 
 from ..runtime_mirror.cache_io import load_index
 from ..runtime_mirror.config import (
+    DYNAMIC_HOLDOUT_FIRST_TRUSTED_MAX_UNCACHED_BYTES,
+    DYNAMIC_HOLDOUT_PROOF_MAX_ARTIFACT_MISSES,
+    DYNAMIC_HOLDOUT_PROOF_MAX_UNCACHED_BYTES,
+    DYNAMIC_HOLDOUT_TOP_RESULTS_MAX_UNCACHED_BYTES,
     FIRST_TRUSTED_MAX_UNCACHED_BYTES,
     HIGH_DF_FIRST_TRUSTED_MAX_UNCACHED_BYTES,
     HIGH_DF_NORMALIZED_QUERIES,
@@ -65,6 +69,7 @@ def retrieval_summary(retrieval: dict[str, Any]) -> dict[str, Any]:
 
 def coverage_summary(coverage: dict[str, Any]) -> dict[str, Any]:
     ledger = coverage.get("proof_ledger") if isinstance(coverage.get("proof_ledger"), dict) else {}
+    cache = coverage.get("cache") if isinstance(coverage.get("cache"), dict) else {}
     return {
         "coverage_state": coverage.get("coverage_state"),
         "exhaustive_complete": bool(coverage.get("exhaustive_complete")),
@@ -80,6 +85,11 @@ def coverage_summary(coverage: dict[str, Any]) -> dict[str, Any]:
         "local_index_bytes": int(coverage.get("local_index_bytes") or 0),
         "hydrated_shard_bytes": int(coverage.get("hydrated_shard_bytes") or 0),
         "proof_ledger_complete": bool(ledger.get("complete")),
+        "artifact_hits": int(cache.get("artifact_hits") or 0),
+        "artifact_misses": int(cache.get("artifact_misses") or 0),
+        "network_misses": int(cache.get("network_misses") or 0),
+        "persistent_hits": int(cache.get("persistent_hits") or 0),
+        "memory_hits": int(cache.get("memory_hits") or 0),
     }
 
 def phase_measurement_summary(stats: dict[str, Any]) -> dict[str, Any]:
@@ -218,6 +228,9 @@ def phase_resource_trace(phases: dict[str, Any], stats: dict[str, Any]) -> dict[
             "postings_visited": int(retrieval.get("postings_visited") or 0),
             "postings_pruned": int(retrieval.get("postings_pruned") or 0),
             "certificate_bytes": certificate_bytes,
+            "artifact_hits": int(coverage.get("artifact_hits") or 0),
+            "artifact_misses": int(coverage.get("artifact_misses") or 0),
+            "network_misses": int(coverage.get("network_misses") or 0),
         }
     return trace
 
@@ -367,6 +380,46 @@ def query_summary(measurements: list[dict[str, Any]]) -> dict[str, Any]:
         or int((item.get("phase_gate") or {}).get("proof_complete_uncached_bytes") or 0) > HIGH_DF_PROOF_MAX_UNCACHED_BYTES
         or not bool((item.get("hot_query_complete_certificate") or {}).get("used"))
     ]
+    dynamic_holdout_measurements = [
+        item for item in measurements
+        if item.get("serving_path") == "dynamic_retrieval"
+        and item.get("query_class") in {"cold_rare_dynamic_holdout", "miss_dynamic_holdout"}
+    ]
+    dynamic_holdout_gate_failures = []
+    for item in dynamic_holdout_measurements:
+        phases = item.get("phase_measurements") or {}
+        first = phases.get("first_trusted_results") or {}
+        top = phases.get("top_results_hydrated") or {}
+        proof = phases.get("proof_complete") or {}
+        first_bytes = int(first.get("uncached_loaded_bytes") or 0)
+        top_bytes = int(top.get("uncached_loaded_bytes") or 0)
+        proof_bytes = int(proof.get("uncached_loaded_bytes") or 0)
+        proof_misses = int(proof.get("network_misses") or proof.get("artifact_misses") or 0)
+        postings_visited = int((item.get("retrieval") or {}).get("postings_visited") or 0)
+        postings_pruned = int((item.get("retrieval") or {}).get("postings_pruned") or 0)
+        failure_reasons = []
+        if first_bytes > DYNAMIC_HOLDOUT_FIRST_TRUSTED_MAX_UNCACHED_BYTES:
+            failure_reasons.append("first_trusted_bytes")
+        if top_bytes > DYNAMIC_HOLDOUT_TOP_RESULTS_MAX_UNCACHED_BYTES:
+            failure_reasons.append("top_results_bytes")
+        if proof_bytes > DYNAMIC_HOLDOUT_PROOF_MAX_UNCACHED_BYTES:
+            failure_reasons.append("proof_complete_bytes")
+        if proof_misses > DYNAMIC_HOLDOUT_PROOF_MAX_ARTIFACT_MISSES:
+            failure_reasons.append("proof_artifact_requests")
+        if postings_pruned == 0:
+            failure_reasons.append("no_dynamic_pruning")
+        if failure_reasons:
+            dynamic_holdout_gate_failures.append({
+                "query": item["query"],
+                "query_class": item.get("query_class"),
+                "first_trusted_uncached_bytes": first_bytes,
+                "top_results_uncached_bytes": top_bytes,
+                "proof_complete_uncached_bytes": proof_bytes,
+                "proof_artifact_misses": proof_misses,
+                "postings_visited": postings_visited,
+                "postings_pruned": postings_pruned,
+                "failure_reasons": failure_reasons,
+            })
     return {
         "query_count": len(measurements),
         "query_class_summary": class_summary,
@@ -406,6 +459,13 @@ def query_summary(measurements: list[dict[str, Any]]) -> dict[str, Any]:
         "high_df_proof_limit_bytes": HIGH_DF_PROOF_MAX_UNCACHED_BYTES,
         "high_df_gates_passed": not high_df_gate_failures,
         "high_df_gate_failures": high_df_gate_failures,
+        "dynamic_holdout_query_count": len(dynamic_holdout_measurements),
+        "dynamic_holdout_first_trusted_limit_bytes": DYNAMIC_HOLDOUT_FIRST_TRUSTED_MAX_UNCACHED_BYTES,
+        "dynamic_holdout_top_results_limit_bytes": DYNAMIC_HOLDOUT_TOP_RESULTS_MAX_UNCACHED_BYTES,
+        "dynamic_holdout_proof_limit_bytes": DYNAMIC_HOLDOUT_PROOF_MAX_UNCACHED_BYTES,
+        "dynamic_holdout_proof_artifact_miss_limit": DYNAMIC_HOLDOUT_PROOF_MAX_ARTIFACT_MISSES,
+        "dynamic_holdout_gates_passed": bool(dynamic_holdout_measurements) and not dynamic_holdout_gate_failures,
+        "dynamic_holdout_gate_failures": dynamic_holdout_gate_failures,
         "all_exhaustive_complete": all(bool(item["coverage"]["exhaustive_complete"]) for item in measurements),
         "any_dynamic_pruning": any(bool(item["retrieval"]["dynamic_pruning"]) for item in measurements),
         "total_postings_pruned": sum(int(item["retrieval"]["postings_pruned"]) for item in measurements),

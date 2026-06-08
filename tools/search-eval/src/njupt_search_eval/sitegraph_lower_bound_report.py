@@ -65,6 +65,7 @@ def stop_conditions(summary: dict[str, Any]) -> dict[str, Any]:
         "current_state": {
             "has_dynamic_holdout": summary.get("has_dynamic_holdout"),
             "dynamic_holdout_pruning_present": summary.get("dynamic_holdout_pruning_present"),
+            "dynamic_holdout_gates_passed": summary.get("dynamic_holdout_gates_passed"),
             "high_df_gates_passed": summary.get("high_df_gates_passed"),
         },
     }

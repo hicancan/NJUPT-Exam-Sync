@@ -152,9 +152,11 @@ def test_lower_bound_report_contains_rerunnable_evidence() -> None:
     assert measurement["retrieval"]["dynamic_pruning"] is False
     assert measurement["phase_measurements"]["first_trusted_results"]["uncached_loaded_bytes"] <= 5 * 1024 * 1024
     assert measurement["phase_gate"]["passed"] is True
-    assert report["query_measurement_summary"]["phase_gates_passed"] is False
-    assert report["query_measurement_summary"]["phase_gate_failures"]
-    assert report["query_measurement_summary"]["phase_gate_failures"][0]["query"] == "图像采集码"
+    assert report["query_measurement_summary"]["phase_gates_passed"] is True
+    assert report["query_measurement_summary"]["dynamic_holdout_gates_passed"] is False
+    assert report["query_measurement_summary"]["dynamic_holdout_gate_failures"]
+    assert report["query_measurement_summary"]["dynamic_holdout_gate_failures"][0]["query"] == "图像采集码"
+    assert "no_dynamic_pruning" in report["query_measurement_summary"]["dynamic_holdout_gate_failures"][0]["failure_reasons"]
     assert report["query_measurement_summary"]["max_proof_complete_uncached_bytes"] >= measurement["phase_gate"]["proof_complete_uncached_bytes"]
     assert "max_proof_true_match_query" in report["query_measurement_summary"]
     assert "max_proof_false_positive_query" in report["query_measurement_summary"]

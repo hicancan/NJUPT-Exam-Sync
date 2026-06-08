@@ -4,7 +4,14 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ..runtime_mirror.config import FIRST_TRUSTED_MAX_UNCACHED_BYTES, TOP_RESULTS_MAX_UNCACHED_BYTES
+from ..runtime_mirror.config import (
+    DYNAMIC_HOLDOUT_FIRST_TRUSTED_MAX_UNCACHED_BYTES,
+    DYNAMIC_HOLDOUT_PROOF_MAX_ARTIFACT_MISSES,
+    DYNAMIC_HOLDOUT_PROOF_MAX_UNCACHED_BYTES,
+    DYNAMIC_HOLDOUT_TOP_RESULTS_MAX_UNCACHED_BYTES,
+    FIRST_TRUSTED_MAX_UNCACHED_BYTES,
+    TOP_RESULTS_MAX_UNCACHED_BYTES,
+)
 from .config import QUERY_PATH_DECODE_REGRESSION_TOLERANCE_PERCENT
 
 
@@ -271,11 +278,19 @@ def render_markdown_report(report: dict[str, Any]) -> str:
             f"(first `<={format_int(query_measurement_summary.get('high_df_first_trusted_limit_bytes'))}`, "
             f"top `<={format_int(query_measurement_summary.get('high_df_top_results_limit_bytes'))}`, "
             f"proof `<={format_int(query_measurement_summary.get('high_df_proof_limit_bytes'))}` bytes).",
+            f"- Dynamic holdout gates passed: `{query_measurement_summary.get('dynamic_holdout_gates_passed')}` "
+            f"(first `<={format_int(DYNAMIC_HOLDOUT_FIRST_TRUSTED_MAX_UNCACHED_BYTES)}`, "
+            f"top `<={format_int(DYNAMIC_HOLDOUT_TOP_RESULTS_MAX_UNCACHED_BYTES)}`, "
+            f"proof `<={format_int(DYNAMIC_HOLDOUT_PROOF_MAX_UNCACHED_BYTES)}` bytes, "
+            f"proof requests `<={format_int(DYNAMIC_HOLDOUT_PROOF_MAX_ARTIFACT_MISSES)}`).",
         ]
     )
     high_df_failures = query_measurement_summary.get("high_df_gate_failures") or []
     if high_df_failures:
         lines.append(f"- High-DF gate failures: `{json.dumps(high_df_failures, ensure_ascii=False)}`")
+    dynamic_failures = query_measurement_summary.get("dynamic_holdout_gate_failures") or []
+    if dynamic_failures:
+        lines.append(f"- Dynamic holdout gate failures: `{json.dumps(dynamic_failures, ensure_ascii=False)}`")
 
     cache = report.get("cache_benchmark") or {}
     if not cache.get("skipped"):

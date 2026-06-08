@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -22,6 +23,7 @@ PUBLIC_ROOT = REPO_ROOT / "apps" / "web" / "public"
 PUBLIC_GENERATED = PUBLIC_ROOT / "generated"
 COLLECTION_DIR = PUBLIC_GENERATED / "collections" / "njupt-public"
 EXAM_DIR = PUBLIC_GENERATED / "exam"
+EXAM_DOWNLOAD_CACHE = REPO_ROOT / "cache" / "exam-lock"
 PUBLIC_ASSET_MARKER = PUBLIC_GENERATED / ".asset-locks.json"
 SITEGRAPH_LOCK = REPO_ROOT / "config" / "data-locks" / "sitegraph.lock.json"
 EXAM_LOCK = REPO_ROOT / "config" / "data-locks" / "exam.lock.json"
@@ -52,6 +54,17 @@ RETRYABLE_REQUEST_EXCEPTIONS = (
 
 class PublicAssetError(RuntimeError):
     pass
+
+
+@contextmanager
+def timed_phase(name: str):
+    started = time.perf_counter()
+    print(f"[prepare_public_assets] >>> {name}", flush=True)
+    try:
+        yield
+    finally:
+        elapsed = time.perf_counter() - started
+        print(f"[prepare_public_assets] <<< {name} ({elapsed:.1f}s)", flush=True)
 
 
 def read_json(path: Path) -> dict[str, Any]:
@@ -159,6 +172,7 @@ def public_asset_builder_fingerprint() -> str:
 
 def materialize_exam_data() -> None:
     lock = read_json(EXAM_LOCK)
+    lock_sha256 = sha256_file(EXAM_LOCK)
     generated_at = str(lock.get("generated_at") or "").strip()
     if not generated_at:
         raise PublicAssetError(f"{EXAM_LOCK} missing generated_at")
@@ -166,49 +180,64 @@ def materialize_exam_data() -> None:
     if not isinstance(files, list) or not files:
         raise PublicAssetError(f"{EXAM_LOCK} files must be a non-empty list")
 
-    if EXAM_DIR.exists():
-        shutil.rmtree(EXAM_DIR)
-    EXAM_DIR.mkdir(parents=True, exist_ok=True)
+    with timed_phase("materialize exam public data"):
+        EXAM_DIR.mkdir(parents=True, exist_ok=True)
+        cache_dir = EXAM_DOWNLOAD_CACHE / lock_sha256
+        cache_dir.mkdir(parents=True, exist_ok=True)
 
-    downloaded_names: list[str] = []
-    verify_tls = str(lock.get("tls_verify", True)).strip().lower() not in {"0", "false", "no"}
-    for item in files:
-        if not isinstance(item, dict):
-            raise PublicAssetError(f"{EXAM_LOCK} files entries must be objects")
-        name = str(item.get("name") or "").strip()
-        url = str(item.get("url") or "").strip()
-        expected_sha256 = str(item.get("sha256") or "").strip().lower()
-        if not name or not url or not expected_sha256:
-            raise PublicAssetError(f"{EXAM_LOCK} file entry missing name/url/sha256")
-        target = EXAM_DIR / name
-        response = get_url_with_retries(
-            url,
-            headers=JWC_HEADERS,
-            timeout=60,
-            verify=verify_tls,
-            purpose=f"download exam file {name}",
+        downloaded_names: list[str] = []
+        verify_tls = str(lock.get("tls_verify", True)).strip().lower() not in {"0", "false", "no"}
+        for item in files:
+            if not isinstance(item, dict):
+                raise PublicAssetError(f"{EXAM_LOCK} files entries must be objects")
+            name = str(item.get("name") or "").strip()
+            url = str(item.get("url") or "").strip()
+            expected_sha256 = str(item.get("sha256") or "").strip().lower()
+            if not name or not url or not expected_sha256:
+                raise PublicAssetError(f"{EXAM_LOCK} file entry missing name/url/sha256")
+            target = EXAM_DIR / name
+            cache_target = cache_dir / name
+            if target.exists() and sha256_file(target) == expected_sha256:
+                pass
+            elif cache_target.exists() and sha256_file(cache_target) == expected_sha256:
+                shutil.copy2(cache_target, target)
+            else:
+                response = get_url_with_retries(
+                    url,
+                    headers=JWC_HEADERS,
+                    timeout=60,
+                    verify=verify_tls,
+                    purpose=f"download exam file {name}",
+                )
+                tmp_target = cache_target.with_suffix(cache_target.suffix + ".tmp")
+                tmp_target.write_bytes(response.content)
+                actual_sha256 = sha256_file(tmp_target)
+                if actual_sha256 != expected_sha256:
+                    tmp_target.unlink(missing_ok=True)
+                    raise PublicAssetError(
+                        f"exam lock hash mismatch for {name}: expected {expected_sha256}, got {actual_sha256}"
+                    )
+                tmp_target.replace(cache_target)
+                shutil.copy2(cache_target, target)
+            downloaded_names.append(name)
+        expected_names = set(downloaded_names)
+        for stale_excel in EXAM_DIR.glob("*.xls*"):
+            if stale_excel.name not in expected_names:
+                stale_excel.unlink()
+
+        write_json(
+            EXAM_DIR / "source_metadata.json",
+            {
+                "source_url": lock.get("source_url"),
+                "source_title": lock.get("source_title"),
+                "downloaded_files": downloaded_names,
+                "updated_at": generated_at,
+            },
         )
-        target.write_bytes(response.content)
-        actual_sha256 = sha256_file(target)
-        if actual_sha256 != expected_sha256:
-            raise PublicAssetError(
-                f"exam lock hash mismatch for {name}: expected {expected_sha256}, got {actual_sha256}"
-            )
-        downloaded_names.append(name)
 
-    write_json(
-        EXAM_DIR / "source_metadata.json",
-        {
-            "source_url": lock.get("source_url"),
-            "source_title": lock.get("source_title"),
-            "downloaded_files": downloaded_names,
-            "updated_at": generated_at,
-        },
-    )
-
-    env = os.environ.copy()
-    env["NJUPT_SEARCH_GENERATED_AT"] = generated_at
-    run([sys.executable, "-m", "njupt_exam_pipeline", "process"], env=env)
+        env = os.environ.copy()
+        env["NJUPT_SEARCH_GENERATED_AT"] = generated_at
+        run([sys.executable, "-m", "njupt_exam_pipeline", "process"], env=env)
 
 
 def resolve_sitegraph_repo(lock: dict[str, Any]) -> Path:
@@ -282,35 +311,69 @@ def materialize_collection_data() -> None:
     env = os.environ.copy()
     env["NJUPT_SITEGRAPH_REPO"] = str(sitegraph_repo)
     env["NJUPT_SEARCH_GENERATED_AT"] = generated_at
-    run([sys.executable, "-m", "njupt_search_indexer", "validate", "--skip-output"], env=env)
-    run(
-        [
-            sys.executable,
-            "-m",
-            "njupt_search_indexer",
-            "build",
-            "--collection-id",
-            "njupt-public",
-            "--out",
-            str(COLLECTION_DIR),
-        ],
-        env=env,
-    )
-    run([sys.executable, "-m", "njupt_search_indexer", "validate", "--collection", str(COLLECTION_DIR)], env=env)
+    with timed_phase("validate sitegraph source packages"):
+        run([sys.executable, "-m", "njupt_search_indexer", "validate", "--skip-output"], env=env)
+    with timed_phase("build collection public data"):
+        run(
+            [
+                sys.executable,
+                "-m",
+                "njupt_search_indexer",
+                "build",
+                "--collection-id",
+                "njupt-public",
+                "--out",
+                str(COLLECTION_DIR),
+            ],
+            env=env,
+        )
+    with timed_phase("validate generated collection public data"):
+        run([sys.executable, "-m", "njupt_search_indexer", "validate", "--collection", str(COLLECTION_DIR)], env=env)
+
+
+def generated_family_summary(root: Path) -> list[dict[str, Any]]:
+    if not root.exists():
+        return []
+    families: dict[str, dict[str, Any]] = {}
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(root).as_posix()
+        parts = relative.split("/")
+        family = "/".join(parts[:2]) if len(parts) >= 2 else parts[0]
+        entry = families.setdefault(family, {"family": family, "files": 0, "bytes": 0})
+        entry["files"] += 1
+        entry["bytes"] += path.stat().st_size
+    return sorted(families.values(), key=lambda item: int(item["bytes"]), reverse=True)
 
 
 def build_public_data() -> None:
     PUBLIC_GENERATED.mkdir(parents=True, exist_ok=True)
-    materialize_collection_data()
+    with timed_phase("materialize collection public data"):
+        materialize_collection_data()
     materialize_exam_data()
-    write_json(
-        PUBLIC_ASSET_MARKER,
-        {
-            "version": "njupt-search-public-asset-marker-v1",
-            "sitegraph_lock_sha256": sha256_file(SITEGRAPH_LOCK),
-            "exam_lock_sha256": sha256_file(EXAM_LOCK),
-            "builder_fingerprint": public_asset_builder_fingerprint(),
-        },
+    with timed_phase("write public asset marker"):
+        write_json(
+            PUBLIC_ASSET_MARKER,
+            {
+                "version": "njupt-search-public-asset-marker-v1",
+                "sitegraph_lock_sha256": sha256_file(SITEGRAPH_LOCK),
+                "exam_lock_sha256": sha256_file(EXAM_LOCK),
+                "builder_fingerprint": public_asset_builder_fingerprint(),
+            },
+        )
+    summary = generated_family_summary(PUBLIC_GENERATED)
+    print(
+        json.dumps(
+            {
+                "public_generated_file_count": sum(int(item["files"]) for item in summary),
+                "public_generated_bytes": sum(int(item["bytes"]) for item in summary),
+                "largest_public_generated_families": summary[:12],
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        flush=True,
     )
 
 

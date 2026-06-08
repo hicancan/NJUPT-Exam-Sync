@@ -30,8 +30,11 @@ from .runtime_mirror.config import (
     HIGH_DF_MIN_TOP_RESULTS_LOCAL_INDEXES,
     HIGH_DF_TOP_RESULTS_LOCAL_INDEX_BYTES,
     LIGHT_SEARCH_FIELDS,
-    MIN_FIRST_TRUSTED_LOCAL_INDEXES,
-    MIN_TOP_RESULTS_LOCAL_INDEXES,
+    RARE_DYNAMIC_FIRST_TRUSTED_LOCAL_INDEX_BYTES,
+    RARE_DYNAMIC_MIN_FIRST_TRUSTED_LOCAL_INDEXES,
+    RARE_DYNAMIC_MIN_TOP_RESULTS_LOCAL_INDEXES,
+    RARE_DYNAMIC_QUICK_MAX_SHARD_LOADS,
+    RARE_DYNAMIC_TOP_RESULTS_LOCAL_INDEX_BYTES,
     TOP_RESULTS_HYDRATION_RESERVE_BYTES,
     TOP_RESULTS_MAX_UNCACHED_BYTES,
 )
@@ -100,6 +103,11 @@ def recall_documents_with_stats(
     hot_initial_coverage = hot_state["hot_initial_coverage"]
     source_manifests, local_refs, source_manifest_bytes = select_local_refs(index, plan, terms)
     shard_path_by_id, shard_bytes_by_path = local_shard_maps(local_refs, source_manifests)
+    first_local_cap = HIGH_DF_FIRST_TRUSTED_LOCAL_INDEX_BYTES if high_df_dynamic_query else RARE_DYNAMIC_FIRST_TRUSTED_LOCAL_INDEX_BYTES
+    top_local_cap = HIGH_DF_TOP_RESULTS_LOCAL_INDEX_BYTES if high_df_dynamic_query else RARE_DYNAMIC_TOP_RESULTS_LOCAL_INDEX_BYTES
+    first_local_minimum = HIGH_DF_MIN_FIRST_TRUSTED_LOCAL_INDEXES if high_df_dynamic_query else RARE_DYNAMIC_MIN_FIRST_TRUSTED_LOCAL_INDEXES
+    top_local_minimum = HIGH_DF_MIN_TOP_RESULTS_LOCAL_INDEXES if high_df_dynamic_query else RARE_DYNAMIC_MIN_TOP_RESULTS_LOCAL_INDEXES
+    quick_shard_limit = 8 if high_df_dynamic_query else RARE_DYNAMIC_QUICK_MAX_SHARD_LOADS
     first_local_budget_base = max(
         0,
         FIRST_TRUSTED_MAX_UNCACHED_BYTES
@@ -107,12 +115,12 @@ def recall_documents_with_stats(
         - source_manifest_bytes
         - FIRST_TRUSTED_HYDRATION_RESERVE_BYTES,
     )
-    first_local_budget = min(first_local_budget_base, HIGH_DF_FIRST_TRUSTED_LOCAL_INDEX_BYTES) if high_df_dynamic_query else first_local_budget_base
+    first_local_budget = min(first_local_budget_base, first_local_cap)
     first_phase_refs = [] if hot_initial_certificate is not None else select_local_refs_within_budget(
         local_refs,
         first_local_budget,
         lambda ref: int(light_index_artifact(ref)["bytes"]),
-        HIGH_DF_MIN_FIRST_TRUSTED_LOCAL_INDEXES if high_df_dynamic_query else MIN_FIRST_TRUSTED_LOCAL_INDEXES,
+        first_local_minimum,
     )
     top_local_budget_base = max(
         0,
@@ -121,7 +129,7 @@ def recall_documents_with_stats(
         - source_manifest_bytes
         - TOP_RESULTS_HYDRATION_RESERVE_BYTES,
     )
-    top_local_budget = min(top_local_budget_base, HIGH_DF_TOP_RESULTS_LOCAL_INDEX_BYTES) if high_df_dynamic_query else top_local_budget_base
+    top_local_budget = min(top_local_budget_base, top_local_cap)
     top_phase_refs = unique_local_refs(
         [
             *first_phase_refs,
@@ -129,7 +137,7 @@ def recall_documents_with_stats(
                 local_refs,
                 top_local_budget,
                 lambda ref: int(light_index_artifact(ref)["bytes"]) + int(body_index_artifact(ref)["bytes"]),
-                HIGH_DF_MIN_TOP_RESULTS_LOCAL_INDEXES if high_df_dynamic_query else MIN_TOP_RESULTS_LOCAL_INDEXES,
+                top_local_minimum,
             ),
         ]
     )
@@ -199,7 +207,7 @@ def recall_documents_with_stats(
         quick_ranked = hot_initial_ranked
         first_trusted_coverage = hot_initial_coverage
     else:
-        quick_indices, quick_paths = select_candidates(min(candidate_limit, 48), min(max_shard_loads, 8))
+        quick_indices, quick_paths = select_candidates(min(candidate_limit, 48), min(max_shard_loads, quick_shard_limit))
         loaded_paths = set(quick_paths)
         quick_docs = load_shards_for_paths(quick_paths)
         quick_ranked = sorted_ranked([
