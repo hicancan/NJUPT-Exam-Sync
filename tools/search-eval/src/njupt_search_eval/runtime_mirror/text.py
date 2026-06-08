@@ -56,6 +56,11 @@ def dynamic_system_authority_sources(text: str) -> list[str]:
             return [str(rule["source_id"])]
     return [str(source_id) for source_id in detection_config["system_default_authority_sources"]]
 
+def expand_authority_sources(raw_sources: Any, text: str) -> list[str]:
+    if raw_sources == "dynamic_system":
+        return dynamic_system_authority_sources(text)
+    return [str(source_id) for source_id in raw_sources]
+
 def detect_query_intent(query: str) -> dict[str, Any]:
     text = normalize_text(query)
     detection_config = SEARCH_INTENT_CONFIG["intent_detection"]
@@ -63,19 +68,14 @@ def detect_query_intent(query: str) -> dict[str, Any]:
         if not includes_any(text, tuple(str(term) for term in rule["match_any"])):
             continue
         raw_sources = rule["authority_sources"]
-        authority_sources = (
-            dynamic_system_authority_sources(text)
-            if raw_sources == "dynamic_system"
-            else [str(source_id) for source_id in raw_sources]
-        )
         return {
             "intent": str(rule["intent"]),
-            "authority_sources": authority_sources,
+            "authority_sources": expand_authority_sources(raw_sources, text),
             "freshness_mode": str(rule["freshness_mode"]),
         }
     fallback = detection_config["fallback_profile"]
     return {
         "intent": str(fallback["intent"]),
-        "authority_sources": [str(source_id) for source_id in fallback["authority_sources"]],
+        "authority_sources": expand_authority_sources(fallback["authority_sources"], text),
         "freshness_mode": str(fallback["freshness_mode"]),
     }

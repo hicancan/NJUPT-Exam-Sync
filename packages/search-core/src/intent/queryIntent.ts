@@ -81,7 +81,6 @@ interface FreshnessWeightConfig {
 interface SearchIntentConfig {
     field_weights: Record<string, number>;
     intent_detection: {
-        default_authority_sources: string[];
         system_authority_rules: Array<{
             source_id: string;
             match_any: string[];
@@ -90,7 +89,7 @@ interface SearchIntentConfig {
         profiles: QueryIntentRuleConfig[];
         fallback_profile: {
             intent: CampusSearchIntent;
-            authority_sources: string[];
+            authority_sources: AuthoritySourcesConfig;
             freshness_mode: FreshnessMode;
         };
     };
@@ -133,17 +132,19 @@ const dynamicSystemAuthoritySources = (text: string): string[] => {
     return [...SEARCH_INTENT_CONFIG.intent_detection.system_default_authority_sources];
 };
 
+const expandAuthoritySources = (config: AuthoritySourcesConfig, text: string): string[] => {
+    if (config === 'dynamic_system') return dynamicSystemAuthoritySources(text);
+    return [...config];
+};
+
 export const detectQueryIntent = (query: string): QueryIntentProfile => {
     const text = normalize(query);
 
     for (const rule of SEARCH_INTENT_CONFIG.intent_detection.profiles) {
         if (!includesAny(text, rule.match_any)) continue;
-        const authoritySources = rule.authority_sources === 'dynamic_system'
-            ? dynamicSystemAuthoritySources(text)
-            : [...rule.authority_sources];
         return {
             intent: rule.intent,
-            authoritySources,
+            authoritySources: expandAuthoritySources(rule.authority_sources, text),
             freshnessMode: rule.freshness_mode,
         };
     }
@@ -151,7 +152,7 @@ export const detectQueryIntent = (query: string): QueryIntentProfile => {
     const fallback = SEARCH_INTENT_CONFIG.intent_detection.fallback_profile;
     return {
         intent: fallback.intent,
-        authoritySources: [...fallback.authority_sources],
+        authoritySources: expandAuthoritySources(fallback.authority_sources, text),
         freshnessMode: fallback.freshness_mode,
     };
 };

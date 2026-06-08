@@ -12,7 +12,6 @@
     "c": 10
   },
   "intent_detection": {
-    "default_authority_sources": ["jwc", "xsc", "cxcy", "lib", "xxb", "www", "job91", "tyb", "bwc", "fwlc", "gzzd", "xxgk", "cs", "scie", "bhs"],
     "system_authority_rules": [
       {
         "source_id": "cxcy",
@@ -190,7 +189,7 @@
     ],
     "fallback_profile": {
       "intent": "broad_exploratory",
-      "authority_sources": ["jwc", "xsc", "cxcy", "lib", "xxb", "www", "job91", "tyb", "bwc", "fwlc", "gzzd", "xxgk", "cs", "scie", "bhs"],
+      "authority_sources": [],
       "freshness_mode": "balanced"
     }
   },
