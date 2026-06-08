@@ -174,6 +174,8 @@ def infer_facet(
         return "system" if "external_system" in external_category else "external"
     if record_type == "attachment":
         return "download"
+    if any(term in text for term in ("转专业", "推免", "免试攻读", "学籍异动")):
+        return "policy"
     if any(term in text for term in ("考试", "补考", "重修", "四六级", "慕课", "mooc", "考场")):
         return "exam"
     if any(term in text for term in ("规章", "制度", "管理办法", "policy", "regulation")):

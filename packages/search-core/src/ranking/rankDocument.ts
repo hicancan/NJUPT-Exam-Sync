@@ -118,6 +118,13 @@ const isShortLandingPage = (document: SitegraphFullDocument, normalizedQuery: st
         && normalizedContentLength(document) < 220;
 };
 
+const isCurrentAcademicWorkNotice = (document: SitegraphFullDocument, title: string, section: string): boolean => {
+    return document.record_type === 'detail'
+        && Boolean(document.published_at)
+        && section.includes('通知公告')
+        && ['工作方案', '工作的通知', '工作通知', '工作安排', '工作细则'].some(term => title.includes(term));
+};
+
 export const rankSitegraphDocument = (
     document: SitegraphFullDocument,
     query: string,
@@ -248,6 +255,10 @@ export const rankSitegraphDocument = (
     if (profile.intent === 'academic_policy' && isShortLandingPage(document, normalizedQuery, title)) {
         score -= SEARCH_INTENT_CONFIG.ranking.short_landing_page_penalty;
         reasons.push('短入口降权');
+    }
+    if (profile.intent === 'academic_policy' && isCurrentAcademicWorkNotice(document, title, section)) {
+        score += SEARCH_INTENT_CONFIG.ranking.academic_policy_current_work_notice_boost;
+        reasons.push('当前工作通知');
     }
     if (profile.intent === 'form_download' && document.record_type === 'external') {
         score -= SEARCH_INTENT_CONFIG.ranking.form_download_external_penalty;

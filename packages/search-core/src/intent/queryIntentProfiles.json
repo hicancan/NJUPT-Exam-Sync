@@ -323,6 +323,7 @@
       ]
     },
     "short_landing_page_penalty": 2600,
+    "academic_policy_current_work_notice_boost": 2200,
     "form_download_external_penalty": 2200,
     "scholarship_non_financial_hardship_penalty": 1800
   }

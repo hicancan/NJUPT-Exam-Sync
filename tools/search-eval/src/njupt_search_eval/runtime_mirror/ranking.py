@@ -85,6 +85,14 @@ def is_short_landing_page(document: dict[str, Any], normalized_query: str, title
         and int(content_length) < 220
     )
 
+def is_current_academic_work_notice(document: dict[str, Any], title: str, section: str) -> bool:
+    return (
+        document.get("record_type") == "detail"
+        and bool(document.get("published_at"))
+        and "通知公告" in section
+        and any(term in title for term in ("工作方案", "工作的通知", "工作通知", "工作安排", "工作细则"))
+    )
+
 def structural_needles(normalized_query: str, terms: list[str]) -> list[str]:
     needles = [normalized_query] if len(normalized_query) >= 3 else []
     needles.extend(term for term in terms if len(term) >= 4)
@@ -245,6 +253,9 @@ def rank_document(document: dict[str, Any], query: str, terms: list[str], light_
     if profile["intent"] == "academic_policy" and is_short_landing_page(document, normalized_query, title):
         score -= float(SEARCH_INTENT_CONFIG["ranking"]["short_landing_page_penalty"])
         reasons.append("短入口降权")
+    if profile["intent"] == "academic_policy" and is_current_academic_work_notice(document, title, section):
+        score += float(SEARCH_INTENT_CONFIG["ranking"]["academic_policy_current_work_notice_boost"])
+        reasons.append("当前工作通知")
     if profile["intent"] == "form_download" and document.get("record_type") == "external":
         score -= float(SEARCH_INTENT_CONFIG["ranking"]["form_download_external_penalty"])
         reasons.append("外链非下载降权")

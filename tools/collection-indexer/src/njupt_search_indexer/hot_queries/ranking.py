@@ -153,6 +153,15 @@ def hot_query_is_short_landing_page(document: dict[str, Any], normalized_query: 
     )
 
 
+def hot_query_is_current_academic_work_notice(document: dict[str, Any], title: str, section: str) -> bool:
+    return (
+        document.get("record_type") == "detail"
+        and bool(document.get("published_at"))
+        and "通知公告" in section
+        and any(term in title for term in ("工作方案", "工作的通知", "工作通知", "工作安排", "工作细则"))
+    )
+
+
 def hot_query_structural_needles(normalized_query: str, terms: list[str]) -> list[str]:
     needles = [normalized_query] if len(normalized_query) >= 3 else []
     needles.extend(term for term in terms if len(term) >= 4)
@@ -274,6 +283,8 @@ def hot_query_runtime_rank_score(document: dict[str, Any], query: str, terms: li
     score -= hot_query_stale_penalty(document, profile["freshness_mode"])
     if profile["intent"] == "academic_policy" and hot_query_is_short_landing_page(document, normalized_query, title):
         score -= float(SEARCH_INTENT_CONFIG["ranking"]["short_landing_page_penalty"])
+    if profile["intent"] == "academic_policy" and hot_query_is_current_academic_work_notice(document, title, section):
+        score += float(SEARCH_INTENT_CONFIG["ranking"]["academic_policy_current_work_notice_boost"])
     if profile["intent"] == "form_download" and document.get("record_type") == "external":
         score -= float(SEARCH_INTENT_CONFIG["ranking"]["form_download_external_penalty"])
     if profile["intent"] == "scholarship_aid" and "学业困难" in title and "家庭经济困难" not in title:

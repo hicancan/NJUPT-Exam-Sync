@@ -1,4 +1,4 @@
-from njupt_search_indexer.sitegraph_documents import build_documents, infer_version_date, section_label
+from njupt_search_indexer.sitegraph_documents import build_documents, infer_facet, infer_version_date, section_label
 
 
 def test_document_date_and_section_helpers() -> None:
@@ -9,6 +9,17 @@ def test_document_date_and_section_helpers() -> None:
         ["考试安排"],
         ["考试"],
     )
+
+
+def test_academic_policy_facet_takes_precedence_over_body_exam_terms() -> None:
+    facet = infer_facet(
+        record_type="detail",
+        section={"section_id": "notice", "name": "通知公告", "nav_path": ["首页", "通知公告"], "business_tags": []},
+        title="关于做好2025-2026学年第二学期全日制本科生转专业工作的通知",
+        content="附件包含南京邮电大学本科生转专业管理办法，正文提及考试成绩审核。",
+    )
+
+    assert facet == "policy"
 
 
 def test_build_documents_preserves_detail_attachment_external_and_utility_records() -> None:

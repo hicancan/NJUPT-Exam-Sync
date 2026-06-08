@@ -97,7 +97,7 @@ QUERY_EXPECTATIONS = (
         "权威来源",
         ResultExpectation("大学生创新", "download", "大创项目", r"cxcy\.njupt\.edu\.cn/.+/page\.htm$", "权威来源"),
     ),
-    expect("推免", "免试攻读", "notice_article", "通知公告", r"jwc\.njupt\.edu\.cn/.+/page\.htm$", "时间较新"),
+    expect("推免", "免试攻读", "policy", "通知公告", r"jwc\.njupt\.edu\.cn/.+/page\.htm$", "当前工作通知"),
     expect("成绩", "成绩复核", "exam", "通知公告", r"jwc\.njupt\.edu\.cn/.+/page\.htm$", "标题"),
     expect("附件1", "通知", "download", "通知公告", r"(jwc|cxcy)\.njupt\.edu\.cn/.+/page\.htm$", "附件名命中"),
     expect("xlsx", "竞赛", "download", "通知公告", r"(jwc|cxcy)\.njupt\.edu\.cn/.+/page\.htm$", "xlsx"),
