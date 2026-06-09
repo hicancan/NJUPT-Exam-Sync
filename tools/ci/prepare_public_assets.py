@@ -377,6 +377,24 @@ def build_public_data() -> None:
     )
 
 
+def build_exam_public_data() -> None:
+    PUBLIC_GENERATED.mkdir(parents=True, exist_ok=True)
+    materialize_exam_data()
+    summary = generated_family_summary(EXAM_DIR)
+    print(
+        json.dumps(
+            {
+                "exam_generated_file_count": sum(int(item["files"]) for item in summary),
+                "exam_generated_bytes": sum(int(item["bytes"]) for item in summary),
+                "largest_exam_generated_families": summary[:12],
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        flush=True,
+    )
+
+
 def public_data_current() -> bool:
     if not PUBLIC_ASSET_MARKER.exists():
         return False
@@ -424,6 +442,46 @@ def hash_tree(root: Path) -> dict[str, str]:
 def verify_public_assets() -> None:
     ensure_public_assets_exist()
     print(json.dumps({"public_generated_files": len(hash_tree(PUBLIC_GENERATED))}, ensure_ascii=False, indent=2))
+
+
+def verify_exam_public_data() -> None:
+    lock = read_json(EXAM_LOCK)
+    summary_path = EXAM_DIR / "data_summary.json"
+    exams_path = EXAM_DIR / "all_exams.json"
+    metadata_path = EXAM_DIR / "source_metadata.json"
+    for path in (summary_path, exams_path, metadata_path):
+        if not path.exists():
+            raise PublicAssetError(f"missing generated exam public asset: {path.relative_to(REPO_ROOT)}")
+
+    summary = read_json(summary_path)
+    metadata = read_json(metadata_path)
+    with exams_path.open("r", encoding="utf-8") as handle:
+        exams = json.load(handle)
+    if not isinstance(exams, list) or not exams:
+        raise PublicAssetError(f"{exams_path.relative_to(REPO_ROOT)} must contain a non-empty list")
+    if summary.get("source_url") != lock.get("source_url"):
+        raise PublicAssetError("exam data_summary source_url does not match exam lock")
+    if summary.get("source_title") != lock.get("source_title"):
+        raise PublicAssetError("exam data_summary source_title does not match exam lock")
+    if metadata.get("source_url") != lock.get("source_url"):
+        raise PublicAssetError("exam source_metadata source_url does not match exam lock")
+    lock_names = [str(item.get("name") or "") for item in lock.get("files", []) if isinstance(item, dict)]
+    if metadata.get("downloaded_files") != lock_names:
+        raise PublicAssetError("exam source_metadata downloaded_files does not match exam lock")
+    total_records = summary.get("total_records")
+    if not isinstance(total_records, int) or total_records != len(exams):
+        raise PublicAssetError("exam data_summary total_records does not match all_exams length")
+    print(
+        json.dumps(
+            {
+                "exam_public_data_records": total_records,
+                "exam_source_url": summary.get("source_url"),
+                "exam_source_title": summary.get("source_title"),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
 
 
 def verify_determinism() -> None:
@@ -597,8 +655,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Prepare CI-only public assets for njupt-search.")
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("build-public-data")
+    subparsers.add_parser("build-exam-public-data")
     subparsers.add_parser("ensure-public-data")
     subparsers.add_parser("verify-public-assets")
+    subparsers.add_parser("verify-exam-public-data")
     subparsers.add_parser("verify-determinism")
     sitegraph_lock_parser = subparsers.add_parser("update-sitegraph-lock")
     sitegraph_lock_parser.add_argument("--sitegraph-ref", default=None)
@@ -608,10 +668,14 @@ def main() -> int:
     try:
         if args.command == "build-public-data":
             build_public_data()
+        elif args.command == "build-exam-public-data":
+            build_exam_public_data()
         elif args.command == "ensure-public-data":
             ensure_public_data()
         elif args.command == "verify-public-assets":
             verify_public_assets()
+        elif args.command == "verify-exam-public-data":
+            verify_exam_public_data()
         elif args.command == "verify-determinism":
             verify_determinism()
         elif args.command == "update-sitegraph-lock":

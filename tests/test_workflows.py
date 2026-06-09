@@ -65,8 +65,15 @@ def test_exam_update_uses_retrying_generated_commit_helper():
     text = workflow.read_text(encoding="utf-8")
     assert "python tools/ci/commit_generated_changes.py" in text
     assert "prepare_public_assets.py update-exam-lock" in text
+    assert "prepare_public_assets.py build-exam-public-data" in text
+    assert "prepare_public_assets.py verify-exam-public-data" in text
+    assert "prepare_public_assets.py build-public-data" not in text
+    assert "Checkout sitegraph source packages" not in text
     assert "--add config/data-locks/exam.lock.json" in text
     assert "--add apps/web/public/generated/exam/" not in text
+    assert "validate_search_index.py" not in text
+    assert "run-smoke-queries" not in text
+    assert "run-task-queries" not in text
     assert "uv run python -m pytest" not in text
     assert "npm test" not in text
     assert "npm run typecheck" not in text
