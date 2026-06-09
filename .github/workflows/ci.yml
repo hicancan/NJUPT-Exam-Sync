@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   ci:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_sha != github.sha)
     permissions:
       contents: read
     runs-on: ubuntu-latest
