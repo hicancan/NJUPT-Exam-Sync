@@ -16,16 +16,15 @@ permissions:
   actions: read
   contents: read
 
-concurrency:
-  group: edgeone-pages-production
-  cancel-in-progress: true
-
 jobs:
   deploy-edgeone:
     if: vars.EDGEONE_PAGES_ENABLED == 'true' && (github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'))
     permissions:
       actions: read
       contents: read
+    concurrency:
+      group: edgeone-pages-production
+      cancel-in-progress: true
     environment:
       name: edgeone-pages
     runs-on: ubuntu-latest
