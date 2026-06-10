@@ -1,30 +1,30 @@
 {
   "version": "njupt-search-exam-lock-v1",
-  "source_url": "https://jwc.njupt.edu.cn/2026/0608/c1594a303791/page.htm",
-  "source_title": "【教务管理办公室】2025-2026学年第二学期考试安排表2026-06-08",
-  "generated_at": "2026-06-09T02:54:23.357396+00:00",
+  "source_url": "https://jwc.njupt.edu.cn/2026/0610/c1594a303974/page.htm",
+  "source_title": "【教务管理办公室】2025-2026学年第二学期考试安排表2026-06-10",
+  "generated_at": "2026-06-10T10:06:41.783558+00:00",
   "tls_verify": true,
   "files": [
     {
       "name": "2025-2026学年第二学期集中考试周1安排表（学校组织）-学生用表.xlsx",
-      "url": "https://jwc.njupt.edu.cn/_upload/article/files/ff/7f/e2e1d9b04642bfb20bc6e02d3927/fee0b7c2-4add-4999-b70d-15e80ec5ed18.xlsx",
+      "url": "https://jwc.njupt.edu.cn/_upload/article/files/f9/0d/918b7916452fa48bf0f2de0f8203/dfc4864b-b9df-4df6-adc9-c3fb30ecf437.xlsx",
       "sha256": "9a2496c051019590d81fa2226ec6eef5c331f9d81aee2b505556cbba967f6d0c",
-      "etag": "\"6a12-653b9482faf0f-gzip\"",
-      "last_modified": "Mon, 08 Jun 2026 07:51:45 GMT"
+      "etag": "\"6a12-653e1d43b403d-gzip\"",
+      "last_modified": "Wed, 10 Jun 2026 08:14:13 GMT"
     },
     {
       "name": "2025-2026学年第二学期考试安排表（学校组织17-18周）-学生用表.xlsx",
-      "url": "https://jwc.njupt.edu.cn/_upload/article/files/ff/7f/e2e1d9b04642bfb20bc6e02d3927/9cf604d0-ee36-4d40-9c65-b9e05288d231.xlsx",
-      "sha256": "8faca344176a8bc71b6ccccca2a0fa78bd04b4bec514038f6d736621531a4802",
-      "etag": "\"56deb-653b9482faf0f-gzip\"",
-      "last_modified": "Mon, 08 Jun 2026 07:51:45 GMT"
+      "url": "https://jwc.njupt.edu.cn/_upload/article/files/f9/0d/918b7916452fa48bf0f2de0f8203/f432f104-2333-42f9-abfd-39a650fda73f.xlsx",
+      "sha256": "fbe0956983e49c9560dfcbb8556ae53dcd322da39497d2d264775c7a8fe5f6dc",
+      "etag": "\"56df1-653e1d43b4426-gzip\"",
+      "last_modified": "Wed, 10 Jun 2026 08:14:13 GMT"
     },
     {
       "name": "2025-2026学年第二学期考试安排表（学院组织）-学生用表.xlsx",
-      "url": "https://jwc.njupt.edu.cn/_upload/article/files/ff/7f/e2e1d9b04642bfb20bc6e02d3927/961bebf9-75de-4993-98ce-35e756977710.xlsx",
-      "sha256": "a4c12deabbf04f5772244afaf2a19573d0b053f8cc1d2a2a99ea6b491a14c00a",
-      "etag": "\"297ea-653b9482fb2f7-gzip\"",
-      "last_modified": "Mon, 08 Jun 2026 07:51:45 GMT"
+      "url": "https://jwc.njupt.edu.cn/_upload/article/files/f9/0d/918b7916452fa48bf0f2de0f8203/883e7853-f0d7-4f31-813d-881ffd689325.xlsx",
+      "sha256": "6a24b4a40ca96400efc5372bebf3e8ce50031f5eae03da5c708593d1dbd61f99",
+      "etag": "\"294c7-653e1d43b4bf6-gzip\"",
+      "last_modified": "Wed, 10 Jun 2026 08:14:13 GMT"
     }
   ]
 }
