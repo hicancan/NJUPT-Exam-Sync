@@ -10,6 +10,11 @@ on:
         required: false
         type: string
         default: 'main'
+      force_deploy:
+        description: 'Deploy the current generated data even when sitegraph.lock.json does not change.'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -35,6 +40,7 @@ jobs:
       DISPATCH_REASON: ${{ github.event.client_payload.dispatch_reason || '' }}
       SITEGRAPH_CHANGED: ${{ github.event.client_payload.sitegraph_changed || '' }}
       NJUPT_SITEGRAPH_REPO: _sitegraph/njupt-site-graph
+      FORCE_DEPLOY: ${{ github.event.inputs.force_deploy || 'false' }}
 
     steps:
       - name: Checkout njupt-search
@@ -116,7 +122,7 @@ jobs:
 
       - name: Resolve latest verified site artifact
         id: verified-dist
-        if: steps.commit.outputs.changed == 'true'
+        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -128,42 +134,42 @@ jobs:
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
       - name: Download latest verified site artifact
-        if: steps.commit.outputs.changed == 'true'
+        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ steps.verified-dist.outputs.run_id }}
         run: gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name njupt-search-dist --dir dist
 
       - name: Overlay validated generated data into verified site artifact
-        if: steps.commit.outputs.changed == 'true'
+        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
         run: |
           rm -rf dist/generated
           mkdir -p dist
           cp -R apps/web/public/generated dist/generated
 
       - name: Setup Pages
-        if: steps.commit.outputs.changed == 'true'
+        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
         uses: actions/configure-pages@v6
 
       - name: Upload collection-fast Pages artifact
-        if: steps.commit.outputs.changed == 'true'
+        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
         uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
       - name: Deploy collection-fast GitHub Pages
-        if: steps.commit.outputs.changed == 'true'
+        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
         id: collection-fast-pages
         uses: actions/deploy-pages@v5
 
       - name: Set up Node for EdgeOne collection-fast deploy
-        if: steps.commit.outputs.changed == 'true' && vars.EDGEONE_PAGES_ENABLED == 'true'
+        if: ${{ (steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true') && vars.EDGEONE_PAGES_ENABLED == 'true' }}
         uses: actions/setup-node@v6
         with:
           node-version: '24'
 
       - name: Deploy collection-fast EdgeOne Pages
-        if: steps.commit.outputs.changed == 'true' && vars.EDGEONE_PAGES_ENABLED == 'true'
+        if: ${{ (steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true') && vars.EDGEONE_PAGES_ENABLED == 'true' }}
         env:
           EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
           EDGEONE_PAGES_PROJECT: ${{ vars.EDGEONE_PAGES_PROJECT || 'njupt-search' }}

@@ -60,6 +60,8 @@ def test_collection_update_is_triggered_by_sitegraph_dispatch():
     assert "id-token: write" in text
     assert "repository_dispatch:" in text
     assert "sitegraph-data-updated" in text
+    assert "force_deploy:" in text
+    assert "FORCE_DEPLOY: ${{ github.event.inputs.force_deploy || 'false' }}" in text
     assert "cron: '30 */6 * * *'" not in text
     assert "github.event.client_payload.sitegraph_ref" in text
     assert "ref: ${{ env.SITEGRAPH_REF }}" in text
@@ -107,6 +109,8 @@ def test_exam_update_uses_retrying_generated_commit_helper():
     assert "id-token: write" in text
     assert "python tools/ci/commit_generated_changes.py" in text
     assert "prepare_public_assets.py update-exam-lock" in text
+    assert "force_deploy:" in text
+    assert "FORCE_DEPLOY: ${{ github.event.inputs.force_deploy || 'false' }}" in text
     assert "prepare_public_assets.py build-exam-public-data" in text
     assert "prepare_public_assets.py verify-exam-public-data" in text
     assert "gh run download \"$RUN_ID\"" in text

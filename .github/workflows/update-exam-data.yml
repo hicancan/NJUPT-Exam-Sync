@@ -4,6 +4,12 @@ on:
   schedule:
     - cron: '0 */6 * * *'
   workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Deploy the current exam data even when exam.lock.json does not change.'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -18,6 +24,8 @@ concurrency:
 jobs:
   update-exam-data:
     runs-on: ubuntu-latest
+    env:
+      FORCE_DEPLOY: ${{ github.event.inputs.force_deploy || 'false' }}
     outputs:
       changed: ${{ steps.commit.outputs.changed }}
       updated_ref: ${{ steps.commit.outputs.updated_ref }}
@@ -58,7 +66,7 @@ jobs:
 
       - name: Resolve latest verified site artifact
         id: verified-dist
-        if: steps.commit.outputs.changed == 'true'
+        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -70,14 +78,14 @@ jobs:
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
       - name: Download latest verified site artifact
-        if: steps.commit.outputs.changed == 'true'
+        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ steps.verified-dist.outputs.run_id }}
         run: gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name njupt-search-dist --dir dist
 
       - name: Overlay validated exam data into verified site artifact
-        if: steps.commit.outputs.changed == 'true'
+        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
         run: |
           rm -rf dist/generated/exam
           mkdir -p dist/generated
@@ -95,28 +103,28 @@ jobs:
           PY
 
       - name: Setup Pages
-        if: steps.commit.outputs.changed == 'true'
+        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
         uses: actions/configure-pages@v6
 
       - name: Upload exam-fast Pages artifact
-        if: steps.commit.outputs.changed == 'true'
+        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
         uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
       - name: Deploy exam-fast GitHub Pages
-        if: steps.commit.outputs.changed == 'true'
+        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
         id: exam-fast-pages
         uses: actions/deploy-pages@v5
 
       - name: Set up Node for EdgeOne exam-fast deploy
-        if: steps.commit.outputs.changed == 'true' && vars.EDGEONE_PAGES_ENABLED == 'true'
+        if: ${{ (steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true') && vars.EDGEONE_PAGES_ENABLED == 'true' }}
         uses: actions/setup-node@v6
         with:
           node-version: '24'
 
       - name: Deploy exam-fast EdgeOne Pages
-        if: steps.commit.outputs.changed == 'true' && vars.EDGEONE_PAGES_ENABLED == 'true'
+        if: ${{ (steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true') && vars.EDGEONE_PAGES_ENABLED == 'true' }}
         env:
           EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
           EDGEONE_PAGES_PROJECT: ${{ vars.EDGEONE_PAGES_PROJECT || 'njupt-search' }}
