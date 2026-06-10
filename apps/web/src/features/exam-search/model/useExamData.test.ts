@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { examDataUrlWithVersion, loadExamData } from './useExamData';
+import { examDataUrlWithVersion, examSummaryUrlWithNonce, loadExamData } from './useExamData';
 
 const originalFetch = globalThis.fetch;
 
@@ -10,6 +10,7 @@ afterEach(() => {
 
 describe('loadExamData', () => {
     it('loads fresh summary before requesting versioned exam data', async () => {
+        vi.spyOn(Date, 'now').mockReturnValue(1_789_012_345_000);
         const calls: Array<{ url: string; cache?: RequestCache }> = [];
         globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
             calls.push({ url: String(input), cache: init?.cache });
@@ -40,7 +41,7 @@ describe('loadExamData', () => {
         expect(result.sourceTitle).toContain('2026-06-10');
         expect(calls).toEqual([
             {
-                url: 'generated/exam/data_summary.json',
+                url: 'generated/exam/data_summary.json?fresh=mtuzrc14',
                 cache: 'no-store',
             },
             {
@@ -58,6 +59,17 @@ describe('examDataUrlWithVersion', () => {
         );
         expect(examDataUrlWithVersion('generated/exam/all_exams.json?x=1', 'v/2')).toBe(
             'generated/exam/all_exams.json?x=1&v=v%2F2'
+        );
+    });
+});
+
+describe('examSummaryUrlWithNonce', () => {
+    it('adds a cache-busting nonce for mutable summary data', () => {
+        expect(examSummaryUrlWithNonce('generated/exam/data_summary.json', 'now/1')).toBe(
+            'generated/exam/data_summary.json?fresh=now%2F1'
+        );
+        expect(examSummaryUrlWithNonce('generated/exam/data_summary.json?x=1', 'now')).toBe(
+            'generated/exam/data_summary.json?x=1&fresh=now'
         );
     });
 });

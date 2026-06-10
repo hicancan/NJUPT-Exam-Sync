@@ -32,8 +32,14 @@ export const examDataUrlWithVersion = (url: string, dataVersion: string): string
     return `${url}${separator}v=${encodeURIComponent(dataVersion)}`;
 };
 
+export const examSummaryUrlWithNonce = (url: string, nonce = Date.now().toString(36)): string => {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}fresh=${encodeURIComponent(nonce)}`;
+};
+
 export async function loadExamData(signal?: AbortSignal): Promise<LoadedExamData> {
-    const manifestPayload = await fetchJson(APP_CONFIG.DATA_URLS.SUMMARY, signal, 'exam-summary');
+    const summaryUrl = examSummaryUrlWithNonce(APP_CONFIG.DATA_URLS.SUMMARY);
+    const manifestPayload = await fetchJson(summaryUrl, signal, 'exam-summary');
     const manifestData: Manifest = parseManifest(manifestPayload, APP_CONFIG.DATA_URLS.SUMMARY);
     const dataVersion = resolveExamDataVersion(manifestData);
     const examsPayload = await fetchJson(
