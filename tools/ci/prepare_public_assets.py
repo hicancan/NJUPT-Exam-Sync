@@ -232,11 +232,13 @@ def materialize_exam_data() -> None:
                 "source_title": lock.get("source_title"),
                 "downloaded_files": downloaded_names,
                 "updated_at": generated_at,
+                "data_version": lock_sha256,
             },
         )
 
         env = os.environ.copy()
         env["NJUPT_SEARCH_GENERATED_AT"] = generated_at
+        env["NJUPT_SEARCH_EXAM_DATA_VERSION"] = lock_sha256
         run([sys.executable, "-m", "njupt_exam_pipeline", "process"], env=env)
 
 
@@ -468,6 +470,11 @@ def verify_exam_public_data() -> None:
     lock_names = [str(item.get("name") or "") for item in lock.get("files", []) if isinstance(item, dict)]
     if metadata.get("downloaded_files") != lock_names:
         raise PublicAssetError("exam source_metadata downloaded_files does not match exam lock")
+    expected_data_version = sha256_file(EXAM_LOCK)
+    if summary.get("data_version") != expected_data_version:
+        raise PublicAssetError("exam data_summary data_version does not match exam lock")
+    if metadata.get("data_version") != expected_data_version:
+        raise PublicAssetError("exam source_metadata data_version does not match exam lock")
     total_records = summary.get("total_records")
     if not isinstance(total_records, int) or total_records != len(exams):
         raise PublicAssetError("exam data_summary total_records does not match all_exams length")

@@ -28,6 +28,16 @@ const notifyCacheUpdated = () => {
   channel.close()
 }
 
+const clearLegacyExamRuntimeCache = () => {
+  if (!('caches' in window)) {
+    return
+  }
+
+  void window.caches.delete('njupt-search-exam-data-current')
+}
+
+clearLegacyExamRuntimeCache()
+
 const updateServiceWorker = registerSW({
   immediate: true,
   onNeedRefresh() {

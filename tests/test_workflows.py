@@ -29,6 +29,9 @@ def test_ci_is_single_authoritative_pages_gate():
     assert "npm run typecheck:prepared" in text
     assert "npm run build:prepared" in text
     assert "retention-days: 3" in text
+    assert "name: njupt-search-production-dist" in text
+    assert "retention-days: 7" in text
+    assert "group: production-publish-main" in text
 
 
 def test_edgeone_deploy_uses_verified_ci_artifact_only():
@@ -54,10 +57,22 @@ def test_edgeone_deploy_uses_verified_ci_artifact_only():
     assert "npm run prepare:public-assets" not in text
 
 
+def test_edgeone_headers_keep_mutable_exam_data_fresh():
+    config = Path("apps/web/public/edgeone.json")
+    assert config.exists()
+    text = config.read_text(encoding="utf-8")
+    assert '"/generated/exam/data_summary.json"' in text
+    assert '"/generated/exam/source_metadata.json"' in text
+    assert '"no-store, max-age=0, must-revalidate"' in text
+    assert '"/generated/exam/all_exams.json"' in text
+    assert '"public, max-age=0, must-revalidate"' in text
+
+
 def test_collection_update_is_triggered_by_sitegraph_dispatch():
     workflow = Path(".github/workflows/update-collection-index.yml")
     assert workflow.exists()
     text = workflow.read_text(encoding="utf-8")
+    assert "concurrency:\n  group: production-publish-${{ github.ref }}\n  cancel-in-progress: false" in text
     assert "actions: read" in text
     assert "pages: write" in text
     assert "id-token: write" in text
@@ -86,12 +101,15 @@ def test_collection_update_is_triggered_by_sitegraph_dispatch():
     assert "prepare_public_assets.py build-public-data" in text
     assert "actions/runs/$candidate_run_id/artifacts" in text
     assert 'select(.expired == false and .name == "njupt-search-dist")' in text
+    assert 'select(.expired == false and .name == "njupt-search-production-dist")' in text
+    assert "ARTIFACT_NAME: ${{ steps.verified-dist.outputs.artifact_name }}" in text
     assert "gh run download \"$RUN_ID\"" in text
-    assert "--name njupt-search-dist" in text
+    assert '--name "$ARTIFACT_NAME"' in text
     assert "rm -rf dist/generated" in text
     assert "cp -R apps/web/public/generated dist/generated" in text
     assert "actions/upload-pages-artifact@v5" in text
     assert "actions/deploy-pages@v5" in text
+    assert "name: njupt-search-production-dist" in text
     assert "npx --yes edgeone@latest pages deploy ./dist" in text
     assert "--add config/data-locks/sitegraph.lock.json" in text
     assert "--add apps/web/public/generated/collections/njupt-public/" not in text
@@ -113,6 +131,7 @@ def test_exam_update_uses_retrying_generated_commit_helper():
     workflow = Path(".github/workflows/update-exam-data.yml")
     assert workflow.exists()
     text = workflow.read_text(encoding="utf-8")
+    assert "concurrency:\n  group: production-publish-${{ github.ref }}\n  cancel-in-progress: false" in text
     assert "actions: read" in text
     assert "pages: write" in text
     assert "id-token: write" in text
@@ -124,12 +143,15 @@ def test_exam_update_uses_retrying_generated_commit_helper():
     assert "prepare_public_assets.py verify-exam-public-data" in text
     assert "actions/runs/$candidate_run_id/artifacts" in text
     assert 'select(.expired == false and .name == "njupt-search-dist")' in text
+    assert 'select(.expired == false and .name == "njupt-search-production-dist")' in text
+    assert "ARTIFACT_NAME: ${{ steps.verified-dist.outputs.artifact_name }}" in text
     assert "gh run download \"$RUN_ID\"" in text
-    assert "--name njupt-search-dist" in text
+    assert '--name "$ARTIFACT_NAME"' in text
     assert "rm -rf dist/generated/exam" in text
     assert "cp -R apps/web/public/generated/exam dist/generated/exam" in text
     assert "actions/upload-pages-artifact@v5" in text
     assert "actions/deploy-pages@v5" in text
+    assert "name: njupt-search-production-dist" in text
     assert "npx --yes edgeone@latest pages deploy ./dist" in text
     assert "Update Exam Data" not in Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     assert "prepare_public_assets.py build-public-data" not in text

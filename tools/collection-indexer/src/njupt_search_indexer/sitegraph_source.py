@@ -11,6 +11,7 @@ from typing import Any
 BASE_DIR = Path(__file__).resolve().parents[4]
 COLLECTION_ID = "njupt-public"
 DEFAULT_COLLECTION_CONFIG = BASE_DIR / "config" / "collections" / "njupt-public.sitegraph.json"
+DEFAULT_SITEGRAPH_LOCK = BASE_DIR / "config" / "data-locks" / "sitegraph.lock.json"
 DEFAULT_SITEGRAPH_REPO = BASE_DIR.parent / "njupt-site-graph"
 DEFAULT_SOURCE_PACKAGE_PATHS = (
     "data/sites/jwc/index",
@@ -91,6 +92,18 @@ def _resolve_path(value: str, base_dir: Path) -> Path:
     return path.resolve()
 
 
+def _locked_sitegraph_repo(config_path: Path) -> Path | None:
+    if config_path.resolve() != DEFAULT_COLLECTION_CONFIG.resolve() or not DEFAULT_SITEGRAPH_LOCK.exists():
+        return None
+    lock = read_json(DEFAULT_SITEGRAPH_LOCK)
+    if not isinstance(lock, dict):
+        raise ValueError(f"{DEFAULT_SITEGRAPH_LOCK} must be a JSON object")
+    checkout_path = lock.get("checkout_path")
+    if not isinstance(checkout_path, str) or not checkout_path:
+        raise ValueError(f"{DEFAULT_SITEGRAPH_LOCK} checkout_path must be a non-empty string")
+    return _resolve_path(checkout_path, BASE_DIR)
+
+
 def load_collection_source_packages(config_path: Path | None = None) -> list[Path]:
     path = config_path or DEFAULT_COLLECTION_CONFIG
     if not path.exists():
@@ -103,8 +116,11 @@ def load_collection_source_packages(config_path: Path | None = None) -> list[Pat
         raise ValueError(f"{path} collection_id must be {COLLECTION_ID!r}")
 
     env_name = str(config.get("sitegraph_repo_env") or "NJUPT_SITEGRAPH_REPO")
-    sitegraph_repo_value = os.environ.get(env_name) or str(config.get("sitegraph_repo") or "../njupt-site-graph")
-    sitegraph_repo = _resolve_path(sitegraph_repo_value, BASE_DIR)
+    sitegraph_repo_value = os.environ.get(env_name)
+    if sitegraph_repo_value:
+        sitegraph_repo = _resolve_path(sitegraph_repo_value, BASE_DIR)
+    else:
+        sitegraph_repo = _locked_sitegraph_repo(path) or _resolve_path(str(config.get("sitegraph_repo") or "../njupt-site-graph"), BASE_DIR)
     source_packages = config.get("source_packages")
     if not isinstance(source_packages, list) or not source_packages:
         raise ValueError(f"{path} source_packages must be a non-empty list")

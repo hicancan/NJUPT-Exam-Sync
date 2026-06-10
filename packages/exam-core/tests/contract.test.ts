@@ -4,7 +4,8 @@ import {
     assertManifestMatchesExams,
     DataContractError,
     parseExamData,
-    parseManifest
+    parseManifest,
+    resolveExamDataVersion
 } from '../src/contract';
 
 const loadPublicJson = (relativePath: string): unknown => {
@@ -26,7 +27,22 @@ describe('exam-core data contract', () => {
 
         expect(exams.length).toBeGreaterThan(0);
         expect(manifest.files_processed.length).toBeGreaterThan(0);
+        expect(resolveExamDataVersion(manifest)).toMatch(/^[a-f0-9]{64}$/);
         expect(new Set(exams.map(exam => exam.id)).size).toBe(exams.length);
+    });
+
+    it('derives a deterministic legacy version for old data summaries', () => {
+        const manifest = parseManifest({
+            generated_at: '2026-06-10T00:00:00+08:00',
+            files_processed: ['schedule.xlsx'],
+            total_records: 1,
+            source_url: 'https://example.test/exam',
+            source_title: '考试安排表',
+        });
+
+        expect(resolveExamDataVersion(manifest)).toBe(
+            'legacy|https://example.test/exam|考试安排表|2026-06-10T00:00:00+08:00|1|schedule.xlsx'
+        );
     });
 
     it('fails fast when all_exams is not an array', () => {

@@ -18,8 +18,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: update-exam-data-${{ github.ref }}
-  cancel-in-progress: true
+  group: production-publish-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   update-exam-data:
@@ -71,25 +71,38 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           run_id=""
+          artifact_name=""
+          for candidate_run_id in $(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.expired == false and .name == "njupt-search-production-dist") | .workflow_run.id'); do
+            run_id="$candidate_run_id"
+            artifact_name="njupt-search-production-dist"
+            break
+          done
           for candidate_run_id in $(gh run list --repo "$GITHUB_REPOSITORY" --workflow CI --branch main --status success --limit 20 --json databaseId --jq '.[].databaseId'); do
+            if [ -n "$run_id" ]; then
+              break
+            fi
             if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$candidate_run_id/artifacts" \
               --jq '.artifacts[] | select(.expired == false and .name == "njupt-search-dist") | .id' | grep -q .; then
               run_id="$candidate_run_id"
+              artifact_name="njupt-search-dist"
               break
             fi
           done
           if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
-            echo "::error::No successful main CI run with a non-expired njupt-search-dist artifact found for exam fast deploy"
+            echo "::error::No non-expired production dist or successful main CI dist artifact found for exam fast deploy"
             exit 1
           fi
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=$artifact_name" >> "$GITHUB_OUTPUT"
 
       - name: Download latest verified site artifact
         if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ steps.verified-dist.outputs.run_id }}
-        run: gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name njupt-search-dist --dir dist
+          ARTIFACT_NAME: ${{ steps.verified-dist.outputs.artifact_name }}
+        run: gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name "$ARTIFACT_NAME" --dir dist
 
       - name: Overlay validated exam data into verified site artifact
         if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
@@ -147,7 +160,16 @@ jobs:
           {
             echo "### Exam fast deploy"
             echo
-            echo "- Verified CI artifact run: \`${{ steps.verified-dist.outputs.run_id }}\`"
+            echo "- Base artifact run: \`${{ steps.verified-dist.outputs.run_id }}\`"
+            echo "- Base artifact name: \`${{ steps.verified-dist.outputs.artifact_name }}\`"
             echo "- Updated ref: \`${{ steps.commit.outputs.updated_ref }}\`"
             grep -E '^EDGEONE_(DEPLOY_URL|DEPLOY_TYPE|PROJECT_ID)=' edgeone-exam-fast-deploy.log || true
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload production dist baseline
+        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: njupt-search-production-dist
+          path: dist/
+          retention-days: 7

@@ -109,10 +109,17 @@ export default defineConfig({
             }
           },
           {
-            urlPattern: ({ url }) => url.pathname.includes('/generated/exam/'),
-            handler: 'NetworkFirst',
+            urlPattern: ({ url }) => [
+              '/generated/exam/data_summary.json',
+              '/generated/exam/source_metadata.json',
+            ].includes(url.pathname),
+            handler: 'NetworkOnly',
+          },
+          {
+            urlPattern: ({ url }) => url.pathname === '/generated/exam/all_exams.json',
+            handler: 'CacheFirst',
             options: {
-              cacheName: 'njupt-search-exam-data-current',
+              cacheName: 'njupt-search-exam-data-versioned-v2',
               expiration: {
                 maxEntries: 12,
                 maxAgeSeconds: 60 * 60 * 24 * 30

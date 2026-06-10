@@ -24,6 +24,7 @@ export interface Exam {
 
 export interface Manifest {
     generated_at: string;
+    data_version?: string;
     files_processed: string[];
     total_records: number;
     source_url?: string;
@@ -71,6 +72,7 @@ export const ExamSchema = z.object({
 
 export const ManifestSchema = z.object({
     generated_at: z.string().min(1),
+    data_version: z.string().min(1).optional(),
     total_records: z.number(),
     files_processed: z.array(z.string()),
     source_url: z.string().nullable().optional(),

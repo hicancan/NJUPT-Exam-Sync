@@ -17,6 +17,7 @@ describe('exam data contract package', () => {
 
         expect(exams.length).toBeGreaterThan(0);
         expect(manifest.files_processed.length).toBeGreaterThan(0);
+        expect(manifest.data_version).toMatch(/^[a-f0-9]{64}$/);
     });
 
     it('rejects invalid exam field shapes', () => {

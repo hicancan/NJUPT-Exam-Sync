@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+from njupt_search_indexer.sitegraph_source import load_collection_source_packages
+
 
 EXPECTED_SOURCE_PACKAGES = [
     "data/sites/jwc/index",
@@ -31,3 +33,12 @@ def test_collection_config_and_sitegraph_lock_use_full_source_registry():
 
     assert collection["source_packages"] == EXPECTED_SOURCE_PACKAGES
     assert lock["source_packages"] == EXPECTED_SOURCE_PACKAGES
+
+
+def test_default_source_packages_resolve_against_locked_checkout(monkeypatch):
+    monkeypatch.delenv("NJUPT_SITEGRAPH_REPO", raising=False)
+
+    resolved = load_collection_source_packages()
+
+    expected_repo = Path("_sitegraph/njupt-site-graph").resolve()
+    assert resolved == [(expected_repo / source_package).resolve() for source_package in EXPECTED_SOURCE_PACKAGES]

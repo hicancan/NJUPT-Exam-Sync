@@ -78,6 +78,42 @@ def get_beijing_time() -> datetime:
     return utc_dt.astimezone(beijing_tz)
 
 
+def get_exam_data_version(metadata: Dict[str, Any]) -> str:
+    locked_value = os.environ.get("NJUPT_SEARCH_EXAM_DATA_VERSION")
+    if locked_value:
+        return locked_value
+    metadata_value = metadata.get("data_version")
+    if isinstance(metadata_value, str) and metadata_value.strip():
+        return metadata_value.strip()
+    raise ExamPipelineError("NJUPT_SEARCH_EXAM_DATA_VERSION is required to build exam data_summary.json")
+
+
+def load_source_metadata() -> Dict[str, Any]:
+    metadata_path = os.path.join(DATA_DIR, 'source_metadata.json')
+    if not os.path.exists(metadata_path):
+        return {}
+    try:
+        with open(metadata_path, 'r', encoding='utf-8') as f:
+            metadata = json.load(f)
+    except Exception as e:
+        raise ExamPipelineError(f"Failed to load source metadata: {metadata_path}") from e
+    if not isinstance(metadata, dict):
+        raise ExamPipelineError(f"Source metadata must be a JSON object: {metadata_path}")
+    return metadata
+
+
+def write_json_file(path: str, payload: Any, *, compact: bool) -> None:
+    try:
+        with open(path, 'w', encoding='utf-8') as f:
+            if compact:
+                json.dump(payload, f, ensure_ascii=False, separators=(',', ':'))
+            else:
+                json.dump(payload, f, indent=2, ensure_ascii=False)
+                f.write('\n')
+    except Exception as e:
+        logger.error(f"Failed to write JSON: {e}")
+        raise ExamPipelineError(f"Failed to write {path}") from e
+
 
 # --- Pydantic Model ---
 class ExamRecord(BaseModel):
@@ -369,71 +405,39 @@ def main():
         raise ExamPipelineError("No exam spreadsheets were processed")
 
     logger.info(f"Generated {len(all_rows)} records.")
-    
-    # Idempotency Check
-    data_changed = True
-    if os.path.exists(MERGED_JSON_PATH):
-        try:
-            with open(MERGED_JSON_PATH, 'r', encoding='utf-8') as f:
-                existing_data = json.load(f)
-            # Compare assuming deterministic sorting/serialization
-            if existing_data == all_rows:
-                logger.info("⚡ Data is identical to existing file. Skipping write to prevent unnecessary commits.")
-                data_changed = False
-            else:
-                logger.info("Data content has changed.")
-        except Exception as e:
-            logger.warning(f"Could not compare with existing data: {e}")
 
-    if data_changed:
-        logger.info(f"Saving {len(all_rows)} records to {MERGED_JSON_PATH}...")
-        try:
-            with open(MERGED_JSON_PATH, 'w', encoding='utf-8') as f:
-                json.dump(all_rows, f, ensure_ascii=False, separators=(',', ':'))
-        except Exception as e:
-            logger.error(f"Failed to write JSON: {e}")
-            raise ExamPipelineError(f"Failed to write {MERGED_JSON_PATH}") from e
+    metadata = load_source_metadata()
+    generated_at = get_beijing_time()
+    data_version = get_exam_data_version(metadata)
 
-        report_content = generate_markdown_report(
-            analyses,
-            len(all_rows),
-            generated_at=get_beijing_time(),
-            field_mapping=FIELD_MAPPING,
-        )
-        try:
-            with open(OUTPUT_DOC_PATH, 'w', encoding='utf-8') as f:
-                f.write(report_content)
-        except Exception as e:
-             logger.error(f"Failed to write Report: {e}")
-             raise ExamPipelineError(f"Failed to write {OUTPUT_DOC_PATH}") from e
+    logger.info(f"Saving {len(all_rows)} records to {MERGED_JSON_PATH}...")
+    write_json_file(MERGED_JSON_PATH, all_rows, compact=True)
 
-        manifest = {
-            "generated_at": get_beijing_time().isoformat(),
-            "files_processed": [a['filename'] for a in analyses],
-            "total_records": len(all_rows)
-        }
+    report_content = generate_markdown_report(
+        analyses,
+        len(all_rows),
+        generated_at=generated_at,
+        field_mapping=FIELD_MAPPING,
+    )
+    try:
+        with open(OUTPUT_DOC_PATH, 'w', encoding='utf-8') as f:
+            f.write(report_content)
+    except Exception as e:
+        logger.error(f"Failed to write Report: {e}")
+        raise ExamPipelineError(f"Failed to write {OUTPUT_DOC_PATH}") from e
 
-        # Try to load source metadata
-        metadata_path = os.path.join(DATA_DIR, 'source_metadata.json')
-        if os.path.exists(metadata_path):
-            try:
-                with open(metadata_path, 'r', encoding='utf-8') as f:
-                    meta = json.load(f)
-                    manifest['source_url'] = meta.get('source_url')
-                    manifest['source_title'] = meta.get('source_title')
-            except Exception as e:
-                 logger.warning(f"Failed to load source metadata: {e}")
+    manifest = {
+        "generated_at": generated_at.isoformat(),
+        "data_version": data_version,
+        "files_processed": [a['filename'] for a in analyses],
+        "total_records": len(all_rows),
+        "source_url": metadata.get('source_url'),
+        "source_title": metadata.get('source_title')
+    }
 
-        try:
-            with open(os.path.join(DATA_DIR, 'data_summary.json'), 'w', encoding='utf-8') as f:
-                json.dump(manifest, f, indent=2, ensure_ascii=False)
-        except Exception as e:
-             logger.error(f"Failed to write Manifest: {e}")
-             raise ExamPipelineError(f"Failed to write {os.path.join(DATA_DIR, 'data_summary.json')}") from e
+    write_json_file(os.path.join(DATA_DIR, 'data_summary.json'), manifest, compact=False)
 
-        logger.info("✅ Data processing and updates complete.")
-    else:
-        logger.info("⚡ No changes detected. All files remain untouched.")
+    logger.info("✅ Data processing and updates complete.")
 
     logger.info("Process finished.")
 

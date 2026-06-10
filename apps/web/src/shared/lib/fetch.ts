@@ -1,4 +1,10 @@
-export type FetchResourceType = 'manifest' | 'index' | 'shard' | 'exam-data' | 'default';
+export type FetchResourceType =
+    | 'manifest'
+    | 'index'
+    | 'shard'
+    | 'exam-summary'
+    | 'exam-data-versioned'
+    | 'default';
 
 const cacheModeFor = (resourceType: FetchResourceType): RequestCache => {
     switch (resourceType) {
@@ -7,8 +13,10 @@ const cacheModeFor = (resourceType: FetchResourceType): RequestCache => {
         case 'index':
         case 'shard':
             return 'force-cache';
-        case 'exam-data':
-            return 'default';
+        case 'exam-summary':
+            return 'no-store';
+        case 'exam-data-versioned':
+            return 'force-cache';
         default:
             return 'default';
     }

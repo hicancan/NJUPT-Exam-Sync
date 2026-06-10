@@ -266,6 +266,14 @@ jobs:
           path: dist/
           retention-days: 3
 
+      - name: Upload production dist baseline
+        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.ci-mode.outputs.needs_public_assets == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: njupt-search-production-dist
+          path: dist/
+          retention-days: 7
+
   pages-build:
     if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.ci.outputs.needs_public_assets == 'true' }}
     permissions:
@@ -293,6 +301,9 @@ jobs:
     permissions:
       pages: write
       id-token: write
+    concurrency:
+      group: production-publish-main
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
