@@ -10,6 +10,7 @@ def test_ci_is_single_authoritative_pages_gate():
     assert "concurrency:\n  group: ci-${{ github.ref }}\n  cancel-in-progress: true" in text
     assert "permissions:\n  contents: read\n\nconcurrency:" in text
     assert "Classify CI workload" in text
+    assert r"^(\.github/.*|tests/test_workflows\.py)$" in text
     assert 'mode="workflow-fast"' in text
     assert "Verify CI-only public asset determinism" in text
     assert "if: steps.ci-mode.outputs.full_verification == 'true'" in text
