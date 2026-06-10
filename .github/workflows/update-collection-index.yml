@@ -72,39 +72,85 @@ jobs:
           echo "dispatch_reason=${DISPATCH_REASON:-unspecified}"
 
       - name: Validate sitegraph ref exists
+        id: sitegraph-ref
         env:
           GH_TOKEN: ${{ secrets.NJUPT_SITEGRAPH_TOKEN || github.token }}
         run: |
-          if ! gh api "repos/hicancan/njupt-site-graph/commits/$SITEGRAPH_REF" --silent; then
+          resolved_sha="$(gh api "repos/hicancan/njupt-site-graph/commits/$SITEGRAPH_REF" --jq '.sha')" || {
             echo "::error::sitegraph_ref $SITEGRAPH_REF is not a commit visible in hicancan/njupt-site-graph"
             exit 1
+          }
+          if [ -z "$resolved_sha" ] || [ "$resolved_sha" = "null" ]; then
+            echo "::error::sitegraph_ref $SITEGRAPH_REF resolved to an empty commit"
+            exit 1
           fi
+          echo "resolved_sha=$resolved_sha" >> "$GITHUB_OUTPUT"
+          echo "sitegraph_ref $SITEGRAPH_REF resolved to $resolved_sha"
+
+      - name: Plan collection update
+        id: collection-plan
+        run: |
+          current_ref="$(python - <<'PY'
+          import json
+          from pathlib import Path
+
+          print(json.loads(Path("config/data-locks/sitegraph.lock.json").read_text(encoding="utf-8"))["sitegraph_ref"])
+          PY
+          )"
+          requested_ref="${{ steps.sitegraph-ref.outputs.resolved_sha }}"
+          needs_data_build="true"
+          if [ "$current_ref" = "$requested_ref" ]; then
+            needs_data_build="false"
+          fi
+          should_deploy="false"
+          if [ "$needs_data_build" = "true" ] || [ "$FORCE_DEPLOY" = "true" ]; then
+            should_deploy="true"
+          fi
+          echo "current_ref=$current_ref" >> "$GITHUB_OUTPUT"
+          echo "requested_ref=$requested_ref" >> "$GITHUB_OUTPUT"
+          echo "needs_data_build=$needs_data_build" >> "$GITHUB_OUTPUT"
+          echo "should_deploy=$should_deploy" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Collection update plan"
+            echo
+            echo "- Current lock ref: \`$current_ref\`"
+            echo "- Requested ref: \`$requested_ref\`"
+            echo "- Needs data build: \`$needs_data_build\`"
+            echo "- Force deploy: \`$FORCE_DEPLOY\`"
+            echo "- Should deploy: \`$should_deploy\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Checkout sitegraph source packages
+        if: steps.collection-plan.outputs.needs_data_build == 'true'
         uses: actions/checkout@v6
         with:
           repository: hicancan/njupt-site-graph
-          ref: ${{ env.SITEGRAPH_REF }}
+          ref: ${{ steps.sitegraph-ref.outputs.resolved_sha }}
           path: _sitegraph/njupt-site-graph
           token: ${{ secrets.NJUPT_SITEGRAPH_TOKEN || github.token }}
 
       - name: Set up Python
+        if: steps.collection-plan.outputs.needs_data_build == 'true'
         uses: actions/setup-python@v6
         with:
           python-version-file: '.python-version'
 
       - name: Set up uv
+        if: steps.collection-plan.outputs.needs_data_build == 'true'
         uses: astral-sh/setup-uv@v8.2.0
 
       - name: Install dependencies
+        if: steps.collection-plan.outputs.needs_data_build == 'true'
         run: uv sync --frozen --extra test
 
       - name: Update sitegraph data lock
+        if: steps.collection-plan.outputs.needs_data_build == 'true'
         run: |
-          uv run python tools/ci/prepare_public_assets.py update-sitegraph-lock --sitegraph-ref "$SITEGRAPH_REF"
+          uv run python tools/ci/prepare_public_assets.py update-sitegraph-lock --sitegraph-ref "${{ steps.sitegraph-ref.outputs.resolved_sha }}"
           uv run python tools/ci/prepare_public_assets.py build-public-data
 
       - name: Validate generated collection artifacts
+        if: steps.collection-plan.outputs.needs_data_build == 'true'
         run: |
           uv run python tools/quality-gates/scripts/check_tracked_byproducts.py
           uv run python tools/quality-gates/scripts/validate_search_index.py
@@ -114,6 +160,7 @@ jobs:
 
       - name: Commit sitegraph lock changes
         id: commit
+        if: steps.collection-plan.outputs.needs_data_build == 'true'
         run: |
           uv run python tools/ci/commit_generated_changes.py \
             --message "Auto-update sitegraph data lock" \
@@ -122,54 +169,61 @@ jobs:
 
       - name: Resolve latest verified site artifact
         id: verified-dist
-        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
+        if: steps.collection-plan.outputs.should_deploy == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow CI --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+          run_id=""
+          for candidate_run_id in $(gh run list --repo "$GITHUB_REPOSITORY" --workflow CI --branch main --status success --limit 20 --json databaseId --jq '.[].databaseId'); do
+            if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$candidate_run_id/artifacts" \
+              --jq '.artifacts[] | select(.expired == false and .name == "njupt-search-dist") | .id' | grep -q .; then
+              run_id="$candidate_run_id"
+              break
+            fi
+          done
           if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
-            echo "::error::No successful main CI run found for collection fast deploy"
+            echo "::error::No successful main CI run with a non-expired njupt-search-dist artifact found for collection fast deploy"
             exit 1
           fi
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
       - name: Download latest verified site artifact
-        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
+        if: steps.collection-plan.outputs.should_deploy == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ steps.verified-dist.outputs.run_id }}
         run: gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name njupt-search-dist --dir dist
 
       - name: Overlay validated generated data into verified site artifact
-        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
+        if: ${{ steps.collection-plan.outputs.should_deploy == 'true' && steps.collection-plan.outputs.needs_data_build == 'true' }}
         run: |
           rm -rf dist/generated
           mkdir -p dist
           cp -R apps/web/public/generated dist/generated
 
       - name: Setup Pages
-        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
+        if: steps.collection-plan.outputs.should_deploy == 'true'
         uses: actions/configure-pages@v6
 
       - name: Upload collection-fast Pages artifact
-        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
+        if: steps.collection-plan.outputs.should_deploy == 'true'
         uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
       - name: Deploy collection-fast GitHub Pages
-        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
+        if: steps.collection-plan.outputs.should_deploy == 'true'
         id: collection-fast-pages
         uses: actions/deploy-pages@v5
 
       - name: Set up Node for EdgeOne collection-fast deploy
-        if: ${{ (steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true') && vars.EDGEONE_PAGES_ENABLED == 'true' }}
+        if: ${{ steps.collection-plan.outputs.should_deploy == 'true' && vars.EDGEONE_PAGES_ENABLED == 'true' }}
         uses: actions/setup-node@v6
         with:
           node-version: '24'
 
       - name: Deploy collection-fast EdgeOne Pages
-        if: ${{ (steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true') && vars.EDGEONE_PAGES_ENABLED == 'true' }}
+        if: ${{ steps.collection-plan.outputs.should_deploy == 'true' && vars.EDGEONE_PAGES_ENABLED == 'true' }}
         env:
           EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
           EDGEONE_PAGES_PROJECT: ${{ vars.EDGEONE_PAGES_PROJECT || 'njupt-search' }}
@@ -186,6 +240,7 @@ jobs:
             echo "### Collection fast deploy"
             echo
             echo "- Verified CI artifact run: \`${{ steps.verified-dist.outputs.run_id }}\`"
-            echo "- Updated ref: \`${{ steps.commit.outputs.updated_ref }}\`"
+            echo "- Requested ref: \`${{ steps.sitegraph-ref.outputs.resolved_sha }}\`"
+            echo "- Data build used: \`${{ steps.collection-plan.outputs.needs_data_build }}\`"
             grep -E '^EDGEONE_(DEPLOY_URL|DEPLOY_TYPE|PROJECT_ID)=' edgeone-collection-fast-deploy.log || true
           } >> "$GITHUB_STEP_SUMMARY"

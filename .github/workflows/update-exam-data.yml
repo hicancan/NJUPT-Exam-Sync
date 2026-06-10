@@ -70,9 +70,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow CI --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+          run_id=""
+          for candidate_run_id in $(gh run list --repo "$GITHUB_REPOSITORY" --workflow CI --branch main --status success --limit 20 --json databaseId --jq '.[].databaseId'); do
+            if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$candidate_run_id/artifacts" \
+              --jq '.artifacts[] | select(.expired == false and .name == "njupt-search-dist") | .id' | grep -q .; then
+              run_id="$candidate_run_id"
+              break
+            fi
+          done
           if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
-            echo "::error::No successful main CI run found for exam fast deploy"
+            echo "::error::No successful main CI run with a non-expired njupt-search-dist artifact found for exam fast deploy"
             exit 1
           fi
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
