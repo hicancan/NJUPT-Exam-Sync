@@ -20,6 +20,13 @@ def test_ci_is_single_authoritative_pages_gate():
     assert "    permissions:\n      contents: read\n      pages: write" in text
     assert "  pages-deploy:" in text
     assert "    permissions:\n      pages: write\n      id-token: write" in text
+    assert "  edgeone-deploy:" in text
+    assert "vars.EDGEONE_PAGES_ENABLED == 'true'" in text
+    assert "name: edgeone-pages" in text
+    assert "EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}" in text
+    assert "EDGEONE_PAGES_PROJECT: ${{ vars.EDGEONE_PAGES_PROJECT || 'njupt-search' }}" in text
+    assert "EDGEONE_PAGES_AREA: ${{ vars.EDGEONE_PAGES_AREA || 'overseas' }}" in text
+    assert 'npx --yes edgeone@latest pages deploy ./dist -n "$project" -t "$EDGEONE_API_TOKEN" -e production -a "$area"' in text
     assert "GITHUB_STEP_SUMMARY" in text
     assert "npm run test:prepared" in text
     assert "npm run typecheck:prepared" in text
