@@ -4,9 +4,6 @@ on:
   pull_request:
   push:
     branches: [ main, 'milestone/**' ]
-  workflow_run:
-    workflows: [ 'Update Collection Index' ]
-    types: [ completed ]
   workflow_dispatch:
 
 permissions:
@@ -18,10 +15,11 @@ concurrency:
 
 jobs:
   ci:
-    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_sha != github.sha)
     permissions:
       contents: read
     runs-on: ubuntu-latest
+    outputs:
+      needs_public_assets: ${{ steps.ci-mode.outputs.needs_public_assets }}
     env:
       NJUPT_SITEGRAPH_REPO: _sitegraph/njupt-site-graph
     steps:
@@ -36,16 +34,14 @@ jobs:
           mode="full"
           full_verification="true"
           needs_public_assets="true"
-          if [ "$GITHUB_EVENT_NAME" = "workflow_run" ]; then
-            mode="data-update-fast"
-            full_verification="false"
-          elif [ "$GITHUB_EVENT_NAME" = "push" ]; then
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
             before="${{ github.event.before }}"
             if [ -n "$before" ] && [ "$before" != "0000000000000000000000000000000000000000" ]; then
               changed_files="$(git diff --name-only "$before" "$GITHUB_SHA")"
               if [ -n "$changed_files" ] && ! printf '%s\n' "$changed_files" | grep -Ev '^(\.github/|tests/test_workflows\.py)$' >/dev/null; then
                 mode="workflow-fast"
                 full_verification="false"
+                needs_public_assets="false"
               fi
             fi
           fi
@@ -212,7 +208,7 @@ jobs:
           printf '| Frontend checks | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build deployment bundle
-        if: steps.ci-mode.outputs.needs_public_assets == 'true' && steps.ci-mode.outputs.full_verification != 'true'
+        if: ${{ steps.ci-mode.outputs.needs_public_assets == 'true' && steps.ci-mode.outputs.full_verification != 'true' }}
         run: |
           start=$SECONDS
           npm run build:prepared
@@ -263,7 +259,7 @@ jobs:
           path: tools/search-eval/reports/
 
       - name: Upload deployment build artifact
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.ci-mode.outputs.needs_public_assets == 'true' }}
         uses: actions/upload-artifact@v7
         with:
           name: njupt-search-dist
@@ -271,7 +267,7 @@ jobs:
           retention-days: 3
 
   pages-build:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.ci.outputs.needs_public_assets == 'true' }}
     permissions:
       contents: read
       pages: write
@@ -293,7 +289,7 @@ jobs:
           path: dist
 
   pages-deploy:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.ci.outputs.needs_public_assets == 'true' }}
     permissions:
       pages: write
       id-token: write

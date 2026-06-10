@@ -13,6 +13,9 @@ on:
 
 permissions:
   contents: write
+  actions: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: update-collection-index-${{ github.ref }}
@@ -21,6 +24,9 @@ concurrency:
 jobs:
   update-collection-index:
     runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
+      updated_ref: ${{ steps.commit.outputs.updated_ref }}
     env:
       SITEGRAPH_REF: ${{ github.event.client_payload.sitegraph_ref || github.event.inputs.sitegraph_ref || 'main' }}
       DISPATCH_SITEGRAPH_REF: ${{ github.event.client_payload.sitegraph_ref || '' }}
@@ -101,7 +107,79 @@ jobs:
           uv run python -m njupt_search_eval run-task-queries
 
       - name: Commit sitegraph lock changes
+        id: commit
         run: |
           uv run python tools/ci/commit_generated_changes.py \
             --message "Auto-update sitegraph data lock" \
-            --add config/data-locks/sitegraph.lock.json
+            --add config/data-locks/sitegraph.lock.json \
+            --ref-output updated_ref
+
+      - name: Resolve latest verified site artifact
+        id: verified-dist
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow CI --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+          if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
+            echo "::error::No successful main CI run found for collection fast deploy"
+            exit 1
+          fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Download latest verified site artifact
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.verified-dist.outputs.run_id }}
+        run: gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name njupt-search-dist --dir dist
+
+      - name: Overlay validated generated data into verified site artifact
+        if: steps.commit.outputs.changed == 'true'
+        run: |
+          rm -rf dist/generated
+          mkdir -p dist
+          cp -R apps/web/public/generated dist/generated
+
+      - name: Setup Pages
+        if: steps.commit.outputs.changed == 'true'
+        uses: actions/configure-pages@v6
+
+      - name: Upload collection-fast Pages artifact
+        if: steps.commit.outputs.changed == 'true'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+      - name: Deploy collection-fast GitHub Pages
+        if: steps.commit.outputs.changed == 'true'
+        id: collection-fast-pages
+        uses: actions/deploy-pages@v5
+
+      - name: Set up Node for EdgeOne collection-fast deploy
+        if: steps.commit.outputs.changed == 'true' && vars.EDGEONE_PAGES_ENABLED == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Deploy collection-fast EdgeOne Pages
+        if: steps.commit.outputs.changed == 'true' && vars.EDGEONE_PAGES_ENABLED == 'true'
+        env:
+          EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
+          EDGEONE_PAGES_PROJECT: ${{ vars.EDGEONE_PAGES_PROJECT || 'njupt-search' }}
+          EDGEONE_PAGES_AREA: ${{ vars.EDGEONE_PAGES_AREA || 'overseas' }}
+        run: |
+          if [ -z "$EDGEONE_API_TOKEN" ]; then
+            echo "::error::EDGEONE_API_TOKEN secret is required"
+            exit 1
+          fi
+          project="${EDGEONE_PAGES_PROJECT:-njupt-search}"
+          area="${EDGEONE_PAGES_AREA:-overseas}"
+          npx --yes edgeone@latest pages deploy ./dist -n "$project" -t "$EDGEONE_API_TOKEN" -e production -a "$area" | tee edgeone-collection-fast-deploy.log
+          {
+            echo "### Collection fast deploy"
+            echo
+            echo "- Verified CI artifact run: \`${{ steps.verified-dist.outputs.run_id }}\`"
+            echo "- Updated ref: \`${{ steps.commit.outputs.updated_ref }}\`"
+            grep -E '^EDGEONE_(DEPLOY_URL|DEPLOY_TYPE|PROJECT_ID)=' edgeone-collection-fast-deploy.log || true
+          } >> "$GITHUB_STEP_SUMMARY"

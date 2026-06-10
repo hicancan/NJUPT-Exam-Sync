@@ -10,19 +10,14 @@ def test_ci_is_single_authoritative_pages_gate():
     assert "concurrency:\n  group: ci-${{ github.ref }}\n  cancel-in-progress: true" in text
     assert "permissions:\n  contents: read\n\nconcurrency:" in text
     assert "Classify CI workload" in text
-    assert 'mode="data-update-fast"' in text
     assert 'mode="workflow-fast"' in text
     assert "Verify CI-only public asset determinism" in text
     assert "if: steps.ci-mode.outputs.full_verification == 'true'" in text
     assert "Fast-mode workflow tests" in text
     assert "Build deployment bundle" in text
-    assert "workflow_run:" in text
-    assert "workflows: [ 'Update Collection Index' ]" in text
-    assert (
-        "  ci:\n"
-        "    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_sha != github.sha)\n"
-        "    permissions:\n      contents: read"
-    ) in text
+    assert "workflow_run:" not in text
+    assert "workflows: [ 'Update Collection Index' ]" not in text
+    assert "  ci:\n    permissions:\n      contents: read" in text
     assert "  pages-build:" in text
     assert "    permissions:\n      contents: read\n      pages: write" in text
     assert "  pages-deploy:" in text
@@ -59,6 +54,9 @@ def test_collection_update_is_triggered_by_sitegraph_dispatch():
     workflow = Path(".github/workflows/update-collection-index.yml")
     assert workflow.exists()
     text = workflow.read_text(encoding="utf-8")
+    assert "actions: read" in text
+    assert "pages: write" in text
+    assert "id-token: write" in text
     assert "repository_dispatch:" in text
     assert "sitegraph-data-updated" in text
     assert "cron: '30 */6 * * *'" not in text
@@ -76,6 +74,13 @@ def test_collection_update_is_triggered_by_sitegraph_dispatch():
     assert "python tools/ci/commit_generated_changes.py" in text
     assert "prepare_public_assets.py update-sitegraph-lock" in text
     assert "prepare_public_assets.py build-public-data" in text
+    assert "gh run download \"$RUN_ID\"" in text
+    assert "--name njupt-search-dist" in text
+    assert "rm -rf dist/generated" in text
+    assert "cp -R apps/web/public/generated dist/generated" in text
+    assert "actions/upload-pages-artifact@v5" in text
+    assert "actions/deploy-pages@v5" in text
+    assert "npx --yes edgeone@latest pages deploy ./dist" in text
     assert "--add config/data-locks/sitegraph.lock.json" in text
     assert "--add apps/web/public/generated/collections/njupt-public/" not in text
     assert "npm test" not in text
