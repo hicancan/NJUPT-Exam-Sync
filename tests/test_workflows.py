@@ -9,8 +9,15 @@ def test_ci_is_single_authoritative_pages_gate():
     text = workflow.read_text(encoding="utf-8")
     assert "concurrency:\n  group: ci-${{ github.ref }}\n  cancel-in-progress: true" in text
     assert "permissions:\n  contents: read\n\nconcurrency:" in text
+    assert "Classify CI workload" in text
+    assert 'mode="data-update-fast"' in text
+    assert 'mode="workflow-fast"' in text
+    assert "Verify CI-only public asset determinism" in text
+    assert "if: steps.ci-mode.outputs.full_verification == 'true'" in text
+    assert "Fast-mode workflow tests" in text
+    assert "Build deployment bundle" in text
     assert "workflow_run:" in text
-    assert "workflows: [ 'Update Collection Index', 'Update Exam Data' ]" in text
+    assert "workflows: [ 'Update Collection Index' ]" in text
     assert (
         "  ci:\n"
         "    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_sha != github.sha)\n"
@@ -25,6 +32,7 @@ def test_ci_is_single_authoritative_pages_gate():
     assert "npm run test:prepared" in text
     assert "npm run typecheck:prepared" in text
     assert "npm run build:prepared" in text
+    assert "retention-days: 3" in text
 
 
 def test_edgeone_deploy_uses_verified_ci_artifact_only():
@@ -88,10 +96,21 @@ def test_exam_update_uses_retrying_generated_commit_helper():
     workflow = Path(".github/workflows/update-exam-data.yml")
     assert workflow.exists()
     text = workflow.read_text(encoding="utf-8")
+    assert "actions: read" in text
+    assert "pages: write" in text
+    assert "id-token: write" in text
     assert "python tools/ci/commit_generated_changes.py" in text
     assert "prepare_public_assets.py update-exam-lock" in text
     assert "prepare_public_assets.py build-exam-public-data" in text
     assert "prepare_public_assets.py verify-exam-public-data" in text
+    assert "gh run download \"$RUN_ID\"" in text
+    assert "--name njupt-search-dist" in text
+    assert "rm -rf dist/generated/exam" in text
+    assert "cp -R apps/web/public/generated/exam dist/generated/exam" in text
+    assert "actions/upload-pages-artifact@v5" in text
+    assert "actions/deploy-pages@v5" in text
+    assert "npx --yes edgeone@latest pages deploy ./dist" in text
+    assert "Update Exam Data" not in Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     assert "prepare_public_assets.py build-public-data" not in text
     assert "Checkout sitegraph source packages" not in text
     assert "--add config/data-locks/exam.lock.json" in text

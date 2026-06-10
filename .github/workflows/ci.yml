@@ -5,7 +5,7 @@ on:
   push:
     branches: [ main, 'milestone/**' ]
   workflow_run:
-    workflows: [ 'Update Collection Index', 'Update Exam Data' ]
+    workflows: [ 'Update Collection Index' ]
     types: [ completed ]
   workflow_dispatch:
 
@@ -30,6 +30,35 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Classify CI workload
+        id: ci-mode
+        run: |
+          mode="full"
+          full_verification="true"
+          needs_public_assets="true"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_run" ]; then
+            mode="data-update-fast"
+            full_verification="false"
+          elif [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            before="${{ github.event.before }}"
+            if [ -n "$before" ] && [ "$before" != "0000000000000000000000000000000000000000" ]; then
+              changed_files="$(git diff --name-only "$before" "$GITHUB_SHA")"
+              if [ -n "$changed_files" ] && ! printf '%s\n' "$changed_files" | grep -Ev '^(\.github/|tests/test_workflows\.py)$' >/dev/null; then
+                mode="workflow-fast"
+                full_verification="false"
+              fi
+            fi
+          fi
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "full_verification=$full_verification" >> "$GITHUB_OUTPUT"
+          echo "needs_public_assets=$needs_public_assets" >> "$GITHUB_OUTPUT"
+          {
+            echo "### CI workload"
+            echo
+            echo "- Mode: \`$mode\`"
+            echo "- Full verification: \`$full_verification\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -39,12 +68,14 @@ jobs:
         uses: astral-sh/setup-uv@v8.2.0
 
       - name: Set up Node
+        if: steps.ci-mode.outputs.needs_public_assets == 'true'
         uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: 'npm'
 
       - name: Read data locks
+        if: steps.ci-mode.outputs.needs_public_assets == 'true'
         id: data-locks
         run: |
           python - <<'PY' >> "$GITHUB_OUTPUT"
@@ -55,6 +86,7 @@ jobs:
           PY
 
       - name: Checkout sitegraph source packages
+        if: steps.ci-mode.outputs.needs_public_assets == 'true'
         uses: actions/checkout@v6
         with:
           repository: hicancan/njupt-site-graph
@@ -63,11 +95,13 @@ jobs:
           token: ${{ secrets.NJUPT_SITEGRAPH_TOKEN || github.token }}
 
       - name: Set up Rust
+        if: steps.ci-mode.outputs.needs_public_assets == 'true'
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
 
       - name: Cache Rust build artifacts
+        if: steps.ci-mode.outputs.needs_public_assets == 'true'
         uses: actions/cache@v4
         with:
           path: |
@@ -79,6 +113,7 @@ jobs:
             rust-wasm-${{ runner.os }}-
 
       - name: Install WASM tools
+        if: steps.ci-mode.outputs.needs_public_assets == 'true'
         run: |
           mkdir -p .ci-tools
           curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 \
@@ -105,28 +140,41 @@ jobs:
         run: |
           start=$SECONDS
           uv sync --frozen --extra test
-          npm ci
+          if [ "${{ steps.ci-mode.outputs.needs_public_assets }}" = "true" ]; then
+            npm ci
+          fi
           printf '| Install dependencies | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Prepare CI-only public assets
+        if: steps.ci-mode.outputs.needs_public_assets == 'true'
         run: |
           start=$SECONDS
           npm run prepare:public-assets
           printf '| Prepare CI-only public assets | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Verify CI-only public asset determinism
+        if: steps.ci-mode.outputs.full_verification == 'true'
         run: |
           start=$SECONDS
           uv run python tools/ci/prepare_public_assets.py verify-determinism
           printf '| Verify public asset determinism | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Python tests
+        if: steps.ci-mode.outputs.full_verification == 'true'
         run: |
           start=$SECONDS
           uv run python -m pytest tests
           printf '| Python tests | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Fast-mode workflow tests
+        if: steps.ci-mode.outputs.full_verification != 'true'
+        run: |
+          start=$SECONDS
+          uv run python -m pytest tests/test_workflows.py
+          printf '| Fast-mode workflow tests | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Source complexity gates
+        if: steps.ci-mode.outputs.full_verification == 'true'
         run: |
           start=$SECONDS
           uv run python tools/quality-gates/scripts/check_source_complexity.py
@@ -135,6 +183,7 @@ jobs:
           printf '| Source complexity gates | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Generated artifact gates
+        if: steps.ci-mode.outputs.needs_public_assets == 'true'
         run: |
           start=$SECONDS
           uv run python tools/quality-gates/scripts/validate_search_index.py
@@ -144,6 +193,7 @@ jobs:
           printf '| Generated artifact gates | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Verify WASM semantics
+        if: steps.ci-mode.outputs.full_verification == 'true'
         run: |
           start=$SECONDS
           npm run build:wasm:web
@@ -151,6 +201,7 @@ jobs:
           printf '| Verify WASM semantics | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Frontend checks
+        if: steps.ci-mode.outputs.full_verification == 'true'
         run: |
           start=$SECONDS
           npm run test:prepared
@@ -160,7 +211,16 @@ jobs:
           npm run check:web-bundle-size
           printf '| Frontend checks | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Build deployment bundle
+        if: steps.ci-mode.outputs.needs_public_assets == 'true' && steps.ci-mode.outputs.full_verification != 'true'
+        run: |
+          start=$SECONDS
+          npm run build:prepared
+          npm run check:web-bundle-size
+          printf '| Build deployment bundle | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Generate CI evidence reports
+        if: steps.ci-mode.outputs.full_verification == 'true'
         run: |
           start=$SECONDS
           mkdir -p tools/search-eval/reports
@@ -196,6 +256,7 @@ jobs:
           printf '| Generate CI evidence reports | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload CI evidence reports
+        if: steps.ci-mode.outputs.full_verification == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: njupt-search-ci-evidence
@@ -207,7 +268,7 @@ jobs:
         with:
           name: njupt-search-dist
           path: dist/
-          retention-days: 1
+          retention-days: 3
 
   pages-build:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
