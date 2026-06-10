@@ -40,6 +40,9 @@ def test_edgeone_deploy_uses_verified_ci_artifact_only():
     assert "run_id:" in text
     assert "vars.EDGEONE_PAGES_ENABLED == 'true'" in text
     assert "group: edgeone-pages-production" in text
+    assert "has_dist_artifact()" in text
+    assert "actions/runs/$candidate_run_id/artifacts" in text
+    assert "has no njupt-search-dist artifact; skipping EdgeOne deploy" in text
     assert "gh run download \"$RUN_ID\"" in text
     assert "--name njupt-search-dist" in text
     assert "EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}" in text

@@ -37,6 +37,14 @@ jobs:
           WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id || '' }}
           WORKFLOW_RUN_SHA: ${{ github.event.workflow_run.head_sha || '' }}
         run: |
+          has_dist_artifact() {
+            local candidate_run_id="$1"
+            local count
+            count="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$candidate_run_id/artifacts" \
+              --jq '[.artifacts[] | select(.name == "njupt-search-dist" and .expired == false)] | length')"
+            [ "$count" != "0" ]
+          }
+
           if [ "$GITHUB_EVENT_NAME" = "workflow_run" ]; then
             latest_sha="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)"
             if [ "$WORKFLOW_RUN_SHA" != "$latest_sha" ]; then
@@ -45,13 +53,28 @@ jobs:
               exit 0
             fi
             run_id="$WORKFLOW_RUN_ID"
+            if ! has_dist_artifact "$run_id"; then
+              echo "CI run $run_id has no njupt-search-dist artifact; skipping EdgeOne deploy."
+              echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
           elif [ -n "$REQUESTED_RUN_ID" ]; then
             run_id="$REQUESTED_RUN_ID"
+            if ! has_dist_artifact "$run_id"; then
+              echo "::error::CI run $run_id has no unexpired njupt-search-dist artifact"
+              exit 1
+            fi
           else
-            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow CI --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+            run_id=""
+            for candidate_run_id in $(gh run list --repo "$GITHUB_REPOSITORY" --workflow CI --branch main --status success --limit 20 --json databaseId --jq '.[].databaseId'); do
+              if has_dist_artifact "$candidate_run_id"; then
+                run_id="$candidate_run_id"
+                break
+              fi
+            done
           fi
           if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
-            echo "::error::No successful main CI run found for EdgeOne deployment"
+            echo "::error::No successful main CI run with an unexpired njupt-search-dist artifact found for EdgeOne deployment"
             exit 1
           fi
           echo "should_deploy=true" >> "$GITHUB_OUTPUT"
