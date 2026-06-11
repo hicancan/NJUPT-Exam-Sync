@@ -23,6 +23,7 @@ def test_ci_is_single_authoritative_pages_gate():
     assert "    permissions:\n      contents: read\n      pages: write" in text
     assert "  pages-deploy:" in text
     assert "    permissions:\n      pages: write\n      id-token: write" in text
+    assert "    needs: [ci, pages-build]" in text
     assert "  edgeone-deploy:" not in text
     assert "GITHUB_STEP_SUMMARY" in text
     assert "npm run test:prepared" in text
@@ -50,8 +51,9 @@ def test_edgeone_deploy_uses_verified_ci_artifact_only():
     assert "download-artifact-with-retry.sh \"$RUN_ID\"" in text
     assert "njupt-search-dist dist" in text
     assert "EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}" in text
-    assert "EDGEONE_PAGES_PROJECT: ${{ vars.EDGEONE_PAGES_PROJECT || 'njupt-search' }}" in text
+    assert "EDGEONE_PROJECT_NAME: ${{ vars.EDGEONE_PROJECT_NAME || 'njupt-search' }}" in text
     assert "EDGEONE_PAGES_AREA: ${{ vars.EDGEONE_PAGES_AREA || 'overseas' }}" in text
+    assert "set -o pipefail" in text
     assert 'npx --yes edgeone@latest pages deploy ./dist -n "$project" -t "$EDGEONE_API_TOKEN" -e production -a "$area"' in text
     assert "EDGEONE_API_TOKEN secret is required" in text
     assert "npm run build" not in text
@@ -111,6 +113,8 @@ def test_collection_update_is_triggered_by_sitegraph_dispatch():
     assert "actions/upload-pages-artifact@v5" in text
     assert "actions/deploy-pages@v5" in text
     assert "name: njupt-search-production-dist" in text
+    assert "EDGEONE_PROJECT_NAME: ${{ vars.EDGEONE_PROJECT_NAME || 'njupt-search' }}" in text
+    assert "set -o pipefail" in text
     assert "npx --yes edgeone@latest pages deploy ./dist" in text
     assert "--add config/data-locks/sitegraph.lock.json" in text
     assert "--add apps/web/public/generated/collections/njupt-public/" not in text
@@ -153,6 +157,8 @@ def test_exam_update_uses_retrying_generated_commit_helper():
     assert "actions/upload-pages-artifact@v5" in text
     assert "actions/deploy-pages@v5" in text
     assert "name: njupt-search-production-dist" in text
+    assert "EDGEONE_PROJECT_NAME: ${{ vars.EDGEONE_PROJECT_NAME || 'njupt-search' }}" in text
+    assert "set -o pipefail" in text
     assert "npx --yes edgeone@latest pages deploy ./dist" in text
     assert "Update Exam Data" not in Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     assert "prepare_public_assets.py build-public-data" not in text
