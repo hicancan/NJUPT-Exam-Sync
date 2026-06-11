@@ -167,6 +167,23 @@ jobs:
             grep -E '^EDGEONE_(DEPLOY_URL|DEPLOY_TYPE|PROJECT_ID)=' edgeone-exam-fast-deploy.log || true
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Purge Cloudflare Cache
+        if: ${{ (steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true') && vars.CF_PURGE_ENABLED == '1' }}
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+        run: |
+          if [ -z "${CF_API_TOKEN}" ] || [ -z "${CF_ZONE_ID}" ]; then
+            echo "Skip purge: CF_API_TOKEN or CF_ZONE_ID is not set."
+            exit 0
+          fi
+          if ! curl --fail-with-body -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}'; then
+            echo "::warning::Cloudflare cache purge failed; static site deployments already completed."
+          fi
+
       - name: Upload production dist baseline
         if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
         uses: actions/upload-artifact@v7

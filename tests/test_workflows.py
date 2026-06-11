@@ -56,6 +56,9 @@ def test_edgeone_deploy_uses_verified_ci_artifact_only():
     assert "set -o pipefail" in text
     assert 'npx --yes edgeone@latest pages deploy ./dist -n "$project" -t "$EDGEONE_API_TOKEN" -e production -a "$area"' in text
     assert "EDGEONE_API_TOKEN secret is required" in text
+    assert "vars.CF_PURGE_ENABLED == '1'" in text
+    assert "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" in text
+    assert "Cloudflare cache purge failed; static site deployments already completed" in text
     assert "npm run build" not in text
     assert "npm run prepare:public-assets" not in text
 
@@ -116,6 +119,9 @@ def test_collection_update_is_triggered_by_sitegraph_dispatch():
     assert "EDGEONE_PROJECT_NAME: ${{ vars.EDGEONE_PROJECT_NAME || 'njupt-search' }}" in text
     assert "set -o pipefail" in text
     assert "npx --yes edgeone@latest pages deploy ./dist" in text
+    assert "vars.CF_PURGE_ENABLED == '1'" in text
+    assert "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" in text
+    assert "Cloudflare cache purge failed; static site deployments already completed" in text
     assert "--add config/data-locks/sitegraph.lock.json" in text
     assert "--add apps/web/public/generated/collections/njupt-public/" not in text
     assert "npm test" not in text
@@ -160,6 +166,9 @@ def test_exam_update_uses_retrying_generated_commit_helper():
     assert "EDGEONE_PROJECT_NAME: ${{ vars.EDGEONE_PROJECT_NAME || 'njupt-search' }}" in text
     assert "set -o pipefail" in text
     assert "npx --yes edgeone@latest pages deploy ./dist" in text
+    assert "vars.CF_PURGE_ENABLED == '1'" in text
+    assert "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" in text
+    assert "Cloudflare cache purge failed; static site deployments already completed" in text
     assert "Update Exam Data" not in Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     assert "prepare_public_assets.py build-public-data" not in text
     assert "Checkout sitegraph source packages" not in text
