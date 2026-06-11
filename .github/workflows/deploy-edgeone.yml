@@ -100,7 +100,7 @@ jobs:
         if: steps.resolve.outputs.should_deploy == 'true'
         env:
           EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
-          EDGEONE_PAGES_PROJECT: ${{ vars.EDGEONE_PAGES_PROJECT || 'njupt-search' }}
+          EDGEONE_PROJECT_NAME: ${{ vars.EDGEONE_PROJECT_NAME || 'njupt-search' }}
           EDGEONE_PAGES_AREA: ${{ vars.EDGEONE_PAGES_AREA || 'overseas' }}
         run: |
           set -o pipefail
@@ -108,7 +108,7 @@ jobs:
             echo "::error::EDGEONE_API_TOKEN secret is required"
             exit 1
           fi
-          project="${EDGEONE_PAGES_PROJECT:-njupt-search}"
+          project="${EDGEONE_PROJECT_NAME:-njupt-search}"
           area="${EDGEONE_PAGES_AREA:-overseas}"
           echo "Deploying verified CI artifact to EdgeOne Pages project '$project' in area '$area'."
           npx --yes edgeone@latest pages deploy ./dist -n "$project" -t "$EDGEONE_API_TOKEN" -e production -a "$area" | tee edgeone-deploy.log
