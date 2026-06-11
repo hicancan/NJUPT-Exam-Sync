@@ -103,6 +103,7 @@ jobs:
           EDGEONE_PAGES_PROJECT: ${{ vars.EDGEONE_PAGES_PROJECT || 'njupt-search' }}
           EDGEONE_PAGES_AREA: ${{ vars.EDGEONE_PAGES_AREA || 'overseas' }}
         run: |
+          set -o pipefail
           if [ -z "$EDGEONE_API_TOKEN" ]; then
             echo "::error::EDGEONE_API_TOKEN secret is required"
             exit 1
