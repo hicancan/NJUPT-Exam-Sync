@@ -23,7 +23,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: production-publish-${{ github.ref }}
+  group: production-publish-main
   cancel-in-progress: false
 
 jobs:
@@ -205,7 +205,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ steps.verified-dist.outputs.run_id }}
           ARTIFACT_NAME: ${{ steps.verified-dist.outputs.artifact_name }}
-        run: gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name "$ARTIFACT_NAME" --dir dist
+        run: bash .github/scripts/download-artifact-with-retry.sh "$RUN_ID" "$GITHUB_REPOSITORY" "$ARTIFACT_NAME" dist
 
       - name: Overlay validated generated data into verified site artifact
         if: ${{ steps.collection-plan.outputs.should_deploy == 'true' && steps.collection-plan.outputs.needs_data_build == 'true' }}
@@ -266,3 +266,32 @@ jobs:
           name: njupt-search-production-dist
           path: dist/
           retention-days: 7
+
+      - name: Publish collection workflow summary
+        if: always()
+        env:
+          NEEDS_DATA_BUILD: ${{ steps.collection-plan.outputs.needs_data_build || 'false' }}
+          SHOULD_DEPLOY: ${{ steps.collection-plan.outputs.should_deploy || 'false' }}
+          REQUESTED_REF: ${{ steps.sitegraph-ref.outputs.resolved_sha || '' }}
+          UPDATED_REF: ${{ steps.commit.outputs.updated_ref || '' }}
+          BASE_RUN_ID: ${{ steps.verified-dist.outputs.run_id || '' }}
+          BASE_ARTIFACT_NAME: ${{ steps.verified-dist.outputs.artifact_name || '' }}
+          EDGEONE_ENABLED: ${{ vars.EDGEONE_PAGES_ENABLED || 'false' }}
+        run: |
+          edgeone_deploy="false"
+          if [ "$SHOULD_DEPLOY" = "true" ] && [ "$EDGEONE_ENABLED" = "true" ]; then
+            edgeone_deploy="true"
+          fi
+          {
+            echo "### Collection update summary"
+            echo
+            echo "- Lock changed: \`${{ steps.commit.outputs.changed || 'false' }}\`"
+            echo "- Force deploy: \`$FORCE_DEPLOY\`"
+            echo "- Data build used: \`$NEEDS_DATA_BUILD\`"
+            echo "- Deployed GitHub Pages: \`$SHOULD_DEPLOY\`"
+            echo "- Deployed EdgeOne: \`$edgeone_deploy\`"
+            echo "- Base artifact run id: \`${BASE_RUN_ID:-none}\`"
+            echo "- Base artifact name: \`${BASE_ARTIFACT_NAME:-none}\`"
+            echo "- Requested lock ref: \`${REQUESTED_REF:-none}\`"
+            echo "- Final lock ref: \`${UPDATED_REF:-unchanged}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

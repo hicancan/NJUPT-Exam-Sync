@@ -42,12 +42,13 @@ def test_edgeone_deploy_uses_verified_ci_artifact_only():
     assert "workflow_dispatch:" in text
     assert "run_id:" in text
     assert "vars.EDGEONE_PAGES_ENABLED == 'true'" in text
-    assert "group: edgeone-pages-production" in text
+    assert "group: production-publish-main" in text
+    assert "Checkout workflow helpers" in text
     assert "has_dist_artifact()" in text
     assert "actions/runs/$candidate_run_id/artifacts" in text
     assert "has no njupt-search-dist artifact; skipping EdgeOne deploy" in text
-    assert "gh run download \"$RUN_ID\"" in text
-    assert "--name njupt-search-dist" in text
+    assert "download-artifact-with-retry.sh \"$RUN_ID\"" in text
+    assert "njupt-search-dist dist" in text
     assert "EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}" in text
     assert "EDGEONE_PAGES_PROJECT: ${{ vars.EDGEONE_PAGES_PROJECT || 'njupt-search' }}" in text
     assert "EDGEONE_PAGES_AREA: ${{ vars.EDGEONE_PAGES_AREA || 'overseas' }}" in text
@@ -72,7 +73,7 @@ def test_collection_update_is_triggered_by_sitegraph_dispatch():
     workflow = Path(".github/workflows/update-collection-index.yml")
     assert workflow.exists()
     text = workflow.read_text(encoding="utf-8")
-    assert "concurrency:\n  group: production-publish-${{ github.ref }}\n  cancel-in-progress: false" in text
+    assert "concurrency:\n  group: production-publish-main\n  cancel-in-progress: false" in text
     assert "actions: read" in text
     assert "pages: write" in text
     assert "id-token: write" in text
@@ -103,8 +104,8 @@ def test_collection_update_is_triggered_by_sitegraph_dispatch():
     assert 'select(.expired == false and .name == "njupt-search-dist")' in text
     assert 'select(.expired == false and .name == "njupt-search-production-dist")' in text
     assert "ARTIFACT_NAME: ${{ steps.verified-dist.outputs.artifact_name }}" in text
-    assert "gh run download \"$RUN_ID\"" in text
-    assert '--name "$ARTIFACT_NAME"' in text
+    assert "download-artifact-with-retry.sh \"$RUN_ID\"" in text
+    assert '"$ARTIFACT_NAME" dist' in text
     assert "rm -rf dist/generated" in text
     assert "cp -R apps/web/public/generated dist/generated" in text
     assert "actions/upload-pages-artifact@v5" in text
@@ -131,7 +132,7 @@ def test_exam_update_uses_retrying_generated_commit_helper():
     workflow = Path(".github/workflows/update-exam-data.yml")
     assert workflow.exists()
     text = workflow.read_text(encoding="utf-8")
-    assert "concurrency:\n  group: production-publish-${{ github.ref }}\n  cancel-in-progress: false" in text
+    assert "concurrency:\n  group: production-publish-main\n  cancel-in-progress: false" in text
     assert "actions: read" in text
     assert "pages: write" in text
     assert "id-token: write" in text
@@ -145,8 +146,8 @@ def test_exam_update_uses_retrying_generated_commit_helper():
     assert 'select(.expired == false and .name == "njupt-search-dist")' in text
     assert 'select(.expired == false and .name == "njupt-search-production-dist")' in text
     assert "ARTIFACT_NAME: ${{ steps.verified-dist.outputs.artifact_name }}" in text
-    assert "gh run download \"$RUN_ID\"" in text
-    assert '--name "$ARTIFACT_NAME"' in text
+    assert "download-artifact-with-retry.sh \"$RUN_ID\"" in text
+    assert '"$ARTIFACT_NAME" dist' in text
     assert "rm -rf dist/generated/exam" in text
     assert "cp -R apps/web/public/generated/exam dist/generated/exam" in text
     assert "actions/upload-pages-artifact@v5" in text
@@ -192,3 +193,13 @@ def test_generated_commit_helper_retries_push_after_rebase():
     assert 'git", "fetch", "origin", branch' in text
     assert 'git", "rebase", f"origin/{branch}"' in text
     assert "GITHUB_OUTPUT" in text
+
+
+def test_github_artifact_downloads_retry_transient_failures():
+    helper = Path(".github/scripts/download-artifact-with-retry.sh")
+    assert helper.exists()
+    text = helper.read_text(encoding="utf-8")
+    assert "for attempt in 1 2 3 4 5" in text
+    assert "gh run download" in text
+    assert 'rm -rf "$output_dir"' in text
+    assert "artifact download failed after 5 attempts" in text

@@ -23,12 +23,15 @@ jobs:
       actions: read
       contents: read
     concurrency:
-      group: edgeone-pages-production
-      cancel-in-progress: true
+      group: production-publish-main
+      cancel-in-progress: false
     environment:
       name: edgeone-pages
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout workflow helpers
+        uses: actions/checkout@v6
+
       - name: Resolve verified CI artifact run
         id: resolve
         env:
@@ -85,7 +88,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ steps.resolve.outputs.run_id }}
-        run: gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name njupt-search-dist --dir dist
+        run: bash .github/scripts/download-artifact-with-retry.sh "$RUN_ID" "$GITHUB_REPOSITORY" njupt-search-dist dist
 
       - name: Set up Node
         if: steps.resolve.outputs.should_deploy == 'true'

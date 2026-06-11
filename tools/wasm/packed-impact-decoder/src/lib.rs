@@ -2,40 +2,21 @@ use std::collections::{HashMap, HashSet};
 use std::str;
 use wasm_bindgen::prelude::*;
 
+mod apply_stats;
 mod dense_scores;
 mod packed_format;
 mod score_entries;
+use apply_stats::ApplyStats;
 use dense_scores::DenseScores;
 use packed_format::{Cursor, PackedFormat, Stats};
-use score_entries::{score_entries_to_f64, sorted_score_entries, top_doc_ids};
+use score_entries::{
+    score_entries_to_f64, sorted_score_entries, top_doc_ids, top_doc_ids_from_sorted,
+};
 
 struct ImpactBlock {
     key: u64,
     impact: f64,
     ids: Vec<u64>,
-}
-
-struct ApplyStats {
-    impact_blocks_visited: u64,
-    impact_blocks_pruned: u64,
-    postings_visited: u64,
-    postings_pruned: u64,
-    competitive_threshold: f64,
-}
-
-impl ApplyStats {
-    fn to_f64(&self, matched_term_count: u64, block_count: usize, candidate_count: usize) -> Vec<f64> {
-        vec![
-            matched_term_count as f64,
-            block_count as f64,
-            candidate_count as f64,
-            self.impact_blocks_visited as f64,
-            self.impact_blocks_pruned as f64,
-            self.postings_visited as f64,
-            self.postings_pruned as f64,
-            self.competitive_threshold,
-        ]
-    }
 }
 
 fn json_string(value: &str) -> Result<String, JsValue> {
@@ -239,7 +220,9 @@ fn collect_query_terms_utf8<'a>(
     query_term_offsets: &[u32],
 ) -> Result<Vec<&'a str>, JsValue> {
     if query_term_offsets.len() % 2 != 0 {
-        return Err(JsValue::from_str("query term offsets must contain start/end pairs"));
+        return Err(JsValue::from_str(
+            "query term offsets must contain start/end pairs",
+        ));
     }
     let mut terms = Vec::with_capacity(query_term_offsets.len() / 2);
     for pair in query_term_offsets.chunks(2) {
@@ -292,7 +275,14 @@ fn collect_packed_impact_blocks_for_terms(
                 if selected_terms.contains(term.as_str()) {
                     matched_term_count += 1;
                     let fields = collect_fields(&mut cursor)?;
-                    push_term_blocks(&mut blocks, &term, term_ordinal, fields, block_size, &field_impacts);
+                    push_term_blocks(
+                        &mut blocks,
+                        &term,
+                        term_ordinal,
+                        fields,
+                        block_size,
+                        &field_impacts,
+                    );
                 } else {
                     scan_fields(&mut cursor)?;
                 }
@@ -306,7 +296,14 @@ fn collect_packed_impact_blocks_for_terms(
                 if selected_terms.contains(term.as_str()) {
                     matched_term_count += 1;
                     let fields = collect_fields(&mut payload_cursor)?;
-                    push_term_blocks(&mut blocks, &term, term_ordinal as u64, fields, block_size, &field_impacts);
+                    push_term_blocks(
+                        &mut blocks,
+                        &term,
+                        term_ordinal as u64,
+                        fields,
+                        block_size,
+                        &field_impacts,
+                    );
                     if !payload_cursor.is_done() {
                         return Err(JsValue::from_str(
                             "trailing bytes in packed impact term payload",
@@ -372,7 +369,11 @@ fn apply_impact_blocks_to_scores(
         impact_blocks_pruned,
         postings_visited,
         postings_pruned,
-        competitive_threshold: if competitive.is_finite() { competitive } else { 0.0 },
+        competitive_threshold: if competitive.is_finite() {
+            competitive
+        } else {
+            0.0
+        },
     })
 }
 
@@ -517,13 +518,13 @@ impl PackedImpactRetrievalSession {
     pub fn scores_json(&self) -> String {
         serde_json::json!({
             "candidate_count": self.scores.len(),
-            "score_entries": sorted_score_entries(&self.scores.entries()),
+            "score_entries": sorted_score_entries(self.scores.entries()),
         })
         .to_string()
     }
 
     pub fn score_entries_f64(&self) -> Vec<f64> {
-        let entries = sorted_score_entries(&self.scores.entries());
+        let entries = sorted_score_entries(self.scores.entries());
         score_entries_to_f64(&entries)
     }
 }
@@ -662,7 +663,7 @@ pub fn retrieve_packed_impact_topk_stats_utf8(
         "postings_visited": stats.postings_visited,
         "postings_pruned": stats.postings_pruned,
         "competitive_threshold": stats.competitive_threshold,
-        "top_doc_ids": top_doc_ids(&scores.entries(), 20),
+        "top_doc_ids": top_doc_ids(scores.entries(), 20),
     })
     .to_string())
 }
@@ -678,7 +679,7 @@ pub fn retrieve_packed_impact_topk_scores_utf8(
         collect_packed_impact_blocks_utf8(bytes, query_terms_utf8, query_term_offsets)?;
     let mut scores = DenseScores::default();
     let stats = apply_impact_blocks_to_scores(&blocks, target_candidates, &mut scores)?;
-    let entries = scores.entries();
+    let entries = sorted_score_entries(scores.entries());
 
     Ok(serde_json::json!({
         "matched_term_count": matched_term_count,
@@ -689,8 +690,8 @@ pub fn retrieve_packed_impact_topk_scores_utf8(
         "postings_visited": stats.postings_visited,
         "postings_pruned": stats.postings_pruned,
         "competitive_threshold": stats.competitive_threshold,
-        "top_doc_ids": top_doc_ids(&entries, 20),
-        "score_entries": sorted_score_entries(&entries),
+        "top_doc_ids": top_doc_ids_from_sorted(&entries, 20),
+        "score_entries": entries,
     })
     .to_string())
 }
