@@ -9,7 +9,7 @@ import type {
     SitegraphSearchFilters,
     SitegraphSearchPhase,
     SitegraphSortMode
-} from '@njupt-search/contracts';
+} from '@njupt-search/contracts/search-index';
 import { sitegraphDocumentMatchesFilters } from './sitegraphFilters';
 import { rankSitegraphDocument } from './ranking/rankDocument';
 import { SearchContractError } from './sitegraphContract';

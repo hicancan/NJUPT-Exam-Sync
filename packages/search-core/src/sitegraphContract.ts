@@ -24,7 +24,7 @@ import {
     SitegraphSourceManifestSchema,
     SitegraphSourceRegistry,
     SitegraphSourceRegistrySchema
-} from '@njupt-search/contracts';
+} from '@njupt-search/contracts/search-index';
 import { z } from 'zod';
 
 export class SearchContractError extends Error {

@@ -1,4 +1,4 @@
-import type { SitegraphImpactIndex, SitegraphLocalBodyIndex } from '@njupt-search/contracts';
+import type { SitegraphImpactIndex, SitegraphLocalBodyIndex } from '@njupt-search/contracts/search-index';
 
 const MAGIC_V1 = 'SGIXB001';
 const MAGIC_V2 = 'SGIXB002';

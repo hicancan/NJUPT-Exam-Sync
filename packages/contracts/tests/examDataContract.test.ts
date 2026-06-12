@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
     ExamSchema,
+    ExamClassHistorySchema,
+    ExamHistoryManifestSchema,
     ManifestSchema
 } from '../src/exam';
 import { z } from 'zod';
@@ -14,10 +16,14 @@ describe('exam data contract package', () => {
     it('accepts the committed public data file shapes', () => {
         const exams = z.array(ExamSchema).parse(loadPublicJson('../../../apps/web/public/generated/exam/all_exams.json'));
         const manifest = ManifestSchema.parse(loadPublicJson('../../../apps/web/public/generated/exam/data_summary.json'));
+        const historyManifest = ExamHistoryManifestSchema.parse(loadPublicJson('../../../apps/web/public/generated/exam/history/manifest.json'));
+        const b240402 = ExamClassHistorySchema.parse(loadPublicJson('../../../apps/web/public/generated/exam/history/classes/b240402.json'));
 
         expect(exams.length).toBeGreaterThan(0);
         expect(manifest.files_processed.length).toBeGreaterThan(0);
         expect(manifest.data_version).toMatch(/^[a-f0-9]{64}$/);
+        expect(historyManifest.latest_data_version).toBe(manifest.data_version);
+        expect(b240402.class_name).toBe('B240402');
     });
 
     it('rejects invalid exam field shapes', () => {

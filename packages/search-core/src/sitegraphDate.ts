@@ -1,4 +1,4 @@
-import type { SitegraphDocMeta, SitegraphFullDocument } from '@njupt-search/contracts';
+import type { SitegraphDocMeta, SitegraphFullDocument } from '@njupt-search/contracts/search-index';
 
 type SitegraphDatedRecord = Pick<
     SitegraphDocMeta | SitegraphFullDocument,

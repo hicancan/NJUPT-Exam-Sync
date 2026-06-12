@@ -1,12 +1,14 @@
 import { APP_CONFIG } from '@/app/config/constants';
 import {
-    SitegraphArtifactCacheStats,
     SitegraphFacetSchema,
+} from '@njupt-search/contracts/search-index';
+import type {
+    SitegraphArtifactCacheStats,
     SitegraphFilterOptions,
     SitegraphRoutedSession,
     SitegraphSearchManifest,
     SitegraphSourceRegistry,
-} from '@/shared/lib/contracts';
+} from '@njupt-search/contracts/search-index';
 import { fetchJson } from '@/shared/lib/fetch';
 import {
     fetchJsonArtifact,

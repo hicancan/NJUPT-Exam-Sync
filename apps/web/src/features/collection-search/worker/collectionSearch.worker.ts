@@ -4,7 +4,7 @@ import type {
     SitegraphSearchEvent,
     SitegraphSearchFilters,
     SitegraphSortMode,
-} from '@/shared/lib/contracts';
+} from '@njupt-search/contracts/search-index';
 import {
     clearSitegraphRuntimeCaches,
     createBrowserContentHashArtifactCache,

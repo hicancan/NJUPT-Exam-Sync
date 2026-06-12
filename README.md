@@ -174,7 +174,9 @@ npm run dev
 
 ```powershell
 # 例如，更新并抓取最新的考试安排：
-uv run python tools/exam-pipeline/src/njupt_exam_pipeline/analyze_and_update.py
+uv run python tools/ci/prepare_public_assets.py update-exam-lock
+uv run python tools/ci/prepare_public_assets.py build-exam-public-data
+uv run python tools/ci/prepare_public_assets.py verify-exam-public-data
 
 # 执行静态包体积监控与回归验证：
 uv run python tools/quality-gates/scripts/check_public_artifact_sizes.py

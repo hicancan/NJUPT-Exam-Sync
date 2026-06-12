@@ -5,17 +5,18 @@ from contextlib import contextmanager
 import hashlib
 import json
 import os
-import shutil
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import requests
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin
+from njupt_exam_pipeline.contract import ExamPipelineError
+from njupt_exam_pipeline.history import build_exam_history, process_exam_snapshot_dir, write_exam_history
+from njupt_exam_pipeline.source import (
+    materialize_locked_exam_files,
+    update_exam_lock as update_exam_lock_from_source,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -24,6 +25,7 @@ PUBLIC_GENERATED = PUBLIC_ROOT / "generated"
 COLLECTION_DIR = PUBLIC_GENERATED / "collections" / "njupt-public"
 EXAM_DIR = PUBLIC_GENERATED / "exam"
 EXAM_DOWNLOAD_CACHE = REPO_ROOT / "cache" / "exam-lock"
+EXAM_HISTORY_CACHE = REPO_ROOT / "cache" / "exam-history"
 PUBLIC_ASSET_MARKER = PUBLIC_GENERATED / ".asset-locks.json"
 SITEGRAPH_LOCK = REPO_ROOT / "config" / "data-locks" / "sitegraph.lock.json"
 EXAM_LOCK = REPO_ROOT / "config" / "data-locks" / "exam.lock.json"
@@ -34,21 +36,6 @@ BUILDER_FINGERPRINT_INPUTS = (
     REPO_ROOT / "tools" / "exam-pipeline" / "src",
     REPO_ROOT / "pyproject.toml",
     REPO_ROOT / "uv.lock",
-)
-JWC_LIST_URL = "https://jwc.njupt.edu.cn/1594/list.htm"
-JWC_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
-    "Referer": "https://jwc.njupt.edu.cn/",
-}
-REQUIRED_EXAM_TITLE_KEYWORDS = ("学年", "学期")
-TARGET_EXAM_TITLE_KEYWORDS = ("考试安排表", "期末考试", "课程结束考试")
-EXCLUDED_EXAM_TITLE_KEYWORDS = ("阶段性", "补考", "清欠", "分级", "补学", "换证", "重修", "选拔", "竞赛", "发车", "监考")
-RETRYABLE_HTTP_STATUS_CODES = frozenset({408, 409, 425, 429, 500, 502, 503, 504})
-RETRYABLE_REQUEST_EXCEPTIONS = (
-    requests.exceptions.ChunkedEncodingError,
-    requests.exceptions.ConnectionError,
-    requests.exceptions.SSLError,
-    requests.exceptions.Timeout,
 )
 
 
@@ -91,56 +78,6 @@ def capture(args: list[str], *, cwd: Path = REPO_ROOT) -> str:
     return subprocess.check_output(args, cwd=cwd, text=True).strip()
 
 
-def get_url_with_retries(
-    url: str,
-    *,
-    headers: dict[str, str] | None = None,
-    timeout: int,
-    verify: bool,
-    purpose: str,
-    attempts: int = 4,
-) -> requests.Response:
-    if attempts < 1:
-        raise PublicAssetError("download attempts must be positive")
-    for attempt in range(1, attempts + 1):
-        try:
-            response = requests.get(url, headers=headers, timeout=timeout, verify=verify)
-            if response.status_code in RETRYABLE_HTTP_STATUS_CODES and attempt < attempts:
-                print(
-                    f"[prepare_public_assets] {purpose} returned HTTP {response.status_code}; "
-                    f"retrying {attempt}/{attempts}",
-                    file=sys.stderr,
-                    flush=True,
-                )
-                time.sleep(min(2 ** (attempt - 1), 8))
-                continue
-            response.raise_for_status()
-            return response
-        except RETRYABLE_REQUEST_EXCEPTIONS as exc:
-            if attempt >= attempts:
-                raise PublicAssetError(f"{purpose} failed after {attempts} attempts: {url}") from exc
-            print(
-                f"[prepare_public_assets] {purpose} failed with {exc.__class__.__name__}; "
-                f"retrying {attempt}/{attempts}",
-                file=sys.stderr,
-                flush=True,
-            )
-            time.sleep(min(2 ** (attempt - 1), 8))
-        except requests.exceptions.HTTPError as exc:
-            status_code = exc.response.status_code if exc.response is not None else None
-            if status_code in RETRYABLE_HTTP_STATUS_CODES and attempt < attempts:
-                print(
-                    f"[prepare_public_assets] {purpose} returned HTTP {status_code}; "
-                    f"retrying {attempt}/{attempts}",
-                    file=sys.stderr,
-                    flush=True,
-                )
-                time.sleep(min(2 ** (attempt - 1), 8))
-                continue
-            raise PublicAssetError(f"{purpose} returned HTTP {status_code}: {url}") from exc
-    raise PublicAssetError(f"{purpose} failed without returning a response: {url}")
-
-
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -170,76 +107,113 @@ def public_asset_builder_fingerprint() -> str:
     return digest.hexdigest()
 
 
+def exam_lock_history_paths() -> list[Path]:
+    lock_rel = EXAM_LOCK.relative_to(REPO_ROOT).as_posix()
+    history_lock_dir = EXAM_HISTORY_CACHE / "locks"
+    history_lock_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        raw_log = capture(["git", "log", "--format=%H", "--", lock_rel])
+    except subprocess.CalledProcessError as exc:
+        raise PublicAssetError("cannot read exam.lock.json history from Git") from exc
+
+    commits = [line.strip() for line in raw_log.splitlines() if line.strip()]
+    entries: list[tuple[str, Path]] = []
+    seen: set[str] = set()
+
+    def semantic_key(lock: dict[str, Any]) -> str:
+        files = lock.get("files")
+        if not isinstance(files, list) or not files:
+            raise PublicAssetError("exam lock files must be a non-empty list")
+        payload = {
+            "generated_at": lock.get("generated_at"),
+            "source_url": lock.get("source_url"),
+            "source_title": lock.get("source_title"),
+            "files": [
+                {
+                    "name": item.get("name"),
+                    "url": item.get("url"),
+                    "sha256": item.get("sha256"),
+                }
+                for item in files
+                if isinstance(item, dict)
+            ],
+        }
+        return json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+    for commit in reversed(commits):
+        try:
+            raw = subprocess.check_output(["git", "show", f"{commit}:{lock_rel}"], cwd=REPO_ROOT)
+        except subprocess.CalledProcessError as exc:
+            raise PublicAssetError(f"cannot read historical exam lock at {commit}") from exc
+        digest = hashlib.sha256(raw).hexdigest()
+        if digest in seen:
+            continue
+        path = history_lock_dir / f"{digest}.json"
+        path.write_bytes(raw)
+        lock = read_json(path)
+        if lock.get("version") != "njupt-search-exam-lock-v1":
+            raise PublicAssetError(f"invalid historical exam lock version at {commit}")
+        if not str(lock.get("generated_at") or "").strip():
+            raise PublicAssetError(f"historical exam lock missing generated_at at {commit}")
+        seen.add(digest)
+        entries.append((semantic_key(lock), path))
+
+    current_raw = EXAM_LOCK.read_bytes()
+    current_digest = hashlib.sha256(current_raw).hexdigest()
+    current_path = history_lock_dir / f"{current_digest}.json"
+    if current_digest not in seen:
+        current_path.write_bytes(current_raw)
+    current_key = semantic_key(read_json(current_path))
+    entries = [(key, path) for key, path in entries if key != current_key]
+    entries.append((current_key, current_path))
+
+    paths = [path for _, path in entries]
+    if len(paths) < 2:
+        raise PublicAssetError("exam history requires at least two lock snapshots")
+    return paths
+
+
+def build_exam_history_data(*, generated_at: str) -> None:
+    snapshots = []
+    lock_paths = exam_lock_history_paths()
+    for lock_path in lock_paths:
+        lock = read_json(lock_path)
+        data_version = sha256_file(lock_path)
+        snapshot_dir = EXAM_HISTORY_CACHE / "snapshots" / data_version
+        with timed_phase(f"materialize exam history snapshot {data_version[:8]}"):
+            try:
+                materialize_locked_exam_files(lock_path=lock_path, exam_dir=snapshot_dir, cache_root=EXAM_DOWNLOAD_CACHE)
+                snapshots.append(
+                    process_exam_snapshot_dir(
+                        data_dir=snapshot_dir,
+                        data_version=data_version,
+                        auto_updated_at=str(lock.get("generated_at") or ""),
+                    )
+                )
+            except ExamPipelineError as exc:
+                raise PublicAssetError(str(exc)) from exc
+    manifest, class_files = build_exam_history(snapshots, generated_at=generated_at)
+    write_exam_history(output_dir=EXAM_DIR, manifest=manifest, class_files=class_files)
+
+
 def materialize_exam_data() -> None:
     lock = read_json(EXAM_LOCK)
     lock_sha256 = sha256_file(EXAM_LOCK)
     generated_at = str(lock.get("generated_at") or "").strip()
     if not generated_at:
         raise PublicAssetError(f"{EXAM_LOCK} missing generated_at")
-    files = lock.get("files")
-    if not isinstance(files, list) or not files:
-        raise PublicAssetError(f"{EXAM_LOCK} files must be a non-empty list")
 
     with timed_phase("materialize exam public data"):
-        EXAM_DIR.mkdir(parents=True, exist_ok=True)
-        cache_dir = EXAM_DOWNLOAD_CACHE / lock_sha256
-        cache_dir.mkdir(parents=True, exist_ok=True)
-
-        downloaded_names: list[str] = []
-        verify_tls = str(lock.get("tls_verify", True)).strip().lower() not in {"0", "false", "no"}
-        for item in files:
-            if not isinstance(item, dict):
-                raise PublicAssetError(f"{EXAM_LOCK} files entries must be objects")
-            name = str(item.get("name") or "").strip()
-            url = str(item.get("url") or "").strip()
-            expected_sha256 = str(item.get("sha256") or "").strip().lower()
-            if not name or not url or not expected_sha256:
-                raise PublicAssetError(f"{EXAM_LOCK} file entry missing name/url/sha256")
-            target = EXAM_DIR / name
-            cache_target = cache_dir / name
-            if target.exists() and sha256_file(target) == expected_sha256:
-                pass
-            elif cache_target.exists() and sha256_file(cache_target) == expected_sha256:
-                shutil.copy2(cache_target, target)
-            else:
-                response = get_url_with_retries(
-                    url,
-                    headers=JWC_HEADERS,
-                    timeout=60,
-                    verify=verify_tls,
-                    purpose=f"download exam file {name}",
-                )
-                tmp_target = cache_target.with_suffix(cache_target.suffix + ".tmp")
-                tmp_target.write_bytes(response.content)
-                actual_sha256 = sha256_file(tmp_target)
-                if actual_sha256 != expected_sha256:
-                    tmp_target.unlink(missing_ok=True)
-                    raise PublicAssetError(
-                        f"exam lock hash mismatch for {name}: expected {expected_sha256}, got {actual_sha256}"
-                    )
-                tmp_target.replace(cache_target)
-                shutil.copy2(cache_target, target)
-            downloaded_names.append(name)
-        expected_names = set(downloaded_names)
-        for stale_excel in EXAM_DIR.glob("*.xls*"):
-            if stale_excel.name not in expected_names:
-                stale_excel.unlink()
-
-        write_json(
-            EXAM_DIR / "source_metadata.json",
-            {
-                "source_url": lock.get("source_url"),
-                "source_title": lock.get("source_title"),
-                "downloaded_files": downloaded_names,
-                "updated_at": generated_at,
-                "data_version": lock_sha256,
-            },
-        )
+        try:
+            materialize_locked_exam_files(lock_path=EXAM_LOCK, exam_dir=EXAM_DIR, cache_root=EXAM_DOWNLOAD_CACHE)
+        except ExamPipelineError as exc:
+            raise PublicAssetError(str(exc)) from exc
 
         env = os.environ.copy()
         env["NJUPT_SEARCH_GENERATED_AT"] = generated_at
         env["NJUPT_SEARCH_EXAM_DATA_VERSION"] = lock_sha256
         run([sys.executable, "-m", "njupt_exam_pipeline", "process"], env=env)
+        build_exam_history_data(generated_at=generated_at)
 
 
 def resolve_sitegraph_repo(lock: dict[str, Any]) -> Path:
@@ -411,6 +385,7 @@ def public_data_current() -> bool:
         and (COLLECTION_DIR / "manifest.json").exists()
         and (EXAM_DIR / "all_exams.json").exists()
         and (EXAM_DIR / "data_summary.json").exists()
+        and (EXAM_DIR / "history" / "manifest.json").exists()
     )
 
 
@@ -426,6 +401,7 @@ def ensure_public_assets_exist() -> None:
         COLLECTION_DIR / "manifest.json",
         EXAM_DIR / "all_exams.json",
         EXAM_DIR / "data_summary.json",
+        EXAM_DIR / "history" / "manifest.json",
     ]
     missing = [str(path.relative_to(REPO_ROOT)) for path in required if not path.exists()]
     if missing:
@@ -451,12 +427,18 @@ def verify_exam_public_data() -> None:
     summary_path = EXAM_DIR / "data_summary.json"
     exams_path = EXAM_DIR / "all_exams.json"
     metadata_path = EXAM_DIR / "source_metadata.json"
-    for path in (summary_path, exams_path, metadata_path):
+    history_manifest_path = EXAM_DIR / "history" / "manifest.json"
+    for path in (summary_path, exams_path, metadata_path, history_manifest_path):
         if not path.exists():
             raise PublicAssetError(f"missing generated exam public asset: {path.relative_to(REPO_ROOT)}")
+    if (EXAM_DIR / "change_summary.json").exists():
+        raise PublicAssetError("legacy exam change_summary.json must not be generated")
+    if (EXAM_DIR / "changes").exists():
+        raise PublicAssetError("legacy exam changes directory must not be generated")
 
     summary = read_json(summary_path)
     metadata = read_json(metadata_path)
+    history_manifest = read_json(history_manifest_path)
     with exams_path.open("r", encoding="utf-8") as handle:
         exams = json.load(handle)
     if not isinstance(exams, list) or not exams:
@@ -478,12 +460,41 @@ def verify_exam_public_data() -> None:
     total_records = summary.get("total_records")
     if not isinstance(total_records, int) or total_records != len(exams):
         raise PublicAssetError("exam data_summary total_records does not match all_exams length")
+    if history_manifest.get("version") != "exam-history-manifest-v1":
+        raise PublicAssetError("exam history manifest version is invalid")
+    if history_manifest.get("latest_data_version") != expected_data_version:
+        raise PublicAssetError("exam history manifest latest_data_version does not match exam lock")
+    history_totals = history_manifest.get("totals")
+    if not isinstance(history_totals, dict) or history_totals.get("current_record_count") != len(exams):
+        raise PublicAssetError("exam history manifest current_record_count does not match all_exams length")
+    snapshots = history_manifest.get("snapshots")
+    if not isinstance(snapshots, list) or len(snapshots) < 2:
+        raise PublicAssetError("exam history manifest must contain at least two snapshots")
+    classes = history_manifest.get("classes")
+    if not isinstance(classes, list) or not classes:
+        raise PublicAssetError("exam history manifest classes must be a non-empty list")
+    for item in classes:
+        if not isinstance(item, dict):
+            raise PublicAssetError("exam history manifest classes entries must be objects")
+        path_value = str(item.get("path") or "")
+        if not path_value.startswith("generated/exam/history/classes/") or not path_value.endswith(".json"):
+            raise PublicAssetError(f"invalid exam class history path: {path_value}")
+        class_history_path = PUBLIC_ROOT / path_value
+        class_payload = read_json(class_history_path)
+        if class_payload.get("version") != "exam-class-history-v1":
+            raise PublicAssetError(f"invalid exam class history version: {path_value}")
+        if class_payload.get("latest_data_version") != expected_data_version:
+            raise PublicAssetError(f"exam class history latest_data_version mismatch: {path_value}")
+        if not isinstance(class_payload.get("checkpoints"), list) or not class_payload["checkpoints"]:
+            raise PublicAssetError(f"exam class history checkpoints must be non-empty: {path_value}")
     print(
         json.dumps(
             {
                 "exam_public_data_records": total_records,
                 "exam_source_url": summary.get("source_url"),
                 "exam_source_title": summary.get("source_title"),
+                "exam_history_snapshots": len(snapshots),
+                "exam_history_classes": len(classes),
             },
             ensure_ascii=False,
             indent=2,
@@ -509,119 +520,15 @@ def verify_determinism() -> None:
     print(json.dumps({"deterministic_public_generated_files": len(second)}, ensure_ascii=False, indent=2))
 
 
-def is_valid_exam_title(title: str) -> bool:
-    return (
-        all(keyword in title for keyword in REQUIRED_EXAM_TITLE_KEYWORDS)
-        and any(keyword in title for keyword in TARGET_EXAM_TITLE_KEYWORDS)
-        and not any(keyword in title for keyword in EXCLUDED_EXAM_TITLE_KEYWORDS)
-    )
-
-
-def is_student_exam_file(name: str) -> bool:
-    return "学生" in name
-
-
-def is_teacher_exam_file(name: str) -> bool:
-    return any(keyword in name for keyword in ("监考", "教师", "巡考", "教务员"))
-
-
-def discover_latest_exam_notice(*, tls_verify: bool) -> tuple[str, str]:
-    response = get_url_with_retries(
-        JWC_LIST_URL,
-        headers=JWC_HEADERS,
-        timeout=30,
-        verify=tls_verify,
-        purpose="discover latest exam notice list",
-    )
-    response.encoding = "utf-8"
-    soup = BeautifulSoup(response.text, "html.parser")
-    container = soup.select_one("div.col_news_con")
-    if container is None:
-        raise PublicAssetError("exam notice list container div.col_news_con was not found")
-    for item in container.select("li.news"):
-        title_span = item.select_one("span.news_title")
-        link = title_span.find("a") if title_span else item.find("a")
-        if link is None:
-            continue
-        title = str(link.get("title") or link.get_text(strip=True)).strip()
-        href = str(link.get("href") or "").strip()
-        if href and is_valid_exam_title(title):
-            return urljoin(JWC_LIST_URL, href), title
-    raise PublicAssetError("no valid current exam schedule notice found")
-
-
-def discover_exam_files(source_url: str, *, tls_verify: bool) -> list[dict[str, str]]:
-    response = get_url_with_retries(
-        source_url,
-        headers=JWC_HEADERS,
-        timeout=30,
-        verify=tls_verify,
-        purpose="discover exam files",
-    )
-    response.encoding = "utf-8"
-    soup = BeautifulSoup(response.text, "html.parser")
-    candidates: list[dict[str, str]] = []
-    for link in soup.find_all("a"):
-        href = str(link.get("href") or "").strip()
-        if not href.lower().endswith((".xls", ".xlsx")):
-            continue
-        name = str(link.get_text(strip=True) or Path(href).name).strip()
-        if not name.lower().endswith((".xls", ".xlsx")):
-            name = Path(href).name
-        candidates.append({"name": name, "url": urljoin(source_url, href)})
-    if not candidates:
-        raise PublicAssetError(f"no Excel attachments found in {source_url}")
-    student_files = [item for item in candidates if is_student_exam_file(item["name"])]
-    selected = student_files or [item for item in candidates if not is_teacher_exam_file(item["name"])]
-    if not selected:
-        raise PublicAssetError(f"no student/non-teacher Excel attachments found in {source_url}")
-    return selected
-
-
 def update_exam_lock() -> None:
-    existing = read_json(EXAM_LOCK) if EXAM_LOCK.exists() else {}
-    tls_verify = str(existing.get("tls_verify", True)).strip().lower() not in {"0", "false", "no"}
-    source_url, source_title = discover_latest_exam_notice(tls_verify=tls_verify)
-    files = []
-    for item in discover_exam_files(source_url, tls_verify=tls_verify):
-        response = get_url_with_retries(
-            item["url"],
-            headers=JWC_HEADERS,
-            timeout=60,
-            verify=tls_verify,
-            purpose=f"download exam lock candidate {item['name']}",
-        )
-        digest = hashlib.sha256(response.content).hexdigest()
-        files.append(
-            {
-                "name": item["name"],
-                "url": item["url"],
-                "sha256": digest,
-                "etag": response.headers.get("etag"),
-                "last_modified": response.headers.get("last-modified"),
-            }
-        )
-    existing_files = existing.get("files") if isinstance(existing.get("files"), list) else []
-    changed = (
-        existing.get("source_url") != source_url
-        or existing.get("source_title") != source_title
-        or existing_files != files
-    )
-    generated_at = (
-        datetime.now(timezone.utc).isoformat()
-        if changed
-        else str(existing.get("generated_at") or files[0].get("last_modified") or "")
-    )
-    payload = {
-        "version": "njupt-search-exam-lock-v1",
-        "source_url": source_url,
-        "source_title": source_title,
-        "generated_at": generated_at,
-        "tls_verify": tls_verify,
-        "files": files,
-    }
-    write_json(EXAM_LOCK, payload)
-    print(json.dumps({"updated": str(EXAM_LOCK.relative_to(REPO_ROOT)), "file_count": len(files)}, ensure_ascii=False, indent=2))
+    try:
+        update_exam_lock_from_source(EXAM_LOCK)
+    except ExamPipelineError as exc:
+        raise PublicAssetError(str(exc)) from exc
+    lock = read_json(EXAM_LOCK)
+    files = lock.get("files")
+    file_count = len(files) if isinstance(files, list) else 0
+    print(json.dumps({"updated": str(EXAM_LOCK.relative_to(REPO_ROOT)), "file_count": file_count}, ensure_ascii=False, indent=2))
 
 
 def update_sitegraph_lock(sitegraph_ref: str | None) -> None:

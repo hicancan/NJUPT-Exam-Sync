@@ -3,7 +3,7 @@ import type {
     SitegraphQueryStats,
     SitegraphRoutedSession,
     SitegraphSearchEvent
-} from '@njupt-search/contracts';
+} from '@njupt-search/contracts/search-index';
 import { SearchContractError } from './sitegraphContract';
 import { searchSitegraphProgressively } from './sitegraphSearch';
 

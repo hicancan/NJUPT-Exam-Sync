@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import requests
 
-from tools.ci import prepare_public_assets
+from njupt_exam_pipeline import source
 
 
 def make_response(status_code: int, body: bytes = b"ok") -> requests.Response:
@@ -22,10 +22,10 @@ def test_get_url_with_retries_recovers_from_transient_ssl(monkeypatch) -> None:
             raise requests.exceptions.SSLError("transient eof")
         return make_response(200, b"stable")
 
-    monkeypatch.setattr(prepare_public_assets.requests, "get", fake_get)
-    monkeypatch.setattr(prepare_public_assets.time, "sleep", lambda _seconds: None)
+    monkeypatch.setattr(source.requests, "get", fake_get)
+    monkeypatch.setattr(source.time, "sleep", lambda _seconds: None)
 
-    response = prepare_public_assets.get_url_with_retries(
+    response = source.get_url_with_retries(
         "https://example.invalid/file.xlsx",
         timeout=60,
         verify=True,
@@ -43,17 +43,17 @@ def test_get_url_with_retries_rejects_non_retryable_http(monkeypatch) -> None:
         calls.append((args, kwargs))
         return make_response(404)
 
-    monkeypatch.setattr(prepare_public_assets.requests, "get", fake_get)
-    monkeypatch.setattr(prepare_public_assets.time, "sleep", lambda _seconds: None)
+    monkeypatch.setattr(source.requests, "get", fake_get)
+    monkeypatch.setattr(source.time, "sleep", lambda _seconds: None)
 
     try:
-        prepare_public_assets.get_url_with_retries(
+        source.get_url_with_retries(
             "https://example.invalid/missing.xlsx",
             timeout=60,
             verify=True,
             purpose="test download",
         )
-    except prepare_public_assets.PublicAssetError as exc:
+    except source.ExamPipelineError as exc:
         assert "HTTP 404" in str(exc)
     else:
         raise AssertionError("expected PublicAssetError")

@@ -1,4 +1,4 @@
-import type { SitegraphArtifactCacheStats } from '@njupt-search/contracts';
+import type { SitegraphArtifactCacheStats } from '@njupt-search/contracts/search-index';
 import {
     type ArtifactContentCache,
     type ArtifactCacheScope,

@@ -4,7 +4,7 @@ import type {
     SitegraphProofLedgerEntry,
     SitegraphRoutedSession,
     SitegraphSearchFilters
-} from '@njupt-search/contracts';
+} from '@njupt-search/contracts/search-index';
 import type { ArtifactContentCache } from './fetchJson';
 import { sitegraphDocumentMatchesFilters } from './sitegraphFilters';
 import { parseSitegraphFullDocuments, SearchContractError } from './sitegraphContract';

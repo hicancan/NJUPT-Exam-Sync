@@ -1,4 +1,4 @@
-import type { SitegraphFullDocument, SitegraphMatchHighlight, SitegraphMatchSnippet } from '@njupt-search/contracts';
+import type { SitegraphFullDocument, SitegraphMatchHighlight, SitegraphMatchSnippet } from '@njupt-search/contracts/search-index';
 import { normalizeSearchText as normalize } from './tokenizer';
 
 const VISIBLE_MATCH_PREFIX_LENGTH = 24;

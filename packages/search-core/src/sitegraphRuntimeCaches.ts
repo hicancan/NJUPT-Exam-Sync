@@ -4,7 +4,7 @@ import type {
     SitegraphLocalLightIndex,
     SitegraphProofCatalog,
     SitegraphSourceManifest
-} from '@njupt-search/contracts';
+} from '@njupt-search/contracts/search-index';
 import type { ShardFilterMap } from './sitegraphShardFilter';
 import type { HotQueryProofCertificate, HotQueryProofDirectory, HotQueryTopCertificate } from './sitegraphHotQuery';
 

@@ -4,6 +4,8 @@ export type FetchResourceType =
     | 'shard'
     | 'exam-summary'
     | 'exam-data-versioned'
+    | 'exam-history-manifest'
+    | 'exam-history-class-versioned'
     | 'default';
 
 const cacheModeFor = (resourceType: FetchResourceType): RequestCache => {
@@ -14,8 +16,10 @@ const cacheModeFor = (resourceType: FetchResourceType): RequestCache => {
         case 'shard':
             return 'force-cache';
         case 'exam-summary':
+        case 'exam-history-manifest':
             return 'no-store';
         case 'exam-data-versioned':
+        case 'exam-history-class-versioned':
             return 'force-cache';
         default:
             return 'default';

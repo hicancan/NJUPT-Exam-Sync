@@ -6,7 +6,7 @@ import type {
     SitegraphQueryPlan,
     SitegraphRoutedSession,
     SitegraphSourceManifest
-} from '@njupt-search/contracts';
+} from '@njupt-search/contracts/search-index';
 import type { ArtifactContentCache } from './fetchJson';
 
 export const DEFAULT_CANDIDATE_LIMIT = 160;

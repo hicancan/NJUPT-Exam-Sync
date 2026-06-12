@@ -13,6 +13,7 @@ export default defineConfig({
       '@njupt-search/contracts/source-sitegraph': path.resolve(__dirname, './packages/contracts/src/source-sitegraph/index.ts'),
       '@njupt-search/contracts': path.resolve(__dirname, './packages/contracts/src/index.ts'),
       '@njupt-search/exam-core/calendar': path.resolve(__dirname, './packages/exam-core/src/calendar/index.ts'),
+      '@njupt-search/exam-core/history': path.resolve(__dirname, './packages/exam-core/src/history/index.ts'),
       '@njupt-search/exam-core/contract': path.resolve(__dirname, './packages/exam-core/src/contract/index.ts'),
       '@njupt-search/exam-core/search': path.resolve(__dirname, './packages/exam-core/src/search/index.ts'),
       '@njupt-search/exam-core': path.resolve(__dirname, './packages/exam-core/src/index.ts'),

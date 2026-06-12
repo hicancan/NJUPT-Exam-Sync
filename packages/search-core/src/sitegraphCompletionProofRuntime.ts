@@ -8,7 +8,7 @@ import type {
     SitegraphSearchFilters,
     SitegraphSearchPhase,
     SitegraphSourceManifest
-} from '@njupt-search/contracts';
+} from '@njupt-search/contracts/search-index';
 import type { ArtifactContentCache } from './fetchJson';
 import { sitegraphDocumentMatchesFilters } from './sitegraphFilters';
 import { rankSitegraphDocument } from './ranking/rankDocument';

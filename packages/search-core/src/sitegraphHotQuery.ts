@@ -1,4 +1,4 @@
-import type { SitegraphArtifact, SitegraphFullDocument } from '@njupt-search/contracts';
+import type { SitegraphArtifact, SitegraphFullDocument } from '@njupt-search/contracts/search-index';
 import hotQueryNormalization from '../../../config/search/hot-query-normalization.json';
 import { SearchContractError, parseSitegraphFullDocuments } from './sitegraphContract';
 import { normalizeSearchText as normalize } from './tokenizer';

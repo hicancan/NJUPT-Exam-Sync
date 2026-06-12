@@ -23,6 +23,7 @@ export default defineConfig({
       '@njupt-search/contracts/source-sitegraph': path.resolve(__dirname, '../../packages/contracts/src/source-sitegraph/index.ts'),
       '@njupt-search/contracts': path.resolve(__dirname, '../../packages/contracts/src/index.ts'),
       '@njupt-search/exam-core/calendar': path.resolve(__dirname, '../../packages/exam-core/src/calendar/index.ts'),
+      '@njupt-search/exam-core/history': path.resolve(__dirname, '../../packages/exam-core/src/history/index.ts'),
       '@njupt-search/exam-core/contract': path.resolve(__dirname, '../../packages/exam-core/src/contract/index.ts'),
       '@njupt-search/exam-core/search': path.resolve(__dirname, '../../packages/exam-core/src/search/index.ts'),
       '@njupt-search/exam-core': path.resolve(__dirname, '../../packages/exam-core/src/index.ts'),
@@ -112,8 +113,23 @@ export default defineConfig({
             urlPattern: ({ url }) => [
               '/generated/exam/data_summary.json',
               '/generated/exam/source_metadata.json',
+              '/generated/exam/history/manifest.json',
             ].includes(url.pathname),
             handler: 'NetworkOnly',
+          },
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/generated/exam/history/classes/') && url.pathname.endsWith('.json'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'njupt-search-exam-history-versioned-v1',
+              expiration: {
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 30
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
           },
           {
             urlPattern: ({ url }) => url.pathname === '/generated/exam/all_exams.json',

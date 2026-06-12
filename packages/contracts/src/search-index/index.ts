@@ -2,6 +2,7 @@ export {
     SitegraphArtifactSchema,
     SitegraphFullShardSchema
 } from './schema-parts';
+export * from '../source-sitegraph';
 
 export type {
     SitegraphArtifact,

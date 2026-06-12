@@ -1,4 +1,4 @@
-import type { SitegraphFullDocument } from '@njupt-search/contracts';
+import type { SitegraphFullDocument } from '@njupt-search/contracts/search-index';
 import { normalizeSearchText as normalize } from '../tokenizer';
 import searchIntentConfig from './queryIntentProfiles.json';
 

@@ -3,6 +3,7 @@ import { useProgressiveSearch } from '@/features/collection-search/model/useProg
 import { useSearchIndexWorker } from '@/features/collection-search/model/useSearchIndexWorker';
 import { useClassSearch } from '@/features/exam-search/model/useClassSearch';
 import { useExamData } from '@/features/exam-search/model/useExamData';
+import { useExamHistory } from '@/features/exam-search/model/useExamHistory';
 import { useSelectedExamIds } from '@/features/exam-search/model/useSelectedExamIds';
 import {
     isClassLookupQuery,
@@ -23,6 +24,7 @@ export function useSearchExperience() {
     const isHome = !classParam && !qParam;
     const isExamRoute = Boolean(classParam) || isExamHelperQuery(qParam || '') || isClassLookupQuery(qParam || '');
     const needsExamData = Boolean(classParam) || isClassLookupQuery(qParam || '');
+    const needsExamHistory = Boolean(classParam) || isExamHelperQuery(qParam || '') || isClassLookupQuery(qParam || '');
     const shouldSearchSitegraph = Boolean(qParam && !isExamRoute && qParam.trim().length >= 2);
     const searchQuery = shouldSearchSitegraph ? qParam || '' : '';
     const manualSelection = classParam;
@@ -55,6 +57,12 @@ export function useSearchExperience() {
     });
     const classSearchResult = useClassSearch(allExams, initialQuery, manualSelection);
     const currentClass = classSearchResult.mode === 'DETAIL' ? classSearchResult.classes[0] || null : null;
+    const {
+        manifest: examHistoryManifest,
+        classHistory: examClassHistory,
+        loading: examHistoryLoading,
+        error: examHistoryError,
+    } = useExamHistory(needsExamHistory, currentClass);
     const {
         selectedIds,
         toggleExamSelection,
@@ -181,6 +189,10 @@ export function useSearchExperience() {
             sourceTitle,
             generatedAt,
             totalRecords,
+            examHistoryManifest,
+            examClassHistory,
+            examHistoryLoading,
+            examHistoryError,
         },
         updateToast: {
             visible: newDataAvailable,

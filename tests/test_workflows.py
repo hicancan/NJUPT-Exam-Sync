@@ -83,6 +83,8 @@ def test_edgeone_headers_keep_mutable_exam_data_fresh():
     assert '"strict-origin-when-cross-origin"' in text
     assert '"/generated/exam/data_summary.json"' in text
     assert '"/generated/exam/source_metadata.json"' in text
+    assert '"/generated/exam/history/manifest.json"' in text
+    assert '"/generated/exam/history/classes/*.json"' in text
     assert '"no-store, max-age=0, must-revalidate"' in text
     assert '"/generated/exam/all_exams.json"' in text
     assert '"/generated/collections/*/manifest.json"' in text
@@ -172,6 +174,7 @@ def test_exam_update_uses_retrying_generated_commit_helper():
     assert "id-token: write" in text
     assert "python tools/ci/commit_generated_changes.py" in text
     assert "prepare_public_assets.py update-exam-lock" in text
+    assert "NJUPT_SEARCH_REQUIRE_PREVIOUS_EXAM_BASELINE" not in text
     assert "force_deploy:" in text
     assert "FORCE_DEPLOY: ${{ github.event.inputs.force_deploy || 'false' }}" in text
     assert "prepare_public_assets.py build-exam-public-data" in text

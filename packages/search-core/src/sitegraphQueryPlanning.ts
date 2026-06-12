@@ -7,7 +7,7 @@ import type {
     SitegraphSearchFilters,
     SitegraphArtifact,
     SourceRegistryEntry
-} from '@njupt-search/contracts';
+} from '@njupt-search/contracts/search-index';
 import { SearchContractError } from './sitegraphContract';
 import { detectQueryIntent } from './intent/queryIntent';
 import { expandSitegraphQueryPhrases, normalizeSearchText as normalize } from './tokenizer';

@@ -7,7 +7,7 @@ import type {
     SitegraphProofCatalogShard,
     SitegraphSourceManifest,
     SourceRegistryEntry
-} from '@njupt-search/contracts';
+} from '@njupt-search/contracts/search-index';
 import type { ArtifactContentCache } from './fetchJson';
 import { parseSitegraphFullDocuments, parseSitegraphLocalIndexRefs, parseSitegraphProofCatalog, parseSitegraphSourceManifest, SearchContractError } from './sitegraphContract';
 import { parseShardFilterPartEntries, parseShardFilterPartsManifest, type ShardFilterMap } from './sitegraphShardFilter';

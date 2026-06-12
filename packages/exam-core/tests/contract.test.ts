@@ -7,6 +7,7 @@ import {
     parseManifest,
     resolveExamDataVersion
 } from '../src/contract';
+import { parseExamClassHistory, parseExamHistoryManifest } from '../src/history';
 
 const loadPublicJson = (relativePath: string): unknown => {
     return JSON.parse(readFileSync(new URL(relativePath, import.meta.url), 'utf-8'));
@@ -22,6 +23,14 @@ describe('exam-core data contract', () => {
             loadPublicJson('../../../apps/web/public/generated/exam/data_summary.json'),
             'apps/web/public/generated/exam/data_summary.json'
         );
+        const historyManifest = parseExamHistoryManifest(
+            loadPublicJson('../../../apps/web/public/generated/exam/history/manifest.json'),
+            'apps/web/public/generated/exam/history/manifest.json'
+        );
+        const b240402 = parseExamClassHistory(
+            loadPublicJson('../../../apps/web/public/generated/exam/history/classes/b240402.json'),
+            'apps/web/public/generated/exam/history/classes/b240402.json'
+        );
 
         assertManifestMatchesExams(manifest, exams);
 
@@ -29,6 +38,10 @@ describe('exam-core data contract', () => {
         expect(manifest.files_processed.length).toBeGreaterThan(0);
         expect(resolveExamDataVersion(manifest)).toMatch(/^[a-f0-9]{64}$/);
         expect(new Set(exams.map(exam => exam.id)).size).toBe(exams.length);
+        expect(historyManifest.latest_data_version).toBe(resolveExamDataVersion(manifest));
+        expect(b240402.latest_substantive_change.status).toBe('changed');
+        expect(JSON.stringify(b240402)).toContain('"before":110');
+        expect(JSON.stringify(b240402)).toContain('"after":120');
     });
 
     it('derives a deterministic legacy version for old data summaries', () => {

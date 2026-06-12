@@ -1,4 +1,4 @@
-import type { RankedSitegraphDocument, SitegraphFullDocument } from '@njupt-search/contracts';
+import type { RankedSitegraphDocument, SitegraphFullDocument } from '@njupt-search/contracts/search-index';
 import { detectQueryIntent, SEARCH_INTENT_CONFIG, sourceIdForDocument } from '../intent/queryIntent';
 import { dateSortValue, searchDateSortValue } from '../sitegraphDate';
 import { buildSitegraphMatchSnippet } from '../sitegraphSnippet';

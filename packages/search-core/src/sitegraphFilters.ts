@@ -4,7 +4,7 @@ import type {
     SitegraphFilterOption,
     SitegraphFilterOptions,
     SitegraphSearchFilters,
-} from '@njupt-search/contracts';
+} from '@njupt-search/contracts/search-index';
 import { searchDateSortValue } from './sitegraphDate';
 
 const DAY_MS = 86_400_000;

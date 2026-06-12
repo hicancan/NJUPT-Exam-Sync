@@ -58,7 +58,34 @@
       ]
     },
     {
+      "source": "/generated/exam/history/manifest.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/generated/exam/history/manifest.json*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/generated/exam/all_exams.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/generated/exam/history/classes/*.json",
       "headers": [
         {
           "key": "Cache-Control",

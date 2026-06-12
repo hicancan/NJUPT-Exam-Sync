@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { Download, Share2 } from 'lucide-react';
 import { buildExamCalendarFilename } from '@/features/exam-search/lib/downloadFilename';
 import { generateICSContent } from '@njupt-search/exam-core/calendar';
 import { Exam } from '@/shared/lib/contracts';
+import type { ExamClassHistory, ExamHistoryManifest } from '@/shared/lib/contracts';
 import { ExamCard } from './ExamCard';
 import { ReminderSettings } from './ReminderSettings';
+
+const ExamHistoryPanel = lazy(() => import('./ExamHistoryPanel').then(module => ({ default: module.ExamHistoryPanel })));
 
 type Notice = {
     message: string;
@@ -24,6 +27,10 @@ interface ExamDetailProps {
     sourceTitle?: string | null;
     generatedAt?: string | null;
     totalRecords?: number | null;
+    examHistoryManifest?: ExamHistoryManifest | null;
+    examClassHistory?: ExamClassHistory | null;
+    examHistoryLoading?: boolean;
+    examHistoryError?: string | null;
 }
 
 export function ExamDetail({
@@ -40,6 +47,10 @@ export function ExamDetail({
     sourceTitle,
     generatedAt,
     totalRecords,
+    examHistoryManifest,
+    examClassHistory,
+    examHistoryLoading = false,
+    examHistoryError = null,
 }: ExamDetailProps) {
     const [copyState, setCopyState] = useState<boolean>(false);
     const [notice, setNotice] = useState<Notice>(null);
@@ -167,6 +178,18 @@ export function ExamDetail({
                     {notice.message}
                 </div>
             ) : null}
+
+            <div className="mb-4">
+                <Suspense fallback={<div className="rounded-xl border border-[#dadce0] bg-white/80 px-4 py-3 text-[14px] text-[#5f6368] dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#9aa0a6]">正在读取考试历史...</div>}>
+                    <ExamHistoryPanel
+                        manifest={examHistoryManifest || null}
+                        classHistory={examClassHistory || null}
+                        className={className}
+                        loading={examHistoryLoading}
+                        error={examHistoryError}
+                    />
+                </Suspense>
+            </div>
 
             <ReminderSettings selected={reminders} onChange={onRemindersChange} />
 

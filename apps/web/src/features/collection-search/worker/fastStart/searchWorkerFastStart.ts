@@ -9,7 +9,7 @@ import type {
     SitegraphSearchManifest,
     SitegraphServingPath,
     SitegraphSortMode,
-} from '@/shared/lib/contracts';
+} from '@njupt-search/contracts/search-index';
 import {
     fetchJsonArtifact,
     normalizeSearchText,

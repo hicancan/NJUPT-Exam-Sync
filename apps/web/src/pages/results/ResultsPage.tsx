@@ -1,4 +1,5 @@
 import { CalendarDays } from 'lucide-react';
+import { lazy, Suspense } from 'react';
 import { CollectionResultsSkeleton } from '@/features/collection-search/ui/CollectionResultsSkeleton';
 import { ExamDetailSkeleton } from '@/features/exam-search/ui/ExamDetailSkeleton';
 import { ExamListSkeleton } from '@/features/exam-search/ui/ExamListSkeleton';
@@ -15,9 +16,13 @@ import {
     SitegraphSearchPhase,
     SitegraphSortMode,
     Exam,
+    ExamClassHistory,
+    ExamHistoryManifest,
 } from '@/shared/lib/contracts';
 
 type ResultsLoadingKind = 'collection' | 'exam-list' | 'exam-detail';
+
+const ExamHistoryPanel = lazy(() => import('@/features/exam-search/ui/ExamHistoryPanel').then(module => ({ default: module.ExamHistoryPanel })));
 
 interface ResultsPageProps {
     isLoading?: boolean;
@@ -46,6 +51,10 @@ interface ResultsPageProps {
     sourceTitle: string | null;
     generatedAt: string | null;
     totalRecords: number | null;
+    examHistoryManifest: ExamHistoryManifest | null;
+    examClassHistory: ExamClassHistory | null;
+    examHistoryLoading: boolean;
+    examHistoryError: string | null;
 }
 
 export function ResultsPage({
@@ -75,6 +84,10 @@ export function ResultsPage({
     sourceTitle,
     generatedAt,
     totalRecords,
+    examHistoryManifest,
+    examClassHistory,
+    examHistoryLoading,
+    examHistoryError,
 }: ResultsPageProps) {
     const trimmedQuery = query.trim();
     const hasClassDetail = classMode.mode === 'DETAIL' && classMode.exams.length > 0;
@@ -119,6 +132,10 @@ export function ResultsPage({
                                 sourceTitle={sourceTitle}
                                 generatedAt={generatedAt}
                                 totalRecords={totalRecords}
+                                examHistoryManifest={examHistoryManifest}
+                                examClassHistory={examClassHistory}
+                                examHistoryLoading={examHistoryLoading}
+                                examHistoryError={examHistoryError}
                             />
                         </section>
                     ) : null}
@@ -133,6 +150,16 @@ export function ResultsPage({
                                 <p className="text-[15px] text-[#4d5156] dark:text-[#bdc1c6] mb-6">
                                     请在顶部搜索框输入完整班级号，例如 <span className="font-mono bg-[#e8eaed] dark:bg-[#3c4043] px-1.5 py-0.5 rounded text-[#202124] dark:text-[#e8eaed]">B250403</span>。
                                 </p>
+                            </div>
+                            <div className="mx-auto mt-4 max-w-[692px]">
+                                <Suspense fallback={<div className="rounded-xl border border-[#dadce0] bg-white/80 px-4 py-3 text-[14px] text-[#5f6368] dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#9aa0a6]">正在读取考试历史...</div>}>
+                                    <ExamHistoryPanel
+                                        manifest={examHistoryManifest}
+                                        classHistory={null}
+                                        loading={examHistoryLoading}
+                                        error={examHistoryError}
+                                    />
+                                </Suspense>
                             </div>
                         </section>
                     ) : showSearchResultsSection ? (

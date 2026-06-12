@@ -6,7 +6,7 @@ import type {
     SitegraphQueryStats,
     SitegraphSearchCoverage,
     SitegraphSearchFilters,
-} from '@/shared/lib/contracts';
+} from '@njupt-search/contracts/search-index';
 import {
     isDegenerateSitegraphQuery,
     isHighDocumentFrequencyNormalizedQuery,

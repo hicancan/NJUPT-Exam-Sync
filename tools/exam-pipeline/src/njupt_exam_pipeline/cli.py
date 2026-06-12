@@ -1,24 +1,29 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
-from . import analyze_and_update, auto_update_exam_data
+from .publisher import publish_exam_artifacts
+from .source import update_exam_lock
+
+
+REPO_ROOT = Path(__file__).resolve().parents[4]
+EXAM_DIR = REPO_ROOT / "apps" / "web" / "public" / "generated" / "exam"
+EXAM_LOCK = REPO_ROOT / "config" / "data-locks" / "exam.lock.json"
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Update and process njupt-search exam artifacts.")
     subparsers = parser.add_subparsers(dest="command", required=True)
-    subparsers.add_parser("fetch", help="Fetch the latest exam spreadsheets from JWC.")
+    subparsers.add_parser("update-lock", help="Update exam.lock.json from JWC.")
     subparsers.add_parser("process", help="Process downloaded exam spreadsheets into JSON artifacts.")
-    subparsers.add_parser("run", help="Fetch and process exam artifacts.")
     args = parser.parse_args()
 
-    if args.command in {"fetch", "run"}:
-        result = auto_update_exam_data.find_latest_schedule_notification()
-        if result:
-            url, title = result
-            auto_update_exam_data.process_detail_page(url, title)
-        else:
-            print("未进行任何更新。")
-    if args.command in {"process", "run"}:
-        analyze_and_update.main()
+    if args.command == "update-lock":
+        update_exam_lock(EXAM_LOCK)
+    elif args.command == "process":
+        publish_exam_artifacts(
+            data_dir=EXAM_DIR,
+            output_doc_path=EXAM_DIR / "DATA_INVENTORY.md",
+            merged_json_path=EXAM_DIR / "all_exams.json",
+        )

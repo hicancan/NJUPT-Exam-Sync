@@ -6,7 +6,7 @@ import type {
     SitegraphQueryPlan,
     SitegraphSearchFilters,
     SitegraphSourceManifest
-} from '@njupt-search/contracts';
+} from '@njupt-search/contracts/search-index';
 import type { ArtifactContentCache } from './fetchJson';
 import { decodePackedImpactIndexTerms, decodePackedLocalBodyIndexTerms } from './sitegraphBinaryIndex';
 import { parseSitegraphLocalBodyIndex, parseSitegraphLocalLightIndex, SearchContractError } from './sitegraphContract';

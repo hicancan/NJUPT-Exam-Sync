@@ -1,0 +1,123 @@
+from __future__ import annotations
+
+import pytest
+
+from njupt_exam_pipeline.contract import ExamPipelineError
+from njupt_exam_pipeline.diff import class_file_key, compare_exam_records
+from njupt_exam_pipeline.history import ExamSnapshot, build_exam_history
+
+
+def exam(**patch):
+    base = {
+        "id": "schedule.xlsx-2",
+        "class_name": "B240402",
+        "course_name": "大学英语",
+        "course_code": "EN1001",
+        "location": "教2-101",
+        "campus": "仙林",
+        "teacher": "张三",
+        "notes": "",
+        "count": 31,
+        "raw_time": "2026年06月08日 08:00-10:00",
+        "start_timestamp": "2026-06-08T08:00:00+08:00",
+        "end_timestamp": "2026-06-08T10:00:00+08:00",
+        "duration_minutes": 120,
+    }
+    base.update(patch)
+    return base
+
+
+def test_row_id_change_is_not_a_material_exam_change():
+    delta = compare_exam_records(
+        previous_records=[exam(id="old-row-2")],
+        current_records=[exam(id="new-row-88")],
+    )
+
+    assert delta["totals"]["unchanged"] == 1
+    assert delta["totals"]["changed"] == 0
+    assert delta["changes"] == []
+
+
+def test_duration_change_reports_field_level_diff():
+    delta = compare_exam_records(
+        previous_records=[exam(duration_minutes=120, end_timestamp="2026-06-08T10:00:00+08:00")],
+        current_records=[exam(duration_minutes=130, end_timestamp="2026-06-08T10:10:00+08:00")],
+    )
+
+    changed = delta["changes"][0]
+    assert delta["totals"]["changed"] == 1
+    assert changed["type"] == "changed"
+    assert {"field": "duration_minutes", "label": "时长", "before": 120, "after": 130} in changed["fields"]
+
+
+def test_added_and_removed_exams_are_reported_by_identity_key():
+    delta = compare_exam_records(
+        previous_records=[exam(course_code="A", course_name="A课")],
+        current_records=[exam(course_code="B", course_name="B课")],
+    )
+
+    assert delta["totals"]["added"] == 1
+    assert delta["totals"]["removed"] == 1
+    assert {change["type"] for change in delta["changes"]} == {"added", "removed"}
+
+
+def test_duplicate_records_pair_by_deterministic_room_split():
+    previous = [
+        exam(id="old-1", location="教2-101", count=1, end_timestamp="2026-06-08T09:50:00+08:00", duration_minutes=110),
+        exam(id="old-2", location="教2-102", count=1, end_timestamp="2026-06-08T09:50:00+08:00", duration_minutes=110),
+    ]
+    current = [
+        exam(id="new-1", location="教2-101", count=1, end_timestamp="2026-06-08T10:00:00+08:00", duration_minutes=120),
+        exam(id="new-2", location="教2-102", count=1, end_timestamp="2026-06-08T10:00:00+08:00", duration_minutes=120),
+    ]
+
+    delta = compare_exam_records(previous_records=previous, current_records=current)
+
+    assert delta["totals"]["changed"] == 2
+    assert all(change["type"] == "changed" for change in delta["changes"])
+
+
+def test_ambiguous_duplicate_identity_group_fails_fast():
+    with pytest.raises(ExamPipelineError):
+        compare_exam_records(
+            previous_records=[
+                exam(id="old-1", location="教2-101", count=1),
+                exam(id="old-2", location="教2-102", count=1),
+            ],
+            current_records=[
+                exam(id="new-1", location="教3-201", count=1),
+                exam(id="new-2", location="教3-202", count=1),
+            ],
+        )
+
+
+def test_class_history_keeps_current_and_latest_substantive_change_separate():
+    first = ExamSnapshot(
+        data_version="first",
+        auto_updated_at="2026-06-08T00:00:00+08:00",
+        source_url=None,
+        source_title=None,
+        records=[exam(duration_minutes=110, end_timestamp="2026-06-08T09:50:00+08:00")],
+    )
+    second = ExamSnapshot(
+        data_version="second",
+        auto_updated_at="2026-06-09T00:00:00+08:00",
+        source_url=None,
+        source_title=None,
+        records=[exam(duration_minutes=120, end_timestamp="2026-06-08T10:00:00+08:00")],
+    )
+    third = ExamSnapshot(
+        data_version="third",
+        auto_updated_at="2026-06-10T00:00:00+08:00",
+        source_url=None,
+        source_title=None,
+        records=[exam(duration_minutes=120, end_timestamp="2026-06-08T10:00:00+08:00")],
+    )
+
+    manifest, class_files = build_exam_history([first, second, third], generated_at="2026-06-10T00:00:00+08:00")
+    b240402 = class_files[class_file_key("B240402")]
+
+    assert manifest["totals"]["snapshot_count"] == 3
+    assert b240402["checkpoints"][-1]["status"] == "unchanged"
+    assert b240402["latest_substantive_change"]["data_version"] == "second"
+    assert b240402["latest_substantive_change"]["totals"]["changed"] == 1

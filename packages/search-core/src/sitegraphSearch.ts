@@ -8,7 +8,7 @@ import type {
     SitegraphSearchFilters,
     SitegraphSearchPhase,
     SitegraphSortMode
-} from '@njupt-search/contracts';
+} from '@njupt-search/contracts/search-index';
 import { expandSitegraphQueryPhrases, normalizeSearchText as normalize, tokenizeSitegraphQuery } from './tokenizer';
 import {
     DEFAULT_CANDIDATE_LIMIT,

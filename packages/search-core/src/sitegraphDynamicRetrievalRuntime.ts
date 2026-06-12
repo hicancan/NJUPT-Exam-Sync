@@ -10,7 +10,7 @@ import type {
     SitegraphSearchFilters,
     SitegraphSearchPhase,
     SitegraphSortMode
-} from '@njupt-search/contracts';
+} from '@njupt-search/contracts/search-index';
 import type { ArtifactContentCache } from './fetchJson';
 import {
     BODY_MAX_SHARD_LOADS,

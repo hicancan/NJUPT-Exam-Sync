@@ -3,7 +3,7 @@ import type {
     SitegraphProofLedgerState,
     SitegraphProofLedgerSummary,
     SitegraphSearchFilters
-} from '@njupt-search/contracts';
+} from '@njupt-search/contracts/search-index';
 import type { ShardFilterMap } from './sitegraphShardFilter';
 import type { VerificationShard } from './sitegraphSearchTypes';
 import { FULL_SCAN_FIELDS } from './sitegraphSearchTypes';

@@ -1,4 +1,4 @@
-import type { SitegraphDocMeta, SitegraphFullDocument, SitegraphLocalBodyIndex, SitegraphLocalLightIndex, SitegraphSearchFilters } from '@njupt-search/contracts';
+import type { SitegraphDocMeta, SitegraphFullDocument, SitegraphLocalBodyIndex, SitegraphLocalLightIndex, SitegraphSearchFilters } from '@njupt-search/contracts/search-index';
 import { sitegraphDocumentMatchesFilters } from './sitegraphFilters';
 import { SITEGRAPH_FIELD_WEIGHTS } from './ranking/rankDocument';
 import { normalizeSearchText as normalize } from './tokenizer';

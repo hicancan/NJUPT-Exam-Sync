@@ -1,4 +1,4 @@
-import type { SitegraphArtifact } from '@njupt-search/contracts';
+import type { SitegraphArtifact } from '@njupt-search/contracts/search-index';
 import { SearchContractError } from './sitegraphContract';
 
 export type ShardFilterMap = Record<string, {
