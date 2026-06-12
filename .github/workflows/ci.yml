@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       needs_public_assets: ${{ steps.ci-mode.outputs.needs_public_assets }}
+      needs_generated_assets: ${{ steps.ci-mode.outputs.needs_generated_assets }}
     env:
       NJUPT_SITEGRAPH_REPO: _sitegraph/njupt-site-graph
     steps:
@@ -34,6 +35,7 @@ jobs:
           mode="full"
           full_verification="true"
           needs_public_assets="true"
+          needs_generated_assets="true"
           if [ "$GITHUB_EVENT_NAME" = "push" ]; then
             before="${{ github.event.before }}"
             if [ -n "$before" ] && [ "$before" != "0000000000000000000000000000000000000000" ]; then
@@ -42,17 +44,26 @@ jobs:
                 mode="workflow-fast"
                 full_verification="false"
                 needs_public_assets="false"
+                needs_generated_assets="false"
+              elif [ -n "$changed_files" ] && ! printf '%s\n' "$changed_files" | grep -Ev '^(\.github/.*|tests/test_workflows\.py|apps/web/public/edgeone\.json)$' >/dev/null; then
+                mode="static-public-fast"
+                full_verification="false"
+                needs_public_assets="true"
+                needs_generated_assets="false"
               fi
             fi
           fi
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
           echo "full_verification=$full_verification" >> "$GITHUB_OUTPUT"
           echo "needs_public_assets=$needs_public_assets" >> "$GITHUB_OUTPUT"
+          echo "needs_generated_assets=$needs_generated_assets" >> "$GITHUB_OUTPUT"
           {
             echo "### CI workload"
             echo
             echo "- Mode: \`$mode\`"
             echo "- Full verification: \`$full_verification\`"
+            echo "- Public asset build: \`$needs_public_assets\`"
+            echo "- Generated asset refresh: \`$needs_generated_assets\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Set up Python
@@ -71,7 +82,7 @@ jobs:
           cache: 'npm'
 
       - name: Read data locks
-        if: steps.ci-mode.outputs.needs_public_assets == 'true'
+        if: steps.ci-mode.outputs.needs_generated_assets == 'true'
         id: data-locks
         run: |
           python - <<'PY' >> "$GITHUB_OUTPUT"
@@ -82,7 +93,7 @@ jobs:
           PY
 
       - name: Checkout sitegraph source packages
-        if: steps.ci-mode.outputs.needs_public_assets == 'true'
+        if: steps.ci-mode.outputs.needs_generated_assets == 'true'
         uses: actions/checkout@v6
         with:
           repository: hicancan/njupt-site-graph
@@ -91,13 +102,13 @@ jobs:
           token: ${{ secrets.NJUPT_SITEGRAPH_TOKEN || github.token }}
 
       - name: Set up Rust
-        if: steps.ci-mode.outputs.needs_public_assets == 'true'
+        if: steps.ci-mode.outputs.needs_generated_assets == 'true'
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
 
       - name: Cache Rust build artifacts
-        if: steps.ci-mode.outputs.needs_public_assets == 'true'
+        if: steps.ci-mode.outputs.needs_generated_assets == 'true'
         uses: actions/cache@v4
         with:
           path: |
@@ -109,7 +120,7 @@ jobs:
             rust-wasm-${{ runner.os }}-
 
       - name: Install WASM tools
-        if: steps.ci-mode.outputs.needs_public_assets == 'true'
+        if: steps.ci-mode.outputs.needs_generated_assets == 'true'
         run: |
           mkdir -p .ci-tools
           curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 \
@@ -142,14 +153,14 @@ jobs:
           printf '| Install dependencies | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Prepare CI-only public assets
-        if: steps.ci-mode.outputs.needs_public_assets == 'true'
+        if: steps.ci-mode.outputs.needs_generated_assets == 'true'
         run: |
           start=$SECONDS
           npm run prepare:public-assets
           printf '| Prepare CI-only public assets | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Verify CI-only public asset determinism
-        if: steps.ci-mode.outputs.full_verification == 'true'
+        if: steps.ci-mode.outputs.needs_generated_assets == 'true'
         run: |
           start=$SECONDS
           uv run python tools/ci/prepare_public_assets.py verify-determinism
@@ -179,7 +190,7 @@ jobs:
           printf '| Source complexity gates | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Generated artifact gates
-        if: steps.ci-mode.outputs.needs_public_assets == 'true'
+        if: steps.ci-mode.outputs.needs_generated_assets == 'true'
         run: |
           start=$SECONDS
           uv run python tools/quality-gates/scripts/validate_search_index.py

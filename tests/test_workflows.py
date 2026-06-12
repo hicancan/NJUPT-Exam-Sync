@@ -11,11 +11,16 @@ def test_ci_is_single_authoritative_pages_gate():
     assert "permissions:\n  contents: read\n\nconcurrency:" in text
     assert "Classify CI workload" in text
     assert r"^(\.github/.*|tests/test_workflows\.py)$" in text
+    assert r"^(\.github/.*|tests/test_workflows\.py|apps/web/public/edgeone\.json)$" in text
+    assert 'mode="static-public-fast"' in text
     assert 'mode="workflow-fast"' in text
+    assert "needs_generated_assets" in text
+    assert "needs_generated_assets: ${{ steps.ci-mode.outputs.needs_generated_assets }}" in text
     assert "Verify CI-only public asset determinism" in text
-    assert "if: steps.ci-mode.outputs.full_verification == 'true'" in text
+    assert "if: steps.ci-mode.outputs.needs_generated_assets == 'true'" in text
     assert "Fast-mode workflow tests" in text
     assert "Build deployment bundle" in text
+    assert "steps.ci-mode.outputs.needs_public_assets == 'true' && steps.ci-mode.outputs.full_verification != 'true'" in text
     assert "workflow_run:" not in text
     assert "workflows: [ 'Update Collection Index' ]" not in text
     assert "  ci:\n    permissions:\n      contents: read" in text
