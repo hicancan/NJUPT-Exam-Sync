@@ -87,6 +87,8 @@ def test_edgeone_headers_keep_mutable_exam_data_fresh():
     assert '"/generated/exam/all_exams.json"' in text
     assert '"/generated/collections/*/manifest.json"' in text
     assert '"/generated/collections/*/manifest.json*"' in text
+    assert '"/generated/collections/*/*.json"' in text
+    assert '"/generated/collections/*/*.json*"' in text
     assert '"/assets/*"' in text
     assert '"public, max-age=31536000, immutable"' in text
     assert '"/manifest.webmanifest"' in text
