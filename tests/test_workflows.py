@@ -88,6 +88,8 @@ def test_edgeone_headers_keep_mutable_exam_data_fresh():
     assert '"/assets/*"' in text
     assert '"public, max-age=31536000, immutable"' in text
     assert '"/manifest.webmanifest"' in text
+    assert '"/sw.js"' in text
+    assert '"/workbox-*.js"' in text
     assert '"public, max-age=0, must-revalidate"' in text
 
 
