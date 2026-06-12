@@ -102,13 +102,13 @@ jobs:
           token: ${{ secrets.NJUPT_SITEGRAPH_TOKEN || github.token }}
 
       - name: Set up Rust
-        if: steps.ci-mode.outputs.needs_generated_assets == 'true'
+        if: steps.ci-mode.outputs.needs_public_assets == 'true'
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
 
       - name: Cache Rust build artifacts
-        if: steps.ci-mode.outputs.needs_generated_assets == 'true'
+        if: steps.ci-mode.outputs.needs_public_assets == 'true'
         uses: actions/cache@v4
         with:
           path: |
@@ -120,7 +120,7 @@ jobs:
             rust-wasm-${{ runner.os }}-
 
       - name: Install WASM tools
-        if: steps.ci-mode.outputs.needs_generated_assets == 'true'
+        if: steps.ci-mode.outputs.needs_public_assets == 'true'
         run: |
           mkdir -p .ci-tools
           curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 \
@@ -222,6 +222,7 @@ jobs:
         if: ${{ steps.ci-mode.outputs.needs_public_assets == 'true' && steps.ci-mode.outputs.full_verification != 'true' }}
         run: |
           start=$SECONDS
+          npm run build:wasm:web
           npm run build:prepared
           npm run check:web-bundle-size
           printf '| Build deployment bundle | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"

@@ -18,6 +18,8 @@ def test_ci_is_single_authoritative_pages_gate():
     assert "needs_generated_assets: ${{ steps.ci-mode.outputs.needs_generated_assets }}" in text
     assert "Verify CI-only public asset determinism" in text
     assert "if: steps.ci-mode.outputs.needs_generated_assets == 'true'" in text
+    assert "if: steps.ci-mode.outputs.needs_public_assets == 'true'\n        uses: dtolnay/rust-toolchain@stable" in text
+    assert "npm run build:wasm:web\n          npm run build:prepared" in text
     assert "Fast-mode workflow tests" in text
     assert "Build deployment bundle" in text
     assert "steps.ci-mode.outputs.needs_public_assets == 'true' && steps.ci-mode.outputs.full_verification != 'true'" in text
