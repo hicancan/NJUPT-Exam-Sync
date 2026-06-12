@@ -52,7 +52,7 @@ def test_edgeone_deploy_uses_verified_ci_artifact_only():
     assert "njupt-search-dist dist" in text
     assert "EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}" in text
     assert "EDGEONE_PROJECT_NAME: ${{ vars.EDGEONE_PROJECT_NAME || 'njupt-search' }}" in text
-    assert "EDGEONE_PAGES_AREA: ${{ vars.EDGEONE_PAGES_AREA || 'overseas' }}" in text
+    assert "EDGEONE_PAGES_AREA: ${{ vars.EDGEONE_PAGES_AREA || 'global' }}" in text
     assert "set -o pipefail" in text
     assert 'npx --yes edgeone@latest pages deploy ./dist -n "$project" -t "$EDGEONE_API_TOKEN" -e production -a "$area"' in text
     assert "EDGEONE_API_TOKEN secret is required" in text
@@ -67,10 +67,22 @@ def test_edgeone_headers_keep_mutable_exam_data_fresh():
     config = Path("apps/web/public/edgeone.json")
     assert config.exists()
     text = config.read_text(encoding="utf-8")
+    assert '"source": "/*"' in text
+    assert '"X-Content-Type-Options"' in text
+    assert '"nosniff"' in text
+    assert '"X-Frame-Options"' in text
+    assert '"SAMEORIGIN"' in text
+    assert '"Referrer-Policy"' in text
+    assert '"strict-origin-when-cross-origin"' in text
     assert '"/generated/exam/data_summary.json"' in text
     assert '"/generated/exam/source_metadata.json"' in text
     assert '"no-store, max-age=0, must-revalidate"' in text
     assert '"/generated/exam/all_exams.json"' in text
+    assert '"/generated/collections/*/manifest.json"' in text
+    assert '"/generated/collections/*/manifest.json*"' in text
+    assert '"/assets/*"' in text
+    assert '"public, max-age=31536000, immutable"' in text
+    assert '"/manifest.webmanifest"' in text
     assert '"public, max-age=0, must-revalidate"' in text
 
 
@@ -117,6 +129,7 @@ def test_collection_update_is_triggered_by_sitegraph_dispatch():
     assert "actions/deploy-pages@v5" in text
     assert "name: njupt-search-production-dist" in text
     assert "EDGEONE_PROJECT_NAME: ${{ vars.EDGEONE_PROJECT_NAME || 'njupt-search' }}" in text
+    assert "EDGEONE_PAGES_AREA: ${{ vars.EDGEONE_PAGES_AREA || 'global' }}" in text
     assert "set -o pipefail" in text
     assert "npx --yes edgeone@latest pages deploy ./dist" in text
     assert "vars.CF_PURGE_ENABLED == '1'" in text
@@ -164,6 +177,7 @@ def test_exam_update_uses_retrying_generated_commit_helper():
     assert "actions/deploy-pages@v5" in text
     assert "name: njupt-search-production-dist" in text
     assert "EDGEONE_PROJECT_NAME: ${{ vars.EDGEONE_PROJECT_NAME || 'njupt-search' }}" in text
+    assert "EDGEONE_PAGES_AREA: ${{ vars.EDGEONE_PAGES_AREA || 'global' }}" in text
     assert "set -o pipefail" in text
     assert "npx --yes edgeone@latest pages deploy ./dist" in text
     assert "vars.CF_PURGE_ENABLED == '1'" in text

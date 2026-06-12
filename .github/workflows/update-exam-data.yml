@@ -148,7 +148,7 @@ jobs:
         env:
           EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
           EDGEONE_PROJECT_NAME: ${{ vars.EDGEONE_PROJECT_NAME || 'njupt-search' }}
-          EDGEONE_PAGES_AREA: ${{ vars.EDGEONE_PAGES_AREA || 'overseas' }}
+          EDGEONE_PAGES_AREA: ${{ vars.EDGEONE_PAGES_AREA || 'global' }}
         run: |
           set -o pipefail
           if [ -z "$EDGEONE_API_TOKEN" ]; then
@@ -156,7 +156,7 @@ jobs:
             exit 1
           fi
           project="${EDGEONE_PROJECT_NAME:-njupt-search}"
-          area="${EDGEONE_PAGES_AREA:-overseas}"
+          area="${EDGEONE_PAGES_AREA:-global}"
           npx --yes edgeone@latest pages deploy ./dist -n "$project" -t "$EDGEONE_API_TOKEN" -e production -a "$area" | tee edgeone-exam-fast-deploy.log
           {
             echo "### Exam fast deploy"
