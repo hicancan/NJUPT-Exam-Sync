@@ -15,6 +15,8 @@ def test_ci_is_single_authoritative_pages_gate():
     assert 'mode="static-public-fast"' in text
     assert 'mode="workflow-fast"' in text
     assert 'mode="exam-code-fast"' in text
+    assert 'mode="manual-full"' in text
+    assert "verification:" in text
     assert "exam_fast_checks" in text
     assert "tools/exam-pipeline/.*" in text
     assert "apps/web/src/features/exam-search/.*" in text
@@ -22,9 +24,17 @@ def test_ci_is_single_authoritative_pages_gate():
     assert "needs_generated_assets: ${{ steps.ci-mode.outputs.needs_generated_assets }}" in text
     assert "Verify CI-only public asset determinism" in text
     assert "if: steps.ci-mode.outputs.needs_generated_assets == 'true'" in text
-    assert "if: steps.ci-mode.outputs.needs_public_assets == 'true'\n        uses: dtolnay/rust-toolchain@stable" in text
-    assert "npm run build:wasm:web\n          npm run build:prepared" in text
+    assert "Resolve latest generated data baseline" in text
+    assert "Restore generated data baseline" in text
+    assert "cp -R _baseline-dist/generated apps/web/public/generated" in text
+    assert "Materialize exam public assets" in text
+    assert "prepare_public_assets.py build-exam-public-data" in text
+    assert "prepare_public_assets.py verify-exam-public-data" in text
+    assert "if: steps.ci-mode.outputs.needs_generated_assets == 'true'\n        uses: dtolnay/rust-toolchain@stable" in text
+    assert "npm run build:wasm:web\n          npm run build:prepared" not in text
+    assert "npm run build:prepared\n          npm run check:web-bundle-size" in text
     assert "Fast-mode workflow tests" in text
+    assert "Fast frontend checks" in text
     assert "Exam fast checks" in text
     assert "tests/test_exam_history.py tests/test_exam_pipeline_failfast.py tests/test_prepare_public_assets_download.py" in text
     assert "npm run test:prepared -- apps/web/src/features/exam-search packages/exam-core packages/contracts/tests/examDataContract.test.ts" in text
@@ -90,10 +100,10 @@ def test_edgeone_headers_keep_mutable_exam_data_fresh():
     assert '"strict-origin-when-cross-origin"' in text
     assert '"/generated/exam/data_summary.json"' in text
     assert '"/generated/exam/source_metadata.json"' in text
-    assert '"/generated/exam/history/manifest.json"' in text
+    assert '"/generated/exam/class_index.json"' in text
+    assert '"/generated/exam/classes/*.json"' in text
     assert '"/generated/exam/history/classes/*.json"' in text
     assert '"no-store, max-age=0, must-revalidate"' in text
-    assert '"/generated/exam/all_exams.json"' in text
     assert '"/generated/collections/*/manifest.json"' in text
     assert '"/generated/collections/*/manifest.json*"' in text
     assert '"/generated/collections/*/*.json"' in text
@@ -102,11 +112,11 @@ def test_edgeone_headers_keep_mutable_exam_data_fresh():
     assert '"public, max-age=31536000, immutable"' in text
     assert '"/manifest.webmanifest"' in text
     assert '"/sw.js"' in text
-    assert '"/workbox-*.js"' in text
+    assert '"/workbox-*.js"' not in text
     assert '"public, max-age=0, must-revalidate"' in text
 
 
-def test_collection_update_is_triggered_by_sitegraph_dispatch():
+def test_collection_update_is_manual_only():
     workflow = Path(".github/workflows/update-collection-index.yml")
     assert workflow.exists()
     text = workflow.read_text(encoding="utf-8")
@@ -114,23 +124,23 @@ def test_collection_update_is_triggered_by_sitegraph_dispatch():
     assert "actions: read" in text
     assert "pages: write" in text
     assert "id-token: write" in text
-    assert "repository_dispatch:" in text
-    assert "sitegraph-data-updated" in text
+    assert "repository_dispatch:" not in text
+    assert "sitegraph-data-updated" not in text
     assert "force_deploy:" in text
     assert "FORCE_DEPLOY: ${{ github.event.inputs.force_deploy || 'false' }}" in text
     assert "cron: '30 */6 * * *'" not in text
-    assert "github.event.client_payload.sitegraph_ref" in text
+    assert "github.event.client_payload.sitegraph_ref" not in text
     assert "resolved_sha" in text
     assert "Plan collection update" in text
     assert "needs_data_build" in text
     assert "should_deploy" in text
     assert "ref: ${{ steps.sitegraph-ref.outputs.resolved_sha }}" in text
-    assert "DISPATCH_SITEGRAPH_REF" in text
-    assert "DISPATCH_SOURCE_REPO" in text
-    assert "DISPATCH_SOURCE_RUN_ID" in text
-    assert "repository_dispatch missing client_payload.sitegraph_ref" in text
-    assert "repository_dispatch source_repo must be hicancan/njupt-site-graph" in text
-    assert "repository_dispatch missing client_payload.source_run_id" in text
+    assert "DISPATCH_SITEGRAPH_REF" not in text
+    assert "DISPATCH_SOURCE_REPO" not in text
+    assert "DISPATCH_SOURCE_RUN_ID" not in text
+    assert "repository_dispatch missing client_payload.sitegraph_ref" not in text
+    assert "repository_dispatch source_repo must be hicancan/njupt-site-graph" not in text
+    assert "repository_dispatch missing client_payload.source_run_id" not in text
     assert "Validate sitegraph ref exists" in text
     assert "repos/hicancan/njupt-site-graph/commits/$SITEGRAPH_REF" in text
     assert "sitegraph_ref $SITEGRAPH_REF is not a commit visible in hicancan/njupt-site-graph" in text

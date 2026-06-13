@@ -18,6 +18,40 @@ export const isCompleteClassQuery = (value: string): boolean => {
 
 export const isExamHelperQuery = (value: string): boolean => value.trim() === '考试安排';
 
+export const getClassNameSearchResult = (
+    classNames: string[],
+    inputValue: string,
+    manualSelection: string | null
+): SearchResult => {
+    const trimmed = inputValue.trim();
+    if (trimmed.length < 2) {
+        return { mode: 'EMPTY', classes: [], exams: [] };
+    }
+
+    if (manualSelection) {
+        const normalizedManualSelection = normalizeClassQuery(manualSelection);
+        const selectedClass = classNames.find(className => className.toUpperCase() === normalizedManualSelection) || null;
+        return selectedClass
+            ? { mode: 'DETAIL', classes: [selectedClass], exams: [] }
+            : { mode: 'NOT_FOUND', classes: [], exams: [] };
+    }
+
+    const term = trimmed.toUpperCase();
+    const uniqueClasses = classNames
+        .filter(className => className.toUpperCase().includes(term))
+        .sort();
+
+    if (uniqueClasses.length === 0) {
+        return { mode: 'NOT_FOUND', classes: [], exams: [] };
+    }
+
+    if (uniqueClasses.length === 1) {
+        return { mode: 'DETAIL', classes: uniqueClasses, exams: [] };
+    }
+
+    return { mode: 'LIST', classes: uniqueClasses, exams: [] };
+};
+
 export const getClassSearchResult = (
     exams: Exam[],
     inputValue: string,

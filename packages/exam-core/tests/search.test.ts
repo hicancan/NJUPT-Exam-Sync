@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Exam } from '@njupt-search/contracts/exam';
 import {
+    getClassNameSearchResult,
     getClassSearchResult,
     isClassLookupQuery,
     isCompleteClassQuery,
@@ -89,6 +90,15 @@ describe('exam-core class search', () => {
             mode: 'NOT_FOUND',
             classes: [],
             exams: []
+        });
+    });
+
+    it('can route by class names without loading exam records', () => {
+        const result = getClassNameSearchResult(['B240401', 'B240402'], 'B240402', null);
+        expect(result).toEqual({
+            mode: 'DETAIL',
+            classes: ['B240402'],
+            exams: [],
         });
     });
 });

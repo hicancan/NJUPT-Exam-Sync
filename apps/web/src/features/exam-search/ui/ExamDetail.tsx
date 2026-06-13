@@ -3,7 +3,7 @@ import { Download, Share2 } from 'lucide-react';
 import { buildExamCalendarFilename } from '@/features/exam-search/lib/downloadFilename';
 import { generateICSContent } from '@njupt-search/exam-core/calendar';
 import { Exam } from '@/shared/lib/contracts';
-import type { ExamClassHistory, ExamHistoryManifest } from '@/shared/lib/contracts';
+import type { ExamClassHistory, ExamClassIndex } from '@/shared/lib/contracts';
 import type { ExamExportStatus } from '../model/examSelection';
 import { ExamCard } from './ExamCard';
 
@@ -27,7 +27,8 @@ interface ExamDetailProps {
     onRemindersChange: (reminders: number[]) => void;
     sourceUrl?: string | null;
     sourceTitle?: string | null;
-    examHistoryManifest?: ExamHistoryManifest | null;
+    generatedAt?: string | null;
+    examClassIndex?: ExamClassIndex | null;
     examClassHistory?: ExamClassHistory | null;
     examHistoryLoading?: boolean;
     examHistoryError?: string | null;
@@ -46,7 +47,8 @@ export function ExamDetail({
     onRemindersChange,
     sourceUrl,
     sourceTitle,
-    examHistoryManifest,
+    generatedAt,
+    examClassIndex,
     examClassHistory,
     examHistoryLoading = false,
     examHistoryError = null,
@@ -55,7 +57,7 @@ export function ExamDetail({
     const [notice, setNotice] = useState<Notice>(null);
     const allSelected = exams.length > 0 && selectedIds.size === exams.length;
     const noneSelected = selectedIds.size === 0;
-    const sourceTime = examHistoryManifest?.latest_auto_updated_at;
+    const sourceTime = generatedAt;
 
     const showErrorNotice = (nextNotice: NonNullable<Notice>) => {
         setNotice(nextNotice);
@@ -181,7 +183,7 @@ export function ExamDetail({
             <div className="mb-4">
                 <Suspense fallback={<div className="rounded-xl border border-[#dadce0] bg-white/80 px-4 py-3 text-[14px] text-[#5f6368] dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#9aa0a6]">正在读取考试历史...</div>}>
                     <ExamHistoryPanel
-                        manifest={examHistoryManifest || null}
+                        classIndex={examClassIndex || null}
                         classHistory={examClassHistory || null}
                         className={className}
                         loading={examHistoryLoading}

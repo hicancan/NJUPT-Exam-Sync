@@ -11,7 +11,7 @@ from .publisher import write_json_file
 
 
 HISTORY_MANIFEST_VERSION = "exam-history-manifest-v1"
-CLASS_HISTORY_VERSION = "exam-class-history-v2"
+CLASS_HISTORY_VERSION = "exam-class-history-v3"
 HISTORY_DIR_NAME = "history"
 
 
@@ -156,6 +156,8 @@ def _snapshot_delta(
         "data_version": snapshot.data_version,
         "auto_updated_at": snapshot.auto_updated_at,
         "exam_period_id": snapshot.exam_period_id,
+        "source_url": snapshot.source_url,
+        "source_title": snapshot.source_title,
         "previous_data_version": previous.data_version if previous else None,
         "previous_auto_updated_at": previous.auto_updated_at if previous else None,
         "status": status,
@@ -171,18 +173,23 @@ def _snapshot_delta(
     }
 
 
-def _event_from_delta(delta: dict[str, Any]) -> dict[str, Any]:
+def _timeline_node_from_delta(delta: dict[str, Any]) -> dict[str, Any]:
     status = delta["status"]
-    if status == "unchanged":
-        raise ExamPipelineError("unchanged snapshot deltas must not be exposed as class history events")
     changes = delta.get("changes")
-    if not isinstance(changes, list) or not changes:
-        raise ExamPipelineError(f"class history event must include changes: {delta.get('data_version')}")
+    if not isinstance(changes, list):
+        raise ExamPipelineError(f"class history timeline node changes must be a list: {delta.get('data_version')}")
+    if status in {"changed", "removed", "reappeared"} and not changes:
+        raise ExamPipelineError(f"class history timeline node must include changes: {delta.get('data_version')}")
+    if status in {"first_seen", "unchanged"} and changes:
+        raise ExamPipelineError(f"class history timeline node must not duplicate unchanged/first_seen records: {delta.get('data_version')}")
     return {
         "data_version": delta["data_version"],
         "auto_updated_at": delta["auto_updated_at"],
         "exam_period_id": delta["exam_period_id"],
+        "source_url": delta.get("source_url"),
+        "source_title": delta.get("source_title"),
         "previous_data_version": delta.get("previous_data_version"),
+        "previous_auto_updated_at": delta.get("previous_auto_updated_at"),
         "status": status,
         "totals": delta["totals"],
         "changes": changes,
@@ -230,7 +237,6 @@ def build_exam_history(snapshots: list[ExamSnapshot], *, generated_at: str) -> t
         key = class_file_key(class_name)
         snapshot_deltas: list[dict[str, Any]] = []
         seen_before = False
-        events_chronological: list[dict[str, Any]] = []
 
         for index, snapshot in enumerate(snapshots):
             current_records = snapshot_classes[index].get(class_name, [])
@@ -243,7 +249,7 @@ def build_exam_history(snapshots: list[ExamSnapshot], *, generated_at: str) -> t
             if not previous_records and current_records:
                 status = "first_seen" if not seen_before else "reappeared"
                 totals = {"added": len(current_records), "removed": 0, "changed": 0, "unchanged": 0}
-                changes = _added_changes(current_records)
+                changes = [] if status == "first_seen" else _added_changes(current_records)
             elif previous_records and not current_records:
                 status = "removed"
                 totals = {"added": 0, "removed": len(previous_records), "changed": 0, "unchanged": 0}
@@ -266,8 +272,6 @@ def build_exam_history(snapshots: list[ExamSnapshot], *, generated_at: str) -> t
             snapshot_deltas.append(snapshot_delta)
             if current_records:
                 seen_before = True
-            if status in {"first_seen", "reappeared", "changed", "removed"}:
-                events_chronological.append(_event_from_delta(snapshot_delta))
 
         if not snapshot_deltas:
             continue
@@ -275,10 +279,10 @@ def build_exam_history(snapshots: list[ExamSnapshot], *, generated_at: str) -> t
         first_delta = snapshot_deltas[0]
         latest_delta = snapshot_deltas[-1]
         first_seen = next((item for item in snapshot_deltas if item["status"] in {"first_seen", "reappeared"}), first_delta)
-        if not events_chronological:
-            raise ExamPipelineError(f"class history has no version events: {class_name}")
-        events = list(reversed(events_chronological))
-        latest_change_event = events[0]
+        timeline = list(reversed([_timeline_node_from_delta(delta) for delta in snapshot_deltas]))
+        affected_timeline = [node for node in timeline if node["status"] != "unchanged"]
+        if not affected_timeline:
+            raise ExamPipelineError(f"class history has no affected timeline nodes: {class_name}")
         current_record_count = len(latest_classes.get(class_name, []))
 
         payload = {
@@ -296,8 +300,7 @@ def build_exam_history(snapshots: list[ExamSnapshot], *, generated_at: str) -> t
                 "data_version": first_seen["data_version"],
                 "auto_updated_at": first_seen["auto_updated_at"],
             },
-            "latest_change_event": latest_change_event,
-            "events": events,
+            "timeline": timeline,
         }
         class_files[key] = payload
         class_index.append(
@@ -309,10 +312,11 @@ def build_exam_history(snapshots: list[ExamSnapshot], *, generated_at: str) -> t
                 "first_seen_data_version": first_seen["data_version"],
                 "first_seen_at": first_seen["auto_updated_at"],
                 "latest_status": latest_delta["status"],
-                "latest_change_data_version": latest_change_event["data_version"],
-                "latest_change_at": latest_change_event["auto_updated_at"],
+                "latest_affected_data_version": affected_timeline[0]["data_version"],
+                "latest_affected_at": affected_timeline[0]["auto_updated_at"],
                 "current_record_count": current_record_count,
-                "event_count": len(events),
+                "timeline_count": len(timeline),
+                "affected_count": len(affected_timeline),
             }
         )
 

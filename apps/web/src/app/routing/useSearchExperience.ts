@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useProgressiveSearch } from '@/features/collection-search/model/useProgressiveSearch';
 import { useSearchIndexWorker } from '@/features/collection-search/model/useSearchIndexWorker';
-import { useClassSearch } from '@/features/exam-search/model/useClassSearch';
 import { useExamData } from '@/features/exam-search/model/useExamData';
 import { useExamHistory } from '@/features/exam-search/model/useExamHistory';
 import { useSelectedExamIds } from '@/features/exam-search/model/useSelectedExamIds';
@@ -12,7 +11,6 @@ import {
     normalizeClassQuery,
 } from '@/features/query-router/model/examQuery';
 import { useUrlState } from '@/features/query-router/model/useUrlState';
-import { useDataUpdateNotifier } from '@/widgets/update-notifier/model/useDataUpdateNotifier';
 import type { SitegraphSearchFilters, SitegraphSortMode } from '@/shared/lib/contracts';
 
 type ResultsLoadingKind = 'collection' | 'exam-list' | 'exam-detail';
@@ -23,8 +21,7 @@ export function useSearchExperience() {
     const initialQuery = classParam || qParam || '';
     const isHome = !classParam && !qParam;
     const isExamRoute = Boolean(classParam) || isExamHelperQuery(qParam || '') || isClassLookupQuery(qParam || '');
-    const needsExamData = Boolean(classParam) || isClassLookupQuery(qParam || '');
-    const needsExamHistory = Boolean(classParam) || isExamHelperQuery(qParam || '') || isClassLookupQuery(qParam || '');
+    const needsExamData = isExamRoute;
     const shouldSearchSitegraph = Boolean(qParam && !isExamRoute && qParam.trim().length >= 2);
     const searchQuery = shouldSearchSitegraph ? qParam || '' : '';
     const manualSelection = classParam;
@@ -32,8 +29,18 @@ export function useSearchExperience() {
         ? (classParam || isCompleteClassQuery(qParam || '') ? 'exam-detail' : 'exam-list')
         : 'collection';
 
-    const { exams: allExams, loading: examLoading, error: examError, sourceUrl, sourceTitle, generatedAt, dataVersion, examPeriodId } = useExamData(needsExamData);
-    const { newDataAvailable, reloadToUpdate } = useDataUpdateNotifier();
+    const {
+        classMode: classSearchResult,
+        loading: examLoading,
+        error: examError,
+        sourceUrl,
+        sourceTitle,
+        generatedAt,
+        dataVersion,
+        examPeriodId,
+        classIndex: examClassIndex,
+        currentClassEntry,
+    } = useExamData(needsExamData, initialQuery, manualSelection);
     const [inputValue, setInputValue] = useState<string>(initialQuery);
     const [reminders, setReminders] = useState<number[]>([30, 60]);
     const [collectionSortMode, setCollectionSortMode] = useState<SitegraphSortMode>('relevance');
@@ -55,14 +62,12 @@ export function useSearchExperience() {
         sortMode: collectionSortMode,
         filters: collectionFilters,
     });
-    const classSearchResult = useClassSearch(allExams, initialQuery, manualSelection);
     const currentClass = classSearchResult.mode === 'DETAIL' ? classSearchResult.classes[0] || null : null;
     const {
-        manifest: examHistoryManifest,
         classHistory: examClassHistory,
         loading: examHistoryLoading,
         error: examHistoryError,
-    } = useExamHistory(needsExamHistory, currentClass);
+    } = useExamHistory(Boolean(currentClassEntry), currentClassEntry, dataVersion);
     const {
         selectedIds,
         toggleExamSelection,
@@ -75,7 +80,7 @@ export function useSearchExperience() {
         classSearchResult.exams,
         dataVersion,
         examPeriodId,
-        examHistoryManifest?.latest_auto_updated_at ?? generatedAt
+        generatedAt
     );
 
     useEffect(() => {
@@ -195,14 +200,11 @@ export function useSearchExperience() {
             onRemindersChange: setReminders,
             sourceUrl,
             sourceTitle,
-            examHistoryManifest,
+            generatedAt,
+            examClassIndex,
             examClassHistory,
             examHistoryLoading,
             examHistoryError,
-        },
-        updateToast: {
-            visible: newDataAvailable,
-            onRefresh: reloadToUpdate,
         },
     };
 }

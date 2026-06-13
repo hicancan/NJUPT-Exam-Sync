@@ -18,7 +18,7 @@ import {
     SitegraphSortMode,
     Exam,
     ExamClassHistory,
-    ExamHistoryManifest,
+    ExamClassIndex,
 } from '@/shared/lib/contracts';
 
 type ResultsLoadingKind = 'collection' | 'exam-list' | 'exam-detail';
@@ -51,7 +51,8 @@ interface ResultsPageProps {
     onRemindersChange: (reminders: number[]) => void;
     sourceUrl: string | null;
     sourceTitle: string | null;
-    examHistoryManifest: ExamHistoryManifest | null;
+    generatedAt: string | null;
+    examClassIndex: ExamClassIndex | null;
     examClassHistory: ExamClassHistory | null;
     examHistoryLoading: boolean;
     examHistoryError: string | null;
@@ -83,7 +84,8 @@ export function ResultsPage({
     onRemindersChange,
     sourceUrl,
     sourceTitle,
-    examHistoryManifest,
+    generatedAt,
+    examClassIndex,
     examClassHistory,
     examHistoryLoading,
     examHistoryError,
@@ -130,7 +132,8 @@ export function ResultsPage({
                                 onRemindersChange={onRemindersChange}
                                 sourceUrl={sourceUrl}
                                 sourceTitle={sourceTitle}
-                                examHistoryManifest={examHistoryManifest}
+                                generatedAt={generatedAt}
+                                examClassIndex={examClassIndex}
                                 examClassHistory={examClassHistory}
                                 examHistoryLoading={examHistoryLoading}
                                 examHistoryError={examHistoryError}
@@ -152,7 +155,7 @@ export function ResultsPage({
                             <div className="mx-auto mt-4 max-w-[692px]">
                                 <Suspense fallback={<div className="rounded-xl border border-[#dadce0] bg-white/80 px-4 py-3 text-[14px] text-[#5f6368] dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#9aa0a6]">正在读取考试历史...</div>}>
                                     <ExamHistoryPanel
-                                        manifest={examHistoryManifest}
+                                        classIndex={examClassIndex}
                                         classHistory={null}
                                         loading={examHistoryLoading}
                                         error={examHistoryError}

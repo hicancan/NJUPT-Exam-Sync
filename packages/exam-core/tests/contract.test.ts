@@ -2,7 +2,11 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
     assertManifestMatchesExams,
+    assertClassDataMatchesIndex,
+    assertClassIndexMatchesManifest,
     DataContractError,
+    parseExamClassData,
+    parseExamClassIndex,
     parseExamData,
     parseManifest,
     resolveExamDataVersion
@@ -23,6 +27,14 @@ describe('exam-core data contract', () => {
             loadPublicJson('../../../apps/web/public/generated/exam/data_summary.json'),
             'apps/web/public/generated/exam/data_summary.json'
         );
+        const classIndex = parseExamClassIndex(
+            loadPublicJson('../../../apps/web/public/generated/exam/class_index.json'),
+            'apps/web/public/generated/exam/class_index.json'
+        );
+        const b240402Data = parseExamClassData(
+            loadPublicJson('../../../apps/web/public/generated/exam/classes/b240402.json'),
+            'apps/web/public/generated/exam/classes/b240402.json'
+        );
         const historyManifest = parseExamHistoryManifest(
             loadPublicJson('../../../apps/web/public/generated/exam/history/manifest.json'),
             'apps/web/public/generated/exam/history/manifest.json'
@@ -33,6 +45,13 @@ describe('exam-core data contract', () => {
         );
 
         assertManifestMatchesExams(manifest, exams);
+        assertClassIndexMatchesManifest(manifest, classIndex);
+        const b240402Index = classIndex.classes.find(item => item.class_name === 'B240402');
+        expect(b240402Index).toBeTruthy();
+        if (!b240402Index) {
+            throw new Error('B240402 must exist in exam class_index');
+        }
+        assertClassDataMatchesIndex(b240402Index, b240402Data, resolveExamDataVersion(manifest));
 
         expect(exams.length).toBeGreaterThan(0);
         expect(manifest.files_processed.length).toBeGreaterThan(0);
@@ -41,8 +60,8 @@ describe('exam-core data contract', () => {
         expect(new Set(exams.map(exam => exam.id)).size).toBe(exams.length);
         expect(historyManifest.latest_data_version).toBe(resolveExamDataVersion(manifest));
         expect(historyManifest.exam_period_id).toBe(manifest.exam_period_id);
-        expect(b240402.latest_change_event.status).toBe('changed');
-        expect(b240402.events.some(event => event.status === 'unchanged')).toBe(false);
+        expect(b240402.timeline[0]?.status).toBe('unchanged');
+        expect(b240402.timeline.some(node => node.status === 'changed')).toBe(true);
         expect(JSON.stringify(b240402)).toContain('"before":110');
         expect(JSON.stringify(b240402)).toContain('"after":120');
     });

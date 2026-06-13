@@ -5,6 +5,15 @@ on:
   push:
     branches: [ main, 'milestone/**' ]
   workflow_dispatch:
+    inputs:
+      verification:
+        description: 'Verification scope'
+        required: true
+        type: choice
+        default: fast
+        options:
+          - fast
+          - full
 
 permissions:
   contents: read
@@ -32,11 +41,16 @@ jobs:
       - name: Classify CI workload
         id: ci-mode
         run: |
-          mode="full"
-          full_verification="true"
+          mode="fast"
+          full_verification="false"
           needs_public_assets="true"
-          needs_generated_assets="true"
+          needs_generated_assets="false"
           exam_fast_checks="false"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "${{ github.event.inputs.verification || 'fast' }}" = "full" ]; then
+            mode="manual-full"
+            full_verification="true"
+            needs_generated_assets="true"
+          fi
           if [ "$GITHUB_EVENT_NAME" = "push" ]; then
             before="${{ github.event.before }}"
             if [ -n "$before" ] && [ "$before" != "0000000000000000000000000000000000000000" ]; then
@@ -53,9 +67,7 @@ jobs:
                 needs_generated_assets="false"
               elif [ -n "$changed_files" ] && ! printf '%s\n' "$changed_files" | grep -Ev '^(tools/exam-pipeline/.*|apps/web/src/features/exam-search/.*|apps/web/src/features/query-router/.*|apps/web/src/app/routing/useSearchExperience\.ts|apps/web/src/app/config/constants\.ts|apps/web/src/pages/results/ResultsPage\.tsx|apps/web/vite\.config\.ts|packages/exam-core/.*|packages/contracts/src/exam/.*|packages/contracts/tests/examDataContract\.test\.ts|tests/test_exam_.*|tests/test_prepare_public_assets_download\.py)$' >/dev/null; then
                 mode="exam-code-fast"
-                full_verification="false"
                 needs_public_assets="true"
-                needs_generated_assets="false"
                 exam_fast_checks="true"
               fi
             fi
@@ -111,13 +123,13 @@ jobs:
           token: ${{ secrets.NJUPT_SITEGRAPH_TOKEN || github.token }}
 
       - name: Set up Rust
-        if: steps.ci-mode.outputs.needs_public_assets == 'true'
+        if: steps.ci-mode.outputs.needs_generated_assets == 'true'
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
 
       - name: Cache Rust build artifacts
-        if: steps.ci-mode.outputs.needs_public_assets == 'true'
+        if: steps.ci-mode.outputs.needs_generated_assets == 'true'
         uses: actions/cache@v4
         with:
           path: |
@@ -129,7 +141,7 @@ jobs:
             rust-wasm-${{ runner.os }}-
 
       - name: Install WASM tools
-        if: steps.ci-mode.outputs.needs_public_assets == 'true'
+        if: steps.ci-mode.outputs.needs_generated_assets == 'true'
         run: |
           mkdir -p .ci-tools
           curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 \
@@ -168,6 +180,48 @@ jobs:
           npm run prepare:public-assets
           printf '| Prepare CI-only public assets | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Resolve latest generated data baseline
+        id: generated-baseline
+        if: ${{ steps.ci-mode.outputs.needs_public_assets == 'true' && steps.ci-mode.outputs.needs_generated_assets != 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          run_id=""
+          artifact_name=""
+          for candidate_run_id in $(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.expired == false and .name == "njupt-search-production-dist") | .workflow_run.id'); do
+            run_id="$candidate_run_id"
+            artifact_name="njupt-search-production-dist"
+            break
+          done
+          if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
+            echo "::error::No non-expired production dist artifact found for fast CI generated data baseline"
+            exit 1
+          fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=$artifact_name" >> "$GITHUB_OUTPUT"
+
+      - name: Restore generated data baseline
+        if: ${{ steps.ci-mode.outputs.needs_public_assets == 'true' && steps.ci-mode.outputs.needs_generated_assets != 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.generated-baseline.outputs.run_id }}
+          ARTIFACT_NAME: ${{ steps.generated-baseline.outputs.artifact_name }}
+        run: |
+          start=$SECONDS
+          bash .github/scripts/download-artifact-with-retry.sh "$RUN_ID" "$GITHUB_REPOSITORY" "$ARTIFACT_NAME" _baseline-dist
+          rm -rf apps/web/public/generated
+          cp -R _baseline-dist/generated apps/web/public/generated
+          printf '| Restore generated data baseline | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Materialize exam public assets
+        if: steps.ci-mode.outputs.exam_fast_checks == 'true'
+        run: |
+          start=$SECONDS
+          uv run python tools/ci/prepare_public_assets.py build-exam-public-data
+          uv run python tools/ci/prepare_public_assets.py verify-exam-public-data
+          printf '| Materialize exam public assets | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Verify CI-only public asset determinism
         if: steps.ci-mode.outputs.needs_generated_assets == 'true'
         run: |
@@ -189,6 +243,7 @@ jobs:
           uv run python -m pytest tests/test_exam_history.py tests/test_exam_pipeline_failfast.py tests/test_prepare_public_assets_download.py
           npm run test:prepared -- apps/web/src/features/exam-search packages/exam-core packages/contracts/tests/examDataContract.test.ts
           npm run typecheck:prepared
+          npm run lint
           printf '| Exam fast checks | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fast-mode workflow tests
@@ -197,6 +252,15 @@ jobs:
           start=$SECONDS
           uv run python -m pytest tests/test_workflows.py
           printf '| Fast-mode workflow tests | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fast frontend checks
+        if: ${{ steps.ci-mode.outputs.needs_public_assets == 'true' && steps.ci-mode.outputs.full_verification != 'true' && steps.ci-mode.outputs.exam_fast_checks != 'true' }}
+        run: |
+          start=$SECONDS
+          npm run test:prepared
+          npm run typecheck:prepared
+          npm run lint
+          printf '| Fast frontend checks | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Source complexity gates
         if: steps.ci-mode.outputs.full_verification == 'true'
@@ -240,7 +304,6 @@ jobs:
         if: ${{ steps.ci-mode.outputs.needs_public_assets == 'true' && steps.ci-mode.outputs.full_verification != 'true' }}
         run: |
           start=$SECONDS
-          npm run build:wasm:web
           npm run build:prepared
           npm run check:web-bundle-size
           printf '| Build deployment bundle | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"

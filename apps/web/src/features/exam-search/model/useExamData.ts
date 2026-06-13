@@ -1,16 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { APP_CONFIG } from '@/app/config/constants';
 import {
-    assertManifestMatchesExams,
-    parseExamData,
+    assertClassDataMatchesIndex,
+    assertClassIndexMatchesManifest,
+    parseExamClassData,
+    parseExamClassIndex,
     parseManifest,
     resolveExamDataVersion
 } from '@njupt-search/exam-core/contract';
+import { getClassNameSearchResult } from '@njupt-search/exam-core/search';
 import { fetchJson } from '@/shared/lib/fetch';
-import { Exam, Manifest } from '@/shared/lib/contracts';
+import type {
+    ExamClassData,
+    ExamClassIndex,
+    ExamClassIndexEntry,
+    Manifest,
+    SearchResult
+} from '@/shared/lib/contracts';
 
 interface UseExamDataResult {
-    exams: Exam[];
+    classMode: SearchResult;
     loading: boolean;
     error: string | null;
     sourceUrl: string | null;
@@ -18,15 +27,31 @@ interface UseExamDataResult {
     generatedAt: string | null;
     dataVersion: string | null;
     examPeriodId: string | null;
+    classIndex: ExamClassIndex | null;
+    currentClassEntry: ExamClassIndexEntry | null;
 }
 
-interface LoadedExamData {
-    exams: Exam[];
-    sourceUrl: string | null;
-    sourceTitle: string | null;
-    generatedAt: string;
+type ExamDataState = UseExamDataResult & {
+    requestKey: string | null;
+};
+
+const toPublicExamDataState = (state: ExamDataState): UseExamDataResult => ({
+    classMode: state.classMode,
+    loading: state.loading,
+    error: state.error,
+    sourceUrl: state.sourceUrl,
+    sourceTitle: state.sourceTitle,
+    generatedAt: state.generatedAt,
+    dataVersion: state.dataVersion,
+    examPeriodId: state.examPeriodId,
+    classIndex: state.classIndex,
+    currentClassEntry: state.currentClassEntry,
+});
+
+interface LoadedExamIndex {
+    manifest: Manifest;
+    classIndex: ExamClassIndex;
     dataVersion: string;
-    examPeriodId: string;
 }
 
 export const examDataUrlWithVersion = (url: string, dataVersion: string): string => {
@@ -43,45 +68,99 @@ export const examSummaryUrlWithNonce = (url: string, nonce = Date.now().toString
     return `${url}${separator}fresh=${encodeURIComponent(nonce)}`;
 };
 
-export async function loadExamData(signal?: AbortSignal): Promise<LoadedExamData> {
-    const summaryUrl = examSummaryUrlWithNonce(APP_CONFIG.DATA_URLS.SUMMARY);
+export async function loadExamIndex(signal?: AbortSignal): Promise<LoadedExamIndex> {
+    const nonce = Date.now().toString(36);
+    const summaryUrl = examSummaryUrlWithNonce(APP_CONFIG.DATA_URLS.SUMMARY, nonce);
     const manifestPayload = await fetchJson(summaryUrl, signal, 'exam-summary');
-    const manifestData: Manifest = parseManifest(manifestPayload, APP_CONFIG.DATA_URLS.SUMMARY);
+    const manifestData = parseManifest(manifestPayload, APP_CONFIG.DATA_URLS.SUMMARY);
     const dataVersion = resolveExamDataVersion(manifestData);
-    const examsPayload = await fetchJson(
-        examDataUrlWithVersion(APP_CONFIG.DATA_URLS.EXAMS, dataVersion),
-        signal,
-        'exam-data-versioned'
-    );
-    const examsData = parseExamData(examsPayload, APP_CONFIG.DATA_URLS.EXAMS);
-    assertManifestMatchesExams(manifestData, examsData);
 
-    const sortedExams = [...examsData].sort((a, b) => {
-        if (a.start_timestamp && b.start_timestamp) {
-            return a.start_timestamp.localeCompare(b.start_timestamp);
-        }
+    const classIndexPayload = await fetchJson(
+        examSummaryUrlWithNonce(APP_CONFIG.DATA_URLS.CLASS_INDEX, nonce),
+        signal,
+        'exam-class-index'
+    );
+    const classIndex = parseExamClassIndex(classIndexPayload, APP_CONFIG.DATA_URLS.CLASS_INDEX);
+    assertClassIndexMatchesManifest(manifestData, classIndex);
+
+    return { manifest: manifestData, classIndex, dataVersion };
+}
+
+export async function loadExamClassData(
+    entry: ExamClassIndexEntry,
+    dataVersion: string,
+    signal?: AbortSignal
+): Promise<ExamClassData> {
+    const payload = await fetchJson(
+        examDataUrlWithVersion(entry.path, dataVersion),
+        signal,
+        'exam-class-data-versioned'
+    );
+    const classData = parseExamClassData(payload, entry.path);
+    assertClassDataMatchesIndex(entry, classData, dataVersion);
+    classData.exams.sort((a, b) => {
+        if (a.start_timestamp && b.start_timestamp) return a.start_timestamp.localeCompare(b.start_timestamp);
         return a.start_timestamp ? -1 : 1;
     });
+    return classData;
+}
+
+const findClassEntry = (classIndex: ExamClassIndex, className: string | null): ExamClassIndexEntry | null => {
+    if (!className) return null;
+    const normalized = className.toUpperCase();
+    return classIndex.classes.find(item => item.class_name.toUpperCase() === normalized) || null;
+};
+
+export async function loadExamClassSearch(
+    inputValue: string,
+    manualSelection: string | null,
+    signal?: AbortSignal
+): Promise<UseExamDataResult> {
+    const loadedIndex = await loadExamIndex(signal);
+    const classNames = loadedIndex.classIndex.classes.map(item => item.class_name);
+    const indexOnlyResult = getClassNameSearchResult(classNames, inputValue, manualSelection);
+    const currentClassName = indexOnlyResult.mode === 'DETAIL' ? indexOnlyResult.classes[0] || null : null;
+    const currentClassEntry = findClassEntry(loadedIndex.classIndex, currentClassName);
+    let classMode = indexOnlyResult;
+
+    if (currentClassEntry) {
+        const classData = await loadExamClassData(currentClassEntry, loadedIndex.dataVersion, signal);
+        classMode = {
+            mode: 'DETAIL',
+            classes: [classData.class_name],
+            exams: classData.exams,
+        };
+    }
 
     return {
-        exams: sortedExams,
-        sourceUrl: manifestData.source_url || null,
-        sourceTitle: manifestData.source_title || null,
-        generatedAt: manifestData.generated_at,
-        dataVersion,
-        examPeriodId: manifestData.exam_period_id,
+        classMode,
+        loading: false,
+        error: null,
+        sourceUrl: loadedIndex.manifest.source_url || null,
+        sourceTitle: loadedIndex.manifest.source_title || null,
+        generatedAt: loadedIndex.manifest.generated_at,
+        dataVersion: loadedIndex.dataVersion,
+        examPeriodId: loadedIndex.manifest.exam_period_id,
+        classIndex: loadedIndex.classIndex,
+        currentClassEntry,
     };
 }
 
-export function useExamData(enabled = true): UseExamDataResult {
-    const [exams, setExams] = useState<Exam[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-    const [sourceUrl, setSourceUrl] = useState<string | null>(null);
-    const [sourceTitle, setSourceTitle] = useState<string | null>(null);
-    const [generatedAt, setGeneratedAt] = useState<string | null>(null);
-    const [dataVersion, setDataVersion] = useState<string | null>(null);
-    const [examPeriodId, setExamPeriodId] = useState<string | null>(null);
+export function useExamData(enabled: boolean, inputValue: string, manualSelection: string | null): UseExamDataResult {
+    const requestKey = `${inputValue}\u001f${manualSelection || ''}`;
+    const [state, setState] = useState<ExamDataState>({
+        requestKey: null,
+        classMode: { mode: 'EMPTY', classes: [], exams: [] },
+        loading: enabled,
+        error: null,
+        sourceUrl: null,
+        sourceTitle: null,
+        generatedAt: null,
+        dataVersion: null,
+        examPeriodId: null,
+        classIndex: null,
+        currentClassEntry: null,
+    });
 
     useEffect(() => {
         if (!enabled) {
@@ -90,36 +169,60 @@ export function useExamData(enabled = true): UseExamDataResult {
 
         const controller = new AbortController();
 
-        loadExamData(controller.signal)
+        loadExamClassSearch(inputValue, manualSelection, controller.signal)
             .then((loaded) => {
-                setExams(loaded.exams);
-                setSourceUrl(loaded.sourceUrl);
-                setSourceTitle(loaded.sourceTitle);
-                setGeneratedAt(loaded.generatedAt);
-                setDataVersion(loaded.dataVersion);
-                setExamPeriodId(loaded.examPeriodId);
-                setLoading(false);
+                if (controller.signal.aborted) return;
+                setState({ ...loaded, requestKey });
             })
             .catch(err => {
-                if (err instanceof DOMException && err.name === 'AbortError') {
-                    return;
-                }
+                if (err instanceof DOMException && err.name === 'AbortError') return;
                 console.error(err);
-                setError(err instanceof Error ? err.message : '无法加载数据：未知错误');
-                setLoading(false);
+                setState(previous => ({
+                    ...previous,
+                    classMode: { mode: 'NOT_FOUND', classes: [], exams: [] },
+                    currentClassEntry: null,
+                    error: err instanceof Error ? err.message : '无法加载数据：未知错误',
+                    loading: false,
+                }));
             });
 
         return () => controller.abort();
-    }, [enabled]);
+    }, [enabled, inputValue, manualSelection, requestKey]);
 
+    if (!enabled) {
+        return {
+            classMode: { mode: 'EMPTY', classes: [], exams: [] },
+            loading: false,
+            error: null,
+            sourceUrl: null,
+            sourceTitle: null,
+            generatedAt: null,
+            dataVersion: null,
+            examPeriodId: null,
+            classIndex: null,
+            currentClassEntry: null,
+        };
+    }
+
+    if (state.requestKey !== requestKey) {
+        return {
+            classMode: { mode: 'EMPTY', classes: [], exams: [] },
+            loading: true,
+            error: null,
+            sourceUrl: null,
+            sourceTitle: null,
+            generatedAt: null,
+            dataVersion: null,
+            examPeriodId: null,
+            classIndex: null,
+            currentClassEntry: null,
+        };
+    }
+
+    const publicState = toPublicExamDataState(state);
     return {
-        exams,
-        loading: enabled && loading,
-        error: enabled ? error : null,
-        sourceUrl,
-        sourceTitle,
-        generatedAt,
-        dataVersion,
-        examPeriodId,
+        ...publicState,
+        loading: publicState.loading,
+        error: publicState.error,
     };
 }

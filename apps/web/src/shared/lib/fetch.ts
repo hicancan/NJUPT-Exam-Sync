@@ -3,8 +3,8 @@ export type FetchResourceType =
     | 'index'
     | 'shard'
     | 'exam-summary'
-    | 'exam-data-versioned'
-    | 'exam-history-manifest'
+    | 'exam-class-index'
+    | 'exam-class-data-versioned'
     | 'exam-history-class-versioned'
     | 'default';
 
@@ -16,9 +16,9 @@ const cacheModeFor = (resourceType: FetchResourceType): RequestCache => {
         case 'shard':
             return 'force-cache';
         case 'exam-summary':
-        case 'exam-history-manifest':
+        case 'exam-class-index':
             return 'no-store';
-        case 'exam-data-versioned':
+        case 'exam-class-data-versioned':
         case 'exam-history-class-versioned':
             return 'force-cache';
         default:
@@ -37,9 +37,17 @@ export const fetchJson = async <T = unknown>(
         throw new Error(`数据请求失败: ${url} HTTP ${response.status}`);
     }
 
+    const responseForError = response.clone();
     try {
         return await response.json() as T;
     } catch {
-        throw new Error(`数据文件不是有效 JSON: ${url}`);
+        let preview = '';
+        try {
+            preview = (await responseForError.text()).slice(0, 160).replace(/\s+/g, ' ');
+        } catch {
+            preview = '';
+        }
+        const contentType = response.headers.get('content-type') || 'unknown';
+        throw new Error(`数据文件不是有效 JSON: ${url}；content-type=${contentType}${preview ? `；preview=${preview}` : ''}`);
     }
 };

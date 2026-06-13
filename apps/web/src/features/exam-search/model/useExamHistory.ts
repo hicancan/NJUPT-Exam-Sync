@@ -1,20 +1,14 @@
 import { useEffect, useReducer } from 'react';
 import { APP_CONFIG } from '@/app/config/constants';
 import { fetchJson } from '@/shared/lib/fetch';
-import {
-    parseExamClassHistory,
-    parseExamHistoryManifest,
-} from '@njupt-search/exam-core/history';
+import { parseExamClassHistory } from '@njupt-search/exam-core/history';
 import type {
     ExamClassHistory,
-    ExamClassHistoryIndex,
-    ExamHistoryManifest,
+    ExamClassIndexEntry,
 } from '@/shared/lib/contracts';
 
 interface UseExamHistoryResult {
-    manifest: ExamHistoryManifest | null;
     classHistory: ExamClassHistory | null;
-    classIndex: ExamClassHistoryIndex | null;
     loading: boolean;
     error: string | null;
 }
@@ -24,15 +18,12 @@ type ExamHistoryState = UseExamHistoryResult;
 type ExamHistoryAction =
     | { type: 'reset' }
     | { type: 'start' }
-    | { type: 'manifest'; manifest: ExamHistoryManifest; classIndex: ExamClassHistoryIndex | null }
     | { type: 'classHistory'; classHistory: ExamClassHistory }
     | { type: 'error'; error: string }
     | { type: 'finish' };
 
 const initialState: ExamHistoryState = {
-    manifest: null,
     classHistory: null,
-    classIndex: null,
     loading: false,
     error: null,
 };
@@ -42,9 +33,7 @@ function examHistoryReducer(state: ExamHistoryState, action: ExamHistoryAction):
         case 'reset':
             return initialState;
         case 'start':
-            return { ...state, classHistory: null, classIndex: null, loading: true, error: null };
-        case 'manifest':
-            return { ...state, manifest: action.manifest, classIndex: action.classIndex, classHistory: null };
+            return { ...state, classHistory: null, loading: true, error: null };
         case 'classHistory':
             return { ...state, classHistory: action.classHistory };
         case 'error':
@@ -53,11 +42,6 @@ function examHistoryReducer(state: ExamHistoryState, action: ExamHistoryAction):
             return { ...state, loading: false };
     }
 }
-
-export const examHistoryManifestUrlWithNonce = (url: string, nonce = Date.now().toString(36)): string => {
-    const separator = url.includes('?') ? '&' : '?';
-    return `${url}${separator}fresh=${encodeURIComponent(nonce)}`;
-};
 
 export const examClassHistoryUrlWithVersion = (path: string, dataVersion: string): string => {
     const params = new URLSearchParams({
@@ -68,26 +52,29 @@ export const examClassHistoryUrlWithVersion = (path: string, dataVersion: string
     return `${path}${separator}${params.toString()}`;
 };
 
-export async function loadExamHistoryManifest(signal?: AbortSignal): Promise<ExamHistoryManifest> {
-    const payload = await fetchJson(
-        examHistoryManifestUrlWithNonce(APP_CONFIG.DATA_URLS.HISTORY_MANIFEST),
-        signal,
-        'exam-history-manifest'
-    );
-    return parseExamHistoryManifest(payload, APP_CONFIG.DATA_URLS.HISTORY_MANIFEST);
-}
-
-export async function loadExamClassHistory(index: ExamClassHistoryIndex, dataVersion: string, signal?: AbortSignal): Promise<ExamClassHistory> {
-    const url = examClassHistoryUrlWithVersion(index.path, dataVersion);
+export async function loadExamClassHistory(
+    index: ExamClassIndexEntry,
+    dataVersion: string,
+    signal?: AbortSignal
+): Promise<ExamClassHistory> {
+    const url = examClassHistoryUrlWithVersion(index.history_path, dataVersion);
     const payload = await fetchJson(url, signal, 'exam-history-class-versioned');
-    return parseExamClassHistory(payload, index.path);
+    const classHistory = parseExamClassHistory(payload, index.history_path);
+    if (classHistory.class_key !== index.class_key || classHistory.class_name !== index.class_name) {
+        throw new Error(`考试历史文件与班级索引不一致：${index.class_name}`);
+    }
+    return classHistory;
 }
 
-export function useExamHistory(enabled: boolean, className: string | null): UseExamHistoryResult {
+export function useExamHistory(
+    enabled: boolean,
+    currentClassEntry: ExamClassIndexEntry | null,
+    dataVersion: string | null
+): UseExamHistoryResult {
     const [state, dispatch] = useReducer(examHistoryReducer, initialState);
 
     useEffect(() => {
-        if (!enabled) {
+        if (!enabled || !currentClassEntry || !dataVersion) {
             dispatch({ type: 'reset' });
             return;
         }
@@ -95,16 +82,8 @@ export function useExamHistory(enabled: boolean, className: string | null): UseE
         const controller = new AbortController();
         dispatch({ type: 'start' });
 
-        loadExamHistoryManifest(controller.signal)
-            .then(async (loadedManifest) => {
-                const nextClassIndex = className
-                    ? loadedManifest.classes.find(item => item.class_name.toUpperCase() === className.toUpperCase()) || null
-                    : null;
-                dispatch({ type: 'manifest', manifest: loadedManifest, classIndex: nextClassIndex });
-                if (!nextClassIndex) {
-                    return;
-                }
-                const loadedClassHistory = await loadExamClassHistory(nextClassIndex, loadedManifest.latest_data_version, controller.signal);
+        loadExamClassHistory(currentClassEntry, dataVersion, controller.signal)
+            .then((loadedClassHistory) => {
                 dispatch({ type: 'classHistory', classHistory: loadedClassHistory });
             })
             .catch((err) => {
@@ -117,12 +96,10 @@ export function useExamHistory(enabled: boolean, className: string | null): UseE
             });
 
         return () => controller.abort();
-    }, [enabled, className]);
+    }, [enabled, currentClassEntry, dataVersion]);
 
     return {
-        manifest: enabled ? state.manifest : null,
         classHistory: enabled ? state.classHistory : null,
-        classIndex: enabled ? state.classIndex : null,
         loading: enabled && state.loading,
         error: enabled ? state.error : null,
     };

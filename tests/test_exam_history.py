@@ -127,7 +127,7 @@ def test_ambiguous_duplicate_identity_group_fails_fast():
         )
 
 
-def test_class_history_events_skip_unchanged_snapshots():
+def test_class_history_timeline_keeps_every_jwc_snapshot():
     first = snapshot("first", "2026-06-08T00:00:00+08:00", [exam(duration_minutes=110, end_timestamp="2026-06-08T09:50:00+08:00")])
     second = snapshot("second", "2026-06-09T00:00:00+08:00", [exam(duration_minutes=120, end_timestamp="2026-06-08T10:00:00+08:00")])
     third = snapshot("third", "2026-06-10T00:00:00+08:00", [exam(duration_minutes=120, end_timestamp="2026-06-08T10:00:00+08:00")])
@@ -137,13 +137,17 @@ def test_class_history_events_skip_unchanged_snapshots():
 
     assert manifest["totals"]["snapshot_count"] == 3
     assert manifest["exam_period_id"] == "2025-2026-2"
-    assert b240402["version"] == "exam-class-history-v2"
+    assert b240402["version"] == "exam-class-history-v3"
     assert "checkpoints" not in b240402
     assert "latest_substantive_change" not in b240402
-    assert [event["status"] for event in b240402["events"]] == ["changed", "first_seen"]
-    assert b240402["latest_change_event"]["data_version"] == "second"
-    assert b240402["events"][0]["totals"]["changed"] == 1
-    assert {field["field"] for field in b240402["events"][0]["changes"][0]["fields"]} == {"end_timestamp", "duration_minutes"}
+    assert "events" not in b240402
+    assert "latest_change_event" not in b240402
+    assert [node["status"] for node in b240402["timeline"]] == ["unchanged", "changed", "first_seen"]
+    assert b240402["timeline"][0]["data_version"] == "third"
+    assert b240402["timeline"][0]["changes"] == []
+    assert b240402["timeline"][1]["data_version"] == "second"
+    assert b240402["timeline"][1]["totals"]["changed"] == 1
+    assert {field["field"] for field in b240402["timeline"][1]["changes"][0]["fields"]} == {"end_timestamp", "duration_minutes"}
 
 
 def test_single_snapshot_period_is_first_seen_without_previous_semester_diff():
@@ -159,8 +163,9 @@ def test_single_snapshot_period_is_first_seen_without_previous_semester_diff():
 
     assert manifest["exam_period_id"] == "2026-2027-1"
     assert manifest["totals"]["snapshot_count"] == 1
-    assert b240402["events"][0]["status"] == "first_seen"
-    assert b240402["events"][0]["previous_data_version"] is None
+    assert b240402["timeline"][0]["status"] == "first_seen"
+    assert b240402["timeline"][0]["previous_data_version"] is None
+    assert b240402["timeline"][0]["changes"] == []
 
 
 def test_mixed_exam_period_history_fails_fast():

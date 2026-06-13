@@ -1,11 +1,7 @@
 import { createRoot } from 'react-dom/client'
-import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import App from './app/App'
 import { AppProviders } from './app/providers/AppProviders'
-import { APP_CONFIG } from './app/config/constants'
-
-
 
 const rootElement = document.getElementById('root')
 if (!rootElement) {
@@ -18,18 +14,31 @@ createRoot(rootElement).render(
   </AppProviders>,
 )
 
-let updateServiceWorker: (reloadPage?: boolean) => Promise<void> = async () => {}
+const cleanupLegacyServiceWorker = async (): Promise<void> => {
+  const reloadKey = 'njupt-search:sw-clean'
+  let removed = false
 
-updateServiceWorker = registerSW({
-  immediate: true,
-  onNeedRefresh() {
-    void updateServiceWorker(true)
-  },
-  onRegisterError(error) {
-    console.error('Service worker registration failed:', error)
+  if ('serviceWorker' in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations()
+    await Promise.all(registrations.map(async registration => {
+      removed = true
+      await registration.unregister()
+    }))
   }
-})
 
-window.addEventListener(APP_CONFIG.UPDATE_APPLY_EVENT, () => {
-  void updateServiceWorker(true)
-})
+  if ('caches' in window) {
+    const keys = await caches.keys()
+    await Promise.all(keys.map(async key => {
+      if (!key.startsWith('njupt-search') && !key.startsWith('workbox-')) return
+      removed = true
+      await caches.delete(key)
+    }))
+  }
+
+  if (removed && sessionStorage.getItem(reloadKey) !== '1') {
+    sessionStorage.setItem(reloadKey, '1')
+    window.location.reload()
+  }
+}
+
+void cleanupLegacyServiceWorker().catch(() => undefined)

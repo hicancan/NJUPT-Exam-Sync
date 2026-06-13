@@ -5,7 +5,6 @@ import { AppFooter } from '@/widgets/app-shell/AppFooter';
 import { BlockingDataError } from '@/widgets/app-shell/BlockingDataError';
 import { Header } from '@/widgets/app-shell/Header';
 import { InlineErrorBanner } from '@/widgets/app-shell/InlineErrorBanner';
-import { DataUpdateToast } from '@/widgets/update-notifier/ui/DataUpdateToast';
 
 function App() {
     const experience = useSearchExperience();
@@ -27,7 +26,6 @@ function App() {
             )}
 
             <AppFooter />
-            <DataUpdateToast {...experience.updateToast} />
         </div>
     );
 }

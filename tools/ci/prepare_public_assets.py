@@ -387,6 +387,8 @@ def public_data_current() -> bool:
         and marker.get("builder_fingerprint") == public_asset_builder_fingerprint()
         and (COLLECTION_DIR / "manifest.json").exists()
         and (EXAM_DIR / "all_exams.json").exists()
+        and (EXAM_DIR / "class_index.json").exists()
+        and (EXAM_DIR / "classes").exists()
         and (EXAM_DIR / "data_summary.json").exists()
         and (EXAM_DIR / "history" / "manifest.json").exists()
     )
@@ -403,6 +405,7 @@ def ensure_public_assets_exist() -> None:
     required = [
         COLLECTION_DIR / "manifest.json",
         EXAM_DIR / "all_exams.json",
+        EXAM_DIR / "class_index.json",
         EXAM_DIR / "data_summary.json",
         EXAM_DIR / "history" / "manifest.json",
     ]
@@ -430,9 +433,10 @@ def verify_exam_public_data() -> None:
     expected_period = parse_exam_period(lock.get("source_title"))
     summary_path = EXAM_DIR / "data_summary.json"
     exams_path = EXAM_DIR / "all_exams.json"
+    class_index_path = EXAM_DIR / "class_index.json"
     metadata_path = EXAM_DIR / "source_metadata.json"
     history_manifest_path = EXAM_DIR / "history" / "manifest.json"
-    for path in (summary_path, exams_path, metadata_path, history_manifest_path):
+    for path in (summary_path, exams_path, class_index_path, metadata_path, history_manifest_path):
         if not path.exists():
             raise PublicAssetError(f"missing generated exam public asset: {path.relative_to(REPO_ROOT)}")
     if (EXAM_DIR / "change_summary.json").exists():
@@ -443,6 +447,7 @@ def verify_exam_public_data() -> None:
         raise PublicAssetError("exam DATA_INVENTORY.md must not be generated in public assets")
 
     summary = read_json(summary_path)
+    class_index = read_json(class_index_path)
     metadata = read_json(metadata_path)
     history_manifest = read_json(history_manifest_path)
     with exams_path.open("r", encoding="utf-8") as handle:
@@ -469,6 +474,19 @@ def verify_exam_public_data() -> None:
     total_records = summary.get("total_records")
     if not isinstance(total_records, int) or total_records != len(exams):
         raise PublicAssetError("exam data_summary total_records does not match all_exams length")
+    if class_index.get("version") != "exam-class-index-v1":
+        raise PublicAssetError("exam class_index version is invalid")
+    if class_index.get("data_version") != expected_data_version:
+        raise PublicAssetError("exam class_index data_version does not match exam lock")
+    if class_index.get("exam_period_id") != expected_period.exam_period_id:
+        raise PublicAssetError("exam class_index exam_period_id does not match source_title period")
+    if class_index.get("total_records") != total_records:
+        raise PublicAssetError("exam class_index total_records does not match data_summary")
+    class_index_entries = class_index.get("classes")
+    if not isinstance(class_index_entries, list) or not class_index_entries:
+        raise PublicAssetError("exam class_index classes must be a non-empty list")
+    if class_index.get("class_count") != len(class_index_entries):
+        raise PublicAssetError("exam class_index class_count mismatch")
     exam_ids: set[str] = set()
     stable_keys: set[str] = set()
     for item in exams:
@@ -506,39 +524,87 @@ def verify_exam_public_data() -> None:
     classes = history_manifest.get("classes")
     if not isinstance(classes, list) or not classes:
         raise PublicAssetError("exam history manifest classes must be a non-empty list")
+    class_entries_by_key: dict[str, dict[str, Any]] = {}
+    class_record_total = 0
+    for item in class_index_entries:
+        if not isinstance(item, dict):
+            raise PublicAssetError("exam class_index entries must be objects")
+        class_key = str(item.get("class_key") or "")
+        class_name = str(item.get("class_name") or "")
+        path_value = str(item.get("path") or "")
+        history_path_value = str(item.get("history_path") or "")
+        if not class_key or not class_name:
+            raise PublicAssetError("exam class_index entries must contain class_key and class_name")
+        if class_key in class_entries_by_key:
+            raise PublicAssetError(f"duplicate exam class_index class_key: {class_key}")
+        if not path_value.startswith("generated/exam/classes/") or not path_value.endswith(".json"):
+            raise PublicAssetError(f"invalid exam class data path: {path_value}")
+        if not history_path_value.startswith("generated/exam/history/classes/") or not history_path_value.endswith(".json"):
+            raise PublicAssetError(f"invalid exam class history path in class_index: {history_path_value}")
+        class_payload = read_json(PUBLIC_ROOT / path_value)
+        if class_payload.get("version") != "exam-class-data-v1":
+            raise PublicAssetError(f"invalid exam class data version: {path_value}")
+        if class_payload.get("data_version") != expected_data_version:
+            raise PublicAssetError(f"exam class data data_version mismatch: {path_value}")
+        if class_payload.get("exam_period_id") != expected_period.exam_period_id:
+            raise PublicAssetError(f"exam class data exam_period_id mismatch: {path_value}")
+        if class_payload.get("class_key") != class_key or class_payload.get("class_name") != class_name:
+            raise PublicAssetError(f"exam class data identity mismatch: {path_value}")
+        class_exams = class_payload.get("exams")
+        if not isinstance(class_exams, list):
+            raise PublicAssetError(f"exam class data exams must be a list: {path_value}")
+        if item.get("record_count") != len(class_exams) or class_payload.get("record_count") != len(class_exams):
+            raise PublicAssetError(f"exam class data record_count mismatch: {path_value}")
+        for class_exam in class_exams:
+            if not isinstance(class_exam, dict) or class_exam.get("class_name") != class_name:
+                raise PublicAssetError(f"exam class data contains a record from another class: {path_value}")
+        class_record_total += len(class_exams)
+        class_entries_by_key[class_key] = item
+    if class_record_total != total_records:
+        raise PublicAssetError("exam class data record total does not match data_summary")
+
     for item in classes:
         if not isinstance(item, dict):
             raise PublicAssetError("exam history manifest classes entries must be objects")
         path_value = str(item.get("path") or "")
         if not path_value.startswith("generated/exam/history/classes/") or not path_value.endswith(".json"):
             raise PublicAssetError(f"invalid exam class history path: {path_value}")
+        class_key = str(item.get("class_key") or "")
+        class_index_entry = class_entries_by_key.get(class_key)
+        if class_index_entry is None:
+            raise PublicAssetError(f"exam history class is missing from class_index: {class_key}")
+        if class_index_entry.get("history_path") != path_value:
+            raise PublicAssetError(f"exam class_index history_path mismatch: {path_value}")
         class_history_path = PUBLIC_ROOT / path_value
         class_payload = read_json(class_history_path)
-        if class_payload.get("version") != "exam-class-history-v2":
+        if class_payload.get("version") != "exam-class-history-v3":
             raise PublicAssetError(f"invalid exam class history version: {path_value}")
         if class_payload.get("latest_data_version") != expected_data_version:
             raise PublicAssetError(f"exam class history latest_data_version mismatch: {path_value}")
         if class_payload.get("exam_period_id") != expected_period.exam_period_id:
             raise PublicAssetError(f"exam class history exam_period_id mismatch: {path_value}")
-        if "latest_substantive_change" in class_payload or "checkpoints" in class_payload:
-            raise PublicAssetError(f"obsolete exam class history v1 fields must not be generated: {path_value}")
-        events = class_payload.get("events")
-        if not isinstance(events, list) or not events:
-            raise PublicAssetError(f"exam class history events must be non-empty: {path_value}")
-        if item.get("event_count") != len(events):
-            raise PublicAssetError(f"exam class history event_count mismatch: {path_value}")
-        latest_event = class_payload.get("latest_change_event")
-        if not isinstance(latest_event, dict):
-            raise PublicAssetError(f"exam class history latest_change_event must be an object: {path_value}")
-        if latest_event.get("data_version") != events[0].get("data_version"):
-            raise PublicAssetError(f"exam class history latest_change_event must match first event: {path_value}")
-        for event in events:
-            if not isinstance(event, dict):
-                raise PublicAssetError(f"exam class history events must contain objects: {path_value}")
-            if event.get("status") == "unchanged":
-                raise PublicAssetError(f"unchanged snapshots must not be class history events: {path_value}")
-            if not event.get("auto_updated_at") or not isinstance(event.get("changes"), list) or not event["changes"]:
-                raise PublicAssetError(f"exam class history events must contain auto_updated_at and changes: {path_value}")
+        for obsolete_field in ("latest_substantive_change", "checkpoints", "events", "latest_change_event"):
+            if obsolete_field in class_payload:
+                raise PublicAssetError(f"obsolete exam class history field must not be generated: {obsolete_field} in {path_value}")
+        timeline = class_payload.get("timeline")
+        if not isinstance(timeline, list) or not timeline:
+            raise PublicAssetError(f"exam class history timeline must be non-empty: {path_value}")
+        affected_count = sum(1 for node in timeline if isinstance(node, dict) and node.get("status") != "unchanged")
+        if item.get("timeline_count") != len(timeline):
+            raise PublicAssetError(f"exam class history timeline_count mismatch: {path_value}")
+        if item.get("affected_count") != affected_count:
+            raise PublicAssetError(f"exam class history affected_count mismatch: {path_value}")
+        for node in timeline:
+            if not isinstance(node, dict):
+                raise PublicAssetError(f"exam class history timeline must contain objects: {path_value}")
+            status = node.get("status")
+            changes = node.get("changes")
+            if not node.get("auto_updated_at") or not isinstance(changes, list):
+                raise PublicAssetError(f"exam class history timeline nodes must contain auto_updated_at and changes: {path_value}")
+            if status in {"changed", "removed", "reappeared"} and not changes:
+                raise PublicAssetError(f"affected exam class history nodes must contain changes: {path_value}")
+            if status in {"first_seen", "unchanged"} and changes:
+                raise PublicAssetError(f"first_seen/unchanged exam class history nodes must not contain changes: {path_value}")
     print(
         json.dumps(
             {

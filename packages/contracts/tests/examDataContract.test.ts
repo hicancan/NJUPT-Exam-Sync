@@ -2,7 +2,9 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
     ExamSchema,
+    ExamClassDataSchema,
     ExamClassHistorySchema,
+    ExamClassIndexSchema,
     ExamHistoryManifestSchema,
     ManifestSchema
 } from '../src/exam';
@@ -16,6 +18,8 @@ describe('exam data contract package', () => {
     it('accepts the committed public data file shapes', () => {
         const exams = z.array(ExamSchema).parse(loadPublicJson('../../../apps/web/public/generated/exam/all_exams.json'));
         const manifest = ManifestSchema.parse(loadPublicJson('../../../apps/web/public/generated/exam/data_summary.json'));
+        const classIndex = ExamClassIndexSchema.parse(loadPublicJson('../../../apps/web/public/generated/exam/class_index.json'));
+        const b240402Data = ExamClassDataSchema.parse(loadPublicJson('../../../apps/web/public/generated/exam/classes/b240402.json'));
         const historyManifest = ExamHistoryManifestSchema.parse(loadPublicJson('../../../apps/web/public/generated/exam/history/manifest.json'));
         const b240402 = ExamClassHistorySchema.parse(loadPublicJson('../../../apps/web/public/generated/exam/history/classes/b240402.json'));
 
@@ -23,9 +27,12 @@ describe('exam data contract package', () => {
         expect(manifest.files_processed.length).toBeGreaterThan(0);
         expect(manifest.data_version).toMatch(/^[a-f0-9]{64}$/);
         expect(manifest.exam_period_id).toMatch(/^\d{4}-\d{4}-[1-4]$/);
+        expect(classIndex.data_version).toBe(manifest.data_version);
+        expect(b240402Data.exams.length).toBe(14);
         expect(historyManifest.latest_data_version).toBe(manifest.data_version);
         expect(historyManifest.exam_period_id).toBe(manifest.exam_period_id);
         expect(b240402.class_name).toBe('B240402');
+        expect(b240402.timeline.some(node => node.status === 'unchanged')).toBe(true);
     });
 
     it('rejects invalid exam field shapes', () => {

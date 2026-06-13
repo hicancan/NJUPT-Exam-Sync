@@ -51,8 +51,47 @@ export interface SearchResult {
     exams: Exam[];
 }
 
+export interface ExamClassIndexEntry {
+    class_name: string;
+    class_key: string;
+    exam_period_id: string;
+    record_count: number;
+    path: string;
+    history_path: string;
+}
+
+export interface ExamClassIndex {
+    version: 'exam-class-index-v1';
+    generated_at: string;
+    data_version: string;
+    exam_period_id: string;
+    academic_year: string;
+    term_number: number;
+    term_label: string;
+    source_url?: string | null;
+    source_title?: string | null;
+    total_records: number;
+    class_count: number;
+    classes: ExamClassIndexEntry[];
+}
+
+export interface ExamClassData {
+    version: 'exam-class-data-v1';
+    exam_period_id: string;
+    academic_year: string;
+    term_number: number;
+    term_label: string;
+    data_version: string;
+    generated_at: string;
+    source_url?: string | null;
+    source_title?: string | null;
+    class_name: string;
+    class_key: string;
+    record_count: number;
+    exams: Exam[];
+}
+
 export type ExamHistoryStatus = 'first_seen' | 'changed' | 'unchanged' | 'removed' | 'reappeared';
-export type ExamHistoryEventStatus = Exclude<ExamHistoryStatus, 'unchanged'>;
 export type ExamHistoryChangeType = 'added' | 'removed' | 'changed';
 
 export interface ExamHistoryFieldChange {
@@ -84,12 +123,15 @@ export interface ExamHistoryEventTotals {
     current_records: number;
 }
 
-export interface ExamHistoryEvent {
+export interface ExamHistoryTimelineNode {
     data_version: string;
     auto_updated_at: string;
     exam_period_id: string;
+    source_url?: string | null;
+    source_title?: string | null;
     previous_data_version?: string | null;
-    status: ExamHistoryEventStatus;
+    previous_auto_updated_at?: string | null;
+    status: ExamHistoryStatus;
     totals: ExamHistoryEventTotals;
     changes: ExamHistoryChange[];
 }
@@ -112,10 +154,11 @@ export interface ExamClassHistoryIndex {
     first_seen_data_version: string;
     first_seen_at: string;
     latest_status: ExamHistoryStatus;
-    latest_change_data_version: string;
-    latest_change_at: string;
+    latest_affected_data_version: string;
+    latest_affected_at: string;
     current_record_count: number;
-    event_count: number;
+    timeline_count: number;
+    affected_count: number;
 }
 
 export interface ExamHistoryManifest {
@@ -138,7 +181,7 @@ export interface ExamHistoryManifest {
 }
 
 export interface ExamClassHistory {
-    version: 'exam-class-history-v2';
+    version: 'exam-class-history-v3';
     exam_period_id: string;
     academic_year: string;
     term_number: number;
@@ -152,8 +195,7 @@ export interface ExamClassHistory {
         data_version: string;
         auto_updated_at: string;
     };
-    latest_change_event: ExamHistoryEvent;
-    events: ExamHistoryEvent[];
+    timeline: ExamHistoryTimelineNode[];
 }
 
 export const ExamSchema = z.object({
@@ -204,6 +246,82 @@ export const ManifestSchema = z.object({
     source_title: z.string().nullable().optional(),
 }).passthrough();
 
+export const ExamClassIndexEntrySchema = z.object({
+    class_name: z.string().min(1),
+    class_key: z.string().min(1),
+    exam_period_id: z.string().regex(/^\d{4}-\d{4}-[1-4]$/),
+    record_count: z.number().int().nonnegative(),
+    path: z.string().regex(/^generated\/exam\/classes\/[^/]+\.json$/),
+    history_path: z.string().regex(/^generated\/exam\/history\/classes\/[^/]+\.json$/),
+}).strict();
+
+export const ExamClassIndexSchema = z.object({
+    version: z.literal('exam-class-index-v1'),
+    generated_at: z.string().min(1),
+    data_version: z.string().regex(/^[a-f0-9]{64}$/),
+    exam_period_id: z.string().regex(/^\d{4}-\d{4}-[1-4]$/),
+    academic_year: z.string().regex(/^\d{4}-\d{4}$/),
+    term_number: z.number().int().min(1).max(4),
+    term_label: z.string().min(1),
+    source_url: z.string().nullable().optional(),
+    source_title: z.string().nullable().optional(),
+    total_records: z.number().int().nonnegative(),
+    class_count: z.number().int().nonnegative(),
+    classes: z.array(ExamClassIndexEntrySchema),
+}).strict().superRefine((value, ctx) => {
+    if (value.class_count !== value.classes.length) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'class_count must match classes.length' });
+    }
+    const seen = new Set<string>();
+    for (const item of value.classes) {
+        if (item.exam_period_id !== value.exam_period_id) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: `class index exam_period_id mismatch: ${item.class_name}` });
+        }
+        if (seen.has(item.class_key)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: `duplicate class_key: ${item.class_key}` });
+        }
+        seen.add(item.class_key);
+    }
+});
+
+export const ExamClassDataSchema = z.object({
+    version: z.literal('exam-class-data-v1'),
+    exam_period_id: z.string().regex(/^\d{4}-\d{4}-[1-4]$/),
+    academic_year: z.string().regex(/^\d{4}-\d{4}$/),
+    term_number: z.number().int().min(1).max(4),
+    term_label: z.string().min(1),
+    data_version: z.string().regex(/^[a-f0-9]{64}$/),
+    generated_at: z.string().min(1),
+    source_url: z.string().nullable().optional(),
+    source_title: z.string().nullable().optional(),
+    class_name: z.string().min(1),
+    class_key: z.string().min(1),
+    record_count: z.number().int().nonnegative(),
+    exams: z.array(ExamSchema),
+}).strict().superRefine((value, ctx) => {
+    if (value.record_count !== value.exams.length) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'record_count must match exams.length' });
+    }
+    const ids = new Set<string>();
+    const stableKeys = new Set<string>();
+    for (const exam of value.exams) {
+        if (exam.class_name !== value.class_name) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: `exam class_name mismatch: ${exam.id}` });
+        }
+        if (exam.exam_period_id !== value.exam_period_id) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: `exam exam_period_id mismatch: ${exam.id}` });
+        }
+        if (ids.has(exam.id)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: `duplicate exam id: ${exam.id}` });
+        }
+        if (stableKeys.has(exam.stable_key)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: `duplicate exam stable_key: ${exam.stable_key}` });
+        }
+        ids.add(exam.id);
+        stableKeys.add(exam.stable_key);
+    }
+});
+
 const ExamRecordSnapshotSchema = z.object({
     id: z.string().optional().nullable(),
     stable_key: z.string().optional().nullable(),
@@ -224,7 +342,6 @@ const ExamRecordSnapshotSchema = z.object({
 }).passthrough();
 
 export const ExamHistoryStatusSchema = z.enum(['first_seen', 'changed', 'unchanged', 'removed', 'reappeared']);
-export const ExamHistoryEventStatusSchema = z.enum(['first_seen', 'changed', 'removed', 'reappeared']);
 
 export const ExamHistoryFieldChangeSchema = z.object({
     field: z.string().min(1),
@@ -265,14 +382,24 @@ export const ExamHistoryEventTotalsSchema = z.object({
     current_records: z.number().int().nonnegative(),
 });
 
-export const ExamHistoryEventSchema = z.object({
+export const ExamHistoryTimelineNodeSchema = z.object({
     data_version: z.string().min(1),
     auto_updated_at: z.string().min(1),
     exam_period_id: z.string().regex(/^\d{4}-\d{4}-[1-4]$/),
+    source_url: z.string().nullable().optional(),
+    source_title: z.string().nullable().optional(),
     previous_data_version: z.string().nullable().optional(),
-    status: ExamHistoryEventStatusSchema,
+    previous_auto_updated_at: z.string().nullable().optional(),
+    status: ExamHistoryStatusSchema,
     totals: ExamHistoryEventTotalsSchema,
-    changes: z.array(ExamHistoryChangeSchema).min(1),
+    changes: z.array(ExamHistoryChangeSchema),
+}).strict().superRefine((value, ctx) => {
+    if (['changed', 'removed', 'reappeared'].includes(value.status) && value.changes.length === 0) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `${value.status} timeline nodes must include changes` });
+    }
+    if ((value.status === 'first_seen' || value.status === 'unchanged') && value.changes.length !== 0) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `${value.status} timeline nodes must not include changes` });
+    }
 });
 
 export const ExamHistorySnapshotSchema = z.object({
@@ -293,10 +420,11 @@ export const ExamClassHistoryIndexSchema = z.object({
     first_seen_data_version: z.string().min(1),
     first_seen_at: z.string().min(1),
     latest_status: ExamHistoryStatusSchema,
-    latest_change_data_version: z.string().min(1),
-    latest_change_at: z.string().min(1),
+    latest_affected_data_version: z.string().min(1),
+    latest_affected_at: z.string().min(1),
     current_record_count: z.number().int().nonnegative(),
-    event_count: z.number().int().positive(),
+    timeline_count: z.number().int().positive(),
+    affected_count: z.number().int().positive(),
 });
 
 export const ExamHistoryManifestSchema = z.object({
@@ -319,7 +447,7 @@ export const ExamHistoryManifestSchema = z.object({
 });
 
 export const ExamClassHistorySchema = z.object({
-    version: z.literal('exam-class-history-v2'),
+    version: z.literal('exam-class-history-v3'),
     exam_period_id: z.string().regex(/^\d{4}-\d{4}-[1-4]$/),
     academic_year: z.string().regex(/^\d{4}-\d{4}$/),
     term_number: z.number().int().min(1).max(4),
@@ -333,19 +461,11 @@ export const ExamClassHistorySchema = z.object({
         data_version: z.string().min(1),
         auto_updated_at: z.string().min(1),
     }),
-    latest_change_event: ExamHistoryEventSchema,
-    events: z.array(ExamHistoryEventSchema).min(1),
+    timeline: z.array(ExamHistoryTimelineNodeSchema).min(1),
 }).strict().superRefine((value, ctx) => {
-    const firstEvent = value.events[0];
-    if (!firstEvent) return;
-    if (
-        value.latest_change_event.data_version !== firstEvent.data_version
-        || value.latest_change_event.auto_updated_at !== firstEvent.auto_updated_at
-        || value.latest_change_event.status !== firstEvent.status
-    ) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: 'latest_change_event must match the first class history event',
-        });
+    for (const node of value.timeline) {
+        if (node.exam_period_id !== value.exam_period_id) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: `timeline node exam_period_id mismatch: ${node.data_version}` });
+        }
     }
 });
