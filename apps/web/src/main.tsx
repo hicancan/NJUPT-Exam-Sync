@@ -18,20 +18,12 @@ createRoot(rootElement).render(
   </AppProviders>,
 )
 
-const notifyCacheUpdated = () => {
-  if (!('BroadcastChannel' in window)) {
-    return
-  }
+let updateServiceWorker: (reloadPage?: boolean) => Promise<void> = async () => {}
 
-  const channel = new BroadcastChannel(APP_CONFIG.UPDATE_CHANNEL)
-  channel.postMessage({ type: 'CACHE_UPDATED' })
-  channel.close()
-}
-
-const updateServiceWorker = registerSW({
+updateServiceWorker = registerSW({
   immediate: true,
   onNeedRefresh() {
-    notifyCacheUpdated()
+    void updateServiceWorker(true)
   },
   onRegisterError(error) {
     console.error('Service worker registration failed:', error)
