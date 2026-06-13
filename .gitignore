@@ -35,7 +35,12 @@ eval/reports/eval-*.json
 cache/
 tools/wasm/packed-impact-decoder/pkg-node/
 tools/wasm/packed-impact-decoder/pkg/
-apps/web/src/features/collection-search/wasm/
+apps/web/src/features/collection-search/wasm/*
+!apps/web/src/features/collection-search/wasm/package.json
+!apps/web/src/features/collection-search/wasm/packed_impact_decoder.js
+!apps/web/src/features/collection-search/wasm/packed_impact_decoder.d.ts
+!apps/web/src/features/collection-search/wasm/packed_impact_decoder_bg.wasm
+!apps/web/src/features/collection-search/wasm/packed_impact_decoder_bg.wasm.d.ts
 apps/web/public/generated/
 tools/search-eval/reports/
 _sitegraph/
