@@ -41,7 +41,8 @@ describe('exam-core data contract', () => {
         expect(new Set(exams.map(exam => exam.id)).size).toBe(exams.length);
         expect(historyManifest.latest_data_version).toBe(resolveExamDataVersion(manifest));
         expect(historyManifest.exam_period_id).toBe(manifest.exam_period_id);
-        expect(b240402.latest_substantive_change.status).toBe('changed');
+        expect(b240402.latest_change_event.status).toBe('changed');
+        expect(b240402.events.some(event => event.status === 'unchanged')).toBe(false);
         expect(JSON.stringify(b240402)).toContain('"before":110');
         expect(JSON.stringify(b240402)).toContain('"after":120');
     });

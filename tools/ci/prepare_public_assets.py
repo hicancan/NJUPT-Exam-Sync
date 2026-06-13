@@ -514,14 +514,31 @@ def verify_exam_public_data() -> None:
             raise PublicAssetError(f"invalid exam class history path: {path_value}")
         class_history_path = PUBLIC_ROOT / path_value
         class_payload = read_json(class_history_path)
-        if class_payload.get("version") != "exam-class-history-v1":
+        if class_payload.get("version") != "exam-class-history-v2":
             raise PublicAssetError(f"invalid exam class history version: {path_value}")
         if class_payload.get("latest_data_version") != expected_data_version:
             raise PublicAssetError(f"exam class history latest_data_version mismatch: {path_value}")
         if class_payload.get("exam_period_id") != expected_period.exam_period_id:
             raise PublicAssetError(f"exam class history exam_period_id mismatch: {path_value}")
-        if not isinstance(class_payload.get("checkpoints"), list) or not class_payload["checkpoints"]:
-            raise PublicAssetError(f"exam class history checkpoints must be non-empty: {path_value}")
+        if "latest_substantive_change" in class_payload or "checkpoints" in class_payload:
+            raise PublicAssetError(f"obsolete exam class history v1 fields must not be generated: {path_value}")
+        events = class_payload.get("events")
+        if not isinstance(events, list) or not events:
+            raise PublicAssetError(f"exam class history events must be non-empty: {path_value}")
+        if item.get("event_count") != len(events):
+            raise PublicAssetError(f"exam class history event_count mismatch: {path_value}")
+        latest_event = class_payload.get("latest_change_event")
+        if not isinstance(latest_event, dict):
+            raise PublicAssetError(f"exam class history latest_change_event must be an object: {path_value}")
+        if latest_event.get("data_version") != events[0].get("data_version"):
+            raise PublicAssetError(f"exam class history latest_change_event must match first event: {path_value}")
+        for event in events:
+            if not isinstance(event, dict):
+                raise PublicAssetError(f"exam class history events must contain objects: {path_value}")
+            if event.get("status") == "unchanged":
+                raise PublicAssetError(f"unchanged snapshots must not be class history events: {path_value}")
+            if not event.get("auto_updated_at") or not isinstance(event.get("changes"), list) or not event["changes"]:
+                raise PublicAssetError(f"exam class history events must contain auto_updated_at and changes: {path_value}")
     print(
         json.dumps(
             {

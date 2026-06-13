@@ -11,7 +11,7 @@ from .publisher import write_json_file
 
 
 HISTORY_MANIFEST_VERSION = "exam-history-manifest-v1"
-CLASS_HISTORY_VERSION = "exam-class-history-v1"
+CLASS_HISTORY_VERSION = "exam-class-history-v2"
 HISTORY_DIR_NAME = "history"
 
 
@@ -142,7 +142,7 @@ def _removed_changes(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     ]
 
 
-def _checkpoint(
+def _snapshot_delta(
     *,
     snapshot: ExamSnapshot,
     previous: ExamSnapshot | None,
@@ -167,6 +167,24 @@ def _checkpoint(
             "previous_records": previous_count,
             "current_records": current_count,
         },
+        "changes": changes,
+    }
+
+
+def _event_from_delta(delta: dict[str, Any]) -> dict[str, Any]:
+    status = delta["status"]
+    if status == "unchanged":
+        raise ExamPipelineError("unchanged snapshot deltas must not be exposed as class history events")
+    changes = delta.get("changes")
+    if not isinstance(changes, list) or not changes:
+        raise ExamPipelineError(f"class history event must include changes: {delta.get('data_version')}")
+    return {
+        "data_version": delta["data_version"],
+        "auto_updated_at": delta["auto_updated_at"],
+        "exam_period_id": delta["exam_period_id"],
+        "previous_data_version": delta.get("previous_data_version"),
+        "status": status,
+        "totals": delta["totals"],
         "changes": changes,
     }
 
@@ -210,9 +228,9 @@ def build_exam_history(snapshots: list[ExamSnapshot], *, generated_at: str) -> t
 
     for class_name in all_classes:
         key = class_file_key(class_name)
-        checkpoints: list[dict[str, Any]] = []
+        snapshot_deltas: list[dict[str, Any]] = []
         seen_before = False
-        latest_substantive: dict[str, Any] | None = None
+        events_chronological: list[dict[str, Any]] = []
 
         for index, snapshot in enumerate(snapshots):
             current_records = snapshot_classes[index].get(class_name, [])
@@ -236,7 +254,7 @@ def build_exam_history(snapshots: list[ExamSnapshot], *, generated_at: str) -> t
                 changes = delta["changes"]
                 status = "changed" if totals["added"] or totals["removed"] or totals["changed"] else "unchanged"
 
-            checkpoint = _checkpoint(
+            snapshot_delta = _snapshot_delta(
                 snapshot=snapshot,
                 previous=previous_snapshot,
                 status=status,
@@ -245,29 +263,22 @@ def build_exam_history(snapshots: list[ExamSnapshot], *, generated_at: str) -> t
                 totals=totals,
                 changes=changes,
             )
-            checkpoints.append(checkpoint)
+            snapshot_deltas.append(snapshot_delta)
             if current_records:
                 seen_before = True
             if status in {"first_seen", "reappeared", "changed", "removed"}:
-                latest_substantive = {
-                    "data_version": snapshot.data_version,
-                    "auto_updated_at": snapshot.auto_updated_at,
-                    "status": status,
-                    "totals": checkpoint["totals"],
-                }
+                events_chronological.append(_event_from_delta(snapshot_delta))
 
-        if not checkpoints:
+        if not snapshot_deltas:
             continue
 
-        first_checkpoint = checkpoints[0]
-        latest_checkpoint = checkpoints[-1]
-        first_seen = next((item for item in checkpoints if item["status"] in {"first_seen", "reappeared"}), first_checkpoint)
-        latest_substantive = latest_substantive or {
-            "data_version": first_checkpoint["data_version"],
-            "auto_updated_at": first_checkpoint["auto_updated_at"],
-            "status": first_checkpoint["status"],
-            "totals": first_checkpoint["totals"],
-        }
+        first_delta = snapshot_deltas[0]
+        latest_delta = snapshot_deltas[-1]
+        first_seen = next((item for item in snapshot_deltas if item["status"] in {"first_seen", "reappeared"}), first_delta)
+        if not events_chronological:
+            raise ExamPipelineError(f"class history has no version events: {class_name}")
+        events = list(reversed(events_chronological))
+        latest_change_event = events[0]
         current_record_count = len(latest_classes.get(class_name, []))
 
         payload = {
@@ -285,8 +296,8 @@ def build_exam_history(snapshots: list[ExamSnapshot], *, generated_at: str) -> t
                 "data_version": first_seen["data_version"],
                 "auto_updated_at": first_seen["auto_updated_at"],
             },
-            "latest_substantive_change": latest_substantive,
-            "checkpoints": checkpoints,
+            "latest_change_event": latest_change_event,
+            "events": events,
         }
         class_files[key] = payload
         class_index.append(
@@ -297,11 +308,11 @@ def build_exam_history(snapshots: list[ExamSnapshot], *, generated_at: str) -> t
                 "exam_period_id": latest_snapshot.exam_period_id,
                 "first_seen_data_version": first_seen["data_version"],
                 "first_seen_at": first_seen["auto_updated_at"],
-                "latest_status": latest_checkpoint["status"],
-                "latest_change_data_version": latest_substantive["data_version"],
-                "latest_change_at": latest_substantive["auto_updated_at"],
+                "latest_status": latest_delta["status"],
+                "latest_change_data_version": latest_change_event["data_version"],
+                "latest_change_at": latest_change_event["auto_updated_at"],
                 "current_record_count": current_record_count,
-                "checkpoint_count": len(checkpoints),
+                "event_count": len(events),
             }
         )
 

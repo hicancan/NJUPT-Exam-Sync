@@ -52,6 +52,7 @@ export interface SearchResult {
 }
 
 export type ExamHistoryStatus = 'first_seen' | 'changed' | 'unchanged' | 'removed' | 'reappeared';
+export type ExamHistoryEventStatus = Exclude<ExamHistoryStatus, 'unchanged'>;
 export type ExamHistoryChangeType = 'added' | 'removed' | 'changed';
 
 export interface ExamHistoryFieldChange {
@@ -74,7 +75,7 @@ export interface ExamHistoryChange {
     after?: Partial<Exam>;
 }
 
-export interface ExamHistoryCheckpointTotals {
+export interface ExamHistoryEventTotals {
     added: number;
     removed: number;
     changed: number;
@@ -83,14 +84,13 @@ export interface ExamHistoryCheckpointTotals {
     current_records: number;
 }
 
-export interface ExamHistoryCheckpoint {
+export interface ExamHistoryEvent {
     data_version: string;
     auto_updated_at: string;
     exam_period_id: string;
     previous_data_version?: string | null;
-    previous_auto_updated_at?: string | null;
-    status: ExamHistoryStatus;
-    totals: ExamHistoryCheckpointTotals;
+    status: ExamHistoryEventStatus;
+    totals: ExamHistoryEventTotals;
     changes: ExamHistoryChange[];
 }
 
@@ -115,7 +115,7 @@ export interface ExamClassHistoryIndex {
     latest_change_data_version: string;
     latest_change_at: string;
     current_record_count: number;
-    checkpoint_count: number;
+    event_count: number;
 }
 
 export interface ExamHistoryManifest {
@@ -138,7 +138,7 @@ export interface ExamHistoryManifest {
 }
 
 export interface ExamClassHistory {
-    version: 'exam-class-history-v1';
+    version: 'exam-class-history-v2';
     exam_period_id: string;
     academic_year: string;
     term_number: number;
@@ -152,13 +152,8 @@ export interface ExamClassHistory {
         data_version: string;
         auto_updated_at: string;
     };
-    latest_substantive_change: {
-        data_version: string;
-        auto_updated_at: string;
-        status: ExamHistoryStatus;
-        totals: ExamHistoryCheckpointTotals;
-    };
-    checkpoints: ExamHistoryCheckpoint[];
+    latest_change_event: ExamHistoryEvent;
+    events: ExamHistoryEvent[];
 }
 
 export const ExamSchema = z.object({
@@ -229,6 +224,7 @@ const ExamRecordSnapshotSchema = z.object({
 }).passthrough();
 
 export const ExamHistoryStatusSchema = z.enum(['first_seen', 'changed', 'unchanged', 'removed', 'reappeared']);
+export const ExamHistoryEventStatusSchema = z.enum(['first_seen', 'changed', 'removed', 'reappeared']);
 
 export const ExamHistoryFieldChangeSchema = z.object({
     field: z.string().min(1),
@@ -260,7 +256,7 @@ export const ExamHistoryChangeSchema = z.object({
     }
 });
 
-export const ExamHistoryCheckpointTotalsSchema = z.object({
+export const ExamHistoryEventTotalsSchema = z.object({
     added: z.number().int().nonnegative(),
     removed: z.number().int().nonnegative(),
     changed: z.number().int().nonnegative(),
@@ -269,15 +265,14 @@ export const ExamHistoryCheckpointTotalsSchema = z.object({
     current_records: z.number().int().nonnegative(),
 });
 
-export const ExamHistoryCheckpointSchema = z.object({
+export const ExamHistoryEventSchema = z.object({
     data_version: z.string().min(1),
     auto_updated_at: z.string().min(1),
     exam_period_id: z.string().regex(/^\d{4}-\d{4}-[1-4]$/),
     previous_data_version: z.string().nullable().optional(),
-    previous_auto_updated_at: z.string().nullable().optional(),
-    status: ExamHistoryStatusSchema,
-    totals: ExamHistoryCheckpointTotalsSchema,
-    changes: z.array(ExamHistoryChangeSchema),
+    status: ExamHistoryEventStatusSchema,
+    totals: ExamHistoryEventTotalsSchema,
+    changes: z.array(ExamHistoryChangeSchema).min(1),
 });
 
 export const ExamHistorySnapshotSchema = z.object({
@@ -301,7 +296,7 @@ export const ExamClassHistoryIndexSchema = z.object({
     latest_change_data_version: z.string().min(1),
     latest_change_at: z.string().min(1),
     current_record_count: z.number().int().nonnegative(),
-    checkpoint_count: z.number().int().positive(),
+    event_count: z.number().int().positive(),
 });
 
 export const ExamHistoryManifestSchema = z.object({
@@ -324,7 +319,7 @@ export const ExamHistoryManifestSchema = z.object({
 });
 
 export const ExamClassHistorySchema = z.object({
-    version: z.literal('exam-class-history-v1'),
+    version: z.literal('exam-class-history-v2'),
     exam_period_id: z.string().regex(/^\d{4}-\d{4}-[1-4]$/),
     academic_year: z.string().regex(/^\d{4}-\d{4}$/),
     term_number: z.number().int().min(1).max(4),
@@ -338,11 +333,19 @@ export const ExamClassHistorySchema = z.object({
         data_version: z.string().min(1),
         auto_updated_at: z.string().min(1),
     }),
-    latest_substantive_change: z.object({
-        data_version: z.string().min(1),
-        auto_updated_at: z.string().min(1),
-        status: ExamHistoryStatusSchema,
-        totals: ExamHistoryCheckpointTotalsSchema,
-    }),
-    checkpoints: z.array(ExamHistoryCheckpointSchema).min(1),
+    latest_change_event: ExamHistoryEventSchema,
+    events: z.array(ExamHistoryEventSchema).min(1),
+}).strict().superRefine((value, ctx) => {
+    const firstEvent = value.events[0];
+    if (!firstEvent) return;
+    if (
+        value.latest_change_event.data_version !== firstEvent.data_version
+        || value.latest_change_event.auto_updated_at !== firstEvent.auto_updated_at
+        || value.latest_change_event.status !== firstEvent.status
+    ) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'latest_change_event must match the first class history event',
+        });
+    }
 });

@@ -32,7 +32,7 @@ export function useSearchExperience() {
         ? (classParam || isCompleteClassQuery(qParam || '') ? 'exam-detail' : 'exam-list')
         : 'collection';
 
-    const { exams: allExams, loading: examLoading, error: examError, sourceUrl, sourceTitle, generatedAt, dataVersion, examPeriodId, totalRecords } = useExamData(needsExamData);
+    const { exams: allExams, loading: examLoading, error: examError, sourceUrl, sourceTitle, generatedAt, dataVersion, examPeriodId } = useExamData(needsExamData);
     const { newDataAvailable, reloadToUpdate } = useDataUpdateNotifier();
     const [inputValue, setInputValue] = useState<string>(initialQuery);
     const [reminders, setReminders] = useState<number[]>([30, 60]);
@@ -195,8 +195,6 @@ export function useSearchExperience() {
             onRemindersChange: setReminders,
             sourceUrl,
             sourceTitle,
-            generatedAt,
-            totalRecords,
             examHistoryManifest,
             examClassHistory,
             examHistoryLoading,

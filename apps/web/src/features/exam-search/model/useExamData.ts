@@ -18,7 +18,6 @@ interface UseExamDataResult {
     generatedAt: string | null;
     dataVersion: string | null;
     examPeriodId: string | null;
-    totalRecords: number | null;
 }
 
 interface LoadedExamData {
@@ -28,7 +27,6 @@ interface LoadedExamData {
     generatedAt: string;
     dataVersion: string;
     examPeriodId: string;
-    totalRecords: number;
 }
 
 export const examDataUrlWithVersion = (url: string, dataVersion: string): string => {
@@ -72,7 +70,6 @@ export async function loadExamData(signal?: AbortSignal): Promise<LoadedExamData
         generatedAt: manifestData.generated_at,
         dataVersion,
         examPeriodId: manifestData.exam_period_id,
-        totalRecords: manifestData.total_records,
     };
 }
 
@@ -85,7 +82,6 @@ export function useExamData(enabled = true): UseExamDataResult {
     const [generatedAt, setGeneratedAt] = useState<string | null>(null);
     const [dataVersion, setDataVersion] = useState<string | null>(null);
     const [examPeriodId, setExamPeriodId] = useState<string | null>(null);
-    const [totalRecords, setTotalRecords] = useState<number | null>(null);
 
     useEffect(() => {
         if (!enabled) {
@@ -102,7 +98,6 @@ export function useExamData(enabled = true): UseExamDataResult {
                 setGeneratedAt(loaded.generatedAt);
                 setDataVersion(loaded.dataVersion);
                 setExamPeriodId(loaded.examPeriodId);
-                setTotalRecords(loaded.totalRecords);
                 setLoading(false);
             })
             .catch(err => {
@@ -126,6 +121,5 @@ export function useExamData(enabled = true): UseExamDataResult {
         generatedAt,
         dataVersion,
         examPeriodId,
-        totalRecords
     };
 }

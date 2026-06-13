@@ -12,7 +12,6 @@ afterEach(() => {
     globalThis.fetch = originalFetch;
     vi.restoreAllMocks();
 });
-
 describe('useExamHistory loaders', () => {
     it('loads and parses the exam history manifest without browser cache reuse', async () => {
         vi.spyOn(Date, 'now').mockReturnValue(1234567890);
@@ -51,7 +50,7 @@ describe('useExamHistory loaders', () => {
                     latest_change_data_version: 'current',
                     latest_change_at: '2026-06-10T10:06:41+08:00',
                     current_record_count: 1,
-                    checkpoint_count: 2,
+                    event_count: 2,
                 }],
             }),
         });
@@ -70,7 +69,7 @@ describe('useExamHistory loaders', () => {
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             json: async () => ({
-                version: 'exam-class-history-v1',
+                version: 'exam-class-history-v2',
                 exam_period_id: '2025-2026-2',
                 academic_year: '2025-2026',
                 term_number: 2,
@@ -84,10 +83,11 @@ describe('useExamHistory loaders', () => {
                     data_version: 'first',
                     auto_updated_at: '2026-06-04T18:00:21+08:00',
                 },
-                latest_substantive_change: {
+                latest_change_event: {
                     data_version: 'current',
                     auto_updated_at: '2026-06-10T10:06:41+08:00',
                     exam_period_id: '2025-2026-2',
+                    previous_data_version: 'first',
                     status: 'changed',
                     totals: {
                         added: 0,
@@ -97,8 +97,14 @@ describe('useExamHistory loaders', () => {
                         previous_records: 1,
                         current_records: 1,
                     },
+                    changes: [{
+                        type: 'changed',
+                        identity_key: 'b240402',
+                        course_name: '大学英语IV',
+                        fields: [{ field: 'duration_minutes', label: '时长', before: 110, after: 120 }],
+                    }],
                 },
-                checkpoints: [{
+                events: [{
                     data_version: 'current',
                     auto_updated_at: '2026-06-10T10:06:41+08:00',
                     exam_period_id: '2025-2026-2',
@@ -133,14 +139,14 @@ describe('useExamHistory loaders', () => {
             latest_change_data_version: 'current',
             latest_change_at: '2026-06-10T10:06:41+08:00',
             current_record_count: 1,
-            checkpoint_count: 2,
+            event_count: 2,
         }, 'current');
 
         expect(fetchMock).toHaveBeenCalledWith(
-            'generated/exam/history/classes/b240402.json?v=current&schema=exam-public-v3',
+            'generated/exam/history/classes/b240402.json?v=current&schema=exam-public-v4',
             { cache: 'force-cache', signal: undefined }
         );
-        expect(history.checkpoints[0]?.changes[0]?.fields?.[0]?.before).toBe(110);
+        expect(history.events[0]?.changes[0]?.fields?.[0]?.before).toBe(110);
     });
 
     it('builds deterministic history URLs', () => {
@@ -148,7 +154,7 @@ describe('useExamHistory loaders', () => {
             'generated/exam/history/manifest.json?x=1&fresh=now'
         );
         expect(examClassHistoryUrlWithVersion('generated/exam/history/classes/b240402.json?x=1', 'v/2')).toBe(
-            'generated/exam/history/classes/b240402.json?x=1&v=v%2F2&schema=exam-public-v3'
+            'generated/exam/history/classes/b240402.json?x=1&v=v%2F2&schema=exam-public-v4'
         );
     });
 });

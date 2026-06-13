@@ -127,7 +127,7 @@ def test_ambiguous_duplicate_identity_group_fails_fast():
         )
 
 
-def test_class_history_keeps_current_and_latest_substantive_change_separate():
+def test_class_history_events_skip_unchanged_snapshots():
     first = snapshot("first", "2026-06-08T00:00:00+08:00", [exam(duration_minutes=110, end_timestamp="2026-06-08T09:50:00+08:00")])
     second = snapshot("second", "2026-06-09T00:00:00+08:00", [exam(duration_minutes=120, end_timestamp="2026-06-08T10:00:00+08:00")])
     third = snapshot("third", "2026-06-10T00:00:00+08:00", [exam(duration_minutes=120, end_timestamp="2026-06-08T10:00:00+08:00")])
@@ -137,9 +137,13 @@ def test_class_history_keeps_current_and_latest_substantive_change_separate():
 
     assert manifest["totals"]["snapshot_count"] == 3
     assert manifest["exam_period_id"] == "2025-2026-2"
-    assert b240402["checkpoints"][-1]["status"] == "unchanged"
-    assert b240402["latest_substantive_change"]["data_version"] == "second"
-    assert b240402["latest_substantive_change"]["totals"]["changed"] == 1
+    assert b240402["version"] == "exam-class-history-v2"
+    assert "checkpoints" not in b240402
+    assert "latest_substantive_change" not in b240402
+    assert [event["status"] for event in b240402["events"]] == ["changed", "first_seen"]
+    assert b240402["latest_change_event"]["data_version"] == "second"
+    assert b240402["events"][0]["totals"]["changed"] == 1
+    assert {field["field"] for field in b240402["events"][0]["changes"][0]["fields"]} == {"end_timestamp", "duration_minutes"}
 
 
 def test_single_snapshot_period_is_first_seen_without_previous_semester_diff():
@@ -155,8 +159,8 @@ def test_single_snapshot_period_is_first_seen_without_previous_semester_diff():
 
     assert manifest["exam_period_id"] == "2026-2027-1"
     assert manifest["totals"]["snapshot_count"] == 1
-    assert b240402["checkpoints"][0]["status"] == "first_seen"
-    assert b240402["checkpoints"][0]["previous_auto_updated_at"] is None
+    assert b240402["events"][0]["status"] == "first_seen"
+    assert b240402["events"][0]["previous_data_version"] is None
 
 
 def test_mixed_exam_period_history_fails_fast():

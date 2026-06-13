@@ -6,9 +6,9 @@ import { Exam } from '@/shared/lib/contracts';
 import type { ExamClassHistory, ExamHistoryManifest } from '@/shared/lib/contracts';
 import type { ExamExportStatus } from '../model/examSelection';
 import { ExamCard } from './ExamCard';
-import { ReminderSettings } from './ReminderSettings';
 
 const ExamHistoryPanel = lazy(() => import('./ExamHistoryPanel').then(module => ({ default: module.ExamHistoryPanel })));
+const ReminderSettings = lazy(() => import('./ReminderSettings').then(module => ({ default: module.ReminderSettings })));
 
 type Notice = {
     message: string;
@@ -55,6 +55,7 @@ export function ExamDetail({
     const [notice, setNotice] = useState<Notice>(null);
     const allSelected = exams.length > 0 && selectedIds.size === exams.length;
     const noneSelected = selectedIds.size === 0;
+    const sourceTime = examHistoryManifest?.latest_auto_updated_at;
 
     const showErrorNotice = (nextNotice: NonNullable<Notice>) => {
         setNotice(nextNotice);
@@ -153,6 +154,7 @@ export function ExamDetail({
                                 <span>来源：{sourceTitle}</span>
                             )
                         ) : null}
+                        {sourceTime ? <span>{sourceTitle ? '• ' : ''}当前自动更新时间：{sourceTime.slice(0, 19).replace('T', ' ')}</span> : null}
                     </div>
                 </div>
                 <button
@@ -188,7 +190,9 @@ export function ExamDetail({
                 </Suspense>
             </div>
 
-            <ReminderSettings selected={reminders} onChange={onRemindersChange} />
+            <Suspense fallback={null}>
+                <ReminderSettings selected={reminders} onChange={onRemindersChange} />
+            </Suspense>
 
             <div className="space-y-0 border border-[#dadce0] dark:border-[#3c4043] rounded-lg overflow-hidden bg-white dark:bg-[#202124]">
                 {exams.map((exam, idx) => (
