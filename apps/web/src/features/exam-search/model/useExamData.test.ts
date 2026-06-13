@@ -55,7 +55,7 @@ describe('loadExamData', () => {
                 cache: 'no-store',
             },
             {
-                url: `generated/exam/all_exams.json?v=${'a'.repeat(64)}`,
+                url: `generated/exam/all_exams.json?v=${'a'.repeat(64)}&schema=exam-public-v2`,
                 cache: 'force-cache',
             },
         ]);
@@ -65,10 +65,10 @@ describe('loadExamData', () => {
 describe('examDataUrlWithVersion', () => {
     it('appends encoded version parameters without dropping existing query strings', () => {
         expect(examDataUrlWithVersion('generated/exam/all_exams.json', 'a b')).toBe(
-            'generated/exam/all_exams.json?v=a%20b'
+            'generated/exam/all_exams.json?v=a+b&schema=exam-public-v2'
         );
         expect(examDataUrlWithVersion('generated/exam/all_exams.json?x=1', 'v/2')).toBe(
-            'generated/exam/all_exams.json?x=1&v=v%2F2'
+            'generated/exam/all_exams.json?x=1&v=v%2F2&schema=exam-public-v2'
         );
     });
 });

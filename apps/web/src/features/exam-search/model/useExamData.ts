@@ -30,8 +30,12 @@ interface LoadedExamData {
 }
 
 export const examDataUrlWithVersion = (url: string, dataVersion: string): string => {
+    const params = new URLSearchParams({
+        v: dataVersion,
+        schema: APP_CONFIG.EXAM_PUBLIC_SCHEMA_VERSION,
+    });
     const separator = url.includes('?') ? '&' : '?';
-    return `${url}${separator}v=${encodeURIComponent(dataVersion)}`;
+    return `${url}${separator}${params.toString()}`;
 };
 
 export const examSummaryUrlWithNonce = (url: string, nonce = Date.now().toString(36)): string => {

@@ -60,8 +60,12 @@ export const examHistoryManifestUrlWithNonce = (url: string, nonce = Date.now().
 };
 
 export const examClassHistoryUrlWithVersion = (path: string, dataVersion: string): string => {
+    const params = new URLSearchParams({
+        v: dataVersion,
+        schema: APP_CONFIG.EXAM_PUBLIC_SCHEMA_VERSION,
+    });
     const separator = path.includes('?') ? '&' : '?';
-    return `${path}${separator}v=${encodeURIComponent(dataVersion)}`;
+    return `${path}${separator}${params.toString()}`;
 };
 
 export async function loadExamHistoryManifest(signal?: AbortSignal): Promise<ExamHistoryManifest> {

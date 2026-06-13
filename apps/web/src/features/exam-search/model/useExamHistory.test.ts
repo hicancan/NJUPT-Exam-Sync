@@ -124,7 +124,7 @@ describe('useExamHistory loaders', () => {
         }, 'current');
 
         expect(fetchMock).toHaveBeenCalledWith(
-            'generated/exam/history/classes/b240402.json?v=current',
+            'generated/exam/history/classes/b240402.json?v=current&schema=exam-public-v2',
             { cache: 'force-cache', signal: undefined }
         );
         expect(history.checkpoints[0]?.changes[0]?.fields?.[0]?.before).toBe(110);
@@ -135,7 +135,7 @@ describe('useExamHistory loaders', () => {
             'generated/exam/history/manifest.json?x=1&fresh=now'
         );
         expect(examClassHistoryUrlWithVersion('generated/exam/history/classes/b240402.json?x=1', 'v/2')).toBe(
-            'generated/exam/history/classes/b240402.json?x=1&v=v%2F2'
+            'generated/exam/history/classes/b240402.json?x=1&v=v%2F2&schema=exam-public-v2'
         );
     });
 });
