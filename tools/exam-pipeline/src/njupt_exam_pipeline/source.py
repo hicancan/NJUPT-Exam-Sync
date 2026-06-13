@@ -12,7 +12,7 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
-from .contract import ExamPipelineError
+from .contract import ExamPipelineError, parse_exam_period
 
 JWC_LIST_URL = "https://jwc.njupt.edu.cn/1594/list.htm"
 JWC_HEADERS = {
@@ -260,11 +260,16 @@ def materialize_locked_exam_files(*, lock_path: Path, exam_dir: Path, cache_root
         if stale_excel.name not in expected_names:
             stale_excel.unlink()
 
+    period = parse_exam_period(lock.get("source_title"))
     write_json(
         exam_dir / "source_metadata.json",
         {
             "source_url": lock.get("source_url"),
             "source_title": lock.get("source_title"),
+            "exam_period_id": period.exam_period_id,
+            "academic_year": period.academic_year,
+            "term_number": period.term_number,
+            "term_label": period.term_label,
             "downloaded_files": downloaded_names,
             "updated_at": generated_at,
             "data_version": lock_sha256,

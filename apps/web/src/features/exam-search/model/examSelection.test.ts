@@ -11,6 +11,7 @@ const baseExam: Exam = {
     id: '2025-2026学年第二学期考试安排表.xlsx-497',
     stable_key: 'b240402\u001fdg1011x0s\u001f数字电路与逻辑设计b\u001f张晶',
     content_fingerprint: 'a'.repeat(64),
+    exam_period_id: '2025-2026-2',
     duplicate_count: 1,
     source_refs: [{
         id: '2025-2026学年第二学期考试安排表.xlsx-497',
@@ -43,17 +44,17 @@ const newExam: Exam = {
     end_timestamp: '2026-06-10T12:00:00+08:00'
 };
 
-const history: ExamExportHistory = {
-    version: 2,
-    className: 'B240402',
-    dataVersion: 'v1',
-    autoUpdatedAt: '2026-06-10T00:00:00+08:00',
-    exportedAt: '2026-06-10T00:10:00+08:00',
-    selected: [{
-        key: getExamExportKey(baseExam),
-        fingerprint: baseExam.content_fingerprint,
-    }],
-};
+const history: ExamExportHistory = [
+    3,
+    'B240402',
+    'v1',
+    '2026-06-10T00:00:00+08:00',
+    [
+        [getExamExportKey(baseExam), baseExam.content_fingerprint],
+        [getExamExportKey(newExam), newExam.content_fingerprint],
+    ],
+    [[getExamExportKey(baseExam), baseExam.content_fingerprint]],
+];
 
 describe('exam export selection defaults', () => {
     it('selects every exam before the class has export history', () => {
@@ -62,17 +63,40 @@ describe('exam export selection defaults', () => {
         );
     });
 
-    it('restores previously exported selections and selects newly published exams', () => {
+    it('keeps previously unselected exams unselected', () => {
         expect(buildDefaultSelectedExamIds(
             [baseExam, newExam],
             history
-        )).toEqual(new Set([baseExam.id, newExam.id]));
+        )).toEqual(new Set([baseExam.id]));
+    });
+
+    it('selects truly new exams that were absent from the last export baseline', () => {
+        const trulyNewExam = {
+            ...newExam,
+            id: '2025-2026学年第二学期考试安排表.xlsx-3000',
+            stable_key: 'b240402\u001fjs140101s\u001f离散数学\u001f刘茜萍',
+            content_fingerprint: 'd'.repeat(64),
+            course_name: '离散数学',
+            course_code: 'JS140101S',
+        };
+
+        expect(buildDefaultSelectedExamIds(
+            [baseExam, newExam, trulyNewExam],
+            history
+        )).toEqual(new Set([baseExam.id, trulyNewExam.id]));
     });
 
     it('marks a previously selected exam when its content fingerprint changes', () => {
-        expect(getExamExportStatus(baseExam, history)).toBe('normal');
-        expect(getExamExportStatus({ ...baseExam, content_fingerprint: 'c'.repeat(64) }, history)).toBe('needs-update');
-        expect(getExamExportStatus(newExam, history)).toBe('new');
+        const trulyNewExam = {
+            ...newExam,
+            stable_key: 'b240402\u001fjs140101s\u001f离散数学\u001f刘茜萍',
+            content_fingerprint: 'd'.repeat(64),
+        };
+
+        expect(getExamExportStatus(baseExam, history)).toBe(0);
+        expect(getExamExportStatus({ ...baseExam, content_fingerprint: 'c'.repeat(64) }, history)).toBe(2);
+        expect(getExamExportStatus(newExam, history)).toBe(0);
+        expect(getExamExportStatus(trulyNewExam, history)).toBe(1);
     });
 
     it('uses a semantic export key instead of the source row id', () => {

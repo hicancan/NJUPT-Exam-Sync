@@ -43,8 +43,16 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v8.2.0
 
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+
       - name: Install dependencies
-        run: uv sync --frozen --extra test
+        run: |
+          uv sync --frozen --extra test
+          npm ci
 
       - name: Update exam data lock and materialize public assets
         run: |
@@ -55,6 +63,11 @@ jobs:
         run: |
           uv run python tools/quality-gates/scripts/check_tracked_byproducts.py
           uv run python tools/ci/prepare_public_assets.py verify-exam-public-data
+
+      - name: Exam-only regression tests
+        run: |
+          uv run python -m pytest tests/test_exam_history.py tests/test_exam_pipeline_failfast.py tests/test_prepare_public_assets_download.py
+          npm run test:prepared -- apps/web/src/features/exam-search packages/exam-core packages/contracts/tests/examDataContract.test.ts
 
       - name: Commit exam lock changes
         id: commit
@@ -136,12 +149,6 @@ jobs:
         if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
         id: exam-fast-pages
         uses: actions/deploy-pages@v5
-
-      - name: Set up Node for EdgeOne exam-fast deploy
-        if: ${{ (steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true') && vars.EDGEONE_PAGES_ENABLED == 'true' }}
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
 
       - name: Deploy exam-fast EdgeOne Pages
         if: ${{ (steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true') && vars.EDGEONE_PAGES_ENABLED == 'true' }}

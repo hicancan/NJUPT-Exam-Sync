@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from njupt_exam_pipeline.contract import ExamPipelineError
+from njupt_exam_pipeline.contract import ExamPipelineError, parse_exam_period
 from njupt_exam_pipeline.history import build_exam_history, process_exam_snapshot_dir, write_exam_history
 from njupt_exam_pipeline.source import (
     materialize_locked_exam_files,
@@ -111,13 +111,15 @@ def exam_lock_history_paths() -> list[Path]:
     lock_rel = EXAM_LOCK.relative_to(REPO_ROOT).as_posix()
     history_lock_dir = EXAM_HISTORY_CACHE / "locks"
     history_lock_dir.mkdir(parents=True, exist_ok=True)
+    current_lock = read_json(EXAM_LOCK)
+    current_period = parse_exam_period(current_lock.get("source_title"))
     try:
         raw_log = capture(["git", "log", "--format=%H", "--", lock_rel])
     except subprocess.CalledProcessError as exc:
         raise PublicAssetError("cannot read exam.lock.json history from Git") from exc
 
     commits = [line.strip() for line in raw_log.splitlines() if line.strip()]
-    entries: list[tuple[str, Path]] = []
+    entries: list[tuple[str, str, Path]] = []
     seen: set[str] = set()
 
     def semantic_key(lock: dict[str, Any]) -> str:
@@ -155,21 +157,22 @@ def exam_lock_history_paths() -> list[Path]:
             raise PublicAssetError(f"invalid historical exam lock version at {commit}")
         if not str(lock.get("generated_at") or "").strip():
             raise PublicAssetError(f"historical exam lock missing generated_at at {commit}")
+        period = parse_exam_period(lock.get("source_title"))
         seen.add(digest)
-        entries.append((semantic_key(lock), path))
+        entries.append((period.exam_period_id, semantic_key(lock), path))
 
     current_raw = EXAM_LOCK.read_bytes()
     current_digest = hashlib.sha256(current_raw).hexdigest()
     current_path = history_lock_dir / f"{current_digest}.json"
     if current_digest not in seen:
         current_path.write_bytes(current_raw)
-    current_key = semantic_key(read_json(current_path))
-    entries = [(key, path) for key, path in entries if key != current_key]
-    entries.append((current_key, current_path))
+    current_key = semantic_key(current_lock)
+    entries = [(period_id, key, path) for period_id, key, path in entries if key != current_key]
+    entries.append((current_period.exam_period_id, current_key, current_path))
 
-    paths = [path for _, path in entries]
-    if len(paths) < 2:
-        raise PublicAssetError("exam history requires at least two lock snapshots")
+    paths = [path for period_id, _, path in entries if period_id == current_period.exam_period_id]
+    if not paths:
+        raise PublicAssetError(f"exam history has no lock snapshots for current period {current_period.exam_period_id}")
     return paths
 
 
@@ -424,6 +427,7 @@ def verify_public_assets() -> None:
 
 def verify_exam_public_data() -> None:
     lock = read_json(EXAM_LOCK)
+    expected_period = parse_exam_period(lock.get("source_title"))
     summary_path = EXAM_DIR / "data_summary.json"
     exams_path = EXAM_DIR / "all_exams.json"
     metadata_path = EXAM_DIR / "source_metadata.json"
@@ -459,6 +463,9 @@ def verify_exam_public_data() -> None:
         raise PublicAssetError("exam data_summary data_version does not match exam lock")
     if metadata.get("data_version") != expected_data_version:
         raise PublicAssetError("exam source_metadata data_version does not match exam lock")
+    for payload_name, payload in (("data_summary", summary), ("source_metadata", metadata)):
+        if payload.get("exam_period_id") != expected_period.exam_period_id:
+            raise PublicAssetError(f"exam {payload_name} exam_period_id does not match source_title period")
     total_records = summary.get("total_records")
     if not isinstance(total_records, int) or total_records != len(exams):
         raise PublicAssetError("exam data_summary total_records does not match all_exams length")
@@ -473,6 +480,8 @@ def verify_exam_public_data() -> None:
         stable_key = str(item.get("stable_key") or "")
         if not exam_id or not stable_key:
             raise PublicAssetError("all_exams entries must contain id and stable_key")
+        if item.get("exam_period_id") != expected_period.exam_period_id:
+            raise PublicAssetError(f"all_exams entry exam_period_id mismatch: {exam_id}")
         if exam_id in exam_ids:
             raise PublicAssetError(f"duplicate exam id: {exam_id}")
         if stable_key in stable_keys:
@@ -483,12 +492,17 @@ def verify_exam_public_data() -> None:
         raise PublicAssetError("exam history manifest version is invalid")
     if history_manifest.get("latest_data_version") != expected_data_version:
         raise PublicAssetError("exam history manifest latest_data_version does not match exam lock")
+    if history_manifest.get("exam_period_id") != expected_period.exam_period_id:
+        raise PublicAssetError("exam history manifest exam_period_id does not match source_title period")
     history_totals = history_manifest.get("totals")
     if not isinstance(history_totals, dict) or history_totals.get("current_record_count") != len(exams):
         raise PublicAssetError("exam history manifest current_record_count does not match all_exams length")
     snapshots = history_manifest.get("snapshots")
-    if not isinstance(snapshots, list) or len(snapshots) < 2:
-        raise PublicAssetError("exam history manifest must contain at least two snapshots")
+    if not isinstance(snapshots, list) or not snapshots:
+        raise PublicAssetError("exam history manifest must contain at least one snapshot")
+    for snapshot in snapshots:
+        if not isinstance(snapshot, dict) or snapshot.get("exam_period_id") != expected_period.exam_period_id:
+            raise PublicAssetError("exam history snapshots must match current exam_period_id")
     classes = history_manifest.get("classes")
     if not isinstance(classes, list) or not classes:
         raise PublicAssetError("exam history manifest classes must be a non-empty list")
@@ -504,6 +518,8 @@ def verify_exam_public_data() -> None:
             raise PublicAssetError(f"invalid exam class history version: {path_value}")
         if class_payload.get("latest_data_version") != expected_data_version:
             raise PublicAssetError(f"exam class history latest_data_version mismatch: {path_value}")
+        if class_payload.get("exam_period_id") != expected_period.exam_period_id:
+            raise PublicAssetError(f"exam class history exam_period_id mismatch: {path_value}")
         if not isinstance(class_payload.get("checkpoints"), list) or not class_payload["checkpoints"]:
             raise PublicAssetError(f"exam class history checkpoints must be non-empty: {path_value}")
     print(

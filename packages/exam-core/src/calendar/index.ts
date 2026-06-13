@@ -31,7 +31,7 @@ const hashIdentity = (identity: string): string => {
 };
 
 export const getExamCalendarIdentity = (exam: Exam): string => {
-    return normalizeIdentityPart(exam.stable_key);
+    return `${normalizeIdentityPart(exam.exam_period_id)}\u001f${normalizeIdentityPart(exam.stable_key)}`;
 };
 
 const generateUID = (exam: Exam, domain: string): string => {

@@ -45,8 +45,6 @@ export function ExamDetailSkeleton() {
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
                         <SkeletonBlock className="h-4 w-60 max-w-full rounded" />
-                        <SkeletonBlock className="h-4 w-40 rounded" />
-                        <SkeletonBlock className="h-4 w-28 rounded" />
                     </div>
                 </div>
                 <SkeletonBlock className="h-10 w-36 rounded-full shrink-0" />

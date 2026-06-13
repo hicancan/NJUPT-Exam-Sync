@@ -12,7 +12,7 @@ export const APP_CONFIG = {
         HISTORY_MANIFEST: 'generated/exam/history/manifest.json',
         SEARCH_MANIFEST: 'generated/collections/njupt-public/manifest.json',
     },
-    EXAM_PUBLIC_SCHEMA_VERSION: 'exam-public-v2',
+    EXAM_PUBLIC_SCHEMA_VERSION: 'exam-public-v3',
     UPDATE_CHANNEL: 'search-data-update-channel',
     UPDATE_APPLY_EVENT: 'njupt-search-apply-update',
     START_TIME_DEFAULT: '2025-12-15T00:00:00',

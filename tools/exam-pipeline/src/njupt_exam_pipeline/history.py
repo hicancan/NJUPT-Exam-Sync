@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .contract import ExamPipelineError, normalize_text
+from .contract import ExamPipelineError, normalize_text, parse_exam_period
 from .diff import business_identity, canonicalize_exam_records, class_file_key, compare_exam_records
 from .processor import get_xlsx_files, process_single_file
 from .publisher import write_json_file
@@ -19,6 +19,10 @@ HISTORY_DIR_NAME = "history"
 class ExamSnapshot:
     data_version: str
     auto_updated_at: str
+    exam_period_id: str
+    academic_year: str
+    term_number: int
+    term_label: str
     source_url: str | None
     source_title: str | None
     records: list[dict[str, Any]]
@@ -36,6 +40,7 @@ def process_exam_snapshot_dir(*, data_dir: Path, data_version: str, auto_updated
             raise ExamPipelineError(f"Invalid source metadata: {metadata_path}")
         metadata = loaded
 
+    period = parse_exam_period(metadata.get("source_title"))
     records: list[dict[str, Any]] = []
     for xlsx_path in get_xlsx_files(data_dir):
         result = process_single_file(xlsx_path)
@@ -46,12 +51,20 @@ def process_exam_snapshot_dir(*, data_dir: Path, data_version: str, auto_updated
     if not records:
         raise ExamPipelineError(f"No exam records were generated for history snapshot: {data_dir}")
 
+    canonical_records = canonicalize_exam_records(records)
+    for record in canonical_records:
+        record["exam_period_id"] = period.exam_period_id
+
     return ExamSnapshot(
         data_version=data_version,
         auto_updated_at=auto_updated_at,
+        exam_period_id=period.exam_period_id,
+        academic_year=period.academic_year,
+        term_number=period.term_number,
+        term_label=period.term_label,
         source_url=metadata.get("source_url"),
         source_title=metadata.get("source_title"),
-        records=canonicalize_exam_records(records),
+        records=canonical_records,
     )
 
 
@@ -78,6 +91,7 @@ def _added_changes(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "after": {
                 "id": record.get("id"),
                 "stable_key": record.get("stable_key"),
+                "exam_period_id": record.get("exam_period_id"),
                 "duplicate_count": record.get("duplicate_count"),
                 "class_name": record.get("class_name"),
                 "course_name": record.get("course_name"),
@@ -108,6 +122,7 @@ def _removed_changes(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "before": {
                 "id": record.get("id"),
                 "stable_key": record.get("stable_key"),
+                "exam_period_id": record.get("exam_period_id"),
                 "duplicate_count": record.get("duplicate_count"),
                 "class_name": record.get("class_name"),
                 "course_name": record.get("course_name"),
@@ -140,6 +155,7 @@ def _checkpoint(
     return {
         "data_version": snapshot.data_version,
         "auto_updated_at": snapshot.auto_updated_at,
+        "exam_period_id": snapshot.exam_period_id,
         "previous_data_version": previous.data_version if previous else None,
         "previous_auto_updated_at": previous.auto_updated_at if previous else None,
         "status": status,
@@ -158,16 +174,28 @@ def _checkpoint(
 def build_exam_history(snapshots: list[ExamSnapshot], *, generated_at: str) -> tuple[dict[str, Any], dict[str, dict[str, Any]]]:
     if not snapshots:
         raise ExamPipelineError("Cannot build exam history without snapshots")
-    snapshots = [
-        ExamSnapshot(
-            data_version=snapshot.data_version,
-            auto_updated_at=snapshot.auto_updated_at,
-            source_url=snapshot.source_url,
-            source_title=snapshot.source_title,
-            records=canonicalize_exam_records(snapshot.records),
+    period_ids = {snapshot.exam_period_id for snapshot in snapshots}
+    if len(period_ids) != 1:
+        raise ExamPipelineError(f"Exam history snapshots must belong to one exam_period_id: {sorted(period_ids)}")
+    normalized_snapshots: list[ExamSnapshot] = []
+    for snapshot in snapshots:
+        records = canonicalize_exam_records(snapshot.records)
+        for record in records:
+            record["exam_period_id"] = snapshot.exam_period_id
+        normalized_snapshots.append(
+            ExamSnapshot(
+                data_version=snapshot.data_version,
+                auto_updated_at=snapshot.auto_updated_at,
+                exam_period_id=snapshot.exam_period_id,
+                academic_year=snapshot.academic_year,
+                term_number=snapshot.term_number,
+                term_label=snapshot.term_label,
+                source_url=snapshot.source_url,
+                source_title=snapshot.source_title,
+                records=records,
+            )
         )
-        for snapshot in snapshots
-    ]
+    snapshots = normalized_snapshots
     data_versions = [snapshot.data_version for snapshot in snapshots]
     if len(set(data_versions)) != len(data_versions):
         raise ExamPipelineError("Exam history snapshots must have unique data_version values")
@@ -244,6 +272,10 @@ def build_exam_history(snapshots: list[ExamSnapshot], *, generated_at: str) -> t
 
         payload = {
             "version": CLASS_HISTORY_VERSION,
+            "exam_period_id": latest_snapshot.exam_period_id,
+            "academic_year": latest_snapshot.academic_year,
+            "term_number": latest_snapshot.term_number,
+            "term_label": latest_snapshot.term_label,
             "class_name": class_name,
             "class_key": key,
             "generated_at": generated_at,
@@ -262,6 +294,7 @@ def build_exam_history(snapshots: list[ExamSnapshot], *, generated_at: str) -> t
                 "class_name": class_name,
                 "class_key": key,
                 "path": f"generated/exam/history/classes/{key}.json",
+                "exam_period_id": latest_snapshot.exam_period_id,
                 "first_seen_data_version": first_seen["data_version"],
                 "first_seen_at": first_seen["auto_updated_at"],
                 "latest_status": latest_checkpoint["status"],
@@ -275,12 +308,17 @@ def build_exam_history(snapshots: list[ExamSnapshot], *, generated_at: str) -> t
     manifest = {
         "version": HISTORY_MANIFEST_VERSION,
         "generated_at": generated_at,
+        "exam_period_id": latest_snapshot.exam_period_id,
+        "academic_year": latest_snapshot.academic_year,
+        "term_number": latest_snapshot.term_number,
+        "term_label": latest_snapshot.term_label,
         "latest_data_version": latest_snapshot.data_version,
         "latest_auto_updated_at": latest_snapshot.auto_updated_at,
         "snapshots": [
             {
                 "data_version": snapshot.data_version,
                 "auto_updated_at": snapshot.auto_updated_at,
+                "exam_period_id": snapshot.exam_period_id,
                 "source_url": snapshot.source_url,
                 "source_title": snapshot.source_title,
                 "record_count": len(snapshot.records),

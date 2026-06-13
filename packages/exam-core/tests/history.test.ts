@@ -11,11 +11,16 @@ describe('exam history parsing', () => {
         const manifest = parseExamHistoryManifest({
             version: 'exam-history-manifest-v1',
             generated_at: '2026-06-10T10:06:41+08:00',
+            exam_period_id: '2025-2026-2',
+            academic_year: '2025-2026',
+            term_number: 2,
+            term_label: '第二学期',
             latest_data_version: 'current',
             latest_auto_updated_at: '2026-06-10T10:06:41+08:00',
             snapshots: [{
                 data_version: 'current',
                 auto_updated_at: '2026-06-10T10:06:41+08:00',
+                exam_period_id: '2025-2026-2',
                 record_count: 1,
                 class_count: 1,
             }],
@@ -29,6 +34,7 @@ describe('exam history parsing', () => {
                 class_name: 'B240402',
                 class_key: 'b240402',
                 path: 'generated/exam/history/classes/b240402.json',
+                exam_period_id: '2025-2026-2',
                 first_seen_data_version: 'first',
                 first_seen_at: '2026-06-04T18:00:21+08:00',
                 latest_status: 'changed',
@@ -43,6 +49,10 @@ describe('exam history parsing', () => {
 
         const history = parseExamClassHistory({
             version: 'exam-class-history-v1',
+            exam_period_id: '2025-2026-2',
+            academic_year: '2025-2026',
+            term_number: 2,
+            term_label: '第二学期',
             class_name: 'B240402',
             class_key: 'b240402',
             generated_at: '2026-06-10T10:06:41+08:00',
@@ -68,6 +78,7 @@ describe('exam history parsing', () => {
             checkpoints: [{
                 data_version: 'current',
                 auto_updated_at: '2026-06-10T10:06:41+08:00',
+                exam_period_id: '2025-2026-2',
                 previous_data_version: 'first',
                 previous_auto_updated_at: '2026-06-04T18:00:21+08:00',
                 status: 'changed',

@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from njupt_exam_pipeline.contract import ExamPipelineError
+from njupt_exam_pipeline.contract import parse_exam_period
 from njupt_exam_pipeline.diff import canonicalize_exam_records, class_file_key, compare_exam_records
 from njupt_exam_pipeline.history import ExamSnapshot, build_exam_history
 
@@ -25,6 +26,21 @@ def exam(**patch):
     }
     base.update(patch)
     return base
+
+
+def snapshot(data_version: str, auto_updated_at: str, records, *, source_title: str = "2025-2026学年第二学期考试安排表"):
+    period = parse_exam_period(source_title)
+    return ExamSnapshot(
+        data_version=data_version,
+        auto_updated_at=auto_updated_at,
+        exam_period_id=period.exam_period_id,
+        academic_year=period.academic_year,
+        term_number=period.term_number,
+        term_label=period.term_label,
+        source_url=None,
+        source_title=source_title,
+        records=list(records),
+    )
 
 
 def test_row_id_change_is_not_a_material_exam_change():
@@ -112,32 +128,45 @@ def test_ambiguous_duplicate_identity_group_fails_fast():
 
 
 def test_class_history_keeps_current_and_latest_substantive_change_separate():
-    first = ExamSnapshot(
-        data_version="first",
-        auto_updated_at="2026-06-08T00:00:00+08:00",
-        source_url=None,
-        source_title=None,
-        records=[exam(duration_minutes=110, end_timestamp="2026-06-08T09:50:00+08:00")],
-    )
-    second = ExamSnapshot(
-        data_version="second",
-        auto_updated_at="2026-06-09T00:00:00+08:00",
-        source_url=None,
-        source_title=None,
-        records=[exam(duration_minutes=120, end_timestamp="2026-06-08T10:00:00+08:00")],
-    )
-    third = ExamSnapshot(
-        data_version="third",
-        auto_updated_at="2026-06-10T00:00:00+08:00",
-        source_url=None,
-        source_title=None,
-        records=[exam(duration_minutes=120, end_timestamp="2026-06-08T10:00:00+08:00")],
-    )
+    first = snapshot("first", "2026-06-08T00:00:00+08:00", [exam(duration_minutes=110, end_timestamp="2026-06-08T09:50:00+08:00")])
+    second = snapshot("second", "2026-06-09T00:00:00+08:00", [exam(duration_minutes=120, end_timestamp="2026-06-08T10:00:00+08:00")])
+    third = snapshot("third", "2026-06-10T00:00:00+08:00", [exam(duration_minutes=120, end_timestamp="2026-06-08T10:00:00+08:00")])
 
     manifest, class_files = build_exam_history([first, second, third], generated_at="2026-06-10T00:00:00+08:00")
     b240402 = class_files[class_file_key("B240402")]
 
     assert manifest["totals"]["snapshot_count"] == 3
+    assert manifest["exam_period_id"] == "2025-2026-2"
     assert b240402["checkpoints"][-1]["status"] == "unchanged"
     assert b240402["latest_substantive_change"]["data_version"] == "second"
     assert b240402["latest_substantive_change"]["totals"]["changed"] == 1
+
+
+def test_single_snapshot_period_is_first_seen_without_previous_semester_diff():
+    first_next_semester = snapshot(
+        "next-first",
+        "2026-12-01T00:00:00+08:00",
+        [exam(raw_time="2027年01月02日 08:00-10:00", start_timestamp="2027-01-02T08:00:00+08:00", end_timestamp="2027-01-02T10:00:00+08:00")],
+        source_title="2026-2027学年第一学期考试安排表",
+    )
+
+    manifest, class_files = build_exam_history([first_next_semester], generated_at="2026-12-01T00:00:00+08:00")
+    b240402 = class_files[class_file_key("B240402")]
+
+    assert manifest["exam_period_id"] == "2026-2027-1"
+    assert manifest["totals"]["snapshot_count"] == 1
+    assert b240402["checkpoints"][0]["status"] == "first_seen"
+    assert b240402["checkpoints"][0]["previous_auto_updated_at"] is None
+
+
+def test_mixed_exam_period_history_fails_fast():
+    current_period = snapshot("current", "2026-06-10T00:00:00+08:00", [exam()])
+    next_period = snapshot(
+        "next",
+        "2026-12-01T00:00:00+08:00",
+        [exam(raw_time="2027年01月02日 08:00-10:00", start_timestamp="2027-01-02T08:00:00+08:00", end_timestamp="2027-01-02T10:00:00+08:00")],
+        source_title="2026-2027学年第一学期考试安排表",
+    )
+
+    with pytest.raises(ExamPipelineError, match="one exam_period_id"):
+        build_exam_history([current_period, next_period], generated_at="2026-12-01T00:00:00+08:00")

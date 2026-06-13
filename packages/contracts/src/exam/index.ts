@@ -4,6 +4,7 @@ export interface Exam {
     id: string;
     stable_key: string;
     content_fingerprint: string;
+    exam_period_id: string;
     duplicate_count: number;
     source_refs?: Array<{
         id: string;
@@ -32,6 +33,10 @@ export interface Exam {
 export interface Manifest {
     generated_at: string;
     data_version: string;
+    exam_period_id: string;
+    academic_year: string;
+    term_number: number;
+    term_label: string;
     files_processed: string[];
     total_records: number;
     source_url?: string;
@@ -81,6 +86,7 @@ export interface ExamHistoryCheckpointTotals {
 export interface ExamHistoryCheckpoint {
     data_version: string;
     auto_updated_at: string;
+    exam_period_id: string;
     previous_data_version?: string | null;
     previous_auto_updated_at?: string | null;
     status: ExamHistoryStatus;
@@ -91,6 +97,7 @@ export interface ExamHistoryCheckpoint {
 export interface ExamHistorySnapshot {
     data_version: string;
     auto_updated_at: string;
+    exam_period_id: string;
     source_url?: string | null;
     source_title?: string | null;
     record_count: number;
@@ -101,6 +108,7 @@ export interface ExamClassHistoryIndex {
     class_name: string;
     class_key: string;
     path: string;
+    exam_period_id: string;
     first_seen_data_version: string;
     first_seen_at: string;
     latest_status: ExamHistoryStatus;
@@ -113,6 +121,10 @@ export interface ExamClassHistoryIndex {
 export interface ExamHistoryManifest {
     version: 'exam-history-manifest-v1';
     generated_at: string;
+    exam_period_id: string;
+    academic_year: string;
+    term_number: number;
+    term_label: string;
     latest_data_version: string;
     latest_auto_updated_at: string;
     snapshots: ExamHistorySnapshot[];
@@ -127,6 +139,10 @@ export interface ExamHistoryManifest {
 
 export interface ExamClassHistory {
     version: 'exam-class-history-v1';
+    exam_period_id: string;
+    academic_year: string;
+    term_number: number;
+    term_label: string;
     class_name: string;
     class_key: string;
     generated_at: string;
@@ -149,6 +165,7 @@ export const ExamSchema = z.object({
     id: z.string().min(1),
     stable_key: z.string().min(1),
     content_fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+    exam_period_id: z.string().regex(/^\d{4}-\d{4}-[1-4]$/),
     duplicate_count: z.number().int().positive(),
     source_refs: z.array(z.object({
         id: z.string().min(1),
@@ -182,6 +199,10 @@ export const ExamSchema = z.object({
 export const ManifestSchema = z.object({
     generated_at: z.string().min(1),
     data_version: z.string().regex(/^[a-f0-9]{64}$/),
+    exam_period_id: z.string().regex(/^\d{4}-\d{4}-[1-4]$/),
+    academic_year: z.string().regex(/^\d{4}-\d{4}$/),
+    term_number: z.number().int().min(1).max(4),
+    term_label: z.string().min(1),
     total_records: z.number(),
     files_processed: z.array(z.string()),
     source_url: z.string().nullable().optional(),
@@ -191,6 +212,7 @@ export const ManifestSchema = z.object({
 const ExamRecordSnapshotSchema = z.object({
     id: z.string().optional().nullable(),
     stable_key: z.string().optional().nullable(),
+    exam_period_id: z.string().regex(/^\d{4}-\d{4}-[1-4]$/).optional().nullable(),
     duplicate_count: z.number().int().positive().optional().nullable(),
     class_name: z.string().optional().nullable(),
     course_name: z.string().optional().nullable(),
@@ -250,6 +272,7 @@ export const ExamHistoryCheckpointTotalsSchema = z.object({
 export const ExamHistoryCheckpointSchema = z.object({
     data_version: z.string().min(1),
     auto_updated_at: z.string().min(1),
+    exam_period_id: z.string().regex(/^\d{4}-\d{4}-[1-4]$/),
     previous_data_version: z.string().nullable().optional(),
     previous_auto_updated_at: z.string().nullable().optional(),
     status: ExamHistoryStatusSchema,
@@ -260,6 +283,7 @@ export const ExamHistoryCheckpointSchema = z.object({
 export const ExamHistorySnapshotSchema = z.object({
     data_version: z.string().min(1),
     auto_updated_at: z.string().min(1),
+    exam_period_id: z.string().regex(/^\d{4}-\d{4}-[1-4]$/),
     source_url: z.string().nullable().optional(),
     source_title: z.string().nullable().optional(),
     record_count: z.number().int().nonnegative(),
@@ -270,6 +294,7 @@ export const ExamClassHistoryIndexSchema = z.object({
     class_name: z.string().min(1),
     class_key: z.string().min(1),
     path: z.string().regex(/^generated\/exam\/history\/classes\/[^/]+\.json$/),
+    exam_period_id: z.string().regex(/^\d{4}-\d{4}-[1-4]$/),
     first_seen_data_version: z.string().min(1),
     first_seen_at: z.string().min(1),
     latest_status: ExamHistoryStatusSchema,
@@ -282,6 +307,10 @@ export const ExamClassHistoryIndexSchema = z.object({
 export const ExamHistoryManifestSchema = z.object({
     version: z.literal('exam-history-manifest-v1'),
     generated_at: z.string().min(1),
+    exam_period_id: z.string().regex(/^\d{4}-\d{4}-[1-4]$/),
+    academic_year: z.string().regex(/^\d{4}-\d{4}$/),
+    term_number: z.number().int().min(1).max(4),
+    term_label: z.string().min(1),
     latest_data_version: z.string().min(1),
     latest_auto_updated_at: z.string().min(1),
     snapshots: z.array(ExamHistorySnapshotSchema).min(1),
@@ -296,6 +325,10 @@ export const ExamHistoryManifestSchema = z.object({
 
 export const ExamClassHistorySchema = z.object({
     version: z.literal('exam-class-history-v1'),
+    exam_period_id: z.string().regex(/^\d{4}-\d{4}-[1-4]$/),
+    academic_year: z.string().regex(/^\d{4}-\d{4}$/),
+    term_number: z.number().int().min(1).max(4),
+    term_label: z.string().min(1),
     class_name: z.string().min(1),
     class_key: z.string().min(1),
     generated_at: z.string().min(1),

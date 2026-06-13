@@ -7,7 +7,7 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 
-from .contract import ExamPipelineError
+from .contract import ExamPipelineError, parse_exam_period
 from .diff import canonicalize_exam_records
 from .processor import get_xlsx_files, process_single_file
 
@@ -82,8 +82,11 @@ def publish_exam_artifacts(
     all_rows = canonicalize_exam_records(all_rows)
 
     metadata = load_source_metadata(data_dir)
+    period = parse_exam_period(metadata.get("source_title"))
     generated_at = get_beijing_time()
     data_version = get_exam_data_version(metadata)
+    for row in all_rows:
+        row["exam_period_id"] = period.exam_period_id
 
     logger.info("Saving %s records to %s...", len(all_rows), merged_json_path)
     write_json_file(merged_json_path, all_rows, compact=True)
@@ -91,6 +94,10 @@ def publish_exam_artifacts(
     manifest = {
         "generated_at": generated_at.isoformat(),
         "data_version": data_version,
+        "exam_period_id": period.exam_period_id,
+        "academic_year": period.academic_year,
+        "term_number": period.term_number,
+        "term_label": period.term_label,
         "files_processed": [analysis["filename"] for analysis in analyses],
         "total_records": len(all_rows),
         "source_url": metadata.get("source_url"),

@@ -6,6 +6,7 @@ const baseExam: Exam = {
     id: '2025-2026学年第二学期考试安排表.xlsx-497',
     stable_key: 'b240402\u001fdg1011x0s\u001f数字电路与逻辑设计b\u001f张晶',
     content_fingerprint: 'a'.repeat(64),
+    exam_period_id: '2025-2026-2',
     duplicate_count: 1,
     source_refs: [{
         id: '2025-2026学年第二学期考试安排表.xlsx-497',
@@ -90,5 +91,16 @@ describe('exam-core calendar export', () => {
 
         expect(getExamCalendarIdentity(movedExam)).toBe(getExamCalendarIdentity(baseExam));
         expect(getExamCalendarIdentity(otherExam)).not.toBe(getExamCalendarIdentity(baseExam));
+    });
+
+    it('keeps calendar identity isolated between exam periods', () => {
+        const nextSemesterExam = {
+            ...baseExam,
+            exam_period_id: '2026-2027-1',
+            start_timestamp: '2027-01-01T08:00:00+08:00',
+            end_timestamp: '2027-01-01T10:00:00+08:00',
+        };
+
+        expect(getExamCalendarIdentity(nextSemesterExam)).not.toBe(getExamCalendarIdentity(baseExam));
     });
 });

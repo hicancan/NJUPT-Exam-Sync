@@ -21,11 +21,16 @@ describe('useExamHistory loaders', () => {
             json: async () => ({
                 version: 'exam-history-manifest-v1',
                 generated_at: '2026-06-10T10:06:41+08:00',
+                exam_period_id: '2025-2026-2',
+                academic_year: '2025-2026',
+                term_number: 2,
+                term_label: '第二学期',
                 latest_data_version: 'current',
                 latest_auto_updated_at: '2026-06-10T10:06:41+08:00',
                 snapshots: [{
                     data_version: 'current',
                     auto_updated_at: '2026-06-10T10:06:41+08:00',
+                    exam_period_id: '2025-2026-2',
                     record_count: 1,
                     class_count: 1,
                 }],
@@ -39,6 +44,7 @@ describe('useExamHistory loaders', () => {
                     class_name: 'B240402',
                     class_key: 'b240402',
                     path: 'generated/exam/history/classes/b240402.json',
+                    exam_period_id: '2025-2026-2',
                     first_seen_data_version: 'first',
                     first_seen_at: '2026-06-04T18:00:21+08:00',
                     latest_status: 'changed',
@@ -65,6 +71,10 @@ describe('useExamHistory loaders', () => {
             ok: true,
             json: async () => ({
                 version: 'exam-class-history-v1',
+                exam_period_id: '2025-2026-2',
+                academic_year: '2025-2026',
+                term_number: 2,
+                term_label: '第二学期',
                 class_name: 'B240402',
                 class_key: 'b240402',
                 generated_at: '2026-06-10T10:06:41+08:00',
@@ -77,6 +87,7 @@ describe('useExamHistory loaders', () => {
                 latest_substantive_change: {
                     data_version: 'current',
                     auto_updated_at: '2026-06-10T10:06:41+08:00',
+                    exam_period_id: '2025-2026-2',
                     status: 'changed',
                     totals: {
                         added: 0,
@@ -90,6 +101,7 @@ describe('useExamHistory loaders', () => {
                 checkpoints: [{
                     data_version: 'current',
                     auto_updated_at: '2026-06-10T10:06:41+08:00',
+                    exam_period_id: '2025-2026-2',
                     status: 'changed',
                     totals: {
                         added: 0,
@@ -114,6 +126,7 @@ describe('useExamHistory loaders', () => {
             class_name: 'B240402',
             class_key: 'b240402',
             path: 'generated/exam/history/classes/b240402.json',
+            exam_period_id: '2025-2026-2',
             first_seen_data_version: 'first',
             first_seen_at: '2026-06-04T18:00:21+08:00',
             latest_status: 'changed',
@@ -124,7 +137,7 @@ describe('useExamHistory loaders', () => {
         }, 'current');
 
         expect(fetchMock).toHaveBeenCalledWith(
-            'generated/exam/history/classes/b240402.json?v=current&schema=exam-public-v2',
+            'generated/exam/history/classes/b240402.json?v=current&schema=exam-public-v3',
             { cache: 'force-cache', signal: undefined }
         );
         expect(history.checkpoints[0]?.changes[0]?.fields?.[0]?.before).toBe(110);
@@ -135,7 +148,7 @@ describe('useExamHistory loaders', () => {
             'generated/exam/history/manifest.json?x=1&fresh=now'
         );
         expect(examClassHistoryUrlWithVersion('generated/exam/history/classes/b240402.json?x=1', 'v/2')).toBe(
-            'generated/exam/history/classes/b240402.json?x=1&v=v%2F2&schema=exam-public-v2'
+            'generated/exam/history/classes/b240402.json?x=1&v=v%2F2&schema=exam-public-v3'
         );
     });
 });

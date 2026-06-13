@@ -17,6 +17,7 @@ export const useSelectedExamIds = (
     className: string | null,
     exams: Exam[],
     dataVersion: string | null,
+    examPeriodId: string | null,
     autoUpdatedAt: string | null
 ) => {
     const [selection, setSelection] = useState<SelectionState>({
@@ -25,8 +26,8 @@ export const useSelectedExamIds = (
     });
     const [, refreshExportHistory] = useState(0);
     const examIds = useMemo(() => exams.map(exam => exam.id), [exams]);
-    const scope = useMemo(() => buildExamSelectionScope(className, exams, dataVersion), [className, dataVersion, exams]);
-    const exportHistory = className ? readExamExportHistory(className) : null;
+    const scope = useMemo(() => buildExamSelectionScope(className, examPeriodId, dataVersion), [className, dataVersion, examPeriodId]);
+    const exportHistory = className && examPeriodId ? readExamExportHistory(examPeriodId, className) : null;
     const defaultSelectedIds = useMemo(
         () => buildDefaultSelectedExamIds(exams, exportHistory),
         [exams, exportHistory]
@@ -62,10 +63,10 @@ export const useSelectedExamIds = (
     }, [scope]);
 
     const markExamsExported = useCallback((exportedExams: Exam[]) => {
-        if (!className || !dataVersion || !autoUpdatedAt) return;
-        writeExamExportHistory(className, exportedExams, { dataVersion, autoUpdatedAt });
+        if (!className || !dataVersion || !examPeriodId || !autoUpdatedAt) return;
+        writeExamExportHistory(className, exams, exportedExams, examPeriodId, dataVersion, autoUpdatedAt);
         refreshExportHistory(version => version + 1);
-    }, [autoUpdatedAt, className, dataVersion]);
+    }, [autoUpdatedAt, className, dataVersion, examPeriodId, exams]);
 
     const getExamStatus = useCallback((exam: Exam) => {
         return getExamExportStatus(exam, exportHistory);

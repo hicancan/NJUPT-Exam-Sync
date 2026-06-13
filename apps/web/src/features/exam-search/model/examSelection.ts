@@ -1,26 +1,23 @@
 import { getExamCalendarIdentity } from '@njupt-search/exam-core/calendar';
 import type { Exam } from '@/shared/lib/contracts';
 
-const STORAGE_PREFIX = 'njupt-search:exam-selection:v2:';
+const STORAGE_PREFIX = 'njupt-search:exam-selection:v3:';
 
-export type ExamExportStatus = 'normal' | 'new' | 'needs-update';
+export type ExamExportStatus = 0 | 1 | 2;
 
-export interface ExportedExamSnapshot {
-    key: string;
-    fingerprint: string;
-}
+export type ExportedExamSnapshot = readonly [key: string, fingerprint: string];
 
-export interface ExamExportHistory {
-    version: 2;
-    className: string;
-    dataVersion: string;
-    autoUpdatedAt: string;
-    exportedAt: string;
-    selected: ExportedExamSnapshot[];
-}
+export type ExamExportHistory = readonly [
+    version: 3,
+    className: string,
+    dataVersion: string,
+    autoUpdatedAt: string,
+    all: ExportedExamSnapshot[],
+    selected: ExportedExamSnapshot[],
+];
 
-const getStorageKey = (className: string): string => {
-    return `${STORAGE_PREFIX}${encodeURIComponent(className.toUpperCase())}`;
+const getStorageKey = (examPeriodId: string, className: string): string => {
+    return `${STORAGE_PREFIX}${examPeriodId}:${className.toUpperCase()}`;
 };
 
 const hasExportableTime = (exam: Exam): boolean => {
@@ -31,17 +28,13 @@ export const getExamExportKey = (exam: Exam): string => {
     return getExamCalendarIdentity(exam);
 };
 
-export const getExamContentFingerprint = (exam: Exam): string => {
-    return exam.content_fingerprint;
-};
-
 export const buildExamSelectionScope = (
     className: string | null,
-    exams: Exam[],
+    examPeriodId: string | null,
     dataVersion: string | null
 ): string | null => {
-    if (!className || !dataVersion) return null;
-    return `${className.toUpperCase()}\u001f${dataVersion}\u001f${exams.map(getExamExportKey).join('\u001f')}`;
+    if (!className || !examPeriodId || !dataVersion) return null;
+    return `${examPeriodId}\u001f${className.toUpperCase()}\u001f${dataVersion}`;
 };
 
 export const buildDefaultSelectedExamIds = (
@@ -52,13 +45,14 @@ export const buildDefaultSelectedExamIds = (
         return new Set(exams.filter(hasExportableTime).map(exam => exam.id));
     }
 
-    const selectedKeys = new Set(exportHistory.selected.map(item => item.key));
+    const selectedKeys = new Set(exportHistory[5].map(item => item[0]));
+    const previousKeys = new Set(exportHistory[4].map(item => item[0]));
     return new Set(
         exams
             .filter(hasExportableTime)
             .filter(exam => {
                 const key = getExamExportKey(exam);
-                return selectedKeys.has(key) || !exportHistory.selected.some(item => item.key === key);
+                return selectedKeys.has(key) || !previousKeys.has(key);
             })
             .map(exam => exam.id)
     );
@@ -68,35 +62,27 @@ export const getExamExportStatus = (
     exam: Exam,
     exportHistory: ExamExportHistory | null
 ): ExamExportStatus => {
-    if (!exportHistory) return 'normal';
+    if (!exportHistory) return 0;
     const key = getExamExportKey(exam);
-    const previous = exportHistory.selected.find(item => item.key === key);
-    if (!previous) return 'new';
-    return previous.fingerprint === getExamContentFingerprint(exam) ? 'normal' : 'needs-update';
+    const previous = exportHistory[5].find(item => item[0] === key);
+    if (!previous) {
+        return exportHistory[4].some(item => item[0] === key) ? 0 : 1;
+    }
+    return previous[1] === exam.content_fingerprint ? 0 : 2;
 };
 
 const isExportHistory = (value: unknown): value is ExamExportHistory => {
-    if (!value || typeof value !== 'object') return false;
-    const candidate = value as Partial<ExamExportHistory>;
-    return candidate.version === 2
-        && typeof candidate.className === 'string'
-        && typeof candidate.dataVersion === 'string'
-        && typeof candidate.autoUpdatedAt === 'string'
-        && typeof candidate.exportedAt === 'string'
-        && Array.isArray(candidate.selected)
-        && candidate.selected.every(item => (
-            item
-            && typeof item === 'object'
-            && typeof (item as ExportedExamSnapshot).key === 'string'
-            && typeof (item as ExportedExamSnapshot).fingerprint === 'string'
-        ));
+    return Array.isArray(value)
+        && value[0] === 3
+        && Array.isArray(value[4])
+        && Array.isArray(value[5]);
 };
 
-export const readExamExportHistory = (className: string): ExamExportHistory | null => {
+export const readExamExportHistory = (examPeriodId: string, className: string): ExamExportHistory | null => {
     if (typeof window === 'undefined') return null;
 
     try {
-        const raw = window.localStorage.getItem(getStorageKey(className));
+        const raw = window.localStorage.getItem(getStorageKey(examPeriodId, className));
         if (!raw) return null;
 
         const parsed: unknown = JSON.parse(raw);
@@ -108,35 +94,27 @@ export const readExamExportHistory = (className: string): ExamExportHistory | nu
 
 export const writeExamExportHistory = (
     className: string,
+    allExams: Exam[],
     exportedExams: Exam[],
-    options: {
-        dataVersion: string;
-        autoUpdatedAt: string;
-    }
-): ExamExportHistory | null => {
-    if (typeof window === 'undefined') return null;
+    examPeriodId: string,
+    dataVersion: string,
+    autoUpdatedAt: string
+): void => {
+    if (typeof window === 'undefined') return;
+
+    const all = allExams
+        .filter(hasExportableTime)
+        .map(exam => [getExamExportKey(exam), exam.content_fingerprint] as const);
 
     const selected = exportedExams
         .filter(hasExportableTime)
-        .map(exam => ({
-            key: getExamExportKey(exam),
-            fingerprint: getExamContentFingerprint(exam),
-        }))
-        .sort((a, b) => a.key.localeCompare(b.key));
+        .map(exam => [getExamExportKey(exam), exam.content_fingerprint] as const);
 
-    const payload: ExamExportHistory = {
-        version: 2,
-        className: className.toUpperCase(),
-        dataVersion: options.dataVersion,
-        autoUpdatedAt: options.autoUpdatedAt,
-        exportedAt: new Date().toISOString(),
-        selected,
-    };
+    const payload: ExamExportHistory = [3, className.toUpperCase(), dataVersion, autoUpdatedAt, all, selected];
 
     try {
-        window.localStorage.setItem(getStorageKey(className), JSON.stringify(payload));
-        return payload;
+        window.localStorage.setItem(getStorageKey(examPeriodId, className), JSON.stringify(payload));
     } catch {
-        return null;
+        return;
     }
 };

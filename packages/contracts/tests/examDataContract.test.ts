@@ -22,7 +22,9 @@ describe('exam data contract package', () => {
         expect(exams.length).toBeGreaterThan(0);
         expect(manifest.files_processed.length).toBeGreaterThan(0);
         expect(manifest.data_version).toMatch(/^[a-f0-9]{64}$/);
+        expect(manifest.exam_period_id).toMatch(/^\d{4}-\d{4}-[1-4]$/);
         expect(historyManifest.latest_data_version).toBe(manifest.data_version);
+        expect(historyManifest.exam_period_id).toBe(manifest.exam_period_id);
         expect(b240402.class_name).toBe('B240402');
     });
 
@@ -31,6 +33,7 @@ describe('exam data contract package', () => {
             id: 'invalid-time',
             stable_key: 'b240402\u001fjs113400s\u001f算法分析与设计\u001f张三',
             content_fingerprint: 'a'.repeat(64),
+            exam_period_id: '2025-2026-2',
             duplicate_count: 1,
             source_refs: [{ id: 'schedule.xlsx-2', source_file: 'schedule.xlsx', row_index: 2 }],
             campus: '仙林',

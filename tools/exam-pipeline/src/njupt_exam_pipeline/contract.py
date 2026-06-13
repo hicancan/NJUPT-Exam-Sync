@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from typing import Any, Optional
 
@@ -30,6 +31,49 @@ FIELD_MAPPING = {
 
 REGEX_CHINESE = re.compile(r"(\d{4})年(\d{1,2})月(\d{1,2})日.*?(\d{1,2}:\d{2})\s*[-~至]\s*(\d{1,2}:\d{2})")
 REGEX_ISO = re.compile(r"\(?(\d{4}-\d{1,2}-\d{1,2})\)?.*?(\d{1,2}:\d{2})\s*[-~至]\s*(\d{1,2}:\d{2})")
+EXAM_PERIOD_RE = re.compile(r"(?P<academic_year>\d{4}-\d{4})\s*学年\s*第\s*(?P<term>[一二三四1-4])\s*学期")
+TERM_NUMBER_BY_LABEL = {
+    "一": 1,
+    "二": 2,
+    "三": 3,
+    "四": 4,
+    "1": 1,
+    "2": 2,
+    "3": 3,
+    "4": 4,
+}
+TERM_LABEL_BY_NUMBER = {
+    1: "第一学期",
+    2: "第二学期",
+    3: "第三学期",
+    4: "第四学期",
+}
+
+
+@dataclass(frozen=True)
+class ExamPeriod:
+    exam_period_id: str
+    academic_year: str
+    term_number: int
+    term_label: str
+
+
+def parse_exam_period(source_title: Any) -> ExamPeriod:
+    title = normalize_text(source_title)
+    match = EXAM_PERIOD_RE.search(title)
+    if not match:
+        raise ExamPipelineError(f"Cannot parse exam period from source_title: {title!r}")
+    academic_year = match.group("academic_year")
+    term_token = match.group("term")
+    term_number = TERM_NUMBER_BY_LABEL.get(term_token)
+    if term_number is None:
+        raise ExamPipelineError(f"Unsupported exam term in source_title: {title!r}")
+    return ExamPeriod(
+        exam_period_id=f"{academic_year}-{term_number}",
+        academic_year=academic_year,
+        term_number=term_number,
+        term_label=TERM_LABEL_BY_NUMBER[term_number],
+    )
 
 
 class ExamRecord(BaseModel):

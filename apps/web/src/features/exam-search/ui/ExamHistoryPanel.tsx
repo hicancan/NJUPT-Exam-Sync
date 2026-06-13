@@ -44,8 +44,8 @@ const changeBadgeClass = (change: ExamHistoryChange): string => {
     return 'bg-[#e8f0fe] text-[#1967d2] dark:bg-[#1f2d4d] dark:text-[#8ab4f8]';
 };
 
-const getExpansionStorageKey = (classKey: string, dataVersion: string): string => {
-    return `njupt-search:exam-history-expanded:${classKey}:${dataVersion}`;
+const getExpansionStorageKey = (examPeriodId: string, classKey: string, dataVersion: string): string => {
+    return `njupt-search:exam-history-expanded:${examPeriodId}:${classKey}:${dataVersion}`;
 };
 
 function ChangeSummaries({ change }: { change: ExamHistoryChange }) {
@@ -104,7 +104,7 @@ function ClassHistoryContent({ classHistory }: { classHistory: ExamClassHistory 
         .find(checkpoint => materialStatus.has(checkpoint.status)) || currentCheckpoint, [classHistory.checkpoints, currentCheckpoint]);
     const currentHasChange = currentCheckpoint?.status && currentCheckpoint.status !== 'unchanged';
     const expansionKey = latestMaterialCheckpoint
-        ? getExpansionStorageKey(classHistory.class_key, latestMaterialCheckpoint.data_version)
+        ? getExpansionStorageKey(classHistory.exam_period_id, classHistory.class_key, latestMaterialCheckpoint.data_version)
         : null;
     const [expansionOverrides, setExpansionOverrides] = useState<Record<string, boolean>>({});
     const expanded = expansionKey
@@ -139,7 +139,7 @@ function ClassHistoryContent({ classHistory }: { classHistory: ExamClassHistory 
                 ) : null}
             </div>
             <p className="mt-2 text-[13px] text-[#5f6368] dark:text-[#9aa0a6]">
-                当前自动更新时间：{formatTime(classHistory.latest_auto_updated_at)}
+                考试周期：{classHistory.academic_year}学年{classHistory.term_label}；当前自动更新时间：{formatTime(classHistory.latest_auto_updated_at)}
                 {currentCheckpoint?.previous_auto_updated_at ? `；上一次自动更新时间：${formatTime(currentCheckpoint.previous_auto_updated_at)}` : ''}
             </p>
             <p className="mt-1 text-[13px] text-[#5f6368] dark:text-[#9aa0a6]">
@@ -183,7 +183,7 @@ export function ExamHistoryPanel({
                     考试安排自动更新摘要
                 </div>
                 <p className="mt-2 text-[13px] text-[#5f6368] dark:text-[#9aa0a6]">
-                    当前自动更新时间：{formatTime(manifest.latest_auto_updated_at)}；可回溯 {manifest.totals.snapshot_count} 个教务快照，覆盖 {manifest.totals.current_class_count} 个当前班级。
+                    考试周期：{manifest.academic_year}学年{manifest.term_label}；当前自动更新时间：{formatTime(manifest.latest_auto_updated_at)}；可回溯 {manifest.totals.snapshot_count} 个教务快照，覆盖 {manifest.totals.current_class_count} 个当前班级。
                 </p>
             </div>
         );

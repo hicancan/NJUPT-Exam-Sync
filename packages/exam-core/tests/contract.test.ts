@@ -37,8 +37,10 @@ describe('exam-core data contract', () => {
         expect(exams.length).toBeGreaterThan(0);
         expect(manifest.files_processed.length).toBeGreaterThan(0);
         expect(resolveExamDataVersion(manifest)).toMatch(/^[a-f0-9]{64}$/);
+        expect(manifest.exam_period_id).toMatch(/^\d{4}-\d{4}-[1-4]$/);
         expect(new Set(exams.map(exam => exam.id)).size).toBe(exams.length);
         expect(historyManifest.latest_data_version).toBe(resolveExamDataVersion(manifest));
+        expect(historyManifest.exam_period_id).toBe(manifest.exam_period_id);
         expect(b240402.latest_substantive_change.status).toBe('changed');
         expect(JSON.stringify(b240402)).toContain('"before":110');
         expect(JSON.stringify(b240402)).toContain('"after":120');
@@ -47,6 +49,10 @@ describe('exam-core data contract', () => {
     it('rejects data summaries without an explicit data version', () => {
         expect(() => parseManifest({
             generated_at: '2026-06-10T00:00:00+08:00',
+            exam_period_id: '2025-2026-2',
+            academic_year: '2025-2026',
+            term_number: 2,
+            term_label: '第二学期',
             files_processed: ['schedule.xlsx'],
             total_records: 1,
             source_url: 'https://example.test/exam',
@@ -63,6 +69,7 @@ describe('exam-core data contract', () => {
             id: 'duplicate',
             stable_key: 'b240402\u001fjs113400s\u001f算法分析与设计\u001f张三',
             content_fingerprint: 'a'.repeat(64),
+            exam_period_id: '2025-2026-2',
             duplicate_count: 1,
             source_refs: [{ id: 'schedule.xlsx-2', source_file: 'schedule.xlsx', row_index: 2 }],
             campus: '仙林',
@@ -87,6 +94,7 @@ describe('exam-core data contract', () => {
             id: 'invalid-time',
             stable_key: 'b240402\u001fjs113400s\u001f算法分析与设计\u001f张三',
             content_fingerprint: 'a'.repeat(64),
+            exam_period_id: '2025-2026-2',
             duplicate_count: 1,
             source_refs: [{ id: 'schedule.xlsx-2', source_file: 'schedule.xlsx', row_index: 2 }],
             campus: '仙林',

@@ -51,8 +51,6 @@ interface ResultsPageProps {
     onRemindersChange: (reminders: number[]) => void;
     sourceUrl: string | null;
     sourceTitle: string | null;
-    generatedAt: string | null;
-    totalRecords: number | null;
     examHistoryManifest: ExamHistoryManifest | null;
     examClassHistory: ExamClassHistory | null;
     examHistoryLoading: boolean;
@@ -85,8 +83,6 @@ export function ResultsPage({
     onRemindersChange,
     sourceUrl,
     sourceTitle,
-    generatedAt,
-    totalRecords,
     examHistoryManifest,
     examClassHistory,
     examHistoryLoading,
@@ -134,8 +130,6 @@ export function ResultsPage({
                                 onRemindersChange={onRemindersChange}
                                 sourceUrl={sourceUrl}
                                 sourceTitle={sourceTitle}
-                                generatedAt={generatedAt}
-                                totalRecords={totalRecords}
                                 examHistoryManifest={examHistoryManifest}
                                 examClassHistory={examClassHistory}
                                 examHistoryLoading={examHistoryLoading}

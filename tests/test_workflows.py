@@ -14,6 +14,10 @@ def test_ci_is_single_authoritative_pages_gate():
     assert r"^(\.github/.*|tests/test_workflows\.py|apps/web/public/edgeone\.json)$" in text
     assert 'mode="static-public-fast"' in text
     assert 'mode="workflow-fast"' in text
+    assert 'mode="exam-code-fast"' in text
+    assert "exam_fast_checks" in text
+    assert "tools/exam-pipeline/.*" in text
+    assert "apps/web/src/features/exam-search/.*" in text
     assert "needs_generated_assets" in text
     assert "needs_generated_assets: ${{ steps.ci-mode.outputs.needs_generated_assets }}" in text
     assert "Verify CI-only public asset determinism" in text
@@ -21,6 +25,9 @@ def test_ci_is_single_authoritative_pages_gate():
     assert "if: steps.ci-mode.outputs.needs_public_assets == 'true'\n        uses: dtolnay/rust-toolchain@stable" in text
     assert "npm run build:wasm:web\n          npm run build:prepared" in text
     assert "Fast-mode workflow tests" in text
+    assert "Exam fast checks" in text
+    assert "tests/test_exam_history.py tests/test_exam_pipeline_failfast.py tests/test_prepare_public_assets_download.py" in text
+    assert "npm run test:prepared -- apps/web/src/features/exam-search packages/exam-core packages/contracts/tests/examDataContract.test.ts" in text
     assert "Build deployment bundle" in text
     assert "steps.ci-mode.outputs.needs_public_assets == 'true' && steps.ci-mode.outputs.full_verification != 'true'" in text
     assert "workflow_run:" not in text
@@ -179,6 +186,9 @@ def test_exam_update_uses_retrying_generated_commit_helper():
     assert "FORCE_DEPLOY: ${{ github.event.inputs.force_deploy || 'false' }}" in text
     assert "prepare_public_assets.py build-exam-public-data" in text
     assert "prepare_public_assets.py verify-exam-public-data" in text
+    assert "Exam-only regression tests" in text
+    assert "npm ci" in text
+    assert "npm run test:prepared -- apps/web/src/features/exam-search packages/exam-core packages/contracts/tests/examDataContract.test.ts" in text
     assert "actions/runs/$candidate_run_id/artifacts" in text
     assert 'select(.expired == false and .name == "njupt-search-dist")' in text
     assert 'select(.expired == false and .name == "njupt-search-production-dist")' in text
@@ -205,7 +215,7 @@ def test_exam_update_uses_retrying_generated_commit_helper():
     assert "validate_search_index.py" not in text
     assert "run-smoke-queries" not in text
     assert "run-task-queries" not in text
-    assert "uv run python -m pytest" not in text
+    assert "uv run python -m pytest tests\n" not in text
     assert "npm test" not in text
     assert "npm run typecheck" not in text
     assert "npm run build" not in text

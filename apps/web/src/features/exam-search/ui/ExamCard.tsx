@@ -18,13 +18,13 @@ const formatDisplayDate = (isoString?: string | null): string => {
 };
 
 const statusBadge = (status: ExamExportStatus): { text: string; className: string } | null => {
-    if (status === 'needs-update') {
+    if (status === 2) {
         return {
             text: '需更新',
             className: 'bg-[#fef7e0] text-[#b06000] border-[#fbbc04] dark:bg-[#3a2a00] dark:text-[#fdd663] dark:border-[#fdd663]',
         };
     }
-    if (status === 'new') {
+    if (status === 1) {
         return {
             text: '新增',
             className: 'bg-[#e6f4ea] text-[#137333] border-[#34a853] dark:bg-[#143820] dark:text-[#81c995] dark:border-[#81c995]',
@@ -36,7 +36,7 @@ const statusBadge = (status: ExamExportStatus): { text: string; className: strin
 export function ExamCard({ exam, isSelected, exportStatus, onToggle }: ExamCardProps) {
     const isValidTime = !!exam.start_timestamp;
     const badge = statusBadge(exportStatus);
-    const borderClass = exportStatus === 'needs-update'
+    const borderClass = exportStatus === 2
         ? 'border-[#fbbc04]'
         : isSelected
             ? 'border-[#1a73e8]'

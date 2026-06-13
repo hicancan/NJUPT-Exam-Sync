@@ -36,6 +36,7 @@ jobs:
           full_verification="true"
           needs_public_assets="true"
           needs_generated_assets="true"
+          exam_fast_checks="false"
           if [ "$GITHUB_EVENT_NAME" = "push" ]; then
             before="${{ github.event.before }}"
             if [ -n "$before" ] && [ "$before" != "0000000000000000000000000000000000000000" ]; then
@@ -50,6 +51,12 @@ jobs:
                 full_verification="false"
                 needs_public_assets="true"
                 needs_generated_assets="false"
+              elif [ -n "$changed_files" ] && ! printf '%s\n' "$changed_files" | grep -Ev '^(tools/exam-pipeline/.*|apps/web/src/features/exam-search/.*|apps/web/src/features/query-router/.*|apps/web/src/app/routing/useSearchExperience\.ts|apps/web/src/app/config/constants\.ts|apps/web/src/pages/results/ResultsPage\.tsx|apps/web/vite\.config\.ts|packages/exam-core/.*|packages/contracts/src/exam/.*|packages/contracts/tests/examDataContract\.test\.ts|tests/test_exam_.*|tests/test_prepare_public_assets_download\.py)$' >/dev/null; then
+                mode="exam-code-fast"
+                full_verification="false"
+                needs_public_assets="true"
+                needs_generated_assets="false"
+                exam_fast_checks="true"
               fi
             fi
           fi
@@ -57,6 +64,7 @@ jobs:
           echo "full_verification=$full_verification" >> "$GITHUB_OUTPUT"
           echo "needs_public_assets=$needs_public_assets" >> "$GITHUB_OUTPUT"
           echo "needs_generated_assets=$needs_generated_assets" >> "$GITHUB_OUTPUT"
+          echo "exam_fast_checks=$exam_fast_checks" >> "$GITHUB_OUTPUT"
           {
             echo "### CI workload"
             echo
@@ -64,6 +72,7 @@ jobs:
             echo "- Full verification: \`$full_verification\`"
             echo "- Public asset build: \`$needs_public_assets\`"
             echo "- Generated asset refresh: \`$needs_generated_assets\`"
+            echo "- Exam fast checks: \`$exam_fast_checks\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Set up Python
@@ -173,8 +182,17 @@ jobs:
           uv run python -m pytest tests
           printf '| Python tests | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Exam fast checks
+        if: steps.ci-mode.outputs.exam_fast_checks == 'true'
+        run: |
+          start=$SECONDS
+          uv run python -m pytest tests/test_exam_history.py tests/test_exam_pipeline_failfast.py tests/test_prepare_public_assets_download.py
+          npm run test:prepared -- apps/web/src/features/exam-search packages/exam-core packages/contracts/tests/examDataContract.test.ts
+          npm run typecheck:prepared
+          printf '| Exam fast checks | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Fast-mode workflow tests
-        if: steps.ci-mode.outputs.full_verification != 'true'
+        if: ${{ steps.ci-mode.outputs.full_verification != 'true' && steps.ci-mode.outputs.exam_fast_checks != 'true' }}
         run: |
           start=$SECONDS
           uv run python -m pytest tests/test_workflows.py

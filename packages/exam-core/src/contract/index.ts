@@ -58,4 +58,11 @@ export const assertManifestMatchesExams = (manifest: Manifest, exams: Exam[]) =>
             `data_summary.total_records=${manifest.total_records} does not match all_exams.length=${exams.length}`
         );
     }
+    for (const exam of exams) {
+        if (exam.exam_period_id !== manifest.exam_period_id) {
+            throw new DataContractError(
+                `all_exams entry ${exam.id} has exam_period_id=${exam.exam_period_id}, expected ${manifest.exam_period_id}`
+            );
+        }
+    }
 };

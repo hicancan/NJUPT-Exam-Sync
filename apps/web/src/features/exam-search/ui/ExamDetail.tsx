@@ -27,8 +27,6 @@ interface ExamDetailProps {
     onRemindersChange: (reminders: number[]) => void;
     sourceUrl?: string | null;
     sourceTitle?: string | null;
-    generatedAt?: string | null;
-    totalRecords?: number | null;
     examHistoryManifest?: ExamHistoryManifest | null;
     examClassHistory?: ExamClassHistory | null;
     examHistoryLoading?: boolean;
@@ -48,8 +46,6 @@ export function ExamDetail({
     onRemindersChange,
     sourceUrl,
     sourceTitle,
-    generatedAt,
-    totalRecords,
     examHistoryManifest,
     examClassHistory,
     examHistoryLoading = false,
@@ -157,8 +153,6 @@ export function ExamDetail({
                                 <span>来源：{sourceTitle}</span>
                             )
                         ) : null}
-                        {generatedAt ? <span>更新：{new Date(generatedAt).toLocaleString('zh-CN')}</span> : null}
-                        {totalRecords ? <span>数据记录：{totalRecords}</span> : null}
                     </div>
                 </div>
                 <button

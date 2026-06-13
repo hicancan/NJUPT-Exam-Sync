@@ -113,6 +113,7 @@ def _exam_summary(record: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": record.get("id"),
         "stable_key": record.get("stable_key"),
+        "exam_period_id": record.get("exam_period_id"),
         "duplicate_count": record.get("duplicate_count"),
         "class_name": record.get("class_name"),
         "course_name": record.get("course_name"),
