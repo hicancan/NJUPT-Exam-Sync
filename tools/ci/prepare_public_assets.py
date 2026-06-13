@@ -34,6 +34,7 @@ BUILDER_FINGERPRINT_INPUTS = (
     REPO_ROOT / "tools" / "ci" / "prepare_public_assets.py",
     REPO_ROOT / "tools" / "collection-indexer" / "src",
     REPO_ROOT / "tools" / "exam-pipeline" / "src",
+    REPO_ROOT / "config" / "classrooms",
     REPO_ROOT / "pyproject.toml",
     REPO_ROOT / "uv.lock",
 )
@@ -391,6 +392,8 @@ def public_data_current() -> bool:
         and (EXAM_DIR / "classes").exists()
         and (EXAM_DIR / "data_summary.json").exists()
         and (EXAM_DIR / "history" / "manifest.json").exists()
+        and (EXAM_DIR / "rooms" / "index.json").exists()
+        and (EXAM_DIR / "rooms" / "audit.json").exists()
     )
 
 
@@ -408,6 +411,8 @@ def ensure_public_assets_exist() -> None:
         EXAM_DIR / "class_index.json",
         EXAM_DIR / "data_summary.json",
         EXAM_DIR / "history" / "manifest.json",
+        EXAM_DIR / "rooms" / "index.json",
+        EXAM_DIR / "rooms" / "audit.json",
     ]
     missing = [str(path.relative_to(REPO_ROOT)) for path in required if not path.exists()]
     if missing:
@@ -436,7 +441,9 @@ def verify_exam_public_data() -> None:
     class_index_path = EXAM_DIR / "class_index.json"
     metadata_path = EXAM_DIR / "source_metadata.json"
     history_manifest_path = EXAM_DIR / "history" / "manifest.json"
-    for path in (summary_path, exams_path, class_index_path, metadata_path, history_manifest_path):
+    room_index_path = EXAM_DIR / "rooms" / "index.json"
+    room_audit_path = EXAM_DIR / "rooms" / "audit.json"
+    for path in (summary_path, exams_path, class_index_path, metadata_path, history_manifest_path, room_index_path, room_audit_path):
         if not path.exists():
             raise PublicAssetError(f"missing generated exam public asset: {path.relative_to(REPO_ROOT)}")
     if (EXAM_DIR / "change_summary.json").exists():
@@ -450,6 +457,8 @@ def verify_exam_public_data() -> None:
     class_index = read_json(class_index_path)
     metadata = read_json(metadata_path)
     history_manifest = read_json(history_manifest_path)
+    room_index = read_json(room_index_path)
+    room_audit = read_json(room_audit_path)
     with exams_path.open("r", encoding="utf-8") as handle:
         exams = json.load(handle)
     if not isinstance(exams, list) or not exams:
@@ -605,6 +614,89 @@ def verify_exam_public_data() -> None:
                 raise PublicAssetError(f"affected exam class history nodes must contain changes: {path_value}")
             if status in {"first_seen", "unchanged"} and changes:
                 raise PublicAssetError(f"first_seen/unchanged exam class history nodes must not contain changes: {path_value}")
+    if room_index.get("version") != "exam-room-index-v1":
+        raise PublicAssetError("exam room index version is invalid")
+    if room_index.get("data_version") != expected_data_version:
+        raise PublicAssetError("exam room index data_version does not match exam lock")
+    if room_index.get("exam_period_id") != expected_period.exam_period_id:
+        raise PublicAssetError("exam room index exam_period_id does not match source_title period")
+    room_entries = room_index.get("rooms")
+    floor_entries = room_index.get("floors")
+    date_entries = room_index.get("dates")
+    if not isinstance(room_entries, list) or not room_entries:
+        raise PublicAssetError("exam room index rooms must be non-empty")
+    if not isinstance(floor_entries, list) or not floor_entries:
+        raise PublicAssetError("exam room index floors must be non-empty")
+    if not isinstance(date_entries, list) or not date_entries:
+        raise PublicAssetError("exam room index dates must be non-empty")
+    if room_index.get("room_count") != len(room_entries):
+        raise PublicAssetError("exam room index room_count mismatch")
+    if room_index.get("floor_count") != len(floor_entries):
+        raise PublicAssetError("exam room index floor_count mismatch")
+    if room_index.get("date_count") != len(date_entries):
+        raise PublicAssetError("exam room index date_count mismatch")
+    room_keys: set[str] = set()
+    for room in room_entries:
+        if not isinstance(room, dict):
+            raise PublicAssetError("exam room index room entries must be objects")
+        room_key = str(room.get("room_key") or "")
+        if not room_key.startswith("room-"):
+            raise PublicAssetError(f"invalid exam room key: {room_key}")
+        if room_key in room_keys:
+            raise PublicAssetError(f"duplicate exam room key: {room_key}")
+        for field in ("campus", "building", "floor", "room", "source"):
+            if not room.get(field):
+                raise PublicAssetError(f"exam room entry missing {field}: {room_key}")
+        room_keys.add(room_key)
+    floor_keys: set[str] = set()
+    for floor in floor_entries:
+        if not isinstance(floor, dict):
+            raise PublicAssetError("exam room floor entries must be objects")
+        floor_key = str(floor.get("floor_key") or "")
+        if not floor_key.startswith("floor-"):
+            raise PublicAssetError(f"invalid exam floor key: {floor_key}")
+        if floor_key in floor_keys:
+            raise PublicAssetError(f"duplicate exam floor key: {floor_key}")
+        floor_room_keys = floor.get("room_keys")
+        if not isinstance(floor_room_keys, list) or not floor_room_keys or any(key not in room_keys for key in floor_room_keys):
+            raise PublicAssetError(f"exam room floor contains invalid room_keys: {floor_key}")
+        floor_keys.add(floor_key)
+    for date_entry in date_entries:
+        if not isinstance(date_entry, dict):
+            raise PublicAssetError("exam room date entries must be objects")
+        floors_for_date = date_entry.get("floors")
+        if not isinstance(floors_for_date, list):
+            raise PublicAssetError("exam room date floors must be a list")
+        for item in floors_for_date:
+            if not isinstance(item, dict):
+                raise PublicAssetError("exam room date floor entries must be objects")
+            floor_key = str(item.get("floor_key") or "")
+            path_value = str(item.get("path") or "")
+            if floor_key not in floor_keys:
+                raise PublicAssetError(f"exam room date references unknown floor_key: {floor_key}")
+            if not path_value.startswith("generated/exam/rooms/by-floor/") or not path_value.endswith(".json"):
+                raise PublicAssetError(f"invalid exam room floor date path: {path_value}")
+            floor_payload = read_json(PUBLIC_ROOT / path_value)
+            if floor_payload.get("version") != "exam-room-floor-date-v1":
+                raise PublicAssetError(f"invalid exam room floor date version: {path_value}")
+            if floor_payload.get("data_version") != expected_data_version:
+                raise PublicAssetError(f"exam room floor date data_version mismatch: {path_value}")
+            if floor_payload.get("floor_key") != floor_key:
+                raise PublicAssetError(f"exam room floor date floor_key mismatch: {path_value}")
+            bookings = floor_payload.get("bookings")
+            if not isinstance(bookings, list) or floor_payload.get("booking_count") != len(bookings):
+                raise PublicAssetError(f"exam room floor date booking_count mismatch: {path_value}")
+            if item.get("booking_count") != len(bookings):
+                raise PublicAssetError(f"exam room date index booking_count mismatch: {path_value}")
+            for booking in bookings:
+                if not isinstance(booking, dict) or booking.get("room_key") not in room_keys:
+                    raise PublicAssetError(f"exam room floor date booking references unknown room: {path_value}")
+    if room_audit.get("version") != "exam-room-audit-v1":
+        raise PublicAssetError("exam room audit version is invalid")
+    if room_audit.get("data_version") != expected_data_version:
+        raise PublicAssetError("exam room audit data_version does not match exam lock")
+    if room_audit.get("unknown_catalog_rooms"):
+        raise PublicAssetError("exam room audit must not contain unknown_catalog_rooms")
     print(
         json.dumps(
             {
@@ -613,6 +705,8 @@ def verify_exam_public_data() -> None:
                 "exam_source_title": summary.get("source_title"),
                 "exam_history_snapshots": len(snapshots),
                 "exam_history_classes": len(classes),
+                "exam_room_count": len(room_entries),
+                "exam_room_date_count": len(date_entries),
             },
             ensure_ascii=False,
             indent=2,

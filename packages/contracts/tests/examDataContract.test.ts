@@ -5,6 +5,8 @@ import {
     ExamClassDataSchema,
     ExamClassHistorySchema,
     ExamClassIndexSchema,
+    ExamRoomFloorDateDataSchema,
+    ExamRoomIndexSchema,
     ExamHistoryManifestSchema,
     ManifestSchema
 } from '../src/exam';
@@ -22,6 +24,12 @@ describe('exam data contract package', () => {
         const b240402Data = ExamClassDataSchema.parse(loadPublicJson('../../../apps/web/public/generated/exam/classes/b240402.json'));
         const historyManifest = ExamHistoryManifestSchema.parse(loadPublicJson('../../../apps/web/public/generated/exam/history/manifest.json'));
         const b240402 = ExamClassHistorySchema.parse(loadPublicJson('../../../apps/web/public/generated/exam/history/classes/b240402.json'));
+        const roomIndex = ExamRoomIndexSchema.parse(loadPublicJson('../../../apps/web/public/generated/exam/rooms/index.json'));
+        const firstRoomSlicePath = roomIndex.dates.find(item => item.floors.length > 0)?.floors[0]?.path;
+        if (!firstRoomSlicePath) {
+            throw new Error('room index must include at least one floor-date slice');
+        }
+        const roomSlice = ExamRoomFloorDateDataSchema.parse(loadPublicJson(`../../../apps/web/public/${firstRoomSlicePath}`));
 
         expect(exams.length).toBeGreaterThan(0);
         expect(manifest.files_processed.length).toBeGreaterThan(0);
@@ -33,6 +41,10 @@ describe('exam data contract package', () => {
         expect(historyManifest.exam_period_id).toBe(manifest.exam_period_id);
         expect(b240402.class_name).toBe('B240402');
         expect(b240402.timeline.some(node => node.status === 'unchanged')).toBe(true);
+        expect(roomIndex.data_version).toBe(manifest.data_version);
+        expect(roomIndex.rooms.some(room => room.campus === '三牌楼' && room.building === '无线楼' && room.room === '无1' && room.floor === '1')).toBe(true);
+        expect(roomSlice.data_version).toBe(manifest.data_version);
+        expect(roomSlice.bookings.every(booking => booking.floor_key === roomSlice.floor_key)).toBe(true);
     });
 
     it('rejects invalid exam field shapes', () => {

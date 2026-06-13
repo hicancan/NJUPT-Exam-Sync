@@ -3,6 +3,8 @@ import type {
     ExamClassData,
     ExamClassIndex,
     ExamClassIndexEntry,
+    ExamRoomFloorDateData,
+    ExamRoomIndex,
     Manifest
 } from '@njupt-search/contracts/exam';
 
@@ -11,6 +13,8 @@ export type {
     ExamClassData,
     ExamClassIndex,
     ExamClassIndexEntry,
+    ExamRoomFloorDateData,
+    ExamRoomIndex,
     Manifest
 } from '@njupt-search/contracts/exam';
 
@@ -233,4 +237,77 @@ export const assertClassDataMatchesIndex = (entry: ExamClassIndexEntry, classDat
     if (classData.record_count !== entry.record_count) {
         throw new DataContractError(`class data record_count mismatch for ${entry.class_name}`);
     }
+};
+
+export const parseExamRoomIndex = (payload: unknown, source = 'exam room index'): ExamRoomIndex => {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        throw new DataContractError(`Validation failed for ${source}: payload must be an object`);
+    }
+    const value = payload as Partial<ExamRoomIndex>;
+    if (value.version !== 'exam-room-index-v1') throw new DataContractError(`Validation failed for ${source}: invalid version`);
+    if (typeof value.data_version !== 'string' || !SHA256_RE.test(value.data_version)) throw new DataContractError(`Validation failed for ${source}: invalid data_version`);
+    if (typeof value.exam_period_id !== 'string' || !PERIOD_RE.test(value.exam_period_id)) throw new DataContractError(`Validation failed for ${source}: invalid exam_period_id`);
+    if (!Array.isArray(value.rooms) || !Array.isArray(value.floors) || !Array.isArray(value.dates)) {
+        throw new DataContractError(`Validation failed for ${source}: rooms, floors and dates must be arrays`);
+    }
+    if (value.room_count !== value.rooms.length) throw new DataContractError(`Validation failed for ${source}: room_count mismatch`);
+    if (value.floor_count !== value.floors.length) throw new DataContractError(`Validation failed for ${source}: floor_count mismatch`);
+    if (value.date_count !== value.dates.length) throw new DataContractError(`Validation failed for ${source}: date_count mismatch`);
+    const roomKeys = new Set<string>();
+    for (const room of value.rooms) {
+        if (!room.room_key?.startsWith('room-') || !room.floor_key?.startsWith('floor-') || !room.campus || !room.building || !room.floor || !room.room) {
+            throw new DataContractError(`Validation failed for ${source}: invalid room entry`);
+        }
+        if (roomKeys.has(room.room_key)) throw new DataContractError(`Validation failed for ${source}: duplicate room_key ${room.room_key}`);
+        roomKeys.add(room.room_key);
+    }
+    const floorKeys = new Set<string>();
+    for (const floor of value.floors) {
+        if (!floor.floor_key?.startsWith('floor-') || !Array.isArray(floor.room_keys) || floor.room_keys.length === 0) {
+            throw new DataContractError(`Validation failed for ${source}: invalid floor entry`);
+        }
+        if (floorKeys.has(floor.floor_key)) throw new DataContractError(`Validation failed for ${source}: duplicate floor_key ${floor.floor_key}`);
+        if (floor.room_count !== floor.room_keys.length) throw new DataContractError(`Validation failed for ${source}: floor room_count mismatch`);
+        for (const roomKey of floor.room_keys) {
+            if (!roomKeys.has(roomKey)) throw new DataContractError(`Validation failed for ${source}: floor references unknown room_key ${roomKey}`);
+        }
+        for (const room of value.rooms) {
+            if (floor.room_keys.includes(room.room_key) && room.floor_key !== floor.floor_key) {
+                throw new DataContractError(`Validation failed for ${source}: room ${room.room_key} floor_key mismatch`);
+            }
+        }
+        floorKeys.add(floor.floor_key);
+    }
+    for (const date of value.dates) {
+        if (!Array.isArray(date.floors)) throw new DataContractError(`Validation failed for ${source}: date floors must be an array`);
+        if (date.floor_count !== date.floors.length) throw new DataContractError(`Validation failed for ${source}: date floor_count mismatch`);
+        const bookingTotal = date.floors.reduce((sum, floor) => sum + floor.booking_count, 0);
+        if (date.booking_count !== bookingTotal) throw new DataContractError(`Validation failed for ${source}: date booking_count mismatch`);
+        for (const floor of date.floors) {
+            if (!floorKeys.has(floor.floor_key)) throw new DataContractError(`Validation failed for ${source}: date references unknown floor_key ${floor.floor_key}`);
+        }
+    }
+    return value as ExamRoomIndex;
+};
+
+export const parseExamRoomFloorDateData = (payload: unknown, source = 'exam room floor date'): ExamRoomFloorDateData => {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        throw new DataContractError(`Validation failed for ${source}: payload must be an object`);
+    }
+    const value = payload as Partial<ExamRoomFloorDateData>;
+    if (value.version !== 'exam-room-floor-date-v1') throw new DataContractError(`Validation failed for ${source}: invalid version`);
+    if (typeof value.data_version !== 'string' || !SHA256_RE.test(value.data_version)) throw new DataContractError(`Validation failed for ${source}: invalid data_version`);
+    if (typeof value.exam_period_id !== 'string' || !PERIOD_RE.test(value.exam_period_id)) throw new DataContractError(`Validation failed for ${source}: invalid exam_period_id`);
+    if (!value.floor_key?.startsWith('floor-') || !value.date) throw new DataContractError(`Validation failed for ${source}: missing floor/date identity`);
+    if (!Array.isArray(value.bookings)) throw new DataContractError(`Validation failed for ${source}: bookings must be an array`);
+    if (value.booking_count !== value.bookings.length) throw new DataContractError(`Validation failed for ${source}: booking_count mismatch`);
+    for (const booking of value.bookings) {
+        if (booking.date !== value.date || booking.floor_key !== value.floor_key) {
+            throw new DataContractError(`Validation failed for ${source}: booking does not belong to floor-date`);
+        }
+        if (!booking.room_key?.startsWith('room-') || !booking.start_timestamp || !booking.end_timestamp) {
+            throw new DataContractError(`Validation failed for ${source}: invalid booking entry`);
+        }
+    }
+    return value as ExamRoomFloorDateData;
 };

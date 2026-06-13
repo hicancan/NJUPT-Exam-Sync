@@ -8,6 +8,8 @@ import {
     parseExamClassData,
     parseExamClassIndex,
     parseExamData,
+    parseExamRoomFloorDateData,
+    parseExamRoomIndex,
     parseManifest,
     resolveExamDataVersion
 } from '../src/contract';
@@ -43,6 +45,18 @@ describe('exam-core data contract', () => {
             loadPublicJson('../../../apps/web/public/generated/exam/history/classes/b240402.json'),
             'apps/web/public/generated/exam/history/classes/b240402.json'
         );
+        const roomIndex = parseExamRoomIndex(
+            loadPublicJson('../../../apps/web/public/generated/exam/rooms/index.json'),
+            'apps/web/public/generated/exam/rooms/index.json'
+        );
+        const firstRoomSlicePath = roomIndex.dates.find(item => item.floors.length > 0)?.floors[0]?.path;
+        if (!firstRoomSlicePath) {
+            throw new Error('room index must include at least one floor-date slice');
+        }
+        const roomSlice = parseExamRoomFloorDateData(
+            loadPublicJson(`../../../apps/web/public/${firstRoomSlicePath}`),
+            firstRoomSlicePath
+        );
 
         assertManifestMatchesExams(manifest, exams);
         assertClassIndexMatchesManifest(manifest, classIndex);
@@ -64,6 +78,10 @@ describe('exam-core data contract', () => {
         expect(b240402.timeline.some(node => node.status === 'changed')).toBe(true);
         expect(JSON.stringify(b240402)).toContain('"before":110');
         expect(JSON.stringify(b240402)).toContain('"after":120');
+        expect(roomIndex.data_version).toBe(resolveExamDataVersion(manifest));
+        expect(roomIndex.rooms.some(room => room.campus === '三牌楼' && room.building === '无线楼' && room.room === '无1' && room.floor === '1')).toBe(true);
+        expect(roomSlice.data_version).toBe(resolveExamDataVersion(manifest));
+        expect(roomSlice.bookings.every(booking => booking.floor_key === roomSlice.floor_key)).toBe(true);
     });
 
     it('rejects data summaries without an explicit data version', () => {

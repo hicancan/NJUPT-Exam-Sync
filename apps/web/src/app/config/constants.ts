@@ -9,6 +9,7 @@ export const APP_CONFIG = {
     DATA_URLS: {
         SUMMARY: 'generated/exam/data_summary.json',
         CLASS_INDEX: 'generated/exam/class_index.json',
+        ROOM_INDEX: 'generated/exam/rooms/index.json',
         SEARCH_MANIFEST: 'generated/collections/njupt-public/manifest.json',
     },
     EXAM_PUBLIC_SCHEMA_VERSION: 'exam-public-v5',

@@ -1,0 +1,243 @@
+import { Building2, Clock, MapPin, SlidersHorizontal } from 'lucide-react';
+import { InlineErrorBanner } from '@/widgets/app-shell/InlineErrorBanner';
+import { overlapsWindow, uniqueValues } from '@/features/room-occupancy/model/roomOccupancy';
+import { useRoomOccupancy } from '@/features/room-occupancy/model/useRoomOccupancy';
+import type { ExamRoom, ExamRoomBooking } from '@/shared/lib/contracts';
+
+interface RoomsPageProps {
+    query: string;
+    date: string | null;
+    campus: string | null;
+    building: string | null;
+    floor: string | null;
+    start: string | null;
+    end: string | null;
+    onChange: (params: Record<string, string | null>, replace?: boolean) => void;
+}
+
+const DAY_START = 8 * 60;
+const DAY_END = 22 * 60;
+
+const formatClock = (timestamp: string): string => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+};
+
+const minuteOfDay = (timestamp: string): number => {
+    const date = new Date(timestamp);
+    return date.getHours() * 60 + date.getMinutes();
+};
+
+const segmentStyle = (booking: ExamRoomBooking) => {
+    const start = Math.max(DAY_START, minuteOfDay(booking.start_timestamp));
+    const end = Math.min(DAY_END, minuteOfDay(booking.end_timestamp));
+    const left = ((start - DAY_START) / (DAY_END - DAY_START)) * 100;
+    const width = Math.max(2, ((end - start) / (DAY_END - DAY_START)) * 100);
+    return { left: `${left}%`, width: `${width}%` };
+};
+
+function FilterSelect({
+    label,
+    value,
+    values,
+    onChange,
+}: {
+    label: string;
+    value: string | null;
+    values: string[];
+    onChange: (value: string) => void;
+}) {
+    return (
+        <label className="grid gap-1 text-[13px] text-[#5f6368] dark:text-[#bdc1c6]">
+            <span>{label}</span>
+            <select
+                value={value || values[0] || ''}
+                onChange={(event) => onChange(event.target.value)}
+                className="h-10 rounded-md border border-[#dadce0] bg-white px-3 text-[14px] text-[#202124] outline-none focus:border-[#1a73e8] dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#e8eaed]"
+            >
+                {values.map(item => <option key={item} value={item}>{item}</option>)}
+            </select>
+        </label>
+    );
+}
+
+function RoomCard({
+    room,
+    bookings,
+    start,
+    end,
+}: {
+    room: ExamRoom;
+    bookings: ExamRoomBooking[];
+    start: string | null;
+    end: string | null;
+}) {
+    const activeBookings = bookings.filter(booking => overlapsWindow(booking, start, end));
+    const occupied = activeBookings.length > 0;
+    return (
+        <div className={`rounded-lg border p-3 ${occupied
+            ? 'border-[#fbbc04] bg-[#fff8e1] dark:border-[#8a6d00] dark:bg-[#2b240f]'
+            : 'border-[#b7e1cd] bg-[#f0fff4] dark:border-[#215b39] dark:bg-[#10251a]'}`}
+        >
+            <div className="flex items-center justify-between gap-2">
+                <span className="text-[16px] font-semibold text-[#202124] dark:text-[#e8eaed]">{room.room}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[12px] font-medium ${occupied
+                    ? 'bg-[#fef7e0] text-[#b06000] dark:bg-[#3a2a00] dark:text-[#fdd663]'
+                    : 'bg-[#e6f4ea] text-[#137333] dark:bg-[#143820] dark:text-[#81c995]'}`}
+                >
+                    {occupied ? '占用' : '空闲'}
+                </span>
+            </div>
+            {activeBookings.length ? (
+                <div className="mt-2 space-y-1 text-[12px] text-[#5f6368] dark:text-[#bdc1c6]">
+                    {activeBookings.slice(0, 2).map(booking => (
+                        <div key={booking.exam_id} className="truncate">
+                            {formatClock(booking.start_timestamp)}-{formatClock(booking.end_timestamp)} {booking.course_name}
+                        </div>
+                    ))}
+                    {activeBookings.length > 2 ? <div>还有 {activeBookings.length - 2} 场</div> : null}
+                </div>
+            ) : null}
+            {room.source === 'inferred_range' ? (
+                <div className="mt-2 text-[11px] text-[#70757a] dark:text-[#9aa0a6]">目录推断，待人工确认</div>
+            ) : null}
+        </div>
+    );
+}
+
+function RoomTimeline({ room, bookings }: { room: ExamRoom; bookings: ExamRoomBooking[] }) {
+    return (
+        <div className="grid gap-2 rounded-lg border border-[#dadce0] bg-white p-3 dark:border-[#3c4043] dark:bg-[#202124] sm:grid-cols-[72px_1fr]">
+            <div className="font-medium text-[#202124] dark:text-[#e8eaed]">{room.room}</div>
+            <div>
+                <div className="relative h-8 rounded-full bg-[#edf2f7] dark:bg-[#303134]">
+                    {bookings.map(booking => (
+                        <div
+                            key={booking.exam_id}
+                            className="absolute top-1 h-6 rounded-full bg-[#1a73e8] px-2 text-[11px] leading-6 text-white shadow-sm"
+                            style={segmentStyle(booking)}
+                            title={`${booking.course_name} ${formatClock(booking.start_timestamp)}-${formatClock(booking.end_timestamp)}`}
+                        >
+                            <span className="hidden md:inline">{booking.course_name}</span>
+                        </div>
+                    ))}
+                </div>
+                <div className="mt-1 flex justify-between text-[11px] text-[#70757a] dark:text-[#9aa0a6]">
+                    <span>08:00</span>
+                    <span>12:00</span>
+                    <span>18:00</span>
+                    <span>22:00</span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export function RoomsPage({ query, date, campus, building, floor, start, end, onChange }: RoomsPageProps) {
+    const state = useRoomOccupancy({ query, date, campus, building, floor, start, end });
+    const index = state.index;
+    const rooms = state.rooms;
+    const bookingsByRoom = new Map<string, ExamRoomBooking[]>();
+    for (const booking of state.bookings) {
+        const next = bookingsByRoom.get(booking.room_key) || [];
+        next.push(booking);
+        bookingsByRoom.set(booking.room_key, next);
+    }
+
+    const campuses = index ? uniqueValues(index.floors.map(item => item.campus)) : [];
+    const buildings = index ? uniqueValues(index.floors.filter(item => !state.campus || item.campus === state.campus).map(item => item.building)) : [];
+    const floors = index ? uniqueValues(index.floors
+        .filter(item => (!state.campus || item.campus === state.campus) && (!state.building || item.building === state.building))
+        .map(item => item.floor)) : [];
+    const dates = index ? index.dates.map(item => item.date) : [];
+
+    return (
+        <main className="flex-1 max-w-6xl w-full mx-auto px-4 pt-6 pb-8">
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h2 className="text-[28px] font-normal text-[#202124] dark:text-[#e8eaed]">
+                        教室占用
+                    </h2>
+                    <p className="mt-2 text-[14px] text-[#5f6368] dark:text-[#bdc1c6]">
+                        基于考试安排和本地教室目录，按日期、校区、楼栋、楼层查看空闲与占用。
+                    </p>
+                </div>
+                {index ? (
+                    <div className="rounded-full bg-[#f1f3f4] px-3 py-1 text-[12px] text-[#5f6368] dark:bg-[#303134] dark:text-[#bdc1c6]">
+                        {index.room_count} 间教室 / {index.date_count} 个考试日期
+                    </div>
+                ) : null}
+            </div>
+
+            <InlineErrorBanner message={state.error} />
+
+            {state.loading && !index ? (
+                <div className="rounded-xl border border-[#dadce0] bg-white px-4 py-6 text-[#5f6368] dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#bdc1c6]">
+                    正在加载教室占用数据...
+                </div>
+            ) : null}
+
+            {index ? (
+                <>
+                    <section className="rounded-xl border border-[#dadce0] bg-[#f8fbff] p-4 dark:border-[#3c4043] dark:bg-[#202124]">
+                        <div className="mb-3 flex items-center gap-2 text-[14px] font-medium text-[#202124] dark:text-[#e8eaed]">
+                            <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+                            筛选
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+                            <FilterSelect label="日期" value={state.date} values={dates} onChange={(value) => onChange({ room: query || null, date: value, campus: state.campus, building: state.building, floor: state.floor, start, end })} />
+                            <FilterSelect label="校区" value={state.campus} values={campuses} onChange={(value) => onChange({ room: query || null, date: state.date, campus: value, building: null, floor: null, start, end })} />
+                            <FilterSelect label="楼栋" value={state.building} values={buildings} onChange={(value) => onChange({ room: query || null, date: state.date, campus: state.campus, building: value, floor: null, start, end })} />
+                            <FilterSelect label="楼层" value={state.floor} values={floors} onChange={(value) => onChange({ room: query || null, date: state.date, campus: state.campus, building: state.building, floor: value, start, end })} />
+                            <label className="grid gap-1 text-[13px] text-[#5f6368] dark:text-[#bdc1c6]">
+                                <span>开始</span>
+                                <input type="time" value={start || '08:00'} onChange={(event) => onChange({ room: query || null, date: state.date, campus: state.campus, building: state.building, floor: state.floor, start: event.target.value, end })} className="h-10 rounded-md border border-[#dadce0] bg-white px-3 text-[14px] dark:border-[#3c4043] dark:bg-[#202124]" />
+                            </label>
+                            <label className="grid gap-1 text-[13px] text-[#5f6368] dark:text-[#bdc1c6]">
+                                <span>结束</span>
+                                <input type="time" value={end || '22:00'} onChange={(event) => onChange({ room: query || null, date: state.date, campus: state.campus, building: state.building, floor: state.floor, start, end: event.target.value })} className="h-10 rounded-md border border-[#dadce0] bg-white px-3 text-[14px] dark:border-[#3c4043] dark:bg-[#202124]" />
+                            </label>
+                        </div>
+                    </section>
+
+                    <section className="mt-5 rounded-xl border border-[#dadce0] bg-white p-4 dark:border-[#3c4043] dark:bg-[#202124]">
+                        <div className="mb-3 flex flex-wrap items-center gap-3">
+                            <span className="inline-flex items-center gap-1 text-[15px] font-medium text-[#202124] dark:text-[#e8eaed]">
+                                <Building2 className="h-4 w-4" aria-hidden="true" />
+                                {state.campus} {state.building} {state.floor}楼
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-[13px] text-[#5f6368] dark:text-[#bdc1c6]">
+                                <Clock className="h-4 w-4" aria-hidden="true" />
+                                {state.date} {start || '08:00'}-{end || '22:00'}
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-[13px] text-[#5f6368] dark:text-[#bdc1c6]">
+                                <MapPin className="h-4 w-4" aria-hidden="true" />
+                                {rooms.length} 间
+                            </span>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            {rooms.map(room => (
+                                <RoomCard
+                                    key={room.room_key}
+                                    room={room}
+                                    bookings={bookingsByRoom.get(room.room_key) || []}
+                                    start={start}
+                                    end={end}
+                                />
+                            ))}
+                        </div>
+                    </section>
+
+                    <section className="mt-5 rounded-xl border border-[#dadce0] bg-[#f8fbff] p-4 dark:border-[#3c4043] dark:bg-[#202124]">
+                        <h3 className="mb-3 text-[15px] font-medium text-[#202124] dark:text-[#e8eaed]">当天时间轴</h3>
+                        <div className="space-y-2">
+                            {rooms.map(room => (
+                                <RoomTimeline key={room.room_key} room={room} bookings={bookingsByRoom.get(room.room_key) || []} />
+                            ))}
+                        </div>
+                    </section>
+                </>
+            ) : null}
+        </main>
+    );
+}

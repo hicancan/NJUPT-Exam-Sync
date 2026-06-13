@@ -198,6 +198,94 @@ export interface ExamClassHistory {
     timeline: ExamHistoryTimelineNode[];
 }
 
+export interface ExamRoom {
+    campus: string;
+    building: string;
+    floor: string;
+    floor_key: string;
+    room: string;
+    room_key: string;
+    source: 'observed' | 'inferred_range' | 'manual_confirmed';
+}
+
+export interface ExamRoomFloor {
+    campus: string;
+    building: string;
+    floor: string;
+    floor_key: string;
+    room_count: number;
+    room_keys: string[];
+}
+
+export interface ExamRoomDateFloorEntry {
+    floor_key: string;
+    path: string;
+    booking_count: number;
+}
+
+export interface ExamRoomDateEntry {
+    date: string;
+    floor_count: number;
+    booking_count: number;
+    floors: ExamRoomDateFloorEntry[];
+}
+
+export interface ExamRoomIndex {
+    version: 'exam-room-index-v1';
+    generated_at: string;
+    data_version: string;
+    exam_period_id: string;
+    academic_year: string;
+    term_number: number;
+    term_label: string;
+    source_url?: string | null;
+    source_title?: string | null;
+    catalog_version: 'njupt-room-catalog-v1';
+    room_count: number;
+    floor_count: number;
+    date_count: number;
+    rooms: ExamRoom[];
+    floors: ExamRoomFloor[];
+    dates: ExamRoomDateEntry[];
+    audit_path: string;
+}
+
+export interface ExamRoomBooking {
+    exam_id: string;
+    stable_key: string;
+    class_name: string;
+    course_name: string;
+    course_code: string;
+    teacher: string;
+    count: number;
+    date: string;
+    start_timestamp: string;
+    end_timestamp: string;
+    duration_minutes: number;
+    location: string;
+    campus: string;
+    building: string;
+    floor: string;
+    floor_key: string;
+    room: string;
+    room_key: string;
+}
+
+export interface ExamRoomFloorDateData {
+    version: 'exam-room-floor-date-v1';
+    generated_at: string;
+    data_version: string;
+    exam_period_id: string;
+    date: string;
+    campus: string;
+    building: string;
+    floor: string;
+    floor_key: string;
+    room_count: number;
+    booking_count: number;
+    bookings: ExamRoomBooking[];
+}
+
 export const ExamSchema = z.object({
     id: z.string().min(1),
     stable_key: z.string().min(1),
@@ -466,6 +554,153 @@ export const ExamClassHistorySchema = z.object({
     for (const node of value.timeline) {
         if (node.exam_period_id !== value.exam_period_id) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: `timeline node exam_period_id mismatch: ${node.data_version}` });
+        }
+    }
+});
+
+export const ExamRoomSchema = z.object({
+    campus: z.string().min(1),
+    building: z.string().min(1),
+    floor: z.string().min(1),
+    floor_key: z.string().regex(/^floor-[a-f0-9]{16}$/),
+    room: z.string().min(1),
+    room_key: z.string().regex(/^room-[a-f0-9]{16}$/),
+    source: z.enum(['observed', 'inferred_range', 'manual_confirmed']),
+}).strict();
+
+export const ExamRoomFloorSchema = z.object({
+    campus: z.string().min(1),
+    building: z.string().min(1),
+    floor: z.string().min(1),
+    floor_key: z.string().regex(/^floor-[a-f0-9]{16}$/),
+    room_count: z.number().int().positive(),
+    room_keys: z.array(z.string().regex(/^room-[a-f0-9]{16}$/)).min(1),
+}).strict();
+
+export const ExamRoomDateFloorEntrySchema = z.object({
+    floor_key: z.string().regex(/^floor-[a-f0-9]{16}$/),
+    path: z.string().regex(/^generated\/exam\/rooms\/by-floor\/\d{4}-\d{2}-\d{2}\/floor-[a-f0-9]{16}\.json$/),
+    booking_count: z.number().int().positive(),
+}).strict();
+
+export const ExamRoomDateEntrySchema = z.object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    floor_count: z.number().int().nonnegative(),
+    booking_count: z.number().int().positive(),
+    floors: z.array(ExamRoomDateFloorEntrySchema),
+}).strict().superRefine((value, ctx) => {
+    if (value.floor_count !== value.floors.length) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'floor_count must match floors.length' });
+    }
+    const bookingCount = value.floors.reduce((sum, item) => sum + item.booking_count, 0);
+    if (value.booking_count !== bookingCount) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'booking_count must match floor booking totals' });
+    }
+});
+
+export const ExamRoomIndexSchema = z.object({
+    version: z.literal('exam-room-index-v1'),
+    generated_at: z.string().min(1),
+    data_version: z.string().regex(/^[a-f0-9]{64}$/),
+    exam_period_id: z.string().regex(/^\d{4}-\d{4}-[1-4]$/),
+    academic_year: z.string().regex(/^\d{4}-\d{4}$/),
+    term_number: z.number().int().min(1).max(4),
+    term_label: z.string().min(1),
+    source_url: z.string().nullable().optional(),
+    source_title: z.string().nullable().optional(),
+    catalog_version: z.literal('njupt-room-catalog-v1'),
+    room_count: z.number().int().positive(),
+    floor_count: z.number().int().positive(),
+    date_count: z.number().int().positive(),
+    rooms: z.array(ExamRoomSchema).min(1),
+    floors: z.array(ExamRoomFloorSchema).min(1),
+    dates: z.array(ExamRoomDateEntrySchema).min(1),
+    audit_path: z.literal('generated/exam/rooms/audit.json'),
+}).strict().superRefine((value, ctx) => {
+    if (value.room_count !== value.rooms.length) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'room_count must match rooms.length' });
+    }
+    if (value.floor_count !== value.floors.length) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'floor_count must match floors.length' });
+    }
+    if (value.date_count !== value.dates.length) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'date_count must match dates.length' });
+    }
+    const roomKeys = new Set(value.rooms.map(room => room.room_key));
+    if (roomKeys.size !== value.rooms.length) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'room_key values must be unique' });
+    }
+    const floorKeys = new Set(value.floors.map(floor => floor.floor_key));
+    if (floorKeys.size !== value.floors.length) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'floor_key values must be unique' });
+    }
+    for (const floor of value.floors) {
+        if (floor.room_count !== floor.room_keys.length) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: `room_count must match room_keys.length for ${floor.floor_key}` });
+        }
+        for (const roomKey of floor.room_keys) {
+            if (!roomKeys.has(roomKey)) {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, message: `floor references unknown room_key ${roomKey}` });
+            }
+        }
+    }
+    for (const date of value.dates) {
+        for (const floor of date.floors) {
+            if (!floorKeys.has(floor.floor_key)) {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, message: `date references unknown floor_key ${floor.floor_key}` });
+            }
+        }
+    }
+});
+
+export const ExamRoomBookingSchema = z.object({
+    exam_id: z.string().min(1),
+    stable_key: z.string().min(1),
+    class_name: z.string().min(1),
+    course_name: z.string().min(1),
+    course_code: z.string().min(1),
+    teacher: z.string().min(1),
+    count: z.number().int().nonnegative(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    start_timestamp: z.string().min(1),
+    end_timestamp: z.string().min(1),
+    duration_minutes: z.number().int().positive(),
+    location: z.string().min(1),
+    campus: z.string().min(1),
+    building: z.string().min(1),
+    floor: z.string().min(1),
+    floor_key: z.string().regex(/^floor-[a-f0-9]{16}$/),
+    room: z.string().min(1),
+    room_key: z.string().regex(/^room-[a-f0-9]{16}$/),
+}).strict().superRefine((value, ctx) => {
+    if (Number.isNaN(new Date(value.start_timestamp).getTime())) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'start_timestamp must be parseable' });
+    }
+    if (Number.isNaN(new Date(value.end_timestamp).getTime())) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'end_timestamp must be parseable' });
+    }
+});
+
+export const ExamRoomFloorDateDataSchema = z.object({
+    version: z.literal('exam-room-floor-date-v1'),
+    generated_at: z.string().min(1),
+    data_version: z.string().regex(/^[a-f0-9]{64}$/),
+    exam_period_id: z.string().regex(/^\d{4}-\d{4}-[1-4]$/),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    campus: z.string().min(1),
+    building: z.string().min(1),
+    floor: z.string().min(1),
+    floor_key: z.string().regex(/^floor-[a-f0-9]{16}$/),
+    room_count: z.number().int().positive(),
+    booking_count: z.number().int().nonnegative(),
+    bookings: z.array(ExamRoomBookingSchema),
+}).strict().superRefine((value, ctx) => {
+    if (value.booking_count !== value.bookings.length) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'booking_count must match bookings.length' });
+    }
+    for (const booking of value.bookings) {
+        if (booking.date !== value.date || booking.floor_key !== value.floor_key) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: `booking does not belong to floor-date ${value.date}/${value.floor_key}` });
         }
     }
 });

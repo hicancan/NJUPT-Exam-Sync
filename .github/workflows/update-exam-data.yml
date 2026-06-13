@@ -66,8 +66,8 @@ jobs:
 
       - name: Exam-only regression tests
         run: |
-          uv run python -m pytest tests/test_exam_history.py tests/test_exam_pipeline_failfast.py tests/test_prepare_public_assets_download.py
-          npm run test:prepared -- apps/web/src/features/exam-search packages/exam-core packages/contracts/tests/examDataContract.test.ts
+          uv run python -m pytest tests/test_exam_history.py tests/test_exam_pipeline_failfast.py tests/test_exam_rooms.py tests/test_prepare_public_assets_download.py
+          npm run test:prepared -- apps/web/src/features/exam-schedule apps/web/src/features/room-occupancy packages/exam-core packages/contracts/tests/examDataContract.test.ts
 
       - name: Commit exam lock changes
         id: commit

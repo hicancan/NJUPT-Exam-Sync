@@ -19,7 +19,7 @@ def test_ci_is_single_authoritative_pages_gate():
     assert "verification:" in text
     assert "exam_fast_checks" in text
     assert "tools/exam-pipeline/.*" in text
-    assert "apps/web/src/features/exam-search/.*" in text
+    assert "apps/web/src/features/exam-schedule/.*" in text
     assert "needs_generated_assets" in text
     assert "needs_generated_assets: ${{ steps.ci-mode.outputs.needs_generated_assets }}" in text
     assert "Verify CI-only public asset determinism" in text
@@ -37,8 +37,12 @@ def test_ci_is_single_authoritative_pages_gate():
     assert "Fast-mode workflow tests" in text
     assert "Fast frontend checks" in text
     assert "Exam fast checks" in text
-    assert "tests/test_exam_history.py tests/test_exam_pipeline_failfast.py tests/test_prepare_public_assets_download.py" in text
-    assert "npm run test:prepared -- apps/web/src/features/exam-search packages/exam-core packages/contracts/tests/examDataContract.test.ts" in text
+    assert "tests/test_exam_history.py tests/test_exam_pipeline_failfast.py tests/test_exam_rooms.py tests/test_prepare_public_assets_download.py" in text
+    assert "apps/web/src/features/room-occupancy/.*" in text
+    assert "config/classrooms/.*" in text
+    assert "apps/web/src/app/routing/useAppRouter\\.ts" in text
+    assert "apps/web/src/pages/rooms/.*" in text
+    assert "npm run test:prepared -- apps/web/src/features/exam-schedule apps/web/src/features/room-occupancy packages/exam-core packages/contracts/tests/examDataContract.test.ts" in text
     assert "Build deployment bundle" in text
     assert "steps.ci-mode.outputs.needs_public_assets == 'true' && steps.ci-mode.outputs.full_verification != 'true'" in text
     assert "workflow_run:" not in text
@@ -104,6 +108,7 @@ def test_edgeone_headers_keep_mutable_exam_data_fresh():
     assert '"/generated/exam/class_index.json"' in text
     assert '"/generated/exam/classes/*.json"' in text
     assert '"/generated/exam/history/classes/*.json"' in text
+    assert '"/generated/exam/rooms/*"' in text
     assert '"no-store, max-age=0, must-revalidate"' in text
     assert '"/generated/collections/*/manifest.json"' in text
     assert '"/generated/collections/*/manifest.json*"' in text
@@ -198,8 +203,9 @@ def test_exam_update_uses_retrying_generated_commit_helper():
     assert "prepare_public_assets.py build-exam-public-data" in text
     assert "prepare_public_assets.py verify-exam-public-data" in text
     assert "Exam-only regression tests" in text
+    assert "tests/test_exam_history.py tests/test_exam_pipeline_failfast.py tests/test_exam_rooms.py tests/test_prepare_public_assets_download.py" in text
     assert "npm ci" in text
-    assert "npm run test:prepared -- apps/web/src/features/exam-search packages/exam-core packages/contracts/tests/examDataContract.test.ts" in text
+    assert "npm run test:prepared -- apps/web/src/features/exam-schedule apps/web/src/features/room-occupancy packages/exam-core packages/contracts/tests/examDataContract.test.ts" in text
     assert "actions/runs/$candidate_run_id/artifacts" in text
     assert 'select(.expired == false and .name == "njupt-search-dist")' in text
     assert 'select(.expired == false and .name == "njupt-search-production-dist")' in text

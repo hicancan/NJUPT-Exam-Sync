@@ -65,7 +65,7 @@ jobs:
                 full_verification="false"
                 needs_public_assets="true"
                 needs_generated_assets="false"
-              elif [ -n "$changed_files" ] && ! printf '%s\n' "$changed_files" | grep -Ev '^(tools/exam-pipeline/.*|apps/web/src/features/exam-search/.*|apps/web/src/features/query-router/.*|apps/web/src/app/routing/useSearchExperience\.ts|apps/web/src/app/config/constants\.ts|apps/web/src/pages/results/ResultsPage\.tsx|apps/web/vite\.config\.ts|packages/exam-core/.*|packages/contracts/src/exam/.*|packages/contracts/tests/examDataContract\.test\.ts|tests/test_exam_.*|tests/test_prepare_public_assets_download\.py)$' >/dev/null; then
+              elif [ -n "$changed_files" ] && ! printf '%s\n' "$changed_files" | grep -Ev '^(tools/exam-pipeline/.*|config/classrooms/.*|apps/web/src/features/exam-schedule/.*|apps/web/src/features/room-occupancy/.*|apps/web/src/features/query-router/.*|apps/web/src/app/routing/useAppRouter\.ts|apps/web/src/app/config/constants\.ts|apps/web/src/pages/exam/.*|apps/web/src/pages/rooms/.*|apps/web/vite\.config\.ts|packages/exam-core/.*|packages/contracts/src/exam/.*|packages/contracts/tests/examDataContract\.test\.ts|tests/test_exam_.*|tests/test_prepare_public_assets_download\.py)$' >/dev/null; then
                 mode="exam-code-fast"
                 needs_public_assets="true"
                 exam_fast_checks="true"
@@ -240,8 +240,8 @@ jobs:
         if: steps.ci-mode.outputs.exam_fast_checks == 'true'
         run: |
           start=$SECONDS
-          uv run python -m pytest tests/test_exam_history.py tests/test_exam_pipeline_failfast.py tests/test_prepare_public_assets_download.py
-          npm run test:prepared -- apps/web/src/features/exam-search packages/exam-core packages/contracts/tests/examDataContract.test.ts
+          uv run python -m pytest tests/test_exam_history.py tests/test_exam_pipeline_failfast.py tests/test_exam_rooms.py tests/test_prepare_public_assets_download.py
+          npm run test:prepared -- apps/web/src/features/exam-schedule apps/web/src/features/room-occupancy packages/exam-core packages/contracts/tests/examDataContract.test.ts
           npm run typecheck:prepared
           npm run lint
           printf '| Exam fast checks | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState } from 'react';
 import { Download, Share2 } from 'lucide-react';
-import { buildExamCalendarFilename } from '@/features/exam-search/lib/downloadFilename';
+import { buildExamCalendarFilename } from '@/features/exam-schedule/lib/downloadFilename';
 import { generateICSContent } from '@njupt-search/exam-core/calendar';
 import { Exam } from '@/shared/lib/contracts';
 import type { ExamClassHistory, ExamClassIndex } from '@/shared/lib/contracts';

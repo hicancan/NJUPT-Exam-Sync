@@ -10,8 +10,12 @@ from typing import Any
 from .contract import ExamPipelineError, parse_exam_period
 from .diff import canonicalize_exam_records, class_file_key
 from .processor import get_xlsx_files, process_single_file
+from .rooms import write_room_occupancy_artifacts
 
 logger = logging.getLogger(__name__)
+
+REPO_ROOT = Path(__file__).resolve().parents[4]
+DEFAULT_ROOM_CATALOG = REPO_ROOT / "config" / "classrooms" / "njupt-room-catalog.json"
 
 
 def get_beijing_time() -> datetime:
@@ -136,6 +140,7 @@ def publish_exam_artifacts(
     *,
     data_dir: Path,
     merged_json_path: Path,
+    room_catalog_path: Path | None = None,
 ) -> None:
     logger.info("Starting data extraction process (Pydantic Powered)...")
     files = get_xlsx_files(data_dir)
@@ -179,5 +184,11 @@ def publish_exam_artifacts(
     }
     write_json_file(data_dir / "data_summary.json", manifest, compact=False)
     write_class_exam_artifacts(data_dir=data_dir, records=all_rows, manifest=manifest)
+    write_room_occupancy_artifacts(
+        data_dir=data_dir,
+        records=all_rows,
+        manifest=manifest,
+        catalog_path=room_catalog_path or DEFAULT_ROOM_CATALOG,
+    )
 
     logger.info("Data processing and updates complete.")

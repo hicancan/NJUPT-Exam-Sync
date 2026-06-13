@@ -6,6 +6,8 @@ export type FetchResourceType =
     | 'exam-class-index'
     | 'exam-class-data-versioned'
     | 'exam-history-class-versioned'
+    | 'exam-room-index'
+    | 'exam-room-floor-date-versioned'
     | 'default';
 
 const cacheModeFor = (resourceType: FetchResourceType): RequestCache => {
@@ -17,9 +19,11 @@ const cacheModeFor = (resourceType: FetchResourceType): RequestCache => {
             return 'force-cache';
         case 'exam-summary':
         case 'exam-class-index':
+        case 'exam-room-index':
             return 'no-store';
         case 'exam-class-data-versioned':
         case 'exam-history-class-versioned':
+        case 'exam-room-floor-date-versioned':
             return 'force-cache';
         default:
             return 'default';

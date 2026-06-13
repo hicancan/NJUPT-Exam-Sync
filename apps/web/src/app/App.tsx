@@ -1,29 +1,70 @@
-import { useSearchExperience } from '@/app/routing/useSearchExperience';
+import { lazy, Suspense } from 'react';
+import { useAppRouter } from '@/app/routing/useAppRouter';
 import { HomePage } from '@/pages/home/HomePage';
-import { ResultsPage } from '@/pages/results/ResultsPage';
 import { AppFooter } from '@/widgets/app-shell/AppFooter';
-import { BlockingDataError } from '@/widgets/app-shell/BlockingDataError';
 import { Header } from '@/widgets/app-shell/Header';
-import { InlineErrorBanner } from '@/widgets/app-shell/InlineErrorBanner';
+
+const SearchPage = lazy(() => import('@/pages/search/SearchPage').then(module => ({ default: module.SearchPage })));
+const ExamPage = lazy(() => import('@/pages/exam/ExamPage').then(module => ({ default: module.ExamPage })));
+const RoomsPage = lazy(() => import('@/pages/rooms/RoomsPage').then(module => ({ default: module.RoomsPage })));
+
+function RouteLoading() {
+    return (
+        <main className="flex-1 max-w-6xl w-full mx-auto px-4 pt-6 pb-8">
+            <div className="rounded-xl border border-[#dadce0] bg-white px-4 py-6 text-[14px] text-[#5f6368] dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#bdc1c6]">
+                正在加载...
+            </div>
+        </main>
+    );
+}
 
 function App() {
-    const experience = useSearchExperience();
-
-    if (experience.blockingError) {
-        return <BlockingDataError {...experience.blockingError} />;
-    }
+    const router = useAppRouter();
 
     return (
         <div className="min-h-screen flex flex-col bg-white dark:bg-[#202124] text-[#202124] dark:text-[#e8eaed] transition-colors duration-200 font-sans">
-            {!experience.isHome ? <Header {...experience.header} /> : null}
+            {router.route !== 'home' ? (
+                <Header
+                    inputValue={router.inputValue}
+                    onInputChange={router.onInputChange}
+                    onSubmit={router.onSubmit}
+                    onGoHome={router.onGoHome}
+                />
+            ) : null}
 
-            <InlineErrorBanner message={experience.displayedError} />
+            {router.route === 'home' ? (
+                <HomePage
+                    inputValue={router.inputValue}
+                    onQuickSearch={router.onQuickSearch}
+                    onInputChange={router.onInputChange}
+                    onSubmit={router.onSubmit}
+                />
+            ) : null}
 
-            {experience.isHome ? (
-                <HomePage {...experience.home} />
-            ) : (
-                <ResultsPage {...experience.results} />
-            )}
+            <Suspense fallback={<RouteLoading />}>
+                {router.route === 'search' ? <SearchPage query={router.search.query} /> : null}
+
+                {router.route === 'exam' ? (
+                    <ExamPage
+                        query={router.exam.query}
+                        className={router.exam.className}
+                        onOpenClass={(className) => router.onSubmit(className)}
+                    />
+                ) : null}
+
+                {router.route === 'rooms' ? (
+                    <RoomsPage
+                        query={router.rooms.query}
+                        date={router.rooms.date}
+                        campus={router.rooms.campus}
+                        building={router.rooms.building}
+                        floor={router.rooms.floor}
+                        start={router.rooms.start}
+                        end={router.rooms.end}
+                        onChange={router.navigateRooms}
+                    />
+                ) : null}
+            </Suspense>
 
             <AppFooter />
         </div>
