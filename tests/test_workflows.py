@@ -28,6 +28,7 @@ def test_ci_is_single_authoritative_pages_gate():
     assert "Restore generated data baseline" in text
     assert "cp -R _baseline-dist/generated apps/web/public/generated" in text
     assert "Materialize exam public assets" in text
+    assert "steps.ci-mode.outputs.needs_public_assets == 'true' && steps.ci-mode.outputs.needs_generated_assets != 'true'" in text
     assert "prepare_public_assets.py build-exam-public-data" in text
     assert "prepare_public_assets.py verify-exam-public-data" in text
     assert "if: steps.ci-mode.outputs.needs_generated_assets == 'true'\n        uses: dtolnay/rust-toolchain@stable" in text

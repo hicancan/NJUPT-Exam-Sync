@@ -215,7 +215,7 @@ jobs:
           printf '| Restore generated data baseline | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Materialize exam public assets
-        if: steps.ci-mode.outputs.exam_fast_checks == 'true'
+        if: ${{ steps.ci-mode.outputs.needs_public_assets == 'true' && steps.ci-mode.outputs.needs_generated_assets != 'true' }}
         run: |
           start=$SECONDS
           uv run python tools/ci/prepare_public_assets.py build-exam-public-data
