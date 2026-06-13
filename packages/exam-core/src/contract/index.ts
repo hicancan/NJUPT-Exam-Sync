@@ -45,19 +45,11 @@ export const parseManifest = (payload: unknown, source = 'data summary'): Manife
 };
 
 export const resolveExamDataVersion = (manifest: Manifest): string => {
-    const explicitVersion = manifest.data_version?.trim();
-    if (explicitVersion) {
-        return explicitVersion;
+    const dataVersion = manifest.data_version.trim();
+    if (!dataVersion) {
+        throw new DataContractError('data_summary.data_version is required');
     }
-
-    return [
-        'legacy',
-        manifest.source_url || '',
-        manifest.source_title || '',
-        manifest.generated_at,
-        String(manifest.total_records),
-        ...manifest.files_processed,
-    ].join('|');
+    return dataVersion;
 };
 
 export const assertManifestMatchesExams = (manifest: Manifest, exams: Exam[]) => {

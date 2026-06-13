@@ -29,11 +29,22 @@ describe('exam data contract package', () => {
     it('rejects invalid exam field shapes', () => {
         const exam = {
             id: 'invalid-time',
+            stable_key: 'b240402\u001fjs113400s\u001f算法分析与设计\u001f张三',
+            content_fingerprint: 'a'.repeat(64),
+            duplicate_count: 1,
+            source_refs: [{ id: 'schedule.xlsx-2', source_file: 'schedule.xlsx', row_index: 2 }],
+            campus: '仙林',
             class_name: 'B240402',
             course_name: '算法分析与设计',
+            course_code: 'JS113400S',
+            teacher: '张三',
+            location: '教3-202',
+            raw_time: '2026年07月01日(08:00-09:50)',
+            count: 31,
             duration_minutes: 0,
             start_timestamp: '2026-07-01T08:00:00+08:00',
-            end_timestamp: '2026-07-01T09:50:00+08:00'
+            end_timestamp: '2026-07-01T09:50:00+08:00',
+            date: '2026-07-01',
         };
 
         expect(ExamSchema.safeParse(exam).success).toBe(false);

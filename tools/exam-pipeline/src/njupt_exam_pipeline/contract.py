@@ -55,7 +55,7 @@ class ExamRecord(BaseModel):
     end_timestamp: Optional[str] = None
     duration_minutes: int = 0
     date: Optional[str] = None
-    parse_error: Optional[str] = None
+    validation_error: Optional[str] = None
 
     @field_validator(
         "campus",
@@ -81,18 +81,33 @@ class ExamRecord(BaseModel):
     @field_validator("count", mode="before")
     @classmethod
     def clean_count_field(cls, value: Any) -> int:
+        if pd.isna(value) or value == "" or value is None:
+            raise ValueError("count is required")
         try:
-            return int(value) if pd.notnull(value) and value != "" else 0
-        except (ValueError, TypeError):
-            return 0
+            count = int(value)
+        except (ValueError, TypeError) as exc:
+            raise ValueError(f"count must be an integer: {value!r}") from exc
+        if count < 0:
+            raise ValueError(f"count must be nonnegative: {count}")
+        return count
 
     @model_validator(mode="after")
     def parse_time_logic(self):
-        time_str = self.raw_time
-        if not time_str:
-            self.parse_error = "Missing time data"
+        required_text_fields = (
+            "campus",
+            "course_name",
+            "course_code",
+            "class_name",
+            "teacher",
+            "location",
+            "raw_time",
+        )
+        missing = [field for field in required_text_fields if not getattr(self, field)]
+        if missing:
+            self.validation_error = "Missing required field(s): " + ", ".join(missing)
             return self
 
+        time_str = self.raw_time
         if isinstance(time_str, (datetime, pd.Timestamp)):
             time_str = str(time_str)
 
@@ -110,7 +125,7 @@ class ExamRecord(BaseModel):
                 except ValueError:
                     date_str = d_str
             else:
-                self.parse_error = "Unrecognized date format"
+                self.validation_error = "Unrecognized date format"
                 return self
 
             beijing_tz = timezone(timedelta(hours=8))
@@ -121,9 +136,9 @@ class ExamRecord(BaseModel):
             self.start_timestamp = start_dt.isoformat()
             self.end_timestamp = end_dt.isoformat()
             self.date = date_str
-            self.parse_error = None
+            self.validation_error = None
         except Exception as exc:
-            self.parse_error = f"Parsing exception: {exc}"
+            self.validation_error = f"Parsing exception: {exc}"
 
         return self
 

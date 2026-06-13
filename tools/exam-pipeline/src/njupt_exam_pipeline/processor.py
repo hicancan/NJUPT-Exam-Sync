@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+from pydantic import ValidationError
 
 from .contract import FIELD_MAPPING, ExamPipelineError, ExamRecord
 
@@ -94,16 +95,21 @@ def process_single_file(file_path: str | Path) -> dict[str, Any]:
         for std_key, original_col in current_file_mapping.items():
             raw_input[std_key] = row.get(original_col) if original_col else None
 
-        record = ExamRecord(**raw_input)
-        if record.parse_error:
-            validation_errors.append(f"Row {idx}: {record.parse_error} (Raw: '{record.raw_time}')")
+        try:
+            record = ExamRecord(**raw_input)
+        except ValidationError as exc:
+            validation_errors.append(f"Row {idx}: {exc}")
+            parse_fail_count += 1
+            continue
+        if record.validation_error:
+            validation_errors.append(f"Row {idx}: {record.validation_error} (Raw: '{record.raw_time}')")
             parse_fail_count += 1
         else:
             parse_success_count += 1
         clean_models.append(record)
 
     serialized_data = [
-        model.model_dump(by_alias=True, exclude={"source_file", "row_index"})
+        model.model_dump(by_alias=True, exclude={"source_file", "row_index", "validation_error"})
         for model in clean_models
     ]
 

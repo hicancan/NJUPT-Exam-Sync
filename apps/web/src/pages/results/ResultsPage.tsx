@@ -6,6 +6,7 @@ import { ExamListSkeleton } from '@/features/exam-search/ui/ExamListSkeleton';
 import { CollectionSearchSection } from '@/features/collection-search/ui/CollectionSearchSection';
 import { ExamDetail } from '@/features/exam-search/ui/ExamDetail';
 import { ExamList } from '@/features/exam-search/ui/ExamList';
+import type { ExamExportStatus } from '@/features/exam-search/model/examSelection';
 import {
     RankedSitegraphDocument,
     SearchResult,
@@ -46,6 +47,7 @@ interface ResultsPageProps {
     onSelectAllExams: () => void;
     onClearExamSelection: () => void;
     onExamExportComplete: (exams: Exam[]) => void;
+    getExamStatus: (exam: Exam) => ExamExportStatus;
     onRemindersChange: (reminders: number[]) => void;
     sourceUrl: string | null;
     sourceTitle: string | null;
@@ -79,6 +81,7 @@ export function ResultsPage({
     onSelectAllExams,
     onClearExamSelection,
     onExamExportComplete,
+    getExamStatus,
     onRemindersChange,
     sourceUrl,
     sourceTitle,
@@ -126,6 +129,7 @@ export function ResultsPage({
                                 onSelectAll={onSelectAllExams}
                                 onClearSelection={onClearExamSelection}
                                 onExportComplete={onExamExportComplete}
+                                getExamStatus={getExamStatus}
                                 reminders={reminders}
                                 onRemindersChange={onRemindersChange}
                                 sourceUrl={sourceUrl}

@@ -432,9 +432,11 @@ def verify_exam_public_data() -> None:
         if not path.exists():
             raise PublicAssetError(f"missing generated exam public asset: {path.relative_to(REPO_ROOT)}")
     if (EXAM_DIR / "change_summary.json").exists():
-        raise PublicAssetError("legacy exam change_summary.json must not be generated")
+        raise PublicAssetError("obsolete exam change_summary.json must not be generated")
     if (EXAM_DIR / "changes").exists():
-        raise PublicAssetError("legacy exam changes directory must not be generated")
+        raise PublicAssetError("obsolete exam changes directory must not be generated")
+    if (EXAM_DIR / "DATA_INVENTORY.md").exists():
+        raise PublicAssetError("exam DATA_INVENTORY.md must not be generated in public assets")
 
     summary = read_json(summary_path)
     metadata = read_json(metadata_path)
@@ -460,6 +462,23 @@ def verify_exam_public_data() -> None:
     total_records = summary.get("total_records")
     if not isinstance(total_records, int) or total_records != len(exams):
         raise PublicAssetError("exam data_summary total_records does not match all_exams length")
+    exam_ids: set[str] = set()
+    stable_keys: set[str] = set()
+    for item in exams:
+        if not isinstance(item, dict):
+            raise PublicAssetError("all_exams entries must be objects")
+        if "parse_error" in item:
+            raise PublicAssetError("all_exams entries must not expose parse_error")
+        exam_id = str(item.get("id") or "")
+        stable_key = str(item.get("stable_key") or "")
+        if not exam_id or not stable_key:
+            raise PublicAssetError("all_exams entries must contain id and stable_key")
+        if exam_id in exam_ids:
+            raise PublicAssetError(f"duplicate exam id: {exam_id}")
+        if stable_key in stable_keys:
+            raise PublicAssetError(f"duplicate exam stable_key: {stable_key}")
+        exam_ids.add(exam_id)
+        stable_keys.add(stable_key)
     if history_manifest.get("version") != "exam-history-manifest-v1":
         raise PublicAssetError("exam history manifest version is invalid")
     if history_manifest.get("latest_data_version") != expected_data_version:

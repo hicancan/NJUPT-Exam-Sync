@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from njupt_exam_pipeline.contract import ExamPipelineError
-from njupt_exam_pipeline.diff import class_file_key, compare_exam_records
+from njupt_exam_pipeline.diff import canonicalize_exam_records, class_file_key, compare_exam_records
 from njupt_exam_pipeline.history import ExamSnapshot, build_exam_history
 
 
@@ -31,6 +31,26 @@ def test_row_id_change_is_not_a_material_exam_change():
     delta = compare_exam_records(
         previous_records=[exam(id="old-row-2")],
         current_records=[exam(id="new-row-88")],
+    )
+
+    assert delta["totals"]["unchanged"] == 1
+    assert delta["totals"]["changed"] == 0
+    assert delta["changes"] == []
+
+
+def test_exact_duplicate_source_rows_are_collapsed_before_history_diff():
+    duplicate_a = exam(id="schedule.xlsx-2008")
+    duplicate_b = exam(id="schedule.xlsx-2009")
+
+    canonical = canonicalize_exam_records([duplicate_b, duplicate_a])
+
+    assert len(canonical) == 1
+    assert canonical[0]["duplicate_count"] == 2
+    assert [item["id"] for item in canonical[0]["source_refs"]] == ["schedule.xlsx-2008", "schedule.xlsx-2009"]
+
+    delta = compare_exam_records(
+        previous_records=[duplicate_a, duplicate_b],
+        current_records=[exam(id="next.xlsx-88")],
     )
 
     assert delta["totals"]["unchanged"] == 1

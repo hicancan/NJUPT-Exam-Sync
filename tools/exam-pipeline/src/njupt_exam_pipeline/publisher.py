@@ -3,14 +3,13 @@ from __future__ import annotations
 import json
 import logging
 import os
-import shutil
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 
-from .contract import FIELD_MAPPING, ExamPipelineError
+from .contract import ExamPipelineError
+from .diff import canonicalize_exam_records
 from .processor import get_xlsx_files, process_single_file
-from .report import generate_markdown_report
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +61,6 @@ def write_json_file(path: Path, payload: Any, *, compact: bool) -> None:
 def publish_exam_artifacts(
     *,
     data_dir: Path,
-    output_doc_path: Path,
     merged_json_path: Path,
 ) -> None:
     logger.info("Starting data extraction process (Pydantic Powered)...")
@@ -81,6 +79,7 @@ def publish_exam_artifacts(
 
     if not analyses:
         raise ExamPipelineError("No exam spreadsheets were processed")
+    all_rows = canonicalize_exam_records(all_rows)
 
     metadata = load_source_metadata(data_dir)
     generated_at = get_beijing_time()
@@ -88,15 +87,6 @@ def publish_exam_artifacts(
 
     logger.info("Saving %s records to %s...", len(all_rows), merged_json_path)
     write_json_file(merged_json_path, all_rows, compact=True)
-
-    report_content = generate_markdown_report(
-        analyses,
-        len(all_rows),
-        generated_at=generated_at,
-        field_mapping=FIELD_MAPPING,
-    )
-    output_doc_path.parent.mkdir(parents=True, exist_ok=True)
-    output_doc_path.write_text(report_content, encoding="utf-8")
 
     manifest = {
         "generated_at": generated_at.isoformat(),
@@ -107,11 +97,5 @@ def publish_exam_artifacts(
         "source_title": metadata.get("source_title"),
     }
     write_json_file(data_dir / "data_summary.json", manifest, compact=False)
-    stale_change_summary = data_dir / "change_summary.json"
-    if stale_change_summary.exists():
-        stale_change_summary.unlink()
-    stale_changes_dir = data_dir / "changes"
-    if stale_changes_dir.exists():
-        shutil.rmtree(stale_changes_dir)
 
     logger.info("Data processing and updates complete.")

@@ -2,11 +2,19 @@ import { z } from 'zod';
 
 export interface Exam {
     id: string;
+    stable_key: string;
+    content_fingerprint: string;
+    duplicate_count: number;
+    source_refs?: Array<{
+        id: string;
+        source_file: string;
+        row_index: number;
+    }>;
     class_name: string;
     course_name: string;
     location: string;
-    start_timestamp: string | null;
-    end_timestamp: string | null;
+    start_timestamp: string;
+    end_timestamp: string;
     duration_minutes: number;
     teacher?: string;
     notes?: string;
@@ -19,12 +27,11 @@ export interface Exam {
     major?: string;
     grade?: string;
     date?: string;
-    parse_error?: string | null;
 }
 
 export interface Manifest {
     generated_at: string;
-    data_version?: string;
+    data_version: string;
     files_processed: string[];
     total_records: number;
     source_url?: string;
@@ -140,38 +147,41 @@ export interface ExamClassHistory {
 
 export const ExamSchema = z.object({
     id: z.string().min(1),
+    stable_key: z.string().min(1),
+    content_fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+    duplicate_count: z.number().int().positive(),
+    source_refs: z.array(z.object({
+        id: z.string().min(1),
+        source_file: z.string().min(1),
+        row_index: z.number().int().positive(),
+    })).min(1).optional(),
     class_name: z.string().min(1),
     course_name: z.string().min(1),
+    course_code: z.string().min(1),
+    teacher: z.string().min(1),
+    campus: z.string().min(1),
+    location: z.string().min(1),
+    raw_time: z.string().min(1),
+    count: z.number().int().nonnegative(),
     duration_minutes: z.number().positive(),
-    start_timestamp: z.string().nullable().optional(),
-    end_timestamp: z.string().nullable().optional(),
-    parse_error: z.string().nullable().optional(),
+    start_timestamp: z.string().min(1),
+    end_timestamp: z.string().min(1),
+    date: z.string().min(1),
 }).passthrough().superRefine((val, ctx) => {
     const start = val.start_timestamp;
     const end = val.end_timestamp;
 
-    if (start && start.trim() === '') {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'start_timestamp must not be empty when present' });
-    }
-    if (end && end.trim() === '') {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'end_timestamp must not be empty when present' });
-    }
-
-    if (start && Number.isNaN(new Date(start).getTime())) {
+    if (Number.isNaN(new Date(start).getTime())) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'start_timestamp must be a parseable date-time string' });
     }
-    if (end && Number.isNaN(new Date(end).getTime())) {
+    if (Number.isNaN(new Date(end).getTime())) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'end_timestamp must be a parseable date-time string' });
-    }
-
-    if ((start && !end) || (!start && end)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'has incomplete time range' });
     }
 });
 
 export const ManifestSchema = z.object({
     generated_at: z.string().min(1),
-    data_version: z.string().min(1).optional(),
+    data_version: z.string().regex(/^[a-f0-9]{64}$/),
     total_records: z.number(),
     files_processed: z.array(z.string()),
     source_url: z.string().nullable().optional(),
@@ -180,6 +190,8 @@ export const ManifestSchema = z.object({
 
 const ExamRecordSnapshotSchema = z.object({
     id: z.string().optional().nullable(),
+    stable_key: z.string().optional().nullable(),
+    duplicate_count: z.number().int().positive().optional().nullable(),
     class_name: z.string().optional().nullable(),
     course_name: z.string().optional().nullable(),
     course_code: z.string().optional().nullable(),

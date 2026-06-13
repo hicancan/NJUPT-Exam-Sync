@@ -3,13 +3,32 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from collections import Counter, defaultdict
+from collections import defaultdict
 from typing import Any
 
 from .contract import ExamPipelineError, normalize_text
 
 
 IDENTITY_FIELDS = ("class_name", "course_code", "course_name", "teacher")
+PUBLIC_RECORD_FIELDS = (
+    "campus",
+    "course_name",
+    "course_code",
+    "class_name",
+    "teacher",
+    "location",
+    "raw_time",
+    "count",
+    "school",
+    "student_school",
+    "major",
+    "grade",
+    "notes",
+    "start_timestamp",
+    "end_timestamp",
+    "duration_minutes",
+    "date",
+)
 COMPARE_FIELDS = (
     "start_timestamp",
     "end_timestamp",
@@ -29,6 +48,18 @@ FIELD_LABELS = {
     "notes": "备注",
     "count": "人数",
     "raw_time": "原始时间",
+}
+SOURCE_REF_FIELDS = {
+    "id",
+    "_source_file",
+    "_row_index",
+    "source_file",
+    "row_index",
+    "source_refs",
+    "duplicate_count",
+    "stable_key",
+    "content_fingerprint",
+    "validation_error",
 }
 
 
@@ -61,6 +92,10 @@ def _record_fingerprint(record: dict[str, Any], fields: tuple[str, ...]) -> str:
     return json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
+def _fingerprint_digest(fingerprint: str) -> str:
+    return hashlib.sha256(fingerprint.encode("utf-8")).hexdigest()
+
+
 def _source_ordinal(record: dict[str, Any]) -> tuple[str, int, str]:
     record_id = str(record.get("id") or "")
     source_file = str(record.get("_source_file") or record.get("source_file") or "")
@@ -77,6 +112,8 @@ def _source_ordinal(record: dict[str, Any]) -> tuple[str, int, str]:
 def _exam_summary(record: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": record.get("id"),
+        "stable_key": record.get("stable_key"),
+        "duplicate_count": record.get("duplicate_count"),
         "class_name": record.get("class_name"),
         "course_name": record.get("course_name"),
         "course_code": record.get("course_code"),
@@ -90,6 +127,87 @@ def _exam_summary(record: dict[str, Any]) -> dict[str, Any]:
         "count": record.get("count"),
         "raw_time": record.get("raw_time"),
     }
+
+
+def _source_ref(record: dict[str, Any]) -> dict[str, Any]:
+    source_file, row_index, record_id = _source_ordinal(record)
+    return {
+        "id": record_id,
+        "source_file": source_file,
+        "row_index": row_index,
+    }
+
+
+def _canonical_exam_id(identity: str, fingerprint: str) -> str:
+    return "exam-" + _fingerprint_digest(identity + "\u001f" + fingerprint)[:20]
+
+
+def _stable_key_digest(identity: str, discriminator: str = "") -> str:
+    return "stable-" + _fingerprint_digest(identity + "\u001f" + discriminator)[:20]
+
+
+def _strip_source_fields(record: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in record.items() if key not in SOURCE_REF_FIELDS}
+
+
+def _stable_discriminator_fields(records: list[dict[str, Any]]) -> tuple[str, ...]:
+    candidates: tuple[tuple[str, ...], ...] = (
+        ("location", "count"),
+        ("location", "count", "start_timestamp", "end_timestamp"),
+        PUBLIC_RECORD_FIELDS,
+    )
+    for fields in candidates:
+        fingerprints = [_record_fingerprint(record, fields) for record in records]
+        if len(set(fingerprints)) == len(fingerprints):
+            return fields
+    raise ExamPipelineError(
+        "Cannot assign deterministic occurrence keys after exact duplicate collapse: "
+        + json.dumps([_exam_summary(record) for record in records], ensure_ascii=False)
+    )
+
+
+def canonicalize_exam_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Collapse byte-equivalent official duplicate rows into one deterministic exam record."""
+    grouped = _group_by_identity(records)
+    canonical_records: list[dict[str, Any]] = []
+
+    for identity in sorted(grouped):
+        by_content: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for record in grouped[identity]:
+            by_content[_record_fingerprint(record, PUBLIC_RECORD_FIELDS)].append(record)
+
+        identity_records: list[dict[str, Any]] = []
+        for fingerprint in sorted(by_content):
+            duplicates = sorted(by_content[fingerprint], key=_source_ordinal)
+            canonical = _strip_source_fields(dict(duplicates[0]))
+            source_refs = [_source_ref(record) for record in duplicates]
+            canonical["id"] = _canonical_exam_id(identity, fingerprint)
+            canonical["duplicate_count"] = len(source_refs)
+            if len(source_refs) > 1:
+                canonical["source_refs"] = source_refs
+            canonical["content_fingerprint"] = _fingerprint_digest(fingerprint)
+            identity_records.append(canonical)
+
+        if len(identity_records) == 1:
+            identity_records[0]["stable_key"] = _stable_key_digest(identity)
+        else:
+            discriminator_fields = _stable_discriminator_fields(identity_records)
+            for record in identity_records:
+                discriminator = _record_fingerprint(record, discriminator_fields)
+                record["stable_key"] = _stable_key_digest(identity, discriminator)
+
+        canonical_records.extend(identity_records)
+
+    return sorted(
+        canonical_records,
+        key=lambda item: (
+            str(item.get("class_name") or ""),
+            str(item.get("course_code") or ""),
+            str(item.get("course_name") or ""),
+            str(item.get("teacher") or ""),
+            str(item.get("stable_key") or ""),
+        ),
+    )
 
 
 def _changed_fields(previous: dict[str, Any], current: dict[str, Any]) -> list[dict[str, Any]]:
@@ -197,14 +315,6 @@ def _pair_group(
         pairs.append((previous_left[0], current_left[0]))
         return pairs, [], []
 
-    previous_source_counts = Counter(_source_ordinal(record) for record in previous_left)
-    current_source_counts = Counter(_source_ordinal(record) for record in current_left)
-    if previous_source_counts == current_source_counts:
-        current_by_source = {tuple(_source_ordinal(record)): record for record in current_left}
-        for previous_record in sorted(previous_left, key=_source_ordinal):
-            pairs.append((previous_record, current_by_source[_source_ordinal(previous_record)]))
-        return pairs, [], []
-
     raise _ambiguous_error(identity, previous_left, current_left)
 
 
@@ -213,6 +323,8 @@ def compare_exam_records(
     previous_records: list[dict[str, Any]],
     current_records: list[dict[str, Any]],
 ) -> dict[str, Any]:
+    previous_records = canonicalize_exam_records(previous_records)
+    current_records = canonicalize_exam_records(current_records)
     previous_groups = _group_by_identity(previous_records)
     current_groups = _group_by_identity(current_records)
     identities = sorted(set(previous_groups) | set(current_groups))

@@ -36,6 +36,5 @@ def test_main_fails_fast_on_unparsable_rows(monkeypatch, tmp_path):
     with pytest.raises(ExamPipelineError):
         publish_exam_artifacts(
             data_dir=tmp_path,
-            output_doc_path=tmp_path / "DATA_INVENTORY.md",
             merged_json_path=tmp_path / "all_exams.json",
         )

@@ -24,6 +24,5 @@ def main() -> None:
     elif args.command == "process":
         publish_exam_artifacts(
             data_dir=EXAM_DIR,
-            output_doc_path=EXAM_DIR / "DATA_INVENTORY.md",
             merged_json_path=EXAM_DIR / "all_exams.json",
         )

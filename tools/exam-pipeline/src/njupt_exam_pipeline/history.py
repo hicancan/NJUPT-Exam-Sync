@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from .contract import ExamPipelineError, normalize_text
-from .diff import class_file_key, compare_exam_records
+from .diff import business_identity, canonicalize_exam_records, class_file_key, compare_exam_records
 from .processor import get_xlsx_files, process_single_file
 from .publisher import write_json_file
 
@@ -51,7 +51,7 @@ def process_exam_snapshot_dir(*, data_dir: Path, data_version: str, auto_updated
         auto_updated_at=auto_updated_at,
         source_url=metadata.get("source_url"),
         source_title=metadata.get("source_title"),
-        records=records,
+        records=canonicalize_exam_records(records),
     )
 
 
@@ -71,12 +71,14 @@ def _added_changes(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [
         {
             "type": "added",
-            "identity_key": "",
+            "identity_key": business_identity(record),
             "course_name": record.get("course_name"),
             "course_code": record.get("course_code"),
             "teacher": record.get("teacher"),
             "after": {
                 "id": record.get("id"),
+                "stable_key": record.get("stable_key"),
+                "duplicate_count": record.get("duplicate_count"),
                 "class_name": record.get("class_name"),
                 "course_name": record.get("course_name"),
                 "course_code": record.get("course_code"),
@@ -99,12 +101,14 @@ def _removed_changes(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [
         {
             "type": "removed",
-            "identity_key": "",
+            "identity_key": business_identity(record),
             "course_name": record.get("course_name"),
             "course_code": record.get("course_code"),
             "teacher": record.get("teacher"),
             "before": {
                 "id": record.get("id"),
+                "stable_key": record.get("stable_key"),
+                "duplicate_count": record.get("duplicate_count"),
                 "class_name": record.get("class_name"),
                 "course_name": record.get("course_name"),
                 "course_code": record.get("course_code"),
@@ -154,6 +158,16 @@ def _checkpoint(
 def build_exam_history(snapshots: list[ExamSnapshot], *, generated_at: str) -> tuple[dict[str, Any], dict[str, dict[str, Any]]]:
     if not snapshots:
         raise ExamPipelineError("Cannot build exam history without snapshots")
+    snapshots = [
+        ExamSnapshot(
+            data_version=snapshot.data_version,
+            auto_updated_at=snapshot.auto_updated_at,
+            source_url=snapshot.source_url,
+            source_title=snapshot.source_title,
+            records=canonicalize_exam_records(snapshot.records),
+        )
+        for snapshot in snapshots
+    ]
     data_versions = [snapshot.data_version for snapshot in snapshots]
     if len(set(data_versions)) != len(data_versions):
         raise ExamPipelineError("Exam history snapshots must have unique data_version values")

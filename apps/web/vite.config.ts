@@ -121,7 +121,7 @@ export default defineConfig({
             urlPattern: ({ url }) => url.pathname.startsWith('/generated/exam/history/classes/') && url.pathname.endsWith('.json'),
             handler: 'CacheFirst',
             options: {
-              cacheName: 'njupt-search-exam-history-versioned-v1',
+              cacheName: 'njupt-search-exam-history-versioned-v2',
               expiration: {
                 maxEntries: 500,
                 maxAgeSeconds: 60 * 60 * 24 * 30
@@ -135,7 +135,7 @@ export default defineConfig({
             urlPattern: ({ url }) => url.pathname === '/generated/exam/all_exams.json',
             handler: 'CacheFirst',
             options: {
-              cacheName: 'njupt-search-exam-data-versioned-v2',
+              cacheName: 'njupt-search-exam-data-versioned-v3',
               expiration: {
                 maxEntries: 12,
                 maxAgeSeconds: 60 * 60 * 24 * 30

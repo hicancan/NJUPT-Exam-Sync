@@ -32,7 +32,7 @@ export function useSearchExperience() {
         ? (classParam || isCompleteClassQuery(qParam || '') ? 'exam-detail' : 'exam-list')
         : 'collection';
 
-    const { exams: allExams, loading: examLoading, error: examError, sourceUrl, sourceTitle, generatedAt, totalRecords } = useExamData(needsExamData);
+    const { exams: allExams, loading: examLoading, error: examError, sourceUrl, sourceTitle, generatedAt, dataVersion, totalRecords } = useExamData(needsExamData);
     const { newDataAvailable, reloadToUpdate } = useDataUpdateNotifier();
     const [inputValue, setInputValue] = useState<string>(initialQuery);
     const [reminders, setReminders] = useState<number[]>([30, 60]);
@@ -69,7 +69,13 @@ export function useSearchExperience() {
         selectAllExamIds,
         clearExamSelection,
         markExamsExported,
-    } = useSelectedExamIds(currentClass, classSearchResult.exams);
+        getExamStatus,
+    } = useSelectedExamIds(
+        currentClass,
+        classSearchResult.exams,
+        dataVersion,
+        examHistoryManifest?.latest_auto_updated_at ?? generatedAt
+    );
 
     useEffect(() => {
         // URL navigation is the external source of truth here; keep the controlled search box in sync.
@@ -184,6 +190,7 @@ export function useSearchExperience() {
             onSelectAllExams: selectAllExamIds,
             onClearExamSelection: clearExamSelection,
             onExamExportComplete: markExamsExported,
+            getExamStatus,
             onRemindersChange: setReminders,
             sourceUrl,
             sourceTitle,

@@ -44,18 +44,14 @@ describe('exam-core data contract', () => {
         expect(JSON.stringify(b240402)).toContain('"after":120');
     });
 
-    it('derives a deterministic legacy version for old data summaries', () => {
-        const manifest = parseManifest({
+    it('rejects data summaries without an explicit data version', () => {
+        expect(() => parseManifest({
             generated_at: '2026-06-10T00:00:00+08:00',
             files_processed: ['schedule.xlsx'],
             total_records: 1,
             source_url: 'https://example.test/exam',
             source_title: '考试安排表',
-        });
-
-        expect(resolveExamDataVersion(manifest)).toBe(
-            'legacy|https://example.test/exam|考试安排表|2026-06-10T00:00:00+08:00|1|schedule.xlsx'
-        );
+        })).toThrow(DataContractError);
     });
 
     it('fails fast when all_exams is not an array', () => {
@@ -65,11 +61,22 @@ describe('exam-core data contract', () => {
     it('fails fast on duplicate exam ids', () => {
         const exam = {
             id: 'duplicate',
+            stable_key: 'b240402\u001fjs113400s\u001f算法分析与设计\u001f张三',
+            content_fingerprint: 'a'.repeat(64),
+            duplicate_count: 1,
+            source_refs: [{ id: 'schedule.xlsx-2', source_file: 'schedule.xlsx', row_index: 2 }],
+            campus: '仙林',
             class_name: 'B240402',
             course_name: '算法分析与设计',
+            course_code: 'JS113400S',
+            teacher: '张三',
+            location: '教3-202',
+            raw_time: '2026年07月01日(08:00-09:50)',
+            count: 31,
             duration_minutes: 110,
-            start_timestamp: null,
-            end_timestamp: null
+            start_timestamp: '2026-07-01T08:00:00+08:00',
+            end_timestamp: '2026-07-01T09:50:00+08:00',
+            date: '2026-07-01',
         };
 
         expect(() => parseExamData([exam, exam], 'all_exams.json')).toThrow(/duplicate id/);
@@ -78,11 +85,22 @@ describe('exam-core data contract', () => {
     it('rejects non-positive durations and invalid timestamps', () => {
         const exam = {
             id: 'invalid-time',
+            stable_key: 'b240402\u001fjs113400s\u001f算法分析与设计\u001f张三',
+            content_fingerprint: 'a'.repeat(64),
+            duplicate_count: 1,
+            source_refs: [{ id: 'schedule.xlsx-2', source_file: 'schedule.xlsx', row_index: 2 }],
+            campus: '仙林',
             class_name: 'B240402',
             course_name: '算法分析与设计',
+            course_code: 'JS113400S',
+            teacher: '张三',
+            location: '教3-202',
+            raw_time: '2026年07月01日(08:00-09:50)',
+            count: 31,
             duration_minutes: 0,
             start_timestamp: '2026-07-01T08:00:00+08:00',
-            end_timestamp: '2026-07-01T09:50:00+08:00'
+            end_timestamp: '2026-07-01T09:50:00+08:00',
+            date: '2026-07-01',
         };
 
         expect(() => parseExamData([exam], 'all_exams.json')).toThrow(/duration_minutes/);

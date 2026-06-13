@@ -4,12 +4,22 @@ import { getClassSearchResult } from './useClassSearch';
 
 const exam = (id: string, className: string, courseName = '算法分析与设计'): Exam => ({
     id,
+    stable_key: `${className}\u001f${courseName}\u001f${id}`,
+    content_fingerprint: id.padEnd(64, '0').slice(0, 64),
+    duplicate_count: 1,
+    source_refs: [{ id, source_file: 'schedule.xlsx', row_index: Number(id) || 1 }],
+    campus: '仙林',
     class_name: className,
     course_name: courseName,
+    course_code: `CODE-${id}`,
+    teacher: '张三',
     location: '教3-202',
-    start_timestamp: null,
-    end_timestamp: null,
-    duration_minutes: 0
+    raw_time: '2026年07月01日(08:00-09:50)',
+    count: 1,
+    start_timestamp: '2026-07-01T08:00:00+08:00',
+    end_timestamp: '2026-07-01T09:50:00+08:00',
+    duration_minutes: 110,
+    date: '2026-07-01'
 });
 
 describe('getClassSearchResult', () => {

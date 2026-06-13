@@ -1,4 +1,5 @@
-import { formatExamHistoryValue } from '@njupt-search/exam-core/history';
+import { useMemo, useState } from 'react';
+import { summarizeExamHistoryChange } from '@njupt-search/exam-core/history';
 import type {
     ExamClassHistory,
     ExamHistoryChange,
@@ -20,7 +21,7 @@ const formatTime = (value?: string | null): string => {
     if (!value) return '未知';
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) return value;
-    return parsed.toLocaleString('zh-CN');
+    return parsed.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
 };
 
 const statusText = (checkpoint: ExamHistoryCheckpoint | null): string => {
@@ -43,21 +44,19 @@ const changeBadgeClass = (change: ExamHistoryChange): string => {
     return 'bg-[#e8f0fe] text-[#1967d2] dark:bg-[#1f2d4d] dark:text-[#8ab4f8]';
 };
 
-function ChangedFields({ change }: { change: ExamHistoryChange }) {
-    if (!change.fields?.length) return null;
+const getExpansionStorageKey = (classKey: string, dataVersion: string): string => {
+    return `njupt-search:exam-history-expanded:${classKey}:${dataVersion}`;
+};
+
+function ChangeSummaries({ change }: { change: ExamHistoryChange }) {
+    const summaries = summarizeExamHistoryChange(change);
+    if (!summaries.length) return null;
     return (
-        <div className="mt-2 grid gap-1 text-[13px]">
-            {change.fields.map((field) => (
-                <div key={field.field} className="grid gap-1 sm:grid-cols-[88px_1fr]">
-                    <span className="text-[#5f6368] dark:text-[#9aa0a6]">{field.label}</span>
-                    <span className="text-[#202124] dark:text-[#e8eaed]">
-                        {formatExamHistoryValue(field, field.before)}
-                        <span className="mx-2 text-[#9aa0a6]">→</span>
-                        {formatExamHistoryValue(field, field.after)}
-                    </span>
-                </div>
+        <ul className="mt-2 grid gap-1 text-[13px] text-[#3c4043] dark:text-[#e8eaed]">
+            {summaries.map((summary) => (
+                <li key={summary}>{summary}</li>
             ))}
-        </div>
+        </ul>
     );
 }
 
@@ -86,7 +85,7 @@ function ChangeList({ checkpoint }: { checkpoint: ExamHistoryCheckpoint }) {
                         {change.teacher ? <span className="text-[12px] text-[#5f6368] dark:text-[#9aa0a6]">{change.teacher}</span> : null}
                         {change.course_code ? <span className="text-[12px] text-[#5f6368] dark:text-[#9aa0a6]">{change.course_code}</span> : null}
                     </div>
-                    <ChangedFields change={change} />
+                    <ChangeSummaries change={change} />
                 </div>
             ))}
             {checkpoint.changes.length > visibleChanges.length ? (
@@ -94,6 +93,59 @@ function ChangeList({ checkpoint }: { checkpoint: ExamHistoryCheckpoint }) {
                     另有 {checkpoint.changes.length - visibleChanges.length} 条变化未展开。
                 </p>
             ) : null}
+        </div>
+    );
+}
+
+function ClassHistoryContent({ classHistory }: { classHistory: ExamClassHistory }) {
+    const currentCheckpoint = classHistory.checkpoints[classHistory.checkpoints.length - 1] || null;
+    const latestMaterialCheckpoint = useMemo(() => [...classHistory.checkpoints]
+        .reverse()
+        .find(checkpoint => materialStatus.has(checkpoint.status)) || currentCheckpoint, [classHistory.checkpoints, currentCheckpoint]);
+    const currentHasChange = currentCheckpoint?.status && currentCheckpoint.status !== 'unchanged';
+    const expansionKey = latestMaterialCheckpoint
+        ? getExpansionStorageKey(classHistory.class_key, latestMaterialCheckpoint.data_version)
+        : null;
+    const [expansionOverrides, setExpansionOverrides] = useState<Record<string, boolean>>({});
+    const expanded = expansionKey
+        ? expansionOverrides[expansionKey] ?? window.localStorage.getItem(expansionKey) !== 'collapsed'
+        : true;
+
+    const toggleExpanded = () => {
+        if (!expansionKey) return;
+        const next = !expanded;
+        window.localStorage.setItem(expansionKey, next ? 'expanded' : 'collapsed');
+        setExpansionOverrides(previous => ({ ...previous, [expansionKey]: next }));
+    };
+
+    return (
+        <div className="rounded-xl border border-[#dadce0] bg-[#f8fbff] px-4 py-3 dark:border-[#3c4043] dark:bg-[#202124]">
+            <div className="flex flex-wrap items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-[#1a73e8]" aria-hidden="true" />
+                <span className="text-[14px] font-medium text-[#202124] dark:text-[#e8eaed]">
+                    本班考试历史
+                </span>
+                <span className={`rounded-full px-2 py-0.5 text-[12px] font-medium ${currentHasChange ? 'bg-[#e8f0fe] text-[#1967d2] dark:bg-[#1f2d4d] dark:text-[#8ab4f8]' : 'bg-[#f1f3f4] text-[#5f6368] dark:bg-[#303134] dark:text-[#bdc1c6]'}`}>
+                    {statusText(currentCheckpoint)}
+                </span>
+                {latestMaterialCheckpoint && latestMaterialCheckpoint.changes.length > 0 ? (
+                    <button
+                        type="button"
+                        onClick={toggleExpanded}
+                        className="rounded-full border border-[#dadce0] px-2 py-0.5 text-[12px] text-[#1a73e8] transition hover:bg-white dark:border-[#5f6368] dark:text-[#8ab4f8] dark:hover:bg-[#303134]"
+                    >
+                        {expanded ? '收起变化' : '展开变化'}
+                    </button>
+                ) : null}
+            </div>
+            <p className="mt-2 text-[13px] text-[#5f6368] dark:text-[#9aa0a6]">
+                当前自动更新时间：{formatTime(classHistory.latest_auto_updated_at)}
+                {currentCheckpoint?.previous_auto_updated_at ? `；上一次自动更新时间：${formatTime(currentCheckpoint.previous_auto_updated_at)}` : ''}
+            </p>
+            <p className="mt-1 text-[13px] text-[#5f6368] dark:text-[#9aa0a6]">
+                最近一次实质变化：{latestMaterialCheckpoint?.status === 'first_seen' ? '教务系统初次发布' : formatTime(classHistory.latest_substantive_change.auto_updated_at)}
+            </p>
+            {expanded && latestMaterialCheckpoint ? <ChangeList checkpoint={latestMaterialCheckpoint} /> : null}
         </div>
     );
 }
@@ -145,31 +197,5 @@ export function ExamHistoryPanel({
         );
     }
 
-    const currentCheckpoint = classHistory.checkpoints[classHistory.checkpoints.length - 1] || null;
-    const latestMaterialCheckpoint = [...classHistory.checkpoints]
-        .reverse()
-        .find(checkpoint => materialStatus.has(checkpoint.status)) || currentCheckpoint;
-    const currentHasChange = currentCheckpoint?.status && currentCheckpoint.status !== 'unchanged';
-
-    return (
-        <div className="rounded-xl border border-[#dadce0] bg-[#f8fbff] px-4 py-3 dark:border-[#3c4043] dark:bg-[#202124]">
-            <div className="flex flex-wrap items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-[#1a73e8]" aria-hidden="true" />
-                <span className="text-[14px] font-medium text-[#202124] dark:text-[#e8eaed]">
-                    本班考试历史
-                </span>
-                <span className={`rounded-full px-2 py-0.5 text-[12px] font-medium ${currentHasChange ? 'bg-[#e8f0fe] text-[#1967d2] dark:bg-[#1f2d4d] dark:text-[#8ab4f8]' : 'bg-[#f1f3f4] text-[#5f6368] dark:bg-[#303134] dark:text-[#bdc1c6]'}`}>
-                    {statusText(currentCheckpoint)}
-                </span>
-            </div>
-            <p className="mt-2 text-[13px] text-[#5f6368] dark:text-[#9aa0a6]">
-                当前自动更新时间：{formatTime(classHistory.latest_auto_updated_at)}
-                {currentCheckpoint?.previous_auto_updated_at ? `；上一次自动更新时间：${formatTime(currentCheckpoint.previous_auto_updated_at)}` : ''}
-            </p>
-            <p className="mt-1 text-[13px] text-[#5f6368] dark:text-[#9aa0a6]">
-                最近一次实质变化：{latestMaterialCheckpoint?.status === 'first_seen' ? '教务系统初次发布' : formatTime(classHistory.latest_substantive_change.auto_updated_at)}
-            </p>
-            {latestMaterialCheckpoint ? <ChangeList checkpoint={latestMaterialCheckpoint} /> : null}
-        </div>
-    );
+    return <ClassHistoryContent classHistory={classHistory} />;
 }

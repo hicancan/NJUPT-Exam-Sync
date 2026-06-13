@@ -31,16 +31,7 @@ const hashIdentity = (identity: string): string => {
 };
 
 export const getExamCalendarIdentity = (exam: Exam): string => {
-    return [
-        exam.class_name,
-        exam.course_code,
-        exam.course_name,
-        exam.start_timestamp,
-        exam.end_timestamp,
-        exam.campus,
-        exam.location,
-        exam.teacher,
-    ].map(normalizeIdentityPart).join('\u001f');
+    return normalizeIdentityPart(exam.stable_key);
 };
 
 const generateUID = (exam: Exam, domain: string): string => {

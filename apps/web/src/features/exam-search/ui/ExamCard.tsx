@@ -1,9 +1,11 @@
 import { Check, Clock, MapPin, User, Users } from 'lucide-react';
 import { Exam } from '@/shared/lib/contracts';
+import type { ExamExportStatus } from '../model/examSelection';
 
 interface ExamCardProps {
     exam: Exam;
     isSelected: boolean;
+    exportStatus: ExamExportStatus;
     onToggle: () => void;
 }
 
@@ -15,8 +17,30 @@ const formatDisplayDate = (isoString?: string | null): string => {
     });
 };
 
-export function ExamCard({ exam, isSelected, onToggle }: ExamCardProps) {
+const statusBadge = (status: ExamExportStatus): { text: string; className: string } | null => {
+    if (status === 'needs-update') {
+        return {
+            text: '需更新',
+            className: 'bg-[#fef7e0] text-[#b06000] border-[#fbbc04] dark:bg-[#3a2a00] dark:text-[#fdd663] dark:border-[#fdd663]',
+        };
+    }
+    if (status === 'new') {
+        return {
+            text: '新增',
+            className: 'bg-[#e6f4ea] text-[#137333] border-[#34a853] dark:bg-[#143820] dark:text-[#81c995] dark:border-[#81c995]',
+        };
+    }
+    return null;
+};
+
+export function ExamCard({ exam, isSelected, exportStatus, onToggle }: ExamCardProps) {
     const isValidTime = !!exam.start_timestamp;
+    const badge = statusBadge(exportStatus);
+    const borderClass = exportStatus === 'needs-update'
+        ? 'border-[#fbbc04]'
+        : isSelected
+            ? 'border-[#1a73e8]'
+            : 'border-transparent';
 
     return (
         <label
@@ -24,9 +48,10 @@ export function ExamCard({ exam, isSelected, onToggle }: ExamCardProps) {
                 block p-5 pl-4 transition-all duration-300 cursor-pointer group border-l-4
                 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] dark:hover:shadow-none
                 ${isSelected 
-                    ? 'border-[#1a73e8] bg-[#f8fafd] dark:bg-[#1a73e8]/10 shadow-[0_1px_3px_rgba(0,0,0,0.02)]' 
-                    : 'border-transparent opacity-70 grayscale-[0.5] hover:bg-[#f8f9fa] dark:hover:bg-[#303134]'
+                    ? 'bg-[#f8fafd] dark:bg-[#1a73e8]/10 shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
+                    : 'opacity-70 grayscale-[0.5] hover:bg-[#f8f9fa] dark:hover:bg-[#303134]'
                 }
+                ${borderClass}
             `}
         >
             <div className="flex items-start gap-4">
@@ -61,6 +86,11 @@ export function ExamCard({ exam, isSelected, onToggle }: ExamCardProps) {
                                 {exam.campus}
                             </span>
                         )}
+                        {badge ? (
+                            <span className={`shrink-0 rounded border px-2.5 py-0.5 text-[12px] font-medium ${badge.className}`}>
+                                {badge.text}
+                            </span>
+                        ) : null}
                     </div>
                     
                     <div className="text-[14px] text-[#4d5156] dark:text-[#bdc1c6] space-y-2.5 mt-1">

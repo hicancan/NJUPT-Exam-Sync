@@ -4,6 +4,14 @@ import { generateICSContent, getExamCalendarIdentity } from '../src/calendar';
 
 const baseExam: Exam = {
     id: '2025-2026学年第二学期考试安排表.xlsx-497',
+    stable_key: 'b240402\u001fdg1011x0s\u001f数字电路与逻辑设计b\u001f张晶',
+    content_fingerprint: 'a'.repeat(64),
+    duplicate_count: 1,
+    source_refs: [{
+        id: '2025-2026学年第二学期考试安排表.xlsx-497',
+        source_file: '2025-2026学年第二学期考试安排表.xlsx',
+        row_index: 497,
+    }],
     campus: '仙林',
     class_name: 'B240402',
     course_name: '数字电路与逻辑设计B',
@@ -21,6 +29,8 @@ const baseExam: Exam = {
 const otherExam: Exam = {
     ...baseExam,
     id: '2025-2026学年第二学期考试安排表.xlsx-1723',
+    stable_key: 'b240402\u001fjs113400s\u001f算法分析与设计\u001f王煜尧',
+    content_fingerprint: 'b'.repeat(64),
     course_name: '算法分析与设计',
     course_code: 'JS113400S',
     start_timestamp: '2026-07-02T08:00:00+08:00',
@@ -68,12 +78,17 @@ describe('exam-core calendar export', () => {
         expect(getExamCalendarIdentity(sameExamFromDifferentRow)).toBe(getExamCalendarIdentity(baseExam));
     });
 
-    it('changes calendar identity when a material exam field changes', () => {
+    it('keeps calendar identity stable when mutable exam fields change', () => {
         const movedExam = {
             ...baseExam,
-            location: '教3－308'
+            location: '教3－308',
+            start_timestamp: '2026-07-01T18:40:00+08:00',
+            end_timestamp: '2026-07-01T20:30:00+08:00',
+            duration_minutes: 110,
+            content_fingerprint: 'c'.repeat(64),
         };
 
-        expect(getExamCalendarIdentity(movedExam)).not.toBe(getExamCalendarIdentity(baseExam));
+        expect(getExamCalendarIdentity(movedExam)).toBe(getExamCalendarIdentity(baseExam));
+        expect(getExamCalendarIdentity(otherExam)).not.toBe(getExamCalendarIdentity(baseExam));
     });
 });

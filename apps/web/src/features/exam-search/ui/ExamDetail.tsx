@@ -4,6 +4,7 @@ import { buildExamCalendarFilename } from '@/features/exam-search/lib/downloadFi
 import { generateICSContent } from '@njupt-search/exam-core/calendar';
 import { Exam } from '@/shared/lib/contracts';
 import type { ExamClassHistory, ExamHistoryManifest } from '@/shared/lib/contracts';
+import type { ExamExportStatus } from '../model/examSelection';
 import { ExamCard } from './ExamCard';
 import { ReminderSettings } from './ReminderSettings';
 
@@ -21,6 +22,7 @@ interface ExamDetailProps {
     onSelectAll: () => void;
     onClearSelection: () => void;
     onExportComplete: (exams: Exam[]) => void;
+    getExamStatus: (exam: Exam) => ExamExportStatus;
     reminders: number[];
     onRemindersChange: (reminders: number[]) => void;
     sourceUrl?: string | null;
@@ -41,6 +43,7 @@ export function ExamDetail({
     onSelectAll,
     onClearSelection,
     onExportComplete,
+    getExamStatus,
     reminders,
     onRemindersChange,
     sourceUrl,
@@ -199,6 +202,7 @@ export function ExamDetail({
                         <ExamCard
                             exam={exam}
                             isSelected={selectedIds.has(exam.id)}
+                            exportStatus={getExamStatus(exam)}
                             onToggle={() => onToggleSelection(exam.id)}
                         />
                     </div>

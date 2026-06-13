@@ -3,8 +3,9 @@ import { Exam } from '@/shared/lib/contracts';
 import {
     buildDefaultSelectedExamIds,
     buildExamSelectionScope,
-    mergeExportedExamKeys,
-    readExportedExamKeys,
+    getExamExportStatus,
+    readExamExportHistory,
+    writeExamExportHistory,
 } from './examSelection';
 
 interface SelectionState {
@@ -12,18 +13,23 @@ interface SelectionState {
     selectedIds: Set<string>;
 }
 
-export const useSelectedExamIds = (className: string | null, exams: Exam[]) => {
+export const useSelectedExamIds = (
+    className: string | null,
+    exams: Exam[],
+    dataVersion: string | null,
+    autoUpdatedAt: string | null
+) => {
     const [selection, setSelection] = useState<SelectionState>({
         scope: null,
         selectedIds: new Set()
     });
     const [, refreshExportHistory] = useState(0);
     const examIds = useMemo(() => exams.map(exam => exam.id), [exams]);
-    const scope = useMemo(() => buildExamSelectionScope(className, exams), [className, exams]);
-    const exportedKeys = className ? readExportedExamKeys(className) : null;
+    const scope = useMemo(() => buildExamSelectionScope(className, exams, dataVersion), [className, dataVersion, exams]);
+    const exportHistory = className ? readExamExportHistory(className) : null;
     const defaultSelectedIds = useMemo(
-        () => buildDefaultSelectedExamIds(exams, exportedKeys),
-        [exams, exportedKeys]
+        () => buildDefaultSelectedExamIds(exams, exportHistory),
+        [exams, exportHistory]
     );
 
     const selectedIds = selection.scope === scope
@@ -56,10 +62,14 @@ export const useSelectedExamIds = (className: string | null, exams: Exam[]) => {
     }, [scope]);
 
     const markExamsExported = useCallback((exportedExams: Exam[]) => {
-        if (!className) return;
-        mergeExportedExamKeys(className, exportedExams, exportedKeys);
+        if (!className || !dataVersion || !autoUpdatedAt) return;
+        writeExamExportHistory(className, exportedExams, { dataVersion, autoUpdatedAt });
         refreshExportHistory(version => version + 1);
-    }, [className, exportedKeys]);
+    }, [autoUpdatedAt, className, dataVersion]);
+
+    const getExamStatus = useCallback((exam: Exam) => {
+        return getExamExportStatus(exam, exportHistory);
+    }, [exportHistory]);
 
     return {
         selectedIds,
@@ -67,5 +77,6 @@ export const useSelectedExamIds = (className: string | null, exams: Exam[]) => {
         selectAllExamIds,
         clearExamSelection,
         markExamsExported,
+        getExamStatus,
     };
 };

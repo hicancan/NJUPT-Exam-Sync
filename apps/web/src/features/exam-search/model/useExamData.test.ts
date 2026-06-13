@@ -17,7 +17,7 @@ describe('loadExamData', () => {
             if (calls.length === 1) {
                 return new Response(JSON.stringify({
                     generated_at: '2026-06-10T18:06:41+08:00',
-                    data_version: 'exam-version-1',
+                    data_version: 'a'.repeat(64),
                     files_processed: ['schedule.xlsx'],
                     total_records: 1,
                     source_url: 'https://jwc.njupt.edu.cn/2026/0610/c1594a303974/page.htm',
@@ -26,12 +26,22 @@ describe('loadExamData', () => {
             }
             return new Response(JSON.stringify([{
                 id: 'exam-1',
+                stable_key: 'b240402\u001fjs113400s\u001f算法分析与设计\u001f张三',
+                content_fingerprint: 'b'.repeat(64),
+                duplicate_count: 1,
+                source_refs: [{ id: 'schedule.xlsx-2', source_file: 'schedule.xlsx', row_index: 2 }],
+                campus: '仙林',
                 class_name: 'B240402',
                 course_name: '算法分析与设计',
+                course_code: 'JS113400S',
+                teacher: '张三',
                 location: '教室A',
+                raw_time: '2026年06月16日(08:00-09:50)',
+                count: 31,
                 duration_minutes: 110,
                 start_timestamp: '2026-06-16T08:00:00+08:00',
                 end_timestamp: '2026-06-16T09:50:00+08:00',
+                date: '2026-06-16',
             }]), { status: 200 });
         }) as typeof fetch;
 
@@ -45,7 +55,7 @@ describe('loadExamData', () => {
                 cache: 'no-store',
             },
             {
-                url: 'generated/exam/all_exams.json?v=exam-version-1',
+                url: `generated/exam/all_exams.json?v=${'a'.repeat(64)}`,
                 cache: 'force-cache',
             },
         ]);

@@ -3,6 +3,7 @@ import {
     formatExamHistoryValue,
     parseExamClassHistory,
     parseExamHistoryManifest,
+    summarizeExamHistoryChange,
 } from '../src/history';
 
 describe('exam history parsing', () => {
@@ -95,5 +96,18 @@ describe('exam history parsing', () => {
     it('formats history values for display', () => {
         expect(formatExamHistoryValue({ field: 'duration_minutes', label: '时长' }, 120)).toBe('120 分钟');
         expect(formatExamHistoryValue({ field: 'location', label: '地点' }, '')).toBe('空');
+    });
+
+    it('summarizes coupled duration and end-time changes without raw-time duplication', () => {
+        expect(summarizeExamHistoryChange({
+            type: 'changed',
+            identity_key: 'b240402',
+            course_name: '大学英语IV',
+            fields: [
+                { field: 'duration_minutes', label: '时长', before: 110, after: 120 },
+                { field: 'end_timestamp', label: '结束时间', before: '2026-06-08T09:50:00+08:00', after: '2026-06-08T10:00:00+08:00' },
+                { field: 'raw_time', label: '原始时间', before: '2026年06月08日(08:00-09:50)', after: '2026年06月08日(08:00-10:00)' },
+            ],
+        })).toEqual(['考试时长延长 10 分钟，结束时间推后至 10:00']);
     });
 });
