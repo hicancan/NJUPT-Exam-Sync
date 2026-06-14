@@ -150,6 +150,7 @@ def test_collection_update_tracks_sitegraph_automatically():
     assert "resolved_sha" in text
     assert "Plan collection update" in text
     assert "needs_data_build" in text
+    assert '[ "$current_ref" = "$requested_ref" ] && [ "$FORCE_DEPLOY" != "true" ]' in text
     assert "should_deploy" in text
     assert "ref: ${{ steps.sitegraph-ref.outputs.resolved_sha }}" in text
     assert "DISPATCH_SITEGRAPH_REF" in text

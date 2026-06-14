@@ -99,7 +99,7 @@ jobs:
           )"
           requested_ref="${{ steps.sitegraph-ref.outputs.resolved_sha }}"
           needs_data_build="true"
-          if [ "$current_ref" = "$requested_ref" ]; then
+          if [ "$current_ref" = "$requested_ref" ] && [ "$FORCE_DEPLOY" != "true" ]; then
             needs_data_build="false"
           fi
           should_deploy="false"
