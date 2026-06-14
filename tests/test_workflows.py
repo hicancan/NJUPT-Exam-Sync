@@ -122,7 +122,7 @@ def test_edgeone_headers_keep_mutable_exam_data_fresh():
     assert '"public, max-age=0, must-revalidate"' in text
 
 
-def test_collection_update_is_manual_only():
+def test_collection_update_tracks_sitegraph_automatically():
     workflow = Path(".github/workflows/update-collection-index.yml")
     assert workflow.exists()
     text = workflow.read_text(encoding="utf-8")
@@ -130,23 +130,25 @@ def test_collection_update_is_manual_only():
     assert "actions: read" in text
     assert "pages: write" in text
     assert "id-token: write" in text
-    assert "repository_dispatch:" not in text
-    assert "sitegraph-data-updated" not in text
+    assert "schedule:" in text
+    assert "cron: '30 1,7,13,19 * * *'" in text
+    assert "repository_dispatch:" in text
+    assert "types: [sitegraph-data-updated]" in text
     assert "force_deploy:" in text
-    assert "FORCE_DEPLOY: ${{ github.event.inputs.force_deploy || 'false' }}" in text
+    assert "FORCE_DEPLOY: ${{ github.event.inputs.force_deploy || (github.event.client_payload.dispatch_reason == 'manual_force' && 'true') || (github.event.client_payload.dispatch_reason == 'manual_dispatch_only' && 'true') || 'false' }}" in text
     assert "cron: '30 */6 * * *'" not in text
-    assert "github.event.client_payload.sitegraph_ref" not in text
+    assert "github.event.client_payload.sitegraph_ref" in text
     assert "resolved_sha" in text
     assert "Plan collection update" in text
     assert "needs_data_build" in text
     assert "should_deploy" in text
     assert "ref: ${{ steps.sitegraph-ref.outputs.resolved_sha }}" in text
-    assert "DISPATCH_SITEGRAPH_REF" not in text
-    assert "DISPATCH_SOURCE_REPO" not in text
-    assert "DISPATCH_SOURCE_RUN_ID" not in text
-    assert "repository_dispatch missing client_payload.sitegraph_ref" not in text
-    assert "repository_dispatch source_repo must be hicancan/njupt-site-graph" not in text
-    assert "repository_dispatch missing client_payload.source_run_id" not in text
+    assert "DISPATCH_SITEGRAPH_REF" in text
+    assert "DISPATCH_SOURCE_REPO" in text
+    assert "DISPATCH_SOURCE_RUN_ID" in text
+    assert "repository_dispatch missing client_payload.sitegraph_ref" in text
+    assert "repository_dispatch source_repo must be hicancan/njupt-site-graph" in text
+    assert "repository_dispatch missing client_payload.source_run_id" in text
     assert "Validate sitegraph ref exists" in text
     assert "repos/hicancan/njupt-site-graph/commits/$SITEGRAPH_REF" in text
     assert "sitegraph_ref $SITEGRAPH_REF is not a commit visible in hicancan/njupt-site-graph" in text
