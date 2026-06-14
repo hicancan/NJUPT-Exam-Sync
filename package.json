@@ -12,7 +12,7 @@
     "build": "npm run prepare:public-assets && npm run build:prepared",
     "build:prepared": "node ./node_modules/typescript/bin/tsc -b && node ./node_modules/vite/bin/vite.js build --config apps/web/vite.config.ts",
     "build:wasm:web": "node tools/wasm/packed-impact-decoder/scripts/buildWasmWeb.mjs",
-    "build:public-data": "uv run python tools/ci/prepare_public_assets.py build-public-data",
+    "build:public-data": "uv run python tools/ci/prepare_public_assets.py build-all-public-data",
     "prepare:public-assets": "npm run build:wasm:web && uv run python tools/ci/prepare_public_assets.py ensure-public-data",
     "verify:public-assets": "uv run python tools/ci/prepare_public_assets.py verify-public-assets",
     "check:runtime-fast-start": "uv run python tools/quality-gates/scripts/check_runtime_fast_start.py",

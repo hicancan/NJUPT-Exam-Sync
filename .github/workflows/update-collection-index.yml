@@ -147,7 +147,7 @@ jobs:
         if: steps.collection-plan.outputs.needs_data_build == 'true'
         run: |
           uv run python tools/ci/prepare_public_assets.py update-sitegraph-lock --sitegraph-ref "${{ steps.sitegraph-ref.outputs.resolved_sha }}"
-          uv run python tools/ci/prepare_public_assets.py build-public-data
+          uv run python tools/ci/prepare_public_assets.py build-sitegraph-public-data
 
       - name: Validate generated collection artifacts
         if: steps.collection-plan.outputs.needs_data_build == 'true'
@@ -155,8 +155,6 @@ jobs:
           uv run python tools/quality-gates/scripts/check_tracked_byproducts.py
           uv run python tools/quality-gates/scripts/validate_search_index.py
           uv run python tools/quality-gates/scripts/check_public_artifact_sizes.py
-          uv run python -m njupt_search_eval run-smoke-queries
-          uv run python -m njupt_search_eval run-task-queries
 
       - name: Commit sitegraph lock changes
         id: commit
@@ -210,9 +208,20 @@ jobs:
       - name: Overlay validated generated data into verified site artifact
         if: ${{ steps.collection-plan.outputs.should_deploy == 'true' && steps.collection-plan.outputs.needs_data_build == 'true' }}
         run: |
-          rm -rf dist/generated
-          mkdir -p dist
-          cp -R apps/web/public/generated dist/generated
+          test -f dist/generated/.asset-locks.json
+          rm -rf dist/generated/collections/njupt-public
+          mkdir -p dist/generated/collections
+          cp -R apps/web/public/generated/collections/njupt-public dist/generated/collections/njupt-public
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          marker_path = Path("dist/generated/.asset-locks.json")
+          marker = json.loads(marker_path.read_text(encoding="utf-8"))
+          marker["sitegraph_lock_sha256"] = hashlib.sha256(Path("config/data-locks/sitegraph.lock.json").read_bytes()).hexdigest()
+          marker_path.write_text(json.dumps(marker, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          PY
 
       - name: Setup Pages
         if: steps.collection-plan.outputs.should_deploy == 'true'

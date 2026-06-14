@@ -327,11 +327,7 @@ def generated_family_summary(root: Path) -> list[dict[str, Any]]:
     return sorted(families.values(), key=lambda item: int(item["bytes"]), reverse=True)
 
 
-def build_public_data() -> None:
-    PUBLIC_GENERATED.mkdir(parents=True, exist_ok=True)
-    with timed_phase("materialize collection public data"):
-        materialize_collection_data()
-    materialize_exam_data()
+def write_public_asset_marker() -> None:
     with timed_phase("write public asset marker"):
         write_json(
             PUBLIC_ASSET_MARKER,
@@ -342,6 +338,34 @@ def build_public_data() -> None:
                 "builder_fingerprint": public_asset_builder_fingerprint(),
             },
         )
+
+
+def build_sitegraph_public_data() -> None:
+    PUBLIC_GENERATED.mkdir(parents=True, exist_ok=True)
+    with timed_phase("materialize collection public data"):
+        materialize_collection_data()
+    write_public_asset_marker()
+    summary = generated_family_summary(COLLECTION_DIR)
+    print(
+        json.dumps(
+            {
+                "sitegraph_generated_file_count": sum(int(item["files"]) for item in summary),
+                "sitegraph_generated_bytes": sum(int(item["bytes"]) for item in summary),
+                "largest_sitegraph_generated_families": summary[:12],
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        flush=True,
+    )
+
+
+def build_all_public_data() -> None:
+    PUBLIC_GENERATED.mkdir(parents=True, exist_ok=True)
+    with timed_phase("materialize collection public data"):
+        materialize_collection_data()
+    materialize_exam_data()
+    write_public_asset_marker()
     summary = generated_family_summary(PUBLIC_GENERATED)
     print(
         json.dumps(
@@ -401,7 +425,7 @@ def ensure_public_data() -> None:
     if public_data_current():
         print("[prepare_public_assets] public data is current")
         return
-    build_public_data()
+    build_all_public_data()
 
 
 def ensure_public_assets_exist() -> None:
@@ -718,9 +742,9 @@ def verify_determinism() -> None:
     if public_data_current():
         first = hash_tree(PUBLIC_GENERATED)
     else:
-        build_public_data()
+        build_all_public_data()
         first = hash_tree(PUBLIC_GENERATED)
-    build_public_data()
+    build_all_public_data()
     second = hash_tree(PUBLIC_GENERATED)
     if first != second:
         changed = sorted(set(first) ^ set(second))
@@ -780,8 +804,9 @@ def update_sitegraph_lock(sitegraph_ref: str | None) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Prepare CI-only public assets for njupt-search.")
     subparsers = parser.add_subparsers(dest="command", required=True)
-    subparsers.add_parser("build-public-data")
+    subparsers.add_parser("build-sitegraph-public-data")
     subparsers.add_parser("build-exam-public-data")
+    subparsers.add_parser("build-all-public-data")
     subparsers.add_parser("ensure-public-data")
     subparsers.add_parser("verify-public-assets")
     subparsers.add_parser("verify-exam-public-data")
@@ -792,10 +817,12 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
-        if args.command == "build-public-data":
-            build_public_data()
+        if args.command == "build-sitegraph-public-data":
+            build_sitegraph_public_data()
         elif args.command == "build-exam-public-data":
             build_exam_public_data()
+        elif args.command == "build-all-public-data":
+            build_all_public_data()
         elif args.command == "ensure-public-data":
             ensure_public_data()
         elif args.command == "verify-public-assets":

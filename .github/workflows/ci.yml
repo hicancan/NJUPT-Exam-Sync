@@ -30,6 +30,8 @@ jobs:
     outputs:
       needs_public_assets: ${{ steps.ci-mode.outputs.needs_public_assets }}
       needs_generated_assets: ${{ steps.ci-mode.outputs.needs_generated_assets }}
+      needs_exam_public_assets: ${{ steps.ci-mode.outputs.needs_exam_public_assets }}
+      needs_sitegraph_public_assets: ${{ steps.ci-mode.outputs.needs_sitegraph_public_assets }}
     env:
       NJUPT_SITEGRAPH_REPO: _sitegraph/njupt-site-graph
     steps:
@@ -45,6 +47,9 @@ jobs:
           full_verification="false"
           needs_public_assets="true"
           needs_generated_assets="false"
+          needs_exam_public_assets="false"
+          needs_sitegraph_public_assets="false"
+          wasm_fast_checks="false"
           exam_fast_checks="false"
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "${{ github.event.inputs.verification || 'fast' }}" = "full" ]; then
             mode="manual-full"
@@ -68,7 +73,16 @@ jobs:
               elif [ -n "$changed_files" ] && ! printf '%s\n' "$changed_files" | grep -Ev '^(tools/exam-pipeline/.*|config/classrooms/.*|apps/web/src/features/exam-schedule/.*|apps/web/src/features/room-occupancy/.*|apps/web/src/features/query-router/.*|apps/web/src/app/routing/useAppRouter\.ts|apps/web/src/app/config/constants\.ts|apps/web/src/pages/exam/.*|apps/web/src/pages/rooms/.*|apps/web/vite\.config\.ts|packages/exam-core/.*|packages/contracts/src/exam/.*|packages/contracts/tests/examDataContract\.test\.ts|tests/test_exam_.*|tests/test_prepare_public_assets_download\.py)$' >/dev/null; then
                 mode="exam-code-fast"
                 needs_public_assets="true"
+                needs_exam_public_assets="true"
                 exam_fast_checks="true"
+              elif [ -n "$changed_files" ] && ! printf '%s\n' "$changed_files" | grep -Ev '^(tools/collection-indexer/.*|packages/search-core/.*|packages/contracts/src/search-index/.*|packages/contracts/src/source-sitegraph/.*|packages/contracts/tests/.*(search|sitegraph).*|tools/quality-gates/scripts/validate_search_index\.py|tools/quality-gates/scripts/check_public_artifact_sizes\.py|tests/test_sitegraph.*|tests/test_workflows\.py)$' >/dev/null; then
+                mode="sitegraph-index-fast"
+                needs_public_assets="true"
+                needs_sitegraph_public_assets="true"
+              elif [ -n "$changed_files" ] && ! printf '%s\n' "$changed_files" | grep -Ev '^(tools/wasm/packed-impact-decoder/.*|apps/web/src/features/collection-search/wasm/.*)$' >/dev/null; then
+                mode="wasm-fast"
+                needs_public_assets="true"
+                wasm_fast_checks="true"
               fi
             fi
           fi
@@ -76,6 +90,9 @@ jobs:
           echo "full_verification=$full_verification" >> "$GITHUB_OUTPUT"
           echo "needs_public_assets=$needs_public_assets" >> "$GITHUB_OUTPUT"
           echo "needs_generated_assets=$needs_generated_assets" >> "$GITHUB_OUTPUT"
+          echo "needs_exam_public_assets=$needs_exam_public_assets" >> "$GITHUB_OUTPUT"
+          echo "needs_sitegraph_public_assets=$needs_sitegraph_public_assets" >> "$GITHUB_OUTPUT"
+          echo "wasm_fast_checks=$wasm_fast_checks" >> "$GITHUB_OUTPUT"
           echo "exam_fast_checks=$exam_fast_checks" >> "$GITHUB_OUTPUT"
           {
             echo "### CI workload"
@@ -84,6 +101,9 @@ jobs:
             echo "- Full verification: \`$full_verification\`"
             echo "- Public asset build: \`$needs_public_assets\`"
             echo "- Generated asset refresh: \`$needs_generated_assets\`"
+            echo "- Exam public refresh: \`$needs_exam_public_assets\`"
+            echo "- Sitegraph public refresh: \`$needs_sitegraph_public_assets\`"
+            echo "- WASM fast checks: \`$wasm_fast_checks\`"
             echo "- Exam fast checks: \`$exam_fast_checks\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -103,7 +123,7 @@ jobs:
           cache: 'npm'
 
       - name: Read data locks
-        if: steps.ci-mode.outputs.needs_generated_assets == 'true'
+        if: ${{ steps.ci-mode.outputs.needs_generated_assets == 'true' || steps.ci-mode.outputs.needs_sitegraph_public_assets == 'true' }}
         id: data-locks
         run: |
           python - <<'PY' >> "$GITHUB_OUTPUT"
@@ -114,7 +134,7 @@ jobs:
           PY
 
       - name: Checkout sitegraph source packages
-        if: steps.ci-mode.outputs.needs_generated_assets == 'true'
+        if: ${{ steps.ci-mode.outputs.needs_generated_assets == 'true' || steps.ci-mode.outputs.needs_sitegraph_public_assets == 'true' }}
         uses: actions/checkout@v6
         with:
           repository: hicancan/njupt-site-graph
@@ -123,13 +143,13 @@ jobs:
           token: ${{ secrets.NJUPT_SITEGRAPH_TOKEN || github.token }}
 
       - name: Set up Rust
-        if: steps.ci-mode.outputs.needs_generated_assets == 'true'
+        if: ${{ steps.ci-mode.outputs.needs_generated_assets == 'true' || steps.ci-mode.outputs.wasm_fast_checks == 'true' }}
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
 
       - name: Cache Rust build artifacts
-        if: steps.ci-mode.outputs.needs_generated_assets == 'true'
+        if: ${{ steps.ci-mode.outputs.needs_generated_assets == 'true' || steps.ci-mode.outputs.wasm_fast_checks == 'true' }}
         uses: actions/cache@v4
         with:
           path: |
@@ -141,7 +161,7 @@ jobs:
             rust-wasm-${{ runner.os }}-
 
       - name: Install WASM tools
-        if: steps.ci-mode.outputs.needs_generated_assets == 'true'
+        if: ${{ steps.ci-mode.outputs.needs_generated_assets == 'true' || steps.ci-mode.outputs.wasm_fast_checks == 'true' }}
         run: |
           mkdir -p .ci-tools
           curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 \
@@ -215,12 +235,21 @@ jobs:
           printf '| Restore generated data baseline | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Materialize exam public assets
-        if: ${{ steps.ci-mode.outputs.needs_public_assets == 'true' && steps.ci-mode.outputs.needs_generated_assets != 'true' }}
+        if: ${{ steps.ci-mode.outputs.needs_exam_public_assets == 'true' && steps.ci-mode.outputs.needs_generated_assets != 'true' }}
         run: |
           start=$SECONDS
           uv run python tools/ci/prepare_public_assets.py build-exam-public-data
           uv run python tools/ci/prepare_public_assets.py verify-exam-public-data
           printf '| Materialize exam public assets | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Materialize sitegraph public assets
+        if: ${{ steps.ci-mode.outputs.needs_sitegraph_public_assets == 'true' && steps.ci-mode.outputs.needs_generated_assets != 'true' }}
+        run: |
+          start=$SECONDS
+          uv run python tools/ci/prepare_public_assets.py build-sitegraph-public-data
+          uv run python tools/quality-gates/scripts/validate_search_index.py
+          uv run python tools/quality-gates/scripts/check_public_artifact_sizes.py
+          printf '| Materialize sitegraph public assets | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Verify CI-only public asset determinism
         if: steps.ci-mode.outputs.needs_generated_assets == 'true'
@@ -247,20 +276,41 @@ jobs:
           printf '| Exam fast checks | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fast-mode workflow tests
-        if: ${{ steps.ci-mode.outputs.full_verification != 'true' && steps.ci-mode.outputs.exam_fast_checks != 'true' }}
+        if: ${{ steps.ci-mode.outputs.full_verification != 'true' && steps.ci-mode.outputs.exam_fast_checks != 'true' && steps.ci-mode.outputs.needs_sitegraph_public_assets != 'true' && steps.ci-mode.outputs.wasm_fast_checks != 'true' }}
         run: |
           start=$SECONDS
           uv run python -m pytest tests/test_workflows.py
           printf '| Fast-mode workflow tests | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fast frontend checks
-        if: ${{ steps.ci-mode.outputs.needs_public_assets == 'true' && steps.ci-mode.outputs.full_verification != 'true' && steps.ci-mode.outputs.exam_fast_checks != 'true' }}
+        if: ${{ steps.ci-mode.outputs.needs_public_assets == 'true' && steps.ci-mode.outputs.full_verification != 'true' && steps.ci-mode.outputs.exam_fast_checks != 'true' && steps.ci-mode.outputs.needs_sitegraph_public_assets != 'true' && steps.ci-mode.outputs.wasm_fast_checks != 'true' }}
         run: |
           start=$SECONDS
           npm run test:prepared
           npm run typecheck:prepared
           npm run lint
           printf '| Fast frontend checks | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Sitegraph index fast checks
+        if: ${{ steps.ci-mode.outputs.needs_sitegraph_public_assets == 'true' && steps.ci-mode.outputs.full_verification != 'true' }}
+        run: |
+          start=$SECONDS
+          uv run python -m pytest tests/test_workflows.py tests/test_prepare_public_assets_download.py
+          npm run test:prepared -- packages/search-core packages/contracts/tests/searchIndexContract.test.ts
+          npm run typecheck:prepared
+          npm run lint
+          printf '| Sitegraph index fast checks | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: WASM fast checks
+        if: ${{ steps.ci-mode.outputs.wasm_fast_checks == 'true' && steps.ci-mode.outputs.full_verification != 'true' }}
+        run: |
+          start=$SECONDS
+          npm run build:wasm:web
+          node tools/wasm/packed-impact-decoder/scripts/verifyWasmEquivalence.mjs
+          npm run test:prepared -- apps/web/src/features/collection-search packages/search-core
+          npm run typecheck:prepared
+          npm run lint
+          printf '| WASM fast checks | %ss |\n' "$((SECONDS - start))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Source complexity gates
         if: steps.ci-mode.outputs.full_verification == 'true'

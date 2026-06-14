@@ -15,9 +15,14 @@ def test_ci_is_single_authoritative_pages_gate():
     assert 'mode="static-public-fast"' in text
     assert 'mode="workflow-fast"' in text
     assert 'mode="exam-code-fast"' in text
+    assert 'mode="sitegraph-index-fast"' in text
+    assert 'mode="wasm-fast"' in text
     assert 'mode="manual-full"' in text
     assert "verification:" in text
     assert "exam_fast_checks" in text
+    assert "needs_exam_public_assets" in text
+    assert "needs_sitegraph_public_assets" in text
+    assert "wasm_fast_checks" in text
     assert "tools/exam-pipeline/.*" in text
     assert "apps/web/src/features/exam-schedule/.*" in text
     assert "needs_generated_assets" in text
@@ -28,10 +33,14 @@ def test_ci_is_single_authoritative_pages_gate():
     assert "Restore generated data baseline" in text
     assert "cp -R _baseline-dist/generated apps/web/public/generated" in text
     assert "Materialize exam public assets" in text
-    assert "steps.ci-mode.outputs.needs_public_assets == 'true' && steps.ci-mode.outputs.needs_generated_assets != 'true'" in text
+    assert "steps.ci-mode.outputs.needs_exam_public_assets == 'true' && steps.ci-mode.outputs.needs_generated_assets != 'true'" in text
     assert "prepare_public_assets.py build-exam-public-data" in text
     assert "prepare_public_assets.py verify-exam-public-data" in text
-    assert "if: steps.ci-mode.outputs.needs_generated_assets == 'true'\n        uses: dtolnay/rust-toolchain@stable" in text
+    assert "Materialize sitegraph public assets" in text
+    assert "prepare_public_assets.py build-sitegraph-public-data" in text
+    assert "Sitegraph index fast checks" in text
+    assert "WASM fast checks" in text
+    assert "steps.ci-mode.outputs.needs_generated_assets == 'true' || steps.ci-mode.outputs.wasm_fast_checks == 'true'" in text
     assert "npm run build:wasm:web\n          npm run build:prepared" not in text
     assert "npm run build:prepared\n          npm run check:web-bundle-size" in text
     assert "Fast-mode workflow tests" in text
@@ -154,15 +163,19 @@ def test_collection_update_tracks_sitegraph_automatically():
     assert "sitegraph_ref $SITEGRAPH_REF is not a commit visible in hicancan/njupt-site-graph" in text
     assert "python tools/ci/commit_generated_changes.py" in text
     assert "prepare_public_assets.py update-sitegraph-lock" in text
-    assert "prepare_public_assets.py build-public-data" in text
+    assert "prepare_public_assets.py build-sitegraph-public-data" in text
+    assert "prepare_public_assets.py build-public-data" not in text
+    assert "run-smoke-queries" not in text
+    assert "run-task-queries" not in text
     assert "actions/runs/$candidate_run_id/artifacts" in text
     assert 'select(.expired == false and .name == "njupt-search-dist")' in text
     assert 'select(.expired == false and .name == "njupt-search-production-dist")' in text
     assert "ARTIFACT_NAME: ${{ steps.verified-dist.outputs.artifact_name }}" in text
     assert "download-artifact-with-retry.sh \"$RUN_ID\"" in text
     assert '"$ARTIFACT_NAME" dist' in text
-    assert "rm -rf dist/generated" in text
-    assert "cp -R apps/web/public/generated dist/generated" in text
+    assert "rm -rf dist/generated/collections/njupt-public" in text
+    assert "cp -R apps/web/public/generated/collections/njupt-public dist/generated/collections/njupt-public" in text
+    assert "test -f dist/generated/.asset-locks.json" in text
     assert "actions/upload-pages-artifact@v5" in text
     assert "actions/deploy-pages@v5" in text
     assert "name: njupt-search-production-dist" in text
@@ -186,7 +199,7 @@ def test_collection_update_uses_configured_source_packages():
     text = workflow.read_text(encoding="utf-8")
     assert "NJUPT_SITEGRAPH_REPO: _sitegraph/njupt-site-graph" in text
     assert "--source-package \"$SITEGRAPH_JWC_INDEX\"" not in text
-    assert "prepare_public_assets.py build-public-data" in text
+    assert "prepare_public_assets.py build-sitegraph-public-data" in text
 
 
 def test_exam_update_uses_retrying_generated_commit_helper():
