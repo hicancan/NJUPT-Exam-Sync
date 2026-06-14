@@ -98,9 +98,6 @@ function RoomCard({
                     {activeBookings.length > 2 ? <div>还有 {activeBookings.length - 2} 场</div> : null}
                 </div>
             ) : null}
-            {room.source === 'inferred_range' ? (
-                <div className="mt-2 text-[11px] text-[#70757a] dark:text-[#9aa0a6]">目录推断，待人工确认</div>
-            ) : null}
         </div>
     );
 }
