@@ -6,7 +6,7 @@ import type {
 const CLASS_LOOKUP_PATTERN = /^[BFPQY]\d{2,}(?:\([A-Z0-9]+\))?$/;
 const COMPLETE_CLASS_PATTERN = /^[BFPQY]\d{6}(?:\([A-Z0-9]+\))?$/;
 
-export const normalizeClassQuery = (value: string): string => value.trim().toUpperCase();
+export const normalizeClassQuery = (value: string): string => value.trim();
 
 export const isClassLookupQuery = (value: string): boolean => {
     return CLASS_LOOKUP_PATTERN.test(normalizeClassQuery(value));
@@ -30,15 +30,15 @@ export const getClassNameSearchResult = (
 
     if (manualSelection) {
         const normalizedManualSelection = normalizeClassQuery(manualSelection);
-        const selectedClass = classNames.find(className => className.toUpperCase() === normalizedManualSelection) || null;
+        const selectedClass = classNames.find(className => className === normalizedManualSelection) || null;
         return selectedClass
             ? { mode: 'DETAIL', classes: [selectedClass], exams: [] }
             : { mode: 'NOT_FOUND', classes: [], exams: [] };
     }
 
-    const term = trimmed.toUpperCase();
+    const term = trimmed;
     const uniqueClasses = classNames
-        .filter(className => className.toUpperCase().includes(term))
+        .filter(className => className.includes(term))
         .sort();
 
     if (uniqueClasses.length === 0) {
@@ -74,9 +74,9 @@ export const getClassSearchResult = (
         };
     }
 
-    const term = trimmed.toUpperCase();
+    const term = trimmed;
     const matchedExams = exams.filter(exam =>
-        exam.class_name.toUpperCase().includes(term)
+        exam.class_name.includes(term)
     );
     const uniqueClasses = Array.from(new Set(matchedExams.map(exam => exam.class_name))).sort();
 

@@ -14,7 +14,7 @@ export interface QuickSearchPreset {
 
 export const QUICK_SEARCHES: QuickSearchPreset[] = [
     { label: '考试安排', query: '考试安排', icon: 'calendar' },
-    { label: '空教室', query: '空教室', icon: 'waypoints' },
+    { label: '考试占用教室', query: '考试占用教室', icon: 'waypoints' },
     { label: '校历', query: '校历', icon: 'calendar' },
     { label: '四六级', query: '四六级', icon: 'file-text' },
     { label: '计算机等级', query: '计算机等级', icon: 'file-text' },

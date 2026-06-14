@@ -93,10 +93,17 @@ function RoomCard({
             {activeGroups.length ? (
                 <div className="mt-2 space-y-1 text-[12px] text-[#5f6368] dark:text-[#bdc1c6]">
                     {activeGroups.map(group => (
-                        <div key={group.group_id} className="truncate">
-                            {formatClock(group.start_timestamp)}-{formatClock(group.end_timestamp)} {group.course_name}
-                            {group.class_count > 1 ? ` / ${group.class_count} 个班` : ''}
-                        </div>
+                        <details key={group.group_id} className="rounded-md bg-white/60 px-2 py-1 dark:bg-black/10">
+                            <summary className="cursor-pointer truncate">
+                                {formatClock(group.start_timestamp)}-{formatClock(group.end_timestamp)} {group.course_name}
+                                {group.class_count > 1 ? ` / ${group.class_count} 个班级` : ''}
+                                {group.total_count > 0 ? ` / ${group.total_count} 人` : ''}
+                            </summary>
+                            <div className="mt-1 grid gap-1 text-[12px] leading-5">
+                                <span>{group.teacher} / {group.course_code}</span>
+                                <span>班级：{group.class_summaries.map(item => `${item.class_name}(${item.count}人)`).join(' / ')}</span>
+                            </div>
+                        </details>
                     ))}
                 </div>
             ) : null}
@@ -113,7 +120,10 @@ function BookingDetail({ group }: { group: RoomBookingGroup }) {
                 <span>{group.teacher}</span>
                 <span>{group.course_code}</span>
                 <span>{group.location}</span>
-                <span className="sm:col-span-2">班级：{group.class_names.join(' / ')}</span>
+                <span>合计人数：{group.total_count} 人</span>
+                <span className="sm:col-span-2">
+                    班级：{group.class_summaries.map(item => `${item.class_name}(${item.count}人)`).join(' / ')}
+                </span>
             </div>
         </div>
     );
@@ -138,7 +148,7 @@ function RoomTimeline({ room, bookings }: { room: ExamRoom; bookings: ExamRoomBo
                             title={`${group.course_name} ${formatClock(group.start_timestamp)}-${formatClock(group.end_timestamp)} ${group.class_names.join(' / ')}`}
                         >
                             <span className="hidden md:inline">
-                                {group.course_name}{group.class_count > 1 ? ` · ${group.class_count}班` : ''}
+                                {group.course_name}{group.class_count > 1 ? ` · ${group.class_count}个班级` : ''}
                             </span>
                         </button>
                     ))}
@@ -198,10 +208,10 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
             <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h2 className="text-[28px] font-normal text-[#202124] dark:text-[#e8eaed]">
-                        教室占用
+                        考试占用教室
                     </h2>
                     <p className="mt-2 text-[14px] text-[#5f6368] dark:text-[#bdc1c6]">
-                        基于考试安排和本地教室目录，按日期、校区、楼栋、楼层查看空闲与占用。
+                        基于考试安排和本地教室目录，按日期、校区、楼栋、楼层查看考试占用与空闲。
                     </p>
                 </div>
                 {index ? (
@@ -215,7 +225,7 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
 
             {state.loading && !index ? (
                 <div className="rounded-xl border border-[#dadce0] bg-white px-4 py-6 text-[#5f6368] dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#bdc1c6]">
-                    正在加载教室占用数据...
+                    正在加载考试占用教室数据...
                 </div>
             ) : null}
 
@@ -223,7 +233,7 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
                 <>
                     {!state.floorEntry && !state.error ? (
                         <section className="rounded-xl border border-[#dadce0] bg-[#f8fbff] p-4 dark:border-[#3c4043] dark:bg-[#202124]">
-                            <h3 className="text-[18px] font-medium text-[#202124] dark:text-[#e8eaed]">查询教室占用</h3>
+                            <h3 className="text-[18px] font-medium text-[#202124] dark:text-[#e8eaed]">查询考试占用教室</h3>
                             <p className="mt-2 text-[14px] text-[#5f6368] dark:text-[#bdc1c6]">
                                 请在搜索框输入楼栋或教室号，或直接选择一个楼栋开始查看。
                             </p>

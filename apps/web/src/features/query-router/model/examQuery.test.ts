@@ -3,12 +3,13 @@ import { isClassLookupQuery, isCompleteClassQuery, isExamHelperQuery, normalizeC
 
 describe('exam query helpers', () => {
     it('normalizes class queries before routing', () => {
-        expect(normalizeClassQuery(' b250218 ')).toBe('B250218');
+        expect(normalizeClassQuery(' B250218 ')).toBe('B250218');
+        expect(normalizeClassQuery(' b250218 ')).toBe('b250218');
     });
 
     it('recognizes class lookup prefixes without treating general queries as exams', () => {
         expect(isClassLookupQuery('B250218')).toBe(true);
-        expect(isClassLookupQuery('b24040')).toBe(true);
+        expect(isClassLookupQuery('b24040')).toBe(false);
         expect(isClassLookupQuery('Q230101(TG)')).toBe(true);
         expect(isClassLookupQuery('校历')).toBe(false);
         expect(isClassLookupQuery('AI')).toBe(false);
@@ -16,7 +17,7 @@ describe('exam query helpers', () => {
 
     it('only promotes complete class names to class routes', () => {
         expect(isCompleteClassQuery('B250218')).toBe(true);
-        expect(isCompleteClassQuery('q230101(tg)')).toBe(true);
+        expect(isCompleteClassQuery('q230101(tg)')).toBe(false);
         expect(isCompleteClassQuery('B24040')).toBe(false);
     });
 

@@ -32,12 +32,13 @@ const exam = (id: string, className: string, courseName = '算法分析与设计
 
 describe('exam-core query routing helpers', () => {
     it('normalizes class queries before routing', () => {
-        expect(normalizeClassQuery(' b250218 ')).toBe('B250218');
+        expect(normalizeClassQuery(' B250218 ')).toBe('B250218');
+        expect(normalizeClassQuery(' b250218 ')).toBe('b250218');
     });
 
     it('recognizes class lookup prefixes without treating general queries as exams', () => {
         expect(isClassLookupQuery('B250218')).toBe(true);
-        expect(isClassLookupQuery('b24040')).toBe(true);
+        expect(isClassLookupQuery('b24040')).toBe(false);
         expect(isClassLookupQuery('Q230101(TG)')).toBe(true);
         expect(isClassLookupQuery('校历')).toBe(false);
         expect(isClassLookupQuery('AI')).toBe(false);
@@ -45,7 +46,7 @@ describe('exam-core query routing helpers', () => {
 
     it('only promotes complete class names to class routes', () => {
         expect(isCompleteClassQuery('B250218')).toBe(true);
-        expect(isCompleteClassQuery('q230101(tg)')).toBe(true);
+        expect(isCompleteClassQuery('q230101(tg)')).toBe(false);
         expect(isCompleteClassQuery('B24040')).toBe(false);
     });
 
@@ -86,6 +87,15 @@ describe('exam-core class search', () => {
 
     it('fails sharply for an invalid shared URL class', () => {
         const result = getClassSearchResult(exams, 'B999999', 'B999999');
+        expect(result).toEqual({
+            mode: 'NOT_FOUND',
+            classes: [],
+            exams: []
+        });
+    });
+
+    it('does not case-normalize lowercase class input into exam search', () => {
+        const result = getClassSearchResult(exams, 'b240402', null);
         expect(result).toEqual({
             mode: 'NOT_FOUND',
             classes: [],

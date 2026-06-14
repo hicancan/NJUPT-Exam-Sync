@@ -9,6 +9,7 @@ import { parseRoomSearchInput } from '@/features/room-occupancy/model/roomOccupa
 import { useUrlState } from '@/features/query-router/model/useUrlState';
 
 const SAVED_CLASS_KEY = 'SAVED_CLASS';
+const SAVED_ROOM_KEY = 'SAVED_ROOM_TARGET';
 
 const roomRouteParams = (value: string): Record<string, string | null> | null => {
     const target = parseRoomSearchInput(value);
@@ -18,6 +19,36 @@ const roomRouteParams = (value: string): Record<string, string | null> | null =>
         return { building: target.building, campus: target.campus };
     }
     return { room: target.display };
+};
+
+const savedRoomParams = (): Record<string, string | null> | null => {
+    const raw = localStorage.getItem(SAVED_ROOM_KEY);
+    if (!raw) return null;
+    try {
+        const parsed = JSON.parse(raw) as unknown;
+        if (!parsed || typeof parsed !== 'object') return null;
+        const params = parsed as Record<string, unknown>;
+        if (typeof params.room === 'string' && params.room) return { room: params.room };
+        if (typeof params.building === 'string' && params.building) {
+            return {
+                campus: typeof params.campus === 'string' && params.campus ? params.campus : null,
+                building: params.building,
+            };
+        }
+        return null;
+    } catch {
+        return null;
+    }
+};
+
+const saveRoomParams = (params: Record<string, string | null>): void => {
+    if (params.room) {
+        localStorage.setItem(SAVED_ROOM_KEY, JSON.stringify({ room: params.room }));
+        return;
+    }
+    if (params.building) {
+        localStorage.setItem(SAVED_ROOM_KEY, JSON.stringify({ campus: params.campus || null, building: params.building }));
+    }
 };
 
 export function useAppRouter() {
@@ -81,7 +112,12 @@ export function useAppRouter() {
         }
         const roomParams = roomRouteParams(trimmed);
         if (roomParams) {
-            navigate({ route: 'rooms', params: roomParams });
+            if (Object.keys(roomParams).length === 0) {
+                navigate({ route: 'rooms', params: savedRoomParams() || {} });
+            } else {
+                saveRoomParams(roomParams);
+                navigate({ route: 'rooms', params: roomParams });
+            }
             return;
         }
         if (isExamHelperQuery(trimmed) || isClassLookupQuery(trimmed)) {
@@ -95,7 +131,7 @@ export function useAppRouter() {
         if (query === '考试安排') {
             const savedClass = localStorage.getItem(SAVED_CLASS_KEY);
             if (savedClass) {
-                navigate({ route: 'exam', params: { class: savedClass.toUpperCase() } });
+                navigate({ route: 'exam', params: { class: savedClass } });
                 return;
             }
             navigate({ route: 'exam', params: { q: query } });
@@ -103,7 +139,12 @@ export function useAppRouter() {
         }
         const roomParams = roomRouteParams(query);
         if (roomParams) {
-            navigate({ route: 'rooms', params: roomParams });
+            if (Object.keys(roomParams).length === 0) {
+                navigate({ route: 'rooms', params: savedRoomParams() || {} });
+            } else {
+                saveRoomParams(roomParams);
+                navigate({ route: 'rooms', params: roomParams });
+            }
             return;
         }
         submit(query);
@@ -128,6 +169,7 @@ export function useAppRouter() {
             end: endParam,
         },
         navigateRooms: (params: Record<string, string | null>, replace = false) => {
+            saveRoomParams(params);
             navigate({ route: 'rooms', params }, replace);
         },
     };

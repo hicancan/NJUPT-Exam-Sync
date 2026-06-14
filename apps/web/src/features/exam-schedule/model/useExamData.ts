@@ -107,8 +107,7 @@ export async function loadExamClassData(
 
 const findClassEntry = (classIndex: ExamClassIndex, className: string | null): ExamClassIndexEntry | null => {
     if (!className) return null;
-    const normalized = className.toUpperCase();
-    return classIndex.classes.find(item => item.class_name.toUpperCase() === normalized) || null;
+    return classIndex.classes.find(item => item.class_name === className) || null;
 };
 
 export async function loadExamClassSearch(

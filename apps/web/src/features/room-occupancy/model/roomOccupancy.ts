@@ -30,7 +30,9 @@ export interface RoomBookingGroup {
     duration_minutes: number;
     location: string;
     class_names: string[];
+    class_summaries: Array<{ class_name: string; count: number }>;
     class_count: number;
+    total_count: number;
     source_bookings: ExamRoomBooking[];
 }
 
@@ -39,7 +41,7 @@ export type RoomSearchTarget =
     | { kind: 'building'; campus: string | null; building: string; display: string }
     | { kind: 'room'; campus: string | null; building: string; floor: string; room: string; display: string };
 
-const ENTRY_TERMS = new Set(['空教室', '教室']);
+const ENTRY_TERMS = new Set(['考试占用教室', '教室']);
 const BUILDING_CAMPUSES: Record<string, string | null> = {
     '教1': '仙林',
     '教2': '仙林',
@@ -258,7 +260,14 @@ export const groupRoomBookings = (bookings: ExamRoomBooking[]): RoomBookingGroup
         if (!first) {
             throw new Error(`Room booking group is empty: ${key}`);
         }
-        const classNames = uniqueValues(groupBookings.map(item => item.class_name));
+        const classCounts = new Map<string, number>();
+        for (const booking of groupBookings) {
+            classCounts.set(booking.class_name, (classCounts.get(booking.class_name) || 0) + booking.count);
+        }
+        const classSummaries = Array.from(classCounts.entries())
+            .map(([className, count]) => ({ class_name: className, count }))
+            .sort((a, b) => a.class_name.localeCompare(b.class_name, 'zh-CN', { numeric: true }));
+        const classNames = classSummaries.map(item => item.class_name);
         return {
             group_id: `room-booking-group:${key}`,
             course_name: first.course_name,
@@ -269,7 +278,9 @@ export const groupRoomBookings = (bookings: ExamRoomBooking[]): RoomBookingGroup
             duration_minutes: first.duration_minutes,
             location: first.location,
             class_names: classNames,
+            class_summaries: classSummaries,
             class_count: classNames.length,
+            total_count: classSummaries.reduce((sum, item) => sum + item.count, 0),
             source_bookings: [...groupBookings].sort((a, b) => a.class_name.localeCompare(b.class_name, 'zh-CN', { numeric: true })),
         };
     }).sort((a, b) =>

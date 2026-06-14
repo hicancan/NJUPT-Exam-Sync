@@ -34,12 +34,12 @@ const readUrlState = (): UrlState => {
     const hashParams = new URLSearchParams(hashSearch);
     const route = hash ? routeFromHashPath(hashPath || '/') : 'home';
     const params = hash ? hashParams : legacyParams;
-    const legacyClass = legacyParams.get('class')?.toUpperCase() || null;
+    const legacyClass = legacyParams.get('class') || null;
     const legacyQuery = legacyParams.get('q') || null;
 
     return {
         route: hash ? route : (legacyClass ? 'exam' : legacyQuery ? 'search' : 'home'),
-        classParam: (params.get('class') || legacyClass || '')?.toUpperCase() || null,
+        classParam: params.get('class') || legacyClass || null,
         qParam: params.get('q') || legacyQuery || null,
         roomQuery: params.get('room') || null,
         dateParam: params.get('date') || null,
