@@ -175,7 +175,7 @@ def test_collection_update_tracks_sitegraph_automatically():
     assert '"$ARTIFACT_NAME" dist' in text
     assert "rm -rf dist/generated/collections/njupt-public" in text
     assert "cp -R apps/web/public/generated/collections/njupt-public dist/generated/collections/njupt-public" in text
-    assert "test -f dist/generated/.asset-locks.json" in text
+    assert "if marker_path.exists():" in text
     assert "actions/upload-pages-artifact@v5" in text
     assert "actions/deploy-pages@v5" in text
     assert "name: njupt-search-production-dist" in text

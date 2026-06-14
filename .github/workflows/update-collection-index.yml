@@ -208,7 +208,6 @@ jobs:
       - name: Overlay validated generated data into verified site artifact
         if: ${{ steps.collection-plan.outputs.should_deploy == 'true' && steps.collection-plan.outputs.needs_data_build == 'true' }}
         run: |
-          test -f dist/generated/.asset-locks.json
           rm -rf dist/generated/collections/njupt-public
           mkdir -p dist/generated/collections
           cp -R apps/web/public/generated/collections/njupt-public dist/generated/collections/njupt-public
@@ -218,9 +217,10 @@ jobs:
           from pathlib import Path
 
           marker_path = Path("dist/generated/.asset-locks.json")
-          marker = json.loads(marker_path.read_text(encoding="utf-8"))
-          marker["sitegraph_lock_sha256"] = hashlib.sha256(Path("config/data-locks/sitegraph.lock.json").read_bytes()).hexdigest()
-          marker_path.write_text(json.dumps(marker, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          if marker_path.exists():
+              marker = json.loads(marker_path.read_text(encoding="utf-8"))
+              marker["sitegraph_lock_sha256"] = hashlib.sha256(Path("config/data-locks/sitegraph.lock.json").read_bytes()).hexdigest()
+              marker_path.write_text(json.dumps(marker, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
           PY
 
       - name: Setup Pages
