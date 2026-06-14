@@ -22,10 +22,10 @@ export function getSearchCoverageProgress(coverage: SitegraphSearchCoverage): Se
         : 0;
 
     const failed = Math.max(0, coverage.failed_shards);
-    const completeLabel = coverage.scope === 'scoped' ? '筛选范围核查完毕' : '全量核查完毕';
+    const completeLabel = coverage.scope === 'scoped' ? '筛选范围搜索完成' : '全部搜索完成';
     const activeLabel = failed > 0
-        ? `核查异常 ${failed} 个分片`
-        : `官网范围核查 ${percent}%`;
+        ? `搜索异常 ${failed} 处`
+        : `搜索进度 ${percent}%`;
 
     return {
         completedShards,

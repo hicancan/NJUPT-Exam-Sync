@@ -69,7 +69,7 @@ export function ExamDetail({
     const copyShareLink = () => {
         const url = window.location.href;
         if (!navigator.clipboard) {
-            showErrorNotice({ message: '复制失败，请手动复制浏览器地址栏链接' });
+            showErrorNotice({ message: '复制失败，请手动复制地址栏链接' });
             return;
         }
 
@@ -79,7 +79,7 @@ export function ExamDetail({
                 setTimeout(() => setCopyState(false), 2000);
             })
             .catch(() => {
-                showErrorNotice({ message: '复制失败，请手动复制浏览器地址栏链接' });
+                showErrorNotice({ message: '复制失败，请手动复制地址栏链接' });
             });
     };
 
@@ -88,7 +88,7 @@ export function ExamDetail({
         const validExams = selectedExams.filter(e => e.start_timestamp && e.end_timestamp);
 
         if (validExams.length === 0) {
-            showErrorNotice({ message: '请至少勾选一门包含有效时间的考试' });
+            showErrorNotice({ message: '请至少选择一门已安排时间的考试' });
             return;
         }
 
@@ -134,7 +134,7 @@ export function ExamDetail({
                             disabled={noneSelected}
                             className={`hover:underline transition-colors ${noneSelected ? 'text-[#9aa0a6] cursor-not-allowed no-underline' : 'text-[var(--color-google-blue)] dark:text-[var(--color-google-blue-dark)]'}`}
                         >
-                            全不选
+                            取消全选
                         </button>
                         <span>•</span>
                         <button
@@ -156,7 +156,7 @@ export function ExamDetail({
                                 <span>来源：{sourceTitle}</span>
                             )
                         ) : null}
-                        {sourceTime ? <span>{sourceTitle ? '• ' : ''}当前自动更新时间：{sourceTime.slice(0, 19).replace('T', ' ')}</span> : null}
+                        {sourceTime ? <span>{sourceTitle ? '• ' : ''}更新时间：{sourceTime.slice(0, 19).replace('T', ' ')}</span> : null}
                     </div>
                 </div>
                 <button

@@ -20,7 +20,7 @@ const formatDisplayDate = (isoString?: string | null): string => {
 const statusBadge = (status: ExamExportStatus): { text: string; className: string } | null => {
     if (status === 2) {
         return {
-            text: '需更新',
+            text: '有更新',
             className: 'bg-[#fef7e0] text-[#b06000] border-[#fbbc04] dark:bg-[#3a2a00] dark:text-[#fdd663] dark:border-[#fdd663]',
         };
     }
@@ -109,7 +109,7 @@ export function ExamCard({ exam, isSelected, exportStatus, onToggle }: ExamCardP
                         ) : (
                             <div className="flex items-center gap-2 text-[#d93025] dark:text-[#f28b82]">
                                 <Clock className="w-4 h-4 shrink-0" aria-hidden="true" />
-                                <span><span className="font-medium">时间待定:</span> {exam.raw_time || '未发布'}</span>
+                                <span><span className="font-medium">时间待定：</span> {exam.raw_time || '未发布'}</span>
                             </div>
                         )}
                         
@@ -132,7 +132,7 @@ export function ExamCard({ exam, isSelected, exportStatus, onToggle }: ExamCardP
                                 <Users className="w-4 h-4 text-[#fbbc04] dark:text-[#fdd663]" aria-hidden="true" />
                                 {exam.count ?? '-'} 人
                             </span>
-                            {exam.notes && <span className="italic">注: {exam.notes}</span>}
+                            {exam.notes && <span className="italic">备注：{exam.notes}</span>}
                         </div>
                     </div>
                 </div>

@@ -76,7 +76,7 @@ export function CollectionSearchSection({
         sortMode
     );
     const statusText = trimmedQuery.length < 2
-        ? '输入至少两个字符搜索南邮官网信息。'
+        ? '输入至少两个字符开始搜索。'
         : phaseText
             ? `${summary}${phaseText}。`
             : summary;
@@ -124,12 +124,12 @@ export function CollectionSearchSection({
             ) : showSearchingEmptyState ? (
                 <div className="min-h-32 max-w-[692px] rounded-md border border-[#dadce0] bg-white p-6 text-[#4d5156] dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#bdc1c6]">
                     <p>正在搜索南邮官网信息。</p>
-                    <p className="mt-2 text-sm">首批可信结果返回后会立即显示，后续继续全量核查。</p>
+                    <p className="mt-2 text-sm">首批结果返回后立即显示，正在搜索更多内容。</p>
                 </div>
             ) : (
                 <div className="border border-[#dadce0] dark:border-[#3c4043] rounded-md bg-white dark:bg-[#202124] p-6 text-[#4d5156] dark:text-[#bdc1c6] max-w-[692px]">
-                    <p>没有找到匹配的南邮官网信息。</p>
-                    <p className="mt-2 text-sm">可以尝试“期末考试”“四六级”“计算机等级”“口语考试”“奖学金”“大创”“竞赛报名”这类学生任务关键词。</p>
+                    <p>没有找到相关内容。</p>
+                    <p className="mt-2 text-sm">试试搜索"期末考试""四六级""计算机等级""口语考试""奖学金""大创""竞赛报名"等。</p>
                 </div>
             )}
         </section>

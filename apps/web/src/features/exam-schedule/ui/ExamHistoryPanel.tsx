@@ -100,7 +100,7 @@ function ChangeList({ node }: { node: ExamHistoryTimelineNode }) {
     if (node.status === 'first_seen') {
         return (
             <p className="text-[13px] text-[#5f6368] dark:text-[#9aa0a6]">
-                本班在系统可回溯教务快照中首次出现，当时收录 {node.totals.current_records} 门考试。
+                本班首次出现在考试记录中，当时收录 {node.totals.current_records} 门考试。
             </p>
         );
     }
@@ -108,7 +108,7 @@ function ChangeList({ node }: { node: ExamHistoryTimelineNode }) {
     if (node.status === 'unchanged') {
         return (
             <p className="text-[13px] text-[#5f6368] dark:text-[#9aa0a6]">
-                本次教务系统自动更新未改变本班考试安排。
+                本次更新未改变本班考试安排。
             </p>
         );
     }
@@ -196,7 +196,7 @@ function ClassHistoryContent({ classHistory }: { classHistory: ExamClassHistory 
                     本班考试历史
                 </span>
                 <span className="rounded-full bg-[#f1f3f4] px-2 py-0.5 text-[12px] font-medium text-[#5f6368] dark:bg-[#303134] dark:text-[#bdc1c6]">
-                    共 {classHistory.timeline.length} 次教务更新，{affectedCount} 次影响本班
+                    共 {classHistory.timeline.length} 次更新，{affectedCount} 次影响本班
                 </span>
             </div>
             <p className="mt-2 text-[13px] text-[#5f6368] dark:text-[#9aa0a6]">
@@ -244,10 +244,10 @@ export function ExamHistoryPanel({
             <div className="rounded-xl border border-[#dadce0] bg-[#f8fbff] px-4 py-3 dark:border-[#3c4043] dark:bg-[#202124]">
                 <div className="flex items-center gap-2 text-[14px] font-medium text-[#202124] dark:text-[#e8eaed]">
                     <span className="h-2 w-2 rounded-full bg-[#1a73e8]" aria-hidden="true" />
-                    考试安排自动更新摘要
+                    考试安排更新摘要
                 </div>
                 <p className="mt-2 text-[13px] text-[#5f6368] dark:text-[#9aa0a6]">
-                    考试周期：{classIndex.academic_year}学年{classIndex.term_label}；当前自动更新时间：{formatTime(classIndex.generated_at)}；当前覆盖 {classIndex.class_count} 个班级、{classIndex.total_records} 条考试记录。
+                    考试周期：{classIndex.academic_year}学年{classIndex.term_label}，更新时间：{formatTime(classIndex.generated_at)}，覆盖 {classIndex.class_count} 个班级、{classIndex.total_records} 条记录。
                 </p>
             </div>
         );

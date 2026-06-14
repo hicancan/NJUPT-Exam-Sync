@@ -46,14 +46,14 @@ export function evidenceLevelLabel(level: string | undefined): string | null {
 
 export function phaseLabel(phase: SitegraphSearchPhase | null, searching: boolean): string {
     if (phase === 'scoped_exhaustive_complete' || phase === 'global_exhaustive_complete') return '';
-    if (phase === 'cancelled') return '已取消本次核查';
+    if (phase === 'cancelled') return '已取消搜索';
     if (!searching) return '等待搜索';
-    if (phase === 'plan_started') return '正在规划权威来源';
-    if (phase === 'local_index_started') return '正在加载相关局部索引';
-    if (phase === 'first_trusted_results') return '可信首批结果已返回，正在继续补全';
-    if (phase === 'body_index_started') return '正在加载相关正文索引';
-    if (phase === 'top_results_hydrated') return '高相关结果已补全，正在做覆盖证明';
-    if (phase === 'verification_started' || phase === 'partial_verified') return '正在验证范围内官网分片';
+    if (phase === 'plan_started') return '正在准备搜索';
+    if (phase === 'local_index_started') return '正在加载索引';
+    if (phase === 'first_trusted_results') return '首批结果已返回，搜索更多中';
+    if (phase === 'body_index_started') return '正在加载内容索引';
+    if (phase === 'top_results_hydrated') return '高相关结果已返回，全面搜索中';
+    if (phase === 'verification_started' || phase === 'partial_verified') return '正在搜索更多内容';
     return '正在搜索';
 }
 
@@ -120,7 +120,7 @@ export function resultSummary(
     exhaustiveComplete: boolean,
     sortMode: SitegraphSortMode
 ): string {
-    const phaseVerb = exhaustiveComplete ? '匹配' : '已召回';
+    const phaseVerb = exhaustiveComplete ? '找到' : '已找到';
     const isCapped = totalCount > returnedCount;
     const scope = hasActiveFilters(filters) ? '筛选后' : '';
     const sortLabel = sortMode === 'date_desc' ? '时间较新的' : '相关性最高的';

@@ -211,7 +211,7 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
                         考试占用教室
                     </h2>
                     <p className="mt-2 text-[14px] text-[#5f6368] dark:text-[#bdc1c6]">
-                        基于考试安排和本地教室目录，按日期、校区、楼栋、楼层查看考试占用与空闲。
+                        按日期、校区、楼栋、楼层查看教室占用情况。
                     </p>
                 </div>
                 {index ? (
@@ -225,7 +225,7 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
 
             {state.loading && !index ? (
                 <div className="rounded-xl border border-[#dadce0] bg-white px-4 py-6 text-[#5f6368] dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#bdc1c6]">
-                    正在加载考试占用教室数据...
+                    正在加载教室占用信息...
                 </div>
             ) : null}
 
@@ -233,9 +233,9 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
                 <>
                     {!state.floorEntry && !state.error ? (
                         <section className="rounded-xl border border-[#dadce0] bg-[#f8fbff] p-4 dark:border-[#3c4043] dark:bg-[#202124]">
-                            <h3 className="text-[18px] font-medium text-[#202124] dark:text-[#e8eaed]">查询考试占用教室</h3>
+                            <h3 className="text-[18px] font-medium text-[#202124] dark:text-[#e8eaed]">查看教室占用</h3>
                             <p className="mt-2 text-[14px] text-[#5f6368] dark:text-[#bdc1c6]">
-                                请在搜索框输入楼栋或教室号，或直接选择一个楼栋开始查看。
+                                在搜索框输入楼栋或教室号，或直接选择楼栋开始查看。
                             </p>
                             <p className="mt-2 text-[13px] text-[#70757a] dark:text-[#9aa0a6]">
                                 示例：教2、教2-313、图科楼、图5、无线楼、无1
@@ -291,17 +291,17 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
                                     onChange={(event) => onChange({ ...objectParams, date: state.date, start: event.target.checked ? '08:00' : null, end: event.target.checked ? '22:00' : null })}
                                     className="mb-2"
                                 />
-                                <span className="mb-1">指定时间段</span>
+                                <span className="mb-1">限定时间</span>
                             </label>
                         </div>
                         {hasTimeWindow ? (
                             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
                             <label className="grid gap-1 text-[13px] text-[#5f6368] dark:text-[#bdc1c6]">
-                                <span>开始</span>
+                                <span>开始时间</span>
                                 <input type="time" value={start || '08:00'} onChange={(event) => onChange({ ...objectParams, date: state.date, start: event.target.value, end })} className="h-10 rounded-md border border-[#dadce0] bg-white px-3 text-[14px] dark:border-[#3c4043] dark:bg-[#202124]" />
                             </label>
                             <label className="grid gap-1 text-[13px] text-[#5f6368] dark:text-[#bdc1c6]">
-                                <span>结束</span>
+                                <span>结束时间</span>
                                 <input type="time" value={end || '22:00'} onChange={(event) => onChange({ ...objectParams, date: state.date, start, end: event.target.value })} className="h-10 rounded-md border border-[#dadce0] bg-white px-3 text-[14px] dark:border-[#3c4043] dark:bg-[#202124]" />
                             </label>
                             </div>
