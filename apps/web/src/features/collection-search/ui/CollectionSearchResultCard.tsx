@@ -114,7 +114,7 @@ export function CollectionSearchResultCard({ document }: SearchResultCardProps) 
                 {document.record_type === 'external' ? (
                     <span className="inline-flex items-center gap-1 text-[#5f6368] dark:text-[#9aa0a6]">
                         <ExternalLink size={13} />
-                        只记录入口
+                        仅入口记录
                     </span>
                 ) : null}
                 {document.record_type === 'attachment' ? (
@@ -175,7 +175,7 @@ export function CollectionSearchResultCard({ document }: SearchResultCardProps) 
 
             {recallReason ? (
                 <div className="mt-1 text-[12px] text-[#70757a] dark:text-[#9aa0a6]">
-                    召回依据：{recallReason}
+                    匹配依据：{recallReason}
                 </div>
             ) : null}
         </a>

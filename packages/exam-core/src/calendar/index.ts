@@ -147,7 +147,7 @@ export const generateICSContent = (
         reminders.forEach(min => {
             lines.push('BEGIN:VALARM');
             lines.push('ACTION:DISPLAY');
-            lines.push('DESCRIPTION:Exam Reminder');
+            lines.push('DESCRIPTION:考试提醒');
             lines.push(`TRIGGER:-PT${min}M`);
             lines.push('END:VALARM');
         });

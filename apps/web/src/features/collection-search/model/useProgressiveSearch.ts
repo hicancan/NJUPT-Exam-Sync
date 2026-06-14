@@ -114,7 +114,7 @@ export function useProgressiveSearch(
                     stats: null,
                     coverage: message.coverage || null,
                     phase: 'error',
-                    error: message.message || '搜索南邮官网信息失败',
+                    error: message.message || '搜索失败',
                     settled: true
                 });
             }

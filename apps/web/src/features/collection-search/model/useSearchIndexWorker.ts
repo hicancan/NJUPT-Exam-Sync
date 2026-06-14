@@ -45,7 +45,7 @@ export function useSearchIndexWorker(enabled = true): UseSearchIndexWorkerResult
             setManifest(null);
             setFilterOptions(null);
             setWorkerState(null);
-            setError(event.message || '南邮官网信息搜索 Worker 启动失败');
+            setError(event.message || '搜索 Worker 启动失败');
         };
 
         return () => {

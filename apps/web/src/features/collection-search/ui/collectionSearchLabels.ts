@@ -81,8 +81,8 @@ export function formatBytes(bytes: number): string {
 }
 
 export function firstResultSourceLabel(source: SitegraphQueryStats['first_result_source']): string | null {
-    if (source === 'hot_query_initial') return '热查询首屏证书';
-    if (source === 'hot_query_topk') return '热查询 Top-K 证书';
+    if (source === 'hot_query_initial') return '热查询快照';
+    if (source === 'hot_query_topk') return '热查询 Top-K 快照';
     if (source === 'dynamic_retrieval') return '动态检索';
     return null;
 }
@@ -100,8 +100,8 @@ export function queryClassLabel(queryClass: SitegraphQueryStats['query_class']):
 }
 
 export function servingPathLabel(servingPath: SitegraphQueryStats['serving_path']): string | null {
-    if (servingPath === 'hot_certificate') return '热查询证书';
-    if (servingPath === 'high_df_certificate') return '高频词证书';
+    if (servingPath === 'hot_certificate') return '热查询快照路径';
+    if (servingPath === 'high_df_certificate') return '高频词快照路径';
     if (servingPath === 'dynamic_retrieval') return '动态检索';
     if (servingPath === 'noop') return '无需检索';
     return null;
