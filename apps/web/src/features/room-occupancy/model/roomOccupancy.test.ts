@@ -1,5 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { isRoomSearchInput, parseRoomQuery, parseRoomSearchInput } from './roomOccupancy';
+import type { ExamRoomBooking } from '@/shared/lib/contracts';
+import { groupRoomBookings, isRoomSearchInput, parseRoomQuery, parseRoomSearchInput } from './roomOccupancy';
+
+const booking = (className: string): ExamRoomBooking => ({
+    exam_id: `exam-${className}`,
+    stable_key: `stable-${className}`,
+    class_name: className,
+    course_name: '人工智能导论及其Python应用实践',
+    course_code: 'JS170201S',
+    teacher: '蒋平',
+    count: 1,
+    date: '2026-06-28',
+    start_timestamp: '2026-06-28T10:25:00+08:00',
+    end_timestamp: '2026-06-28T12:15:00+08:00',
+    duration_minutes: 110,
+    location: '教4－101',
+    campus: '仙林',
+    building: '教4',
+    floor: '1',
+    floor_key: 'floor-2497ba2a4413469c',
+    room: '101',
+    room_key: 'room-26904f0c06438a91',
+});
 
 describe('room occupancy query parsing', () => {
     it('accepts only deterministic room vertical entries', () => {
@@ -53,5 +75,20 @@ describe('room occupancy query parsing', () => {
 
     it('keeps time expressions out of the room entry parser', () => {
         expect(parseRoomQuery('教2-313 14:00')).toEqual({});
+    });
+
+    it('groups same room, same time and same exam into one occupancy block with all classes', () => {
+        const groups = groupRoomBookings([
+            booking('B240402'),
+            booking('B240401'),
+            booking('B240403'),
+        ]);
+        expect(groups).toHaveLength(1);
+        expect(groups[0]).toMatchObject({
+            course_name: '人工智能导论及其Python应用实践',
+            class_count: 3,
+            class_names: ['B240401', 'B240402', 'B240403'],
+        });
+        expect(groups[0]?.source_bookings.map(item => item.class_name)).toEqual(['B240401', 'B240402', 'B240403']);
     });
 });

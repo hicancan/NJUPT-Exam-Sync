@@ -20,6 +20,20 @@ export interface RoomFilters {
     end: string | null;
 }
 
+export interface RoomBookingGroup {
+    group_id: string;
+    course_name: string;
+    course_code: string;
+    teacher: string;
+    start_timestamp: string;
+    end_timestamp: string;
+    duration_minutes: number;
+    location: string;
+    class_names: string[];
+    class_count: number;
+    source_bookings: ExamRoomBooking[];
+}
+
 export type RoomSearchTarget =
     | { kind: 'entry' }
     | { kind: 'building'; campus: string | null; building: string; display: string }
@@ -211,12 +225,59 @@ export const findRoomByTarget = (index: ExamRoomIndex, target: RoomSearchTarget 
     ) || null;
 };
 
-export const overlapsWindow = (booking: ExamRoomBooking, start: string | null, end: string | null): boolean => {
+type TimeRange = Pick<ExamRoomBooking, 'start_timestamp' | 'end_timestamp'>;
+
+export const overlapsWindow = (booking: TimeRange, start: string | null, end: string | null): boolean => {
     const startMinute = parseClock(start, 8 * 60);
     const endMinute = parseClock(end, 22 * 60);
     const bookingStart = minutesOfDay(booking.start_timestamp);
     const bookingEnd = minutesOfDay(booking.end_timestamp);
     return bookingStart < endMinute && bookingEnd > startMinute;
+};
+
+const bookingGroupKey = (booking: ExamRoomBooking): string => [
+    booking.room_key,
+    booking.start_timestamp,
+    booking.end_timestamp,
+    booking.course_code,
+    booking.course_name,
+    booking.teacher,
+    booking.location,
+].join('\u001f');
+
+export const groupRoomBookings = (bookings: ExamRoomBooking[]): RoomBookingGroup[] => {
+    const grouped = new Map<string, ExamRoomBooking[]>();
+    for (const booking of bookings) {
+        const key = bookingGroupKey(booking);
+        const current = grouped.get(key) || [];
+        current.push(booking);
+        grouped.set(key, current);
+    }
+    return Array.from(grouped.entries()).map(([key, groupBookings]) => {
+        const first = groupBookings[0];
+        if (!first) {
+            throw new Error(`Room booking group is empty: ${key}`);
+        }
+        const classNames = uniqueValues(groupBookings.map(item => item.class_name));
+        return {
+            group_id: `room-booking-group:${key}`,
+            course_name: first.course_name,
+            course_code: first.course_code,
+            teacher: first.teacher,
+            start_timestamp: first.start_timestamp,
+            end_timestamp: first.end_timestamp,
+            duration_minutes: first.duration_minutes,
+            location: first.location,
+            class_names: classNames,
+            class_count: classNames.length,
+            source_bookings: [...groupBookings].sort((a, b) => a.class_name.localeCompare(b.class_name, 'zh-CN', { numeric: true })),
+        };
+    }).sort((a, b) =>
+        minutesOfDay(a.start_timestamp) - minutesOfDay(b.start_timestamp)
+        || minutesOfDay(a.end_timestamp) - minutesOfDay(b.end_timestamp)
+        || a.course_name.localeCompare(b.course_name, 'zh-CN')
+        || a.teacher.localeCompare(b.teacher, 'zh-CN')
+    );
 };
 
 export const parseRoomQuery = (query: string): Partial<RoomFilters> => {

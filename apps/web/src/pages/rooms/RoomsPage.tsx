@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Building2, Clock, MapPin, SlidersHorizontal } from 'lucide-react';
 import { InlineErrorBanner } from '@/widgets/app-shell/InlineErrorBanner';
-import { canonicalRoomLabel, overlapsWindow, uniqueValues } from '@/features/room-occupancy/model/roomOccupancy';
+import { canonicalRoomLabel, groupRoomBookings, overlapsWindow, uniqueValues } from '@/features/room-occupancy/model/roomOccupancy';
 import { useRoomOccupancy } from '@/features/room-occupancy/model/useRoomOccupancy';
+import type { RoomBookingGroup } from '@/features/room-occupancy/model/roomOccupancy';
 import type { ExamRoom, ExamRoomBooking } from '@/shared/lib/contracts';
 
 interface RoomsPageProps {
@@ -29,7 +30,7 @@ const minuteOfDay = (timestamp: string): number => {
     return date.getHours() * 60 + date.getMinutes();
 };
 
-const segmentStyle = (booking: ExamRoomBooking) => {
+const segmentStyle = (booking: RoomBookingGroup) => {
     const start = Math.max(DAY_START, minuteOfDay(booking.start_timestamp));
     const end = Math.min(DAY_END, minuteOfDay(booking.end_timestamp));
     const left = ((start - DAY_START) / (DAY_END - DAY_START)) * 100;
@@ -73,8 +74,8 @@ function RoomCard({
     start: string | null;
     end: string | null;
 }) {
-    const activeBookings = bookings.filter(booking => overlapsWindow(booking, start, end));
-    const occupied = activeBookings.length > 0;
+    const activeGroups = groupRoomBookings(bookings).filter(group => overlapsWindow(group, start, end));
+    const occupied = activeGroups.length > 0;
     return (
         <div className={`rounded-lg border p-3 ${occupied
             ? 'border-[#fbbc04] bg-[#fff8e1] dark:border-[#8a6d00] dark:bg-[#2b240f]'
@@ -89,11 +90,12 @@ function RoomCard({
                     {occupied ? '占用' : '空闲'}
                 </span>
             </div>
-            {activeBookings.length ? (
+            {activeGroups.length ? (
                 <div className="mt-2 space-y-1 text-[12px] text-[#5f6368] dark:text-[#bdc1c6]">
-                    {activeBookings.map(booking => (
-                        <div key={booking.exam_id} className="truncate">
-                            {formatClock(booking.start_timestamp)}-{formatClock(booking.end_timestamp)} {booking.course_name}
+                    {activeGroups.map(group => (
+                        <div key={group.group_id} className="truncate">
+                            {formatClock(group.start_timestamp)}-{formatClock(group.end_timestamp)} {group.course_name}
+                            {group.class_count > 1 ? ` / ${group.class_count} 个班` : ''}
                         </div>
                     ))}
                 </div>
@@ -102,38 +104,42 @@ function RoomCard({
     );
 }
 
-function BookingDetail({ booking }: { booking: ExamRoomBooking }) {
+function BookingDetail({ group }: { group: RoomBookingGroup }) {
     return (
         <div className="mt-2 rounded-md border border-[#d2e3fc] bg-[#f8fbff] p-3 text-[13px] text-[#3c4043] dark:border-[#394457] dark:bg-[#1f2430] dark:text-[#bdc1c6]">
-            <div className="font-medium text-[#202124] dark:text-[#e8eaed]">{booking.course_name}</div>
+            <div className="font-medium text-[#202124] dark:text-[#e8eaed]">{group.course_name}</div>
             <div className="mt-1 grid gap-1 sm:grid-cols-2">
-                <span>{formatClock(booking.start_timestamp)}-{formatClock(booking.end_timestamp)} / {booking.duration_minutes} min</span>
-                <span>{booking.class_name} / {booking.teacher}</span>
-                <span>{booking.course_code}</span>
-                <span>{booking.location}</span>
+                <span>{formatClock(group.start_timestamp)}-{formatClock(group.end_timestamp)} / {group.duration_minutes} min</span>
+                <span>{group.teacher}</span>
+                <span>{group.course_code}</span>
+                <span>{group.location}</span>
+                <span className="sm:col-span-2">班级：{group.class_names.join(' / ')}</span>
             </div>
         </div>
     );
 }
 
 function RoomTimeline({ room, bookings }: { room: ExamRoom; bookings: ExamRoomBooking[] }) {
-    const [expandedExamId, setExpandedExamId] = useState<string | null>(null);
-    const expandedBooking = bookings.find(booking => booking.exam_id === expandedExamId) || null;
+    const groups = groupRoomBookings(bookings);
+    const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
+    const expandedGroup = groups.find(group => group.group_id === expandedGroupId) || null;
     return (
         <div className="grid gap-2 rounded-lg border border-[#dadce0] bg-white p-3 dark:border-[#3c4043] dark:bg-[#202124] sm:grid-cols-[72px_1fr]">
             <div className="font-medium text-[#202124] dark:text-[#e8eaed]">{room.room}</div>
             <div>
                 <div className="relative h-8 rounded-full bg-[#edf2f7] dark:bg-[#303134]">
-                    {bookings.map(booking => (
+                    {groups.map(group => (
                         <button
                             type="button"
-                            key={booking.exam_id}
-                            onClick={() => setExpandedExamId(expandedExamId === booking.exam_id ? null : booking.exam_id)}
+                            key={group.group_id}
+                            onClick={() => setExpandedGroupId(expandedGroupId === group.group_id ? null : group.group_id)}
                             className="absolute top-1 h-6 rounded-full bg-[#1a73e8] px-2 text-left text-[11px] leading-6 text-white shadow-sm outline-none focus:ring-2 focus:ring-[#8ab4f8]"
-                            style={segmentStyle(booking)}
-                            title={`${booking.course_name} ${formatClock(booking.start_timestamp)}-${formatClock(booking.end_timestamp)}`}
+                            style={segmentStyle(group)}
+                            title={`${group.course_name} ${formatClock(group.start_timestamp)}-${formatClock(group.end_timestamp)} ${group.class_names.join(' / ')}`}
                         >
-                            <span className="hidden md:inline">{booking.course_name}</span>
+                            <span className="hidden md:inline">
+                                {group.course_name}{group.class_count > 1 ? ` · ${group.class_count}班` : ''}
+                            </span>
                         </button>
                     ))}
                 </div>
@@ -143,7 +149,7 @@ function RoomTimeline({ room, bookings }: { room: ExamRoom; bookings: ExamRoomBo
                     <span>18:00</span>
                     <span>22:00</span>
                 </div>
-                {expandedBooking ? <BookingDetail booking={expandedBooking} /> : null}
+                {expandedGroup ? <BookingDetail group={expandedGroup} /> : null}
             </div>
         </div>
     );
