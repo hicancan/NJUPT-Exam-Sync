@@ -32,6 +32,14 @@ BLOCKED_PREFIXES = (
     "tmp/",
 )
 
+ALLOWED_TRACKED_BYPRODUCTS = {
+    "apps/web/src/features/collection-search/wasm/package.json",
+    "apps/web/src/features/collection-search/wasm/packed_impact_decoder.d.ts",
+    "apps/web/src/features/collection-search/wasm/packed_impact_decoder.js",
+    "apps/web/src/features/collection-search/wasm/packed_impact_decoder_bg.wasm",
+    "apps/web/src/features/collection-search/wasm/packed_impact_decoder_bg.wasm.d.ts",
+}
+
 
 def tracked_files() -> list[str]:
     output = subprocess.check_output(["git", "ls-files"], cwd=REPO_ROOT, text=True)
@@ -39,6 +47,8 @@ def tracked_files() -> list[str]:
 
 
 def is_byproduct(path: str) -> bool:
+    if path in ALLOWED_TRACKED_BYPRODUCTS:
+        return False
     parts = set(path.split("/"))
     return (
         path.startswith(BLOCKED_PREFIXES)

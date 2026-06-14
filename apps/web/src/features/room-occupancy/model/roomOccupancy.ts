@@ -20,6 +20,25 @@ export interface RoomFilters {
     end: string | null;
 }
 
+export type RoomSearchTarget =
+    | { kind: 'entry' }
+    | { kind: 'building'; campus: string | null; building: string; display: string }
+    | { kind: 'room'; campus: string | null; building: string; floor: string; room: string; display: string };
+
+const ENTRY_TERMS = new Set(['空教室', '教室']);
+const BUILDING_CAMPUSES: Record<string, string | null> = {
+    '教1': '仙林',
+    '教2': '仙林',
+    '教3': '仙林',
+    '教4': '仙林',
+    '自动化学科楼': '仙林',
+    '教东': '三牌楼',
+    '教西': '三牌楼',
+    '图科楼': '三牌楼',
+    '无线楼': '三牌楼',
+    '锁金': '锁金',
+};
+
 export const roomIndexUrlWithNonce = (nonce = Date.now().toString(36)): string => {
     return `${APP_CONFIG.DATA_URLS.ROOM_INDEX}?fresh=${encodeURIComponent(nonce)}`;
 };
@@ -55,17 +74,15 @@ export const findFloor = (
     campus: string | null,
     building: string | null,
     floor: string | null
-): ExamRoomFloor => {
+): ExamRoomFloor | null => {
+    if (!campus && !building && !floor) return null;
     const floors = index.floors;
     const matched = floors.find(item =>
         (!campus || item.campus === campus)
         && (!building || item.building === building)
         && (!floor || item.floor === floor)
     );
-    if (matched) return matched;
-    const fallback = floors[0];
-    if (fallback) return fallback;
-    throw new Error('Room index contains no floors');
+    return matched || null;
 };
 
 export const roomsForFloor = (index: ExamRoomIndex, floor: ExamRoomFloor): ExamRoom[] => {
@@ -119,6 +136,81 @@ const wirelessRoomNumber = (room: string): number | null => {
     return digits[value] ?? null;
 };
 
+const normalizeWirelessRoom = (room: string): string | null => {
+    const wirelessNumber = wirelessRoomNumber(room);
+    return wirelessNumber === null ? null : `无${wirelessNumber}`;
+};
+
+const roomFloor = (room: string): string | null => {
+    const wirelessNumber = room.startsWith('无') ? wirelessRoomNumber(room) : null;
+    if (wirelessNumber !== null) return String(Math.floor((wirelessNumber - 1) / 2) + 1);
+    if (room === '图4') return '1';
+    if (room === '图5') return '4';
+    const match = /^(\d)/.exec(room);
+    return match?.[1] || null;
+};
+
+export const canonicalRoomLabel = (room: ExamRoom): string => {
+    if (room.building === '图科楼' && /^图[45]$/.test(room.room)) return room.room;
+    if (room.building === '无线楼' && /^无[1-6]$/.test(room.room)) return room.room;
+    return `${room.building}-${room.room}`;
+};
+
+export const parseRoomSearchInput = (query: string): RoomSearchTarget | null => {
+    const trimmed = query.trim();
+    if (!trimmed) return null;
+    if (ENTRY_TERMS.has(trimmed)) return { kind: 'entry' };
+    if (trimmed in BUILDING_CAMPUSES) {
+        return { kind: 'building', campus: BUILDING_CAMPUSES[trimmed] ?? null, building: trimmed, display: trimmed };
+    }
+
+    const bareWireless = /^无[1-6一二三四五六]$/.exec(trimmed);
+    if (bareWireless) {
+        const room = normalizeWirelessRoom(trimmed);
+        const floor = room ? roomFloor(room) : null;
+        if (!room || !floor) return null;
+        return { kind: 'room', campus: '三牌楼', building: '无线楼', floor, room, display: room };
+    }
+
+    if (/^图[45]$/.test(trimmed)) {
+        return {
+            kind: 'room',
+            campus: '三牌楼',
+            building: '图科楼',
+            floor: trimmed === '图4' ? '1' : '4',
+            room: trimmed,
+            display: trimmed,
+        };
+    }
+
+    const explicitRoom = /^(教\d|教东|教西|无线楼|图科楼|自动化学科楼|锁金)-(\d{3,4}|无[1-6一二三四五六]|图[45])$/.exec(trimmed);
+    if (!explicitRoom) return null;
+    const building = explicitRoom[1];
+    const rawRoom = explicitRoom[2];
+    if (!building || !rawRoom) return null;
+    const room = rawRoom.startsWith('无') ? normalizeWirelessRoom(rawRoom) : rawRoom;
+    if (!room) return null;
+    const floor = roomFloor(room);
+    if (!floor) return null;
+    const campus = building in BUILDING_CAMPUSES ? BUILDING_CAMPUSES[building] ?? null : null;
+    const display = (building === '图科楼' && /^图[45]$/.test(room))
+        || (building === '无线楼' && /^无[1-6]$/.test(room))
+        ? room
+        : `${building}-${room}`;
+    return { kind: 'room', campus, building, floor, room, display };
+};
+
+export const isRoomSearchInput = (query: string): boolean => parseRoomSearchInput(query) !== null;
+
+export const findRoomByTarget = (index: ExamRoomIndex, target: RoomSearchTarget | null): ExamRoom | null => {
+    if (!target || target.kind !== 'room') return null;
+    return index.rooms.find(room =>
+        room.room === target.room
+        && room.building === target.building
+        && (!target.campus || room.campus === target.campus)
+    ) || null;
+};
+
 export const overlapsWindow = (booking: ExamRoomBooking, start: string | null, end: string | null): boolean => {
     const startMinute = parseClock(start, 8 * 60);
     const endMinute = parseClock(end, 22 * 60);
@@ -128,44 +220,11 @@ export const overlapsWindow = (booking: ExamRoomBooking, start: string | null, e
 };
 
 export const parseRoomQuery = (query: string): Partial<RoomFilters> => {
-    const trimmed = query.trim();
+    const target = parseRoomSearchInput(query);
     const result: Partial<RoomFilters> = {};
-    const bareWireless = /^无[1-6一二三四五六]$/.exec(trimmed);
-    if (bareWireless) {
-        const wirelessNumber = wirelessRoomNumber(trimmed);
-        if (wirelessNumber !== null) {
-            result.campus = '三牌楼';
-            result.building = '无线楼';
-            result.floor = String(Math.floor((wirelessNumber - 1) / 2) + 1);
-        }
-    }
-    const bareLibraryScience = /^图[45]$/.exec(trimmed);
-    if (bareLibraryScience) {
-        result.campus = '三牌楼';
-        result.building = '图科楼';
-        result.floor = trimmed === '图4' ? '1' : '4';
-    }
-    const explicitRoom = /(教\d|教东|教西|无线楼|图科楼)[-\s]*(\d{3,4}|无[1-6一二三四五六]|图[45])/.exec(trimmed);
-    if (explicitRoom) {
-        const building = explicitRoom[1];
-        const room = explicitRoom[2];
-        if (!building || !room) return result;
-        result.building = building;
-        const wirelessNumber = room.startsWith('无') ? wirelessRoomNumber(room) : null;
-        result.floor = wirelessNumber !== null
-            ? String(Math.floor((wirelessNumber - 1) / 2) + 1)
-            : room.startsWith('图')
-                ? (room === '图4' ? '1' : '4')
-                : room[0];
-    }
-    const buildingFloor = /(教\d|教东|教西|无线楼|图科楼)\s*(\d)\s*楼/.exec(trimmed);
-    if (buildingFloor) {
-        result.building = buildingFloor[1];
-        result.floor = buildingFloor[2];
-    }
-    if (/三牌楼/.test(trimmed)) result.campus = '三牌楼';
-    if (/仙林/.test(trimmed)) result.campus = '仙林';
-    const time = /(\d{1,2}:\d{2})/.exec(trimmed);
-    if (time) result.start = time[1];
+    if (!target || target.kind === 'entry') return result;
+    result.campus = target.campus;
+    result.building = target.building;
+    if (target.kind === 'room') result.floor = target.floor;
     return result;
 };

@@ -5,14 +5,19 @@ import {
     isExamHelperQuery,
     normalizeClassQuery,
 } from '@/features/query-router/model/examQuery';
+import { parseRoomSearchInput } from '@/features/room-occupancy/model/roomOccupancy';
 import { useUrlState } from '@/features/query-router/model/useUrlState';
 
 const SAVED_CLASS_KEY = 'SAVED_CLASS';
 
-const isRoomQuery = (value: string): boolean => {
-    const text = value.trim();
-    if (!text) return false;
-    return /空教室|教室|楼层|^\s*教\d|^\s*无\d|^\s*图[45]/.test(text);
+const roomRouteParams = (value: string): Record<string, string | null> | null => {
+    const target = parseRoomSearchInput(value);
+    if (!target) return null;
+    if (target.kind === 'entry') return {};
+    if (target.kind === 'building') {
+        return { building: target.building, campus: target.campus };
+    }
+    return { room: target.display };
 };
 
 export function useAppRouter() {
@@ -32,10 +37,10 @@ export function useAppRouter() {
     } = url;
     const routeInput = useMemo(() => {
         if (route === 'exam') return classParam || qParam || '';
-        if (route === 'rooms') return roomQuery || '';
+        if (route === 'rooms') return roomQuery || buildingParam || '';
         if (route === 'search') return qParam || '';
         return '';
-    }, [classParam, qParam, roomQuery, route]);
+    }, [buildingParam, classParam, qParam, roomQuery, route]);
     const [inputValue, setInputValue] = useState(routeInput);
 
     useEffect(() => {
@@ -50,9 +55,12 @@ export function useAppRouter() {
                 const query = qParam;
                 if (isExamHelperQuery(query) || isClassLookupQuery(query)) {
                     navigate({ route: 'exam', params: { q: query } }, true);
-                } else if (isRoomQuery(query)) {
-                    navigate({ route: 'rooms', params: { room: query } }, true);
                 } else {
+                    const roomParams = roomRouteParams(query);
+                    if (roomParams) {
+                        navigate({ route: 'rooms', params: roomParams }, true);
+                        return;
+                    }
                     navigate({ route: 'search', params: { q: query } }, true);
                 }
             }
@@ -71,8 +79,9 @@ export function useAppRouter() {
             navigate({ route: 'exam', params: { class: className } });
             return;
         }
-        if (isRoomQuery(trimmed)) {
-            navigate({ route: 'rooms', params: { room: trimmed } });
+        const roomParams = roomRouteParams(trimmed);
+        if (roomParams) {
+            navigate({ route: 'rooms', params: roomParams });
             return;
         }
         if (isExamHelperQuery(trimmed) || isClassLookupQuery(trimmed)) {
@@ -92,8 +101,9 @@ export function useAppRouter() {
             navigate({ route: 'exam', params: { q: query } });
             return;
         }
-        if (isRoomQuery(query)) {
-            navigate({ route: 'rooms', params: { room: query } });
+        const roomParams = roomRouteParams(query);
+        if (roomParams) {
+            navigate({ route: 'rooms', params: roomParams });
             return;
         }
         submit(query);
