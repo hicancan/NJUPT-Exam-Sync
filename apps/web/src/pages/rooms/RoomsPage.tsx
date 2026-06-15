@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Building2, Clock, MapPin, SlidersHorizontal } from 'lucide-react';
+import { Building2, Clock, MapPin, Search, SlidersHorizontal } from 'lucide-react';
 import { InlineErrorBanner } from '@/widgets/app-shell/InlineErrorBanner';
 import { canonicalRoomLabel, groupRoomBookings, overlapsWindow, uniqueValues } from '@/features/room-occupancy/model/roomOccupancy';
 import { useRoomOccupancy } from '@/features/room-occupancy/model/useRoomOccupancy';
@@ -19,6 +19,7 @@ interface RoomsPageProps {
 
 const DAY_START = 8 * 60;
 const DAY_END = 22 * 60;
+const BUILDING_CLOSURE_SEARCH_URL = `#/search?q=${encodeURIComponent('封楼')}`;
 
 const formatClock = (timestamp: string): string => {
     const date = new Date(timestamp);
@@ -213,6 +214,13 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
                     <p className="mt-2 text-[14px] text-[#5f6368] dark:text-[#bdc1c6]">
                         按日期、校区、楼栋、楼层查看教室占用情况。
                     </p>
+                    <a
+                        href={BUILDING_CLOSURE_SEARCH_URL}
+                        className="mt-2 inline-flex items-center gap-1 text-[13px] font-medium text-[#1a73e8] hover:underline dark:text-[#8ab4f8]"
+                    >
+                        <Search className="h-4 w-4" aria-hidden="true" />
+                        查看封楼通知
+                    </a>
                 </div>
                 {index ? (
                     <div className="rounded-full bg-[#f1f3f4] px-3 py-1 text-[12px] text-[#5f6368] dark:bg-[#303134] dark:text-[#bdc1c6]">
