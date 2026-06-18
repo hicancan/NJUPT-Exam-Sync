@@ -80,6 +80,36 @@ export async function loadRoomFloorDateData(
 
 export const uniqueValues = (items: string[]): string[] => Array.from(new Set(items)).sort((a, b) => a.localeCompare(b, 'zh-CN'));
 
+export const sortExamRoomDates = (dates: string[]): string[] => {
+    return Array.from(new Set(dates)).sort();
+};
+
+export const findAdjacentExamRoomDate = (
+    dates: string[],
+    value: string | null,
+    direction: 'previous' | 'next'
+): string | null => {
+    const sorted = sortExamRoomDates(dates);
+    if (!sorted.length) return null;
+    if (!value) return direction === 'next' ? sorted[0] ?? null : sorted[sorted.length - 1] ?? null;
+    if (direction === 'previous') {
+        for (let index = sorted.length - 1; index >= 0; index -= 1) {
+            const candidate = sorted[index];
+            if (candidate && candidate < value) return candidate;
+        }
+        return null;
+    }
+    return sorted.find(candidate => candidate > value) || null;
+};
+
+export const findNearestExamRoomDate = (dates: string[], value: string | null): string | null => {
+    const sorted = sortExamRoomDates(dates);
+    if (!sorted.length) return null;
+    if (!value) return sorted[0] ?? null;
+    if (sorted.includes(value)) return value;
+    return sorted.find(candidate => candidate > value) || sorted[sorted.length - 1] || null;
+};
+
 export const pickDefaultDate = (index: ExamRoomIndex): string => {
     const today = new Date().toISOString().slice(0, 10);
     return index.dates.find(item => item.date >= today)?.date || index.dates[0]?.date || today;

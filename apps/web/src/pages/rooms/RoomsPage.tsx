@@ -3,6 +3,7 @@ import { Building2, Clock, MapPin, Search, SlidersHorizontal } from 'lucide-reac
 import { InlineErrorBanner } from '@/widgets/app-shell/InlineErrorBanner';
 import { canonicalRoomLabel, groupRoomBookings, overlapsWindow, uniqueValues } from '@/features/room-occupancy/model/roomOccupancy';
 import { useRoomOccupancy } from '@/features/room-occupancy/model/useRoomOccupancy';
+import { RoomDateFilter } from '@/features/room-occupancy/ui/RoomDateFilter';
 import type { RoomBookingGroup } from '@/features/room-occupancy/model/roomOccupancy';
 import type { ExamRoom, ExamRoomBooking } from '@/shared/lib/contracts';
 
@@ -183,6 +184,12 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
         .filter(item => (!state.campus || item.campus === state.campus) && (!state.building || item.building === state.building))
         .map(item => item.floor)) : [];
     const dates = index ? index.dates.map(item => item.date) : [];
+    const selectedDateEntry = index && state.date ? index.dates.find(item => item.date === state.date) || null : null;
+    const floorDateEntry = state.floorEntry && selectedDateEntry
+        ? selectedDateEntry.floors.find(item => item.floor_key === state.floorEntry?.floor_key) || null
+        : null;
+    const selectedDateHasAnyBooking = Boolean(selectedDateEntry);
+    const selectedFloorHasBooking = Boolean(floorDateEntry);
     const floorRooms = index && state.floorEntry
         ? state.floorEntry.room_keys
             .map(key => index.rooms.find(room => room.room_key === key))
@@ -277,8 +284,12 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
                             <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
                             筛选
                         </div>
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-                            <FilterSelect label="日期" value={state.date} values={dates} onChange={(value) => onChange({ ...objectParams, date: value, start, end })} />
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-7">
+                            <RoomDateFilter
+                                value={state.date}
+                                dates={dates}
+                                onChange={(value) => onChange({ ...objectParams, date: value, start, end })}
+                            />
                             <FilterSelect label="校区" value={state.campus} values={campuses} onChange={(value) => {
                                 const firstBuilding = uniqueValues(index.floors.filter(item => item.campus === value).map(item => item.building))[0] || null;
                                 onChange({ room: null, date: state.date, campus: value, building: firstBuilding, floor: null, start, end });
@@ -331,6 +342,11 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
                                 {rooms.length} 间
                             </span>
                         </div>
+                        {state.date && (!selectedDateHasAnyBooking || !selectedFloorHasBooking) ? (
+                            <div className="mb-3 rounded-md border border-[#d2e3fc] bg-[#f8fbff] px-3 py-2 text-[13px] text-[#3c4043] dark:border-[#394457] dark:bg-[#1f2430] dark:text-[#bdc1c6]">
+                                {selectedDateHasAnyBooking ? '该楼层当天没有考试占用记录，当前教室按空闲显示。' : '当天没有考试占用记录，当前教室按空闲显示。'}
+                            </div>
+                        ) : null}
                         {hasTimeWindow ? (
                             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                                 {rooms.map(room => (

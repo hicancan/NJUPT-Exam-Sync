@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { ExamRoomBooking } from '@/shared/lib/contracts';
-import { groupRoomBookings, isRoomSearchInput, parseRoomQuery, parseRoomSearchInput } from './roomOccupancy';
+import {
+    findAdjacentExamRoomDate,
+    findNearestExamRoomDate,
+    groupRoomBookings,
+    isRoomSearchInput,
+    parseRoomQuery,
+    parseRoomSearchInput,
+    sortExamRoomDates,
+} from './roomOccupancy';
 
 const booking = (className: string, count = 1): ExamRoomBooking => ({
     exam_id: `exam-${className}`,
@@ -98,5 +106,26 @@ describe('room occupancy query parsing', () => {
             total_count: 6,
         });
         expect(groups[0]?.source_bookings.map(item => item.class_name)).toEqual(['B240401', 'B240402', 'B240403']);
+    });
+});
+
+describe('room occupancy date helpers', () => {
+    const dates = ['2026-06-20', '2026-06-18', '2026-06-20', '2026-06-25'];
+
+    it('sorts and deduplicates room dates', () => {
+        expect(sortExamRoomDates(dates)).toEqual(['2026-06-18', '2026-06-20', '2026-06-25']);
+    });
+
+    it('finds adjacent valid exam dates around arbitrary input', () => {
+        expect(findAdjacentExamRoomDate(dates, '2026-06-20', 'previous')).toBe('2026-06-18');
+        expect(findAdjacentExamRoomDate(dates, '2026-06-20', 'next')).toBe('2026-06-25');
+        expect(findAdjacentExamRoomDate(dates, '2026-06-21', 'previous')).toBe('2026-06-20');
+        expect(findAdjacentExamRoomDate(dates, '2026-06-21', 'next')).toBe('2026-06-25');
+    });
+
+    it('maps empty or no-exam dates to the nearest selectable exam date', () => {
+        expect(findNearestExamRoomDate(dates, null)).toBe('2026-06-18');
+        expect(findNearestExamRoomDate(dates, '2026-06-19')).toBe('2026-06-20');
+        expect(findNearestExamRoomDate(dates, '2026-07-01')).toBe('2026-06-25');
     });
 });
