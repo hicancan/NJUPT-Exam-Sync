@@ -23,7 +23,6 @@ export function RoomDateFilter({ value, dates, onChange }: RoomDateFilterProps) 
     const knownDate = Boolean(selectedDate && sortedDates.includes(selectedDate));
 
     const dateInputId = 'room-occupancy-date';
-    const dateOptionsId = 'room-occupancy-date-options';
 
     return (
         <div className="grid gap-1 text-[13px] text-[#5f6368] dark:text-[#bdc1c6] sm:col-span-2 lg:col-span-2">
@@ -48,7 +47,6 @@ export function RoomDateFilter({ value, dates, onChange }: RoomDateFilterProps) 
                     value={selectedDate}
                     min={minDate}
                     max={maxDate}
-                    list={dateOptionsId}
                     onChange={(event) => {
                         if (event.target.value) onChange(event.target.value);
                     }}
@@ -65,9 +63,6 @@ export function RoomDateFilter({ value, dates, onChange }: RoomDateFilterProps) 
                     <ChevronRight className="h-4 w-4" aria-hidden="true" />
                 </button>
             </div>
-            <datalist id={dateOptionsId}>
-                {sortedDates.map(date => <option key={date} value={date} />)}
-            </datalist>
             {!knownDate && nearestDate ? (
                 <div className="flex items-center justify-between gap-2 text-[12px] text-[#70757a] dark:text-[#9aa0a6]">
                     <span>当天没有考试占用记录</span>
