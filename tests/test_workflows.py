@@ -92,7 +92,7 @@ def test_edgeone_deploy_uses_verified_ci_artifact_only():
     assert "EDGEONE_PROJECT_NAME: ${{ vars.EDGEONE_PROJECT_NAME || 'njupt-search' }}" in text
     assert "EDGEONE_PAGES_AREA: ${{ vars.EDGEONE_PAGES_AREA || 'global' }}" in text
     assert "set -o pipefail" in text
-    assert 'npx --yes edgeone@latest pages deploy ./dist -n "$project" -t "$EDGEONE_API_TOKEN" -e production -a "$area"' in text
+    assert 'bash .github/scripts/deploy-edgeone-with-retry.sh ./dist "$project" production "$area" edgeone-deploy.log' in text
     assert "EDGEONE_API_TOKEN secret is required" in text
     assert "vars.CF_PURGE_ENABLED == '1'" in text
     assert "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" in text
@@ -183,7 +183,7 @@ def test_collection_update_tracks_sitegraph_automatically():
     assert "EDGEONE_PROJECT_NAME: ${{ vars.EDGEONE_PROJECT_NAME || 'njupt-search' }}" in text
     assert "EDGEONE_PAGES_AREA: ${{ vars.EDGEONE_PAGES_AREA || 'global' }}" in text
     assert "set -o pipefail" in text
-    assert "npx --yes edgeone@latest pages deploy ./dist" in text
+    assert 'bash .github/scripts/deploy-edgeone-with-retry.sh ./dist "$project" production "$area" edgeone-collection-fast-deploy.log' in text
     assert "vars.CF_PURGE_ENABLED == '1'" in text
     assert "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" in text
     assert "Cloudflare cache purge failed; static site deployments already completed" in text
@@ -236,7 +236,7 @@ def test_exam_update_uses_retrying_generated_commit_helper():
     assert "EDGEONE_PROJECT_NAME: ${{ vars.EDGEONE_PROJECT_NAME || 'njupt-search' }}" in text
     assert "EDGEONE_PAGES_AREA: ${{ vars.EDGEONE_PAGES_AREA || 'global' }}" in text
     assert "set -o pipefail" in text
-    assert "npx --yes edgeone@latest pages deploy ./dist" in text
+    assert 'bash .github/scripts/deploy-edgeone-with-retry.sh ./dist "$project" production "$area" edgeone-exam-fast-deploy.log' in text
     assert "vars.CF_PURGE_ENABLED == '1'" in text
     assert "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" in text
     assert "Cloudflare cache purge failed; static site deployments already completed" in text
@@ -289,3 +289,16 @@ def test_github_artifact_downloads_retry_transient_failures():
     assert "gh run download" in text
     assert 'rm -rf "$output_dir"' in text
     assert "artifact download failed after 5 attempts" in text
+
+
+def test_edgeone_deploy_retries_transient_failures():
+    helper = Path(".github/scripts/deploy-edgeone-with-retry.sh")
+    assert helper.exists()
+    text = helper.read_text(encoding="utf-8")
+    assert "for attempt in 1 2 3 4 5" in text
+    assert "npx --yes edgeone@latest pages deploy" in text
+    assert "EDGEONE_API_TOKEN secret is required" in text
+    assert "API request failed \\(5[0-9][0-9]\\)" in text
+    assert "ECONNRESET" in text
+    assert "EdgeOne deploy failed after 5 transient attempts" in text
+    assert "EdgeOne deploy failed with a non-transient error" in text

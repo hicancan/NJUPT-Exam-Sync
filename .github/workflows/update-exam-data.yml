@@ -164,7 +164,7 @@ jobs:
           fi
           project="${EDGEONE_PROJECT_NAME:-njupt-search}"
           area="${EDGEONE_PAGES_AREA:-global}"
-          npx --yes edgeone@latest pages deploy ./dist -n "$project" -t "$EDGEONE_API_TOKEN" -e production -a "$area" | tee edgeone-exam-fast-deploy.log
+          bash .github/scripts/deploy-edgeone-with-retry.sh ./dist "$project" production "$area" edgeone-exam-fast-deploy.log
           {
             echo "### Exam fast deploy"
             echo

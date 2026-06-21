@@ -111,7 +111,7 @@ jobs:
           project="${EDGEONE_PROJECT_NAME:-njupt-search}"
           area="${EDGEONE_PAGES_AREA:-global}"
           echo "Deploying verified CI artifact to EdgeOne Pages project '$project' in area '$area'."
-          npx --yes edgeone@latest pages deploy ./dist -n "$project" -t "$EDGEONE_API_TOKEN" -e production -a "$area" | tee edgeone-deploy.log
+          bash .github/scripts/deploy-edgeone-with-retry.sh ./dist "$project" production "$area" edgeone-deploy.log
           {
             echo "### EdgeOne Pages deployment"
             echo
