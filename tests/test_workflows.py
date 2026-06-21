@@ -81,6 +81,10 @@ def test_edgeone_deploy_uses_verified_ci_artifact_only():
     assert "workflow_dispatch:" in text
     assert "run_id:" in text
     assert "vars.EDGEONE_PAGES_ENABLED == 'true'" in text
+    assert "resolve-edgeone:" in text
+    assert "deploy-edgeone:" in text
+    assert "needs: resolve-edgeone" in text
+    assert "if: needs.resolve-edgeone.outputs.should_deploy == 'true'" in text
     assert "group: production-publish-main" in text
     assert "Checkout workflow helpers" in text
     assert "has_dist_artifact()" in text

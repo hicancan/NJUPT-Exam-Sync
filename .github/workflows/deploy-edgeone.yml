@@ -17,21 +17,16 @@ permissions:
   contents: read
 
 jobs:
-  deploy-edgeone:
+  resolve-edgeone:
     if: vars.EDGEONE_PAGES_ENABLED == 'true' && (github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'))
     permissions:
       actions: read
       contents: read
-    concurrency:
-      group: production-publish-main
-      cancel-in-progress: false
-    environment:
-      name: edgeone-pages
+    outputs:
+      should_deploy: ${{ steps.resolve.outputs.should_deploy }}
+      run_id: ${{ steps.resolve.outputs.run_id }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout workflow helpers
-        uses: actions/checkout@v6
-
       - name: Resolve verified CI artifact run
         id: resolve
         env:
@@ -83,21 +78,34 @@ jobs:
           echo "should_deploy=true" >> "$GITHUB_OUTPUT"
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
+  deploy-edgeone:
+    needs: resolve-edgeone
+    if: needs.resolve-edgeone.outputs.should_deploy == 'true'
+    permissions:
+      actions: read
+      contents: read
+    concurrency:
+      group: production-publish-main
+      cancel-in-progress: false
+    environment:
+      name: edgeone-pages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout workflow helpers
+        uses: actions/checkout@v6
+
       - name: Download verified build artifact
-        if: steps.resolve.outputs.should_deploy == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          RUN_ID: ${{ steps.resolve.outputs.run_id }}
+          RUN_ID: ${{ needs.resolve-edgeone.outputs.run_id }}
         run: bash .github/scripts/download-artifact-with-retry.sh "$RUN_ID" "$GITHUB_REPOSITORY" njupt-search-dist dist
 
       - name: Set up Node
-        if: steps.resolve.outputs.should_deploy == 'true'
         uses: actions/setup-node@v6
         with:
           node-version: '24'
 
       - name: Deploy to EdgeOne Pages
-        if: steps.resolve.outputs.should_deploy == 'true'
         env:
           EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
           EDGEONE_PROJECT_NAME: ${{ vars.EDGEONE_PROJECT_NAME || 'njupt-search' }}
@@ -115,14 +123,14 @@ jobs:
           {
             echo "### EdgeOne Pages deployment"
             echo
-            echo "- CI run: \`${{ steps.resolve.outputs.run_id }}\`"
+            echo "- CI run: \`${{ needs.resolve-edgeone.outputs.run_id }}\`"
             echo "- Project: \`$project\`"
             echo "- Area: \`$area\`"
             grep -E '^EDGEONE_(DEPLOY_URL|DEPLOY_TYPE|PROJECT_ID)=' edgeone-deploy.log || true
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Purge Cloudflare Cache
-        if: ${{ steps.resolve.outputs.should_deploy == 'true' && vars.CF_PURGE_ENABLED == '1' }}
+        if: ${{ vars.CF_PURGE_ENABLED == '1' }}
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
