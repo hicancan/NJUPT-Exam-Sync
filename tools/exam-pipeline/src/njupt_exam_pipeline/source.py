@@ -15,6 +15,8 @@ from bs4 import BeautifulSoup
 from .contract import ExamPipelineError, parse_exam_period
 
 JWC_LIST_URL = "https://jwc.njupt.edu.cn/1594/list.htm"
+JWC_LIST_PAGE_COUNT = 6
+JWC_LIST_URLS = (JWC_LIST_URL,) + tuple(f"https://jwc.njupt.edu.cn/1594/list{page}.htm" for page in range(2, JWC_LIST_PAGE_COUNT + 1))
 JWC_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
     "Referer": "https://jwc.njupt.edu.cn/",
@@ -118,6 +120,7 @@ def is_teacher_exam_file(name: str) -> bool:
 
 
 def discover_latest_exam_notice(*, tls_verify: bool) -> tuple[str, str]:
+    seen_urls: set[str] = set()
     response = get_url_with_retries(
         JWC_LIST_URL,
         headers=JWC_HEADERS,
@@ -129,17 +132,35 @@ def discover_latest_exam_notice(*, tls_verify: bool) -> tuple[str, str]:
     soup = BeautifulSoup(response.text, "html.parser")
     container = soup.select_one("div.col_news_con")
     if container is None:
-        raise ExamPipelineError("exam notice list container div.col_news_con was not found")
-    for item in container.select("li.news"):
-        title_span = item.select_one("span.news_title")
-        link = title_span.find("a") if title_span else item.find("a")
-        if link is None:
-            continue
-        title = str(link.get("title") or link.get_text(strip=True)).strip()
-        href = str(link.get("href") or "").strip()
-        if href and is_valid_exam_title(title):
-            return urljoin(JWC_LIST_URL, href), title
-    raise ExamPipelineError("no valid current exam schedule notice found")
+        raise ExamPipelineError(f"exam notice list container div.col_news_con was not found in {JWC_LIST_URL}")
+    for list_url in JWC_LIST_URLS:
+        if list_url != JWC_LIST_URL:
+            response = get_url_with_retries(
+                list_url,
+                headers=JWC_HEADERS,
+                timeout=30,
+                verify=tls_verify,
+                purpose=f"discover latest exam notice list {list_url}",
+            )
+            response.encoding = "utf-8"
+            soup = BeautifulSoup(response.text, "html.parser")
+            container = soup.select_one("div.col_news_con")
+            if container is None:
+                raise ExamPipelineError(f"exam notice list container div.col_news_con was not found in {list_url}")
+        for item in container.select("li.news"):
+            title_span = item.select_one("span.news_title")
+            link = title_span.find("a") if title_span else item.find("a")
+            if link is None:
+                continue
+            title = str(link.get("title") or link.get_text(strip=True)).strip()
+            href = str(link.get("href") or "").strip()
+            notice_url = urljoin(list_url, href)
+            if not href or notice_url in seen_urls:
+                continue
+            seen_urls.add(notice_url)
+            if is_valid_exam_title(title):
+                return notice_url, title
+    raise ExamPipelineError(f"no valid current exam schedule notice found in {len(JWC_LIST_URLS)} notice pages")
 
 
 def discover_exam_files(source_url: str, *, tls_verify: bool) -> list[dict[str, str]]:
