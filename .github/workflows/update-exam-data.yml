@@ -85,7 +85,7 @@ jobs:
         run: |
           run_id=""
           artifact_name=""
-          for candidate_run_id in $(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
+          for candidate_run_id in $(bash .github/scripts/gh-api-with-retry.sh "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
             --jq '.artifacts[] | select(.expired == false and .name == "njupt-search-production-dist") | .workflow_run.id'); do
             run_id="$candidate_run_id"
             artifact_name="njupt-search-production-dist"
@@ -95,7 +95,7 @@ jobs:
             if [ -n "$run_id" ]; then
               break
             fi
-            if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$candidate_run_id/artifacts" \
+            if bash .github/scripts/gh-api-with-retry.sh "repos/$GITHUB_REPOSITORY/actions/runs/$candidate_run_id/artifacts" \
               --jq '.artifacts[] | select(.expired == false and .name == "njupt-search-dist") | .id' | grep -q .; then
               run_id="$candidate_run_id"
               artifact_name="njupt-search-dist"

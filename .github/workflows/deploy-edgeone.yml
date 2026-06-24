@@ -27,6 +27,9 @@ jobs:
       run_id: ${{ steps.resolve.outputs.run_id }}
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout workflow helpers
+        uses: actions/checkout@v6
+
       - name: Resolve verified CI artifact run
         id: resolve
         env:
@@ -38,13 +41,13 @@ jobs:
           has_dist_artifact() {
             local candidate_run_id="$1"
             local count
-            count="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$candidate_run_id/artifacts" \
+            count="$(bash .github/scripts/gh-api-with-retry.sh "repos/$GITHUB_REPOSITORY/actions/runs/$candidate_run_id/artifacts" \
               --jq '[.artifacts[] | select(.name == "njupt-search-dist" and .expired == false)] | length')"
             [ "$count" != "0" ]
           }
 
           if [ "$GITHUB_EVENT_NAME" = "workflow_run" ]; then
-            latest_sha="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)"
+            latest_sha="$(bash .github/scripts/gh-api-with-retry.sh "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)"
             if [ "$WORKFLOW_RUN_SHA" != "$latest_sha" ]; then
               echo "workflow_run SHA $WORKFLOW_RUN_SHA is not current main $latest_sha; skipping stale EdgeOne deploy."
               echo "should_deploy=false" >> "$GITHUB_OUTPUT"

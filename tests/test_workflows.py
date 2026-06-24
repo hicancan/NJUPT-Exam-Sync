@@ -88,7 +88,8 @@ def test_edgeone_deploy_uses_verified_ci_artifact_only():
     assert "group: production-publish-main" in text
     assert "Checkout workflow helpers" in text
     assert "has_dist_artifact()" in text
-    assert "actions/runs/$candidate_run_id/artifacts" in text
+    assert 'gh-api-with-retry.sh "repos/$GITHUB_REPOSITORY/actions/runs/$candidate_run_id/artifacts"' in text
+    assert 'gh-api-with-retry.sh "repos/$GITHUB_REPOSITORY/commits/main"' in text
     assert "has no njupt-search-dist artifact; skipping EdgeOne deploy" in text
     assert "download-artifact-with-retry.sh \"$RUN_ID\"" in text
     assert "njupt-search-dist dist" in text
@@ -164,7 +165,7 @@ def test_collection_update_tracks_sitegraph_automatically():
     assert "repository_dispatch source_repo must be hicancan/njupt-site-graph" in text
     assert "repository_dispatch missing client_payload.source_run_id" in text
     assert "Validate sitegraph ref exists" in text
-    assert "repos/hicancan/njupt-site-graph/commits/$SITEGRAPH_REF" in text
+    assert 'gh-api-with-retry.sh "repos/hicancan/njupt-site-graph/commits/$SITEGRAPH_REF"' in text
     assert "sitegraph_ref $SITEGRAPH_REF is not a commit visible in hicancan/njupt-site-graph" in text
     assert "python tools/ci/commit_generated_changes.py" in text
     assert "prepare_public_assets.py update-sitegraph-lock" in text
@@ -172,7 +173,8 @@ def test_collection_update_tracks_sitegraph_automatically():
     assert "prepare_public_assets.py build-public-data" not in text
     assert "run-smoke-queries" not in text
     assert "run-task-queries" not in text
-    assert "actions/runs/$candidate_run_id/artifacts" in text
+    assert 'gh-api-with-retry.sh "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100"' in text
+    assert 'gh-api-with-retry.sh "repos/$GITHUB_REPOSITORY/actions/runs/$candidate_run_id/artifacts"' in text
     assert 'select(.expired == false and .name == "njupt-search-dist")' in text
     assert 'select(.expired == false and .name == "njupt-search-production-dist")' in text
     assert "ARTIFACT_NAME: ${{ steps.verified-dist.outputs.artifact_name }}" in text
@@ -230,6 +232,8 @@ def test_exam_update_uses_retrying_generated_commit_helper():
     assert 'select(.expired == false and .name == "njupt-search-dist")' in text
     assert 'select(.expired == false and .name == "njupt-search-production-dist")' in text
     assert "ARTIFACT_NAME: ${{ steps.verified-dist.outputs.artifact_name }}" in text
+    assert 'gh-api-with-retry.sh "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100"' in text
+    assert 'gh-api-with-retry.sh "repos/$GITHUB_REPOSITORY/actions/runs/$candidate_run_id/artifacts"' in text
     assert "download-artifact-with-retry.sh \"$RUN_ID\"" in text
     assert '"$ARTIFACT_NAME" dist' in text
     assert "rm -rf dist/generated/exam" in text
@@ -293,6 +297,17 @@ def test_github_artifact_downloads_retry_transient_failures():
     assert "gh run download" in text
     assert 'rm -rf "$output_dir"' in text
     assert "artifact download failed after 5 attempts" in text
+
+
+def test_github_api_calls_retry_transient_failures():
+    helper = Path(".github/scripts/gh-api-with-retry.sh")
+    assert helper.exists()
+    text = helper.read_text(encoding="utf-8")
+    assert "for attempt in 1 2 3 4 5" in text
+    assert 'gh api "$@"' in text
+    assert "HTTP (401|403|404)" in text
+    assert "gh api failed after 5 attempts" in text
+    assert "attempt * attempt * 5" in text
 
 
 def test_edgeone_deploy_retries_transient_failures():
