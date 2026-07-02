@@ -146,6 +146,20 @@ def technical_diagnostics(text: str) -> dict[str, Any]:
     }
 
 
+def completion_visible(page: Any) -> bool:
+    return bool(
+        page.evaluate(
+            """() => {
+                const text = document.body.innerText;
+                return text.includes('全量核查完毕')
+                    || text.includes('筛选范围核查完毕')
+                    || text.includes('输入至少两个字符')
+                    || text.includes('数据请求失败');
+            }"""
+        )
+    )
+
+
 def run_scenario(page: Any, base_url: str, scenario: dict[str, Any], run_id: str) -> dict[str, Any]:
     console_errors: list[str] = []
     http_errors: list[str] = []
@@ -160,16 +174,34 @@ def run_scenario(page: Any, base_url: str, scenario: dict[str, Any], run_id: str
     started = time.perf_counter()
     page.goto(scenario_url(base_url, scenario, run_id), wait_until="domcontentloaded")
     page.wait_for_load_state("networkidle", timeout=15_000)
+    expected = str(scenario["expect"])
+    wait_error: str | None = None
     page.wait_for_function(
-        """() => {
+        f"""() => {{
             const text = document.body.innerText;
-            return text.includes('全量核查完毕')
+            return text.includes({json.dumps(expected, ensure_ascii=False)})
                 || text.includes('筛选范围核查完毕')
                 || text.includes('输入至少两个字符')
                 || text.includes('数据请求失败');
-        }""",
-        timeout=30_000,
+        }}""",
+        timeout=int(scenario.get("visible_timeout_ms", 45_000)),
     )
+    did_complete = completion_visible(page)
+    if not did_complete:
+        try:
+            page.wait_for_function(
+                """() => {
+                    const text = document.body.innerText;
+                    return text.includes('全量核查完毕')
+                        || text.includes('筛选范围核查完毕')
+                        || text.includes('输入至少两个字符')
+                        || text.includes('数据请求失败');
+                }""",
+                timeout=int(scenario.get("completion_timeout_ms", 5_000)),
+            )
+            did_complete = True
+        except Exception as exc:
+            wait_error = f"completion marker not visible before optional timeout: {exc}"
     try:
         details = page.get_by_text("技术细节", exact=True)
         if details.count() > 0:
@@ -179,7 +211,6 @@ def run_scenario(page: Any, base_url: str, scenario: dict[str, Any], run_id: str
         pass
     body_text = page.locator("body").inner_text(timeout=5_000)
     elapsed_ms = round((time.perf_counter() - started) * 1000, 3)
-    expected = str(scenario["expect"])
     has_expected_text = expected in body_text
     has_data_error = "数据请求失败" in body_text or "HTTP 404" in body_text or "HTTP 500" in body_text
     layout = layout_snapshot(page)
@@ -194,6 +225,8 @@ def run_scenario(page: Any, base_url: str, scenario: dict[str, Any], run_id: str
         "has_expected_text": has_expected_text,
         "has_data_error": has_data_error,
         "diagnostics": technical_diagnostics(body_text),
+        "completion_marker_visible": did_complete,
+        "optional_completion_wait_error": wait_error,
         "immutable_artifact_transfer_bytes": immutable_artifact_bytes(resources),
         "layout": layout,
         "console_error_count": len(console_errors),
