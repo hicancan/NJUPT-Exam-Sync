@@ -407,6 +407,11 @@ def build_source_registry(
         source_attachments = [item for item in built["attachment_index"] if str(item.get("source_id") or "") == source_id]
         attachment_coverage = attachment_evidence_coverage(source_attachments)
         quality = package.get("manifest", {}).get("quality") if isinstance(package.get("manifest"), dict) else {}
+        coverage_report = package.get("coverage_report") if isinstance(package.get("coverage_report"), dict) else {}
+        coverage_exclusions = ((coverage_report.get("urls") or {}).get("exclusions") or []) if isinstance(coverage_report.get("urls"), dict) else []
+        coverage_status = str(coverage_report.get("coverage_status") or quality.get("coverage_status") or "incomplete")
+        if coverage_status == "complete" and coverage_exclusions:
+            coverage_status = "complete_with_exclusions"
         sources.append(
             {
                 "source_id": source_id,
@@ -423,7 +428,8 @@ def build_source_registry(
                 "attachment_evidence_coverage": attachment_coverage,
                 "updated_at": clean_text(package.get("manifest", {}).get("generated_at")) or None,
                 "quality_status": "ok" if isinstance(quality, dict) and quality.get("errors", 0) == 0 else "degraded",
-                "coverage_status": "audited" if isinstance(quality, dict) and quality.get("all_discovered_urls_have_outcomes") is True else "partial",
+                "coverage_status": coverage_status,
+                "coverage_exclusion_count": len(coverage_exclusions),
                 "facet_counts": source_field_counts(documents, source_id, "facet"),
                 "record_counts": source_field_counts(documents, source_id, "record_type"),
                 "truth_counts": dict(package["actual_counts"]),

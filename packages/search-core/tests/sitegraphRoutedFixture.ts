@@ -208,7 +208,7 @@ export const makeRoutedFixture = (
             },
             updated_at: '2026-05-30T00:00:00Z',
             quality_status: 'ok',
-            coverage_status: 'audited',
+            coverage_status: 'complete',
             facet_counts: { [scope.facet]: documents.length },
             record_counts: { detail: documents.length },
             truth_counts: { detail_pages: documents.length, attachments: 1, external_links: 0, edges: 0 }

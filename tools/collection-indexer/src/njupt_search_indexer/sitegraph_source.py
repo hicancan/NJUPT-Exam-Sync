@@ -4,6 +4,7 @@ import json
 import os
 import re
 from collections import Counter
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -43,6 +44,7 @@ REQUIRED_SITEGRAPH_FILES = {
     "attachments.jsonl",
     "external_links.jsonl",
     "edges.jsonl",
+    "coverage_report.json",
 }
 
 COUNT_FIELDS = (
@@ -229,6 +231,33 @@ def validate_sitegraph_package(index_dir: Path) -> dict[str, Any]:
         raise ValueError(f"{source_id} attachment_policy must be metadata_only, got {quality.get('attachment_policy')!r}")
     if quality.get("external_link_policy") != "record_only":
         raise ValueError(f"{source_id} external_link_policy must be record_only, got {quality.get('external_link_policy')!r}")
+    coverage_report = read_json(index_dir / "coverage_report.json")
+    if not isinstance(coverage_report, dict):
+        raise ValueError(f"{source_id} coverage_report.json must be an object")
+    if clean_text(coverage_report.get("site_id")) != source_id:
+        raise ValueError(f"{source_id} coverage_report.site_id must match manifest site_id")
+    if manifest.get("coverage_status") != "complete" or quality.get("coverage_status") != "complete":
+        raise ValueError(f"{source_id} coverage_status must be complete")
+    if coverage_report.get("coverage_status") != "complete":
+        raise ValueError(f"{source_id} coverage_report coverage_status must be complete")
+    if manifest.get("pagination_terminal_verified") is not True:
+        raise ValueError(f"{source_id} pagination_terminal_verified must be true")
+    if int(manifest.get("unknown_url_count") or 0) != 0:
+        raise ValueError(f"{source_id} unknown_url_count must be zero")
+    audit_ref = clean_text(manifest.get("audit_evidence_ref") or quality.get("audit_evidence_ref") or coverage_report.get("audit_evidence_ref"))
+    if not audit_ref:
+        raise ValueError(f"{source_id} audit_evidence_ref is required")
+    if not (index_dir / audit_ref).exists():
+        raise ValueError(f"{source_id} audit evidence is missing: {audit_ref}")
+    exclusions = ((coverage_report.get("urls") or {}).get("exclusions") or []) if isinstance(coverage_report.get("urls"), dict) else []
+    today = date.today().isoformat()
+    for index, exclusion in enumerate(exclusions, start=1):
+        if not isinstance(exclusion, dict):
+            raise ValueError(f"{source_id} coverage exclusion {index} must be an object")
+        if not clean_text(exclusion.get("reason")) or not clean_text(exclusion.get("scope")) or not clean_text(exclusion.get("expiry")):
+            raise ValueError(f"{source_id} coverage exclusion {index} requires reason, scope and expiry")
+        if clean_text(exclusion.get("expiry")) < today:
+            raise ValueError(f"{source_id} coverage exclusion {index} expired")
     assert_unknown_url_outcomes_allowlisted(index_dir, source_id, manifest)
 
     site = read_json(index_dir / "site.json")
@@ -273,6 +302,7 @@ def validate_sitegraph_package(index_dir: Path) -> dict[str, Any]:
     return {
         "source_index_dir": index_dir,
         "manifest": manifest,
+        "coverage_report": coverage_report,
         "site": site,
         "sections": sections,
         "homepage_modules": homepage_modules,

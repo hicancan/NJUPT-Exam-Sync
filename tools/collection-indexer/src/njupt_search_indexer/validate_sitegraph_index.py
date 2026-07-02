@@ -413,6 +413,8 @@ def validate_generated_index(packages: list[dict[str, Any]] | dict[str, Any]) ->
         for field in ("owner_unit", "authority_domains", "priority_by_intent", "freshness_policy", "doc_count", "quality_status", "coverage_status"):
             if field not in item:
                 fail(f"source registry entry missing {field}: {item.get('source_id')}")
+        if item.get("coverage_status") not in {"complete", "complete_with_exclusions"}:
+            fail(f"source registry coverage_status must be complete or complete_with_exclusions: {item.get('source_id')}={item.get('coverage_status')!r}")
 
     query_directory = read_json(artifact_path(manifest, "global_query_directory"))
     if query_directory.get("version") != "sitegraph-global-query-directory-cost-v2":
