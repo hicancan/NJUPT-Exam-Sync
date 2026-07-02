@@ -64,7 +64,7 @@ def test_ci_is_single_authoritative_pages_gate():
     assert "    permissions:\n      pages: write\n      id-token: write" in text
     assert "    needs: [ci, pages-build]" in text
     assert "  edgeone-deploy:" not in text
-    assert "timeout: 1800000" in text
+    assert "timeout: 600000" in text
     assert "reporting_interval: 10000" in text
     assert "GITHUB_STEP_SUMMARY" in text
     assert "npm run test:prepared" in text
