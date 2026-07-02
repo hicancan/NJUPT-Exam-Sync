@@ -25,6 +25,7 @@ def test_ci_is_single_authoritative_pages_gate():
     assert "wasm_fast_checks" in text
     assert "tools/exam-pipeline/.*" in text
     assert "apps/web/src/features/exam-schedule/.*" in text
+    assert "config/data-locks/sitegraph\\.lock\\.json" in text
     assert "needs_generated_assets" in text
     assert "needs_generated_assets: ${{ steps.ci-mode.outputs.needs_generated_assets }}" in text
     assert "Verify CI-only public asset determinism" in text
