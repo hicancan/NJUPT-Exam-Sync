@@ -46,6 +46,15 @@ REQUIRED_SITEGRAPH_FILES = {
     "edges.jsonl",
     "coverage_report.json",
 }
+CONSUMABLE_COVERAGE_STATUSES = {"complete", "complete_with_exclusions"}
+ALLOWED_SECTION_SOURCES = {
+    "declared_section",
+    "homepage_nav",
+    "homepage_module",
+    "inline_section_link",
+    "api_category",
+    "archive_section",
+}
 
 COUNT_FIELDS = (
     "sections",
@@ -92,6 +101,40 @@ def _resolve_path(value: str, base_dir: Path) -> Path:
     if not path.is_absolute():
         path = base_dir / path
     return path.resolve()
+
+
+def _resolve_package_ref(index_dir: Path, value: str) -> Path:
+    path = Path(value)
+    if not path.is_absolute():
+        path = index_dir / path
+    return path.resolve()
+
+
+def _validate_audit_evidence_json(index_dir: Path, source_id: str, ref: str) -> None:
+    path = _resolve_package_ref(index_dir, ref)
+    if not path.exists():
+        raise ValueError(f"{source_id} audit_evidence_json_ref is missing: {ref}")
+    payload = read_json(path)
+    if not isinstance(payload, dict):
+        raise ValueError(f"{source_id} audit_evidence_json_ref must point to a JSON object")
+    if clean_text(payload.get("site_id")) != source_id:
+        raise ValueError(f"{source_id} audit evidence JSON site_id must match")
+    required_keys = {
+        "homepage",
+        "navigation_entries",
+        "section_samples",
+        "list_page_samples",
+        "pagination_terminal_samples",
+        "detail_page_samples",
+        "attachment_samples",
+        "external_boundaries",
+        "console_errors",
+        "network_errors",
+        "exclusions",
+    }
+    missing = sorted(key for key in required_keys if key not in payload)
+    if missing:
+        raise ValueError(f"{source_id} audit evidence JSON is missing keys: {', '.join(missing)}")
 
 
 def _locked_sitegraph_repo(config_path: Path) -> Path | None:
@@ -236,10 +279,24 @@ def validate_sitegraph_package(index_dir: Path) -> dict[str, Any]:
         raise ValueError(f"{source_id} coverage_report.json must be an object")
     if clean_text(coverage_report.get("site_id")) != source_id:
         raise ValueError(f"{source_id} coverage_report.site_id must match manifest site_id")
-    if manifest.get("coverage_status") != "complete" or quality.get("coverage_status") != "complete":
-        raise ValueError(f"{source_id} coverage_status must be complete")
-    if coverage_report.get("coverage_status") != "complete":
-        raise ValueError(f"{source_id} coverage_report coverage_status must be complete")
+    manifest_status = clean_text(manifest.get("coverage_status"))
+    quality_status = clean_text(quality.get("coverage_status"))
+    coverage_status = clean_text(coverage_report.get("coverage_status"))
+    if manifest_status not in CONSUMABLE_COVERAGE_STATUSES or quality_status not in CONSUMABLE_COVERAGE_STATUSES:
+        raise ValueError(f"{source_id} coverage_status must be complete or complete_with_exclusions")
+    if coverage_status not in CONSUMABLE_COVERAGE_STATUSES:
+        raise ValueError(f"{source_id} coverage_report coverage_status must be consumable")
+    if len({manifest_status, quality_status, coverage_status}) != 1:
+        raise ValueError(
+            f"{source_id} coverage_status drift: manifest={manifest_status}, quality={quality_status}, report={coverage_status}"
+        )
+    evidence_source = clean_text(
+        coverage_report.get("evidence_source")
+        or manifest.get("evidence_source")
+        or quality.get("evidence_source")
+    )
+    if evidence_source != "full_crawl":
+        raise ValueError(f"{source_id} evidence_source must be full_crawl, got {evidence_source!r}")
     if manifest.get("pagination_terminal_verified") is not True:
         raise ValueError(f"{source_id} pagination_terminal_verified must be true")
     if int(manifest.get("unknown_url_count") or 0) != 0:
@@ -247,15 +304,36 @@ def validate_sitegraph_package(index_dir: Path) -> dict[str, Any]:
     audit_ref = clean_text(manifest.get("audit_evidence_ref") or quality.get("audit_evidence_ref") or coverage_report.get("audit_evidence_ref"))
     if not audit_ref:
         raise ValueError(f"{source_id} audit_evidence_ref is required")
-    if not (index_dir / audit_ref).exists():
+    if not _resolve_package_ref(index_dir, audit_ref).exists():
         raise ValueError(f"{source_id} audit evidence is missing: {audit_ref}")
+    audit_json_ref = clean_text(
+        manifest.get("audit_evidence_json_ref")
+        or quality.get("audit_evidence_json_ref")
+        or coverage_report.get("audit_evidence_json_ref")
+    )
+    if not audit_json_ref:
+        raise ValueError(f"{source_id} audit_evidence_json_ref is required")
+    _validate_audit_evidence_json(index_dir, source_id, audit_json_ref)
     exclusions = ((coverage_report.get("urls") or {}).get("exclusions") or []) if isinstance(coverage_report.get("urls"), dict) else []
+    if exclusions and coverage_status != "complete_with_exclusions":
+        raise ValueError(f"{source_id} packages with exclusions must use complete_with_exclusions")
+    if not exclusions and coverage_status != "complete":
+        raise ValueError(f"{source_id} packages without exclusions must use complete")
+    section_sources = ((coverage_report.get("sections") or {}).get("by_source") or {}) if isinstance(coverage_report.get("sections"), dict) else {}
+    invalid_sources = sorted(source for source in section_sources if str(source) not in ALLOWED_SECTION_SOURCES)
+    if invalid_sources:
+        raise ValueError(f"{source_id} coverage section sources are invalid: {json.dumps(invalid_sources, ensure_ascii=False)}")
     today = date.today().isoformat()
     for index, exclusion in enumerate(exclusions, start=1):
         if not isinstance(exclusion, dict):
             raise ValueError(f"{source_id} coverage exclusion {index} must be an object")
-        if not clean_text(exclusion.get("reason")) or not clean_text(exclusion.get("scope")) or not clean_text(exclusion.get("expiry")):
-            raise ValueError(f"{source_id} coverage exclusion {index} requires reason, scope and expiry")
+        missing = [
+            key
+            for key in ("scope", "reason", "evidence_url", "expiry", "owner_action")
+            if not clean_text(exclusion.get(key))
+        ]
+        if missing:
+            raise ValueError(f"{source_id} coverage exclusion {index} missing keys: {', '.join(missing)}")
         if clean_text(exclusion.get("expiry")) < today:
             raise ValueError(f"{source_id} coverage exclusion {index} expired")
     assert_unknown_url_outcomes_allowlisted(index_dir, source_id, manifest)

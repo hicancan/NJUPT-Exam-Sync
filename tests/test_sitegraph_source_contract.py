@@ -32,6 +32,24 @@ def write_minimal_sitegraph_package(index_dir: Path, *, with_allowlist: bool) ->
     reports_dir = index_dir.parent / "reports"
     reports_dir.mkdir(parents=True)
     (reports_dir / "audit_evidence.md").write_text("# JWC audit evidence\n", encoding="utf-8")
+    write_json(
+        reports_dir / "audit_evidence.json",
+        {
+            "version": "njupt-site-audit-evidence-v1",
+            "site_id": "jwc",
+            "homepage": {"url": "https://jwc.njupt.edu.cn/"},
+            "navigation_entries": [],
+            "section_samples": [],
+            "list_page_samples": [],
+            "pagination_terminal_samples": [],
+            "detail_page_samples": [],
+            "attachment_samples": [],
+            "external_boundaries": [],
+            "console_errors": [],
+            "network_errors": [],
+            "exclusions": [],
+        },
+    )
     write_json(index_dir / "site.json", {"site_id": "jwc", "domain": "jwc.njupt.edu.cn", "base_url": "https://jwc.njupt.edu.cn/"})
     write_json(index_dir / "sections.json", [])
     for filename in ("list_pages.jsonl", "detail_pages.jsonl", "attachments.jsonl", "external_links.jsonl", "edges.jsonl"):
@@ -40,7 +58,9 @@ def write_minimal_sitegraph_package(index_dir: Path, *, with_allowlist: bool) ->
     manifest = {
         "site_id": "jwc",
         "coverage_status": "complete",
+        "evidence_source": "full_crawl",
         "audit_evidence_ref": "../reports/audit_evidence.md",
+        "audit_evidence_json_ref": "../reports/audit_evidence.json",
         "pagination_terminal_verified": True,
         "unknown_url_count": 0,
         "excluded_url_count": 0,
@@ -50,7 +70,9 @@ def write_minimal_sitegraph_package(index_dir: Path, *, with_allowlist: bool) ->
             "attachment_policy": "metadata_only",
             "external_link_policy": "record_only",
             "coverage_status": "complete",
+            "evidence_source": "full_crawl",
             "audit_evidence_ref": "../reports/audit_evidence.md",
+            "audit_evidence_json_ref": "../reports/audit_evidence.json",
         },
         "totals": {field: 0 for field in COUNT_FIELDS},
         "errors": [],
@@ -69,8 +91,11 @@ def write_minimal_sitegraph_package(index_dir: Path, *, with_allowlist: bool) ->
             "version": "sitegraph-coverage-v1",
             "site_id": "jwc",
             "coverage_status": "complete",
+            "evidence_source": "full_crawl",
             "audit_evidence_ref": "../reports/audit_evidence.md",
+            "audit_evidence_json_ref": "../reports/audit_evidence.json",
             "pagination_terminal_verified": True,
+            "sections": {"by_source": {"declared_section": 1}},
             "urls": {"unknown_url_count": 0, "exclusions": []},
         },
     )

@@ -169,7 +169,9 @@ export const SourceRegistryEntrySchema = z.object({
     attachment_evidence_coverage: SitegraphAttachmentEvidenceCoverageSchema.optional(),
     updated_at: z.string().nullable().optional(),
     quality_status: z.string().min(1),
-    coverage_status: z.string().min(1),
+    coverage_status: z.enum(['complete', 'complete_with_exclusions']),
+    coverage_evidence_source: z.literal('full_crawl'),
+    coverage_exclusion_count: z.number(),
     facet_counts: z.record(z.string(), z.number()),
     record_counts: z.record(z.string(), z.number()),
     truth_counts: z.record(z.string(), z.number())

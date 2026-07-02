@@ -30,12 +30,18 @@ def aggregate_quality(packages: list[dict[str, Any]]) -> dict[str, Any]:
         for package in packages
         if isinstance(package.get("coverage_report"), dict)
     ]
+    statuses = [str(item.get("coverage_status") or "incomplete") for item in qualities]
+    coverage_status = "complete"
+    if any(status == "complete_with_exclusions" for status in statuses):
+        coverage_status = "complete_with_exclusions"
+    if any(status not in {"complete", "complete_with_exclusions"} for status in statuses):
+        coverage_status = "incomplete"
     return {
         "all_discovered_urls_have_outcomes": all(item.get("all_discovered_urls_have_outcomes") is True for item in qualities),
         "errors": sum(int(item.get("errors", 0) or 0) for item in qualities),
         "attachment_policy": "metadata_only" if all(item.get("attachment_policy") == "metadata_only" for item in qualities) else "mixed",
         "external_link_policy": "record_only" if all(item.get("external_link_policy") == "record_only" for item in qualities) else "mixed",
-        "coverage_status": "complete" if all(item.get("coverage_status") == "complete" for item in qualities) else "incomplete",
+        "coverage_status": coverage_status,
         "coverage_exclusion_count": sum(
             len(((report.get("urls") or {}).get("exclusions") or []))
             for report in coverage_reports

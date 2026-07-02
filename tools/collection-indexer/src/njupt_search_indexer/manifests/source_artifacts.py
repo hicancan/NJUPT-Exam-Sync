@@ -429,6 +429,12 @@ def build_source_registry(
                 "updated_at": clean_text(package.get("manifest", {}).get("generated_at")) or None,
                 "quality_status": "ok" if isinstance(quality, dict) and quality.get("errors", 0) == 0 else "degraded",
                 "coverage_status": coverage_status,
+                "coverage_evidence_source": clean_text(
+                    coverage_report.get("evidence_source")
+                    or quality.get("evidence_source")
+                    or package.get("manifest", {}).get("evidence_source")
+                )
+                or None,
                 "coverage_exclusion_count": len(coverage_exclusions),
                 "facet_counts": source_field_counts(documents, source_id, "facet"),
                 "record_counts": source_field_counts(documents, source_id, "record_type"),
