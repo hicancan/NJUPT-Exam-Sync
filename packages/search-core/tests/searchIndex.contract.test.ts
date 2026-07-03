@@ -38,6 +38,13 @@ describe('sitegraph contract and query planning', () => {
         expect(intent.freshnessMode).toBe('current_term');
     });
 
+    it('routes physical experiment technology works to innovation competition sources', () => {
+        const intent = detectQueryIntent('物理实验科技作品');
+        expect(intent.intent).toBe('innovation_entrepreneurship');
+        expect(intent.authoritySources).toEqual(['cxcy', 'jwc', 'bhs']);
+        expect(intent.freshnessMode).toBe('current_term');
+    });
+
     it('resolves hot query command forms without unsafe substring matching', () => {
         const scoreEntry = {
             ...artifact('hot-query-entry-score.json', 'hot_query_complete_certificate'),

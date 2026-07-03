@@ -122,9 +122,9 @@
       },
       {
         "intent": "innovation_entrepreneurship",
-        "authority_sources": ["cxcy"],
+        "authority_sources": ["cxcy", "jwc", "bhs"],
         "freshness_mode": "current_term",
-        "match_any": ["大创", "创新创业", "双创", "互联网+", "挑战杯", "竞赛报名", "竞赛", "创业", "学科竞赛"]
+        "match_any": ["大创", "创新创业", "双创", "互联网+", "挑战杯", "竞赛报名", "竞赛", "创业", "学科竞赛", "物理实验", "实验科技", "科技作品"]
       },
       {
         "intent": "library_hours",
