@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -36,7 +37,51 @@ def has_staged_changes() -> bool:
     return subprocess.run(["git", "diff", "--staged", "--quiet"], check=False).returncode != 0
 
 
-def push_with_rebase(branch: str, attempts: int) -> None:
+def snapshot_generated_paths(paths: list[str]) -> dict[str, bytes | None]:
+    snapshot: dict[str, bytes | None] = {}
+    for item in paths:
+        path = Path(item)
+        if path.is_file():
+            snapshot[str(path)] = path.read_bytes()
+            continue
+        if path.is_dir():
+            for child in sorted(path.rglob("*")):
+                if child.is_file():
+                    snapshot[str(child)] = child.read_bytes()
+            continue
+        snapshot[str(path)] = None
+    return snapshot
+
+
+def restore_generated_snapshot(paths: list[str], snapshot: dict[str, bytes | None]) -> None:
+    for item in paths:
+        path = Path(item)
+        if path.exists():
+            if path.is_dir():
+                shutil.rmtree(path)
+            else:
+                path.unlink()
+    for name, payload in snapshot.items():
+        path = Path(name)
+        if payload is None:
+            continue
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(payload)
+
+
+def recreate_generated_commit(branch: str, paths: list[str], snapshot: dict[str, bytes | None], message: str) -> bool:
+    print(f"Reapplying generated snapshot onto origin/{branch} after rebase conflict.")
+    run(["git", "reset", "--hard", f"origin/{branch}"])
+    restore_generated_snapshot(paths, snapshot)
+    run(["git", "add", *paths])
+    if not has_staged_changes():
+        print("origin already contains the generated changes after refresh.")
+        return False
+    run(["git", "commit", "-m", message])
+    return True
+
+
+def push_with_rebase(branch: str, attempts: int, paths: list[str], snapshot: dict[str, bytes | None], message: str) -> None:
     for attempt in range(1, attempts + 1):
         push = run(["git", "push", "origin", f"HEAD:{branch}"], check=False)
         if push.returncode == 0:
@@ -48,7 +93,8 @@ def push_with_rebase(branch: str, attempts: int) -> None:
         rebase = run(["git", "rebase", f"origin/{branch}"], check=False)
         if rebase.returncode != 0:
             run(["git", "rebase", "--abort"], check=False)
-            raise SystemExit(f"Cannot rebase generated commit onto origin/{branch}; resolve the conflicting automation output.")
+            if not recreate_generated_commit(branch, paths, snapshot, message):
+                return
         time.sleep(2)
 
 
@@ -72,8 +118,9 @@ def main() -> int:
             set_output(args.ref_output, current_ref())
         return 0
 
+    snapshot = snapshot_generated_paths(args.add)
     run(["git", "commit", "-m", args.message])
-    push_with_rebase(target_branch(), args.attempts)
+    push_with_rebase(target_branch(), args.attempts, args.add, snapshot, args.message)
     set_output(args.changed_output, "true")
     if args.ref_output:
         set_output(args.ref_output, current_ref())

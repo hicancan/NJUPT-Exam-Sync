@@ -289,6 +289,8 @@ def test_generated_commit_helper_retries_push_after_rebase():
     assert 'git", "push", "origin", f"HEAD:{branch}"' in text
     assert 'git", "fetch", "origin", branch' in text
     assert 'git", "rebase", f"origin/{branch}"' in text
+    assert "Reapplying generated snapshot onto origin/{branch}" in text
+    assert "restore_generated_snapshot" in text
     assert "GITHUB_OUTPUT" in text
 
 
