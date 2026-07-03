@@ -17,7 +17,6 @@ import {
     loadShard,
     loadShardFilter,
     loadSourceManifest,
-    verificationShardFromFullShard,
     verificationShardFromProofCatalog
 } from './sitegraphArtifactLoaders';
 import type { ShardFilterMap } from './sitegraphShardFilter';
@@ -117,7 +116,7 @@ export const runCompletionProof = async ({
         allVerificationShards.push(...proofCatalog.shards.map(verificationShardFromProofCatalog));
     }
     if (allVerificationShards.length === 0) {
-        allVerificationShards.push(...verificationManifests.flatMap(sourceManifest => sourceManifest.full_shards.map(verificationShardFromFullShard)));
+        throw new Error('Search proof contract violation: proof catalogs are required for completion; full-shard proof fallback has been removed.');
     }
     const proofLedgerEntries = buildProofLedger(allVerificationShards, filters, now);
     const inScopeShards = allVerificationShards

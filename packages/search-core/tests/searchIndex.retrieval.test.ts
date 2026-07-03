@@ -57,6 +57,31 @@ describe('sitegraph routed retrieval', () => {
         });
     });
 
+    it('fails fast when completion proof catalogs are empty', async () => {
+        const fixture = makeRoutedFixture('empty-proof-catalog', [makeDocument()], {
+            queryTerms: ['南京邮电大学本科生转专业管理办法'],
+            lightTerms: {},
+            bodyTerms: {}
+        });
+        const proofCatalogArtifact = required(fixture.sourceManifest.artifacts.proof_catalog, 'expected proof catalog artifact');
+        const emptyProofCatalog = {
+            ...fixture.proofCatalog,
+            shards: []
+        };
+
+        await withMockFetch(fixture, async () => {
+            await expect(recallSitegraphDocuments(
+                fixture.session,
+                '南京邮电大学本科生转专业管理办法',
+                new AbortController().signal
+            )).rejects.toThrow(/proof catalogs are required for completion/);
+        }, {
+            extraResponses: {
+                [proofCatalogArtifact.path]: emptyProofCatalog
+            }
+        });
+    });
+
     it('does not load unrelated source manifests before routed first trusted results', async () => {
         const fixture = makeRoutedFixture('route-source-scope', [makeDocument()], {
             queryTerms: ['转专业申请表'],
