@@ -2,8 +2,8 @@
   "version": "njupt-search-sitegraph-lock-v1",
   "sitegraph_repo": "hicancan/njupt-site-graph",
   "checkout_path": "_sitegraph/njupt-site-graph",
-  "sitegraph_ref": "ecd5a9ce748cd96019b50b46ad1657e1a13a6a2b",
-  "generated_at": "2026-07-18T01:19:43.170425+00:00",
+  "sitegraph_ref": "6dc1a8d365046c8d92d35a43a5dff92fdfb21e48",
+  "generated_at": "2026-07-18T07:26:38.738633+00:00",
   "collection_id": "njupt-public",
   "source_packages": [
     "data/sites/jwc/index",
