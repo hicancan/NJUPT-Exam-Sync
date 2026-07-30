@@ -142,3 +142,29 @@ jobs:
           tag_name: ${{ needs.build-apk.outputs.release_tag }}
           name: Release ${{ needs.build-apk.outputs.release_tag }}
           generate_release_notes: true
+
+      - name: Update the stable Android download
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build-apk.outputs.version }}
+        run: |
+          set -euo pipefail
+          apk="$(find release-artifacts -type f -name njupt-search-latest.apk -print -quit)"
+          test -n "$apk"
+          test -s "$apk"
+
+          current_tag="android-current"
+          notes="Current signed Android build: v${VERSION}"
+          if gh release view "$current_tag" >/dev/null 2>&1; then
+            gh release upload "$current_tag" "$apk" --clobber
+            gh release edit "$current_tag" \
+              --title "Current Android release" \
+              --notes "$notes" \
+              --latest=false
+          else
+            gh release create "$current_tag" "$apk" \
+              --target "$GITHUB_SHA" \
+              --title "Current Android release" \
+              --notes "$notes" \
+              --latest=false
+          fi
