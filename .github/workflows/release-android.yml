@@ -137,8 +137,8 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            release-artifacts/njupt-search-*.apk
-            release-artifacts/njupt-search-*.aab
+            release-artifacts/**/*.apk
+            release-artifacts/**/*.aab
           tag_name: ${{ needs.build-apk.outputs.release_tag }}
           name: Release ${{ needs.build-apk.outputs.release_tag }}
           generate_release_notes: true
