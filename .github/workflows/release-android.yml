@@ -146,6 +146,7 @@ jobs:
       - name: Update the stable Android download
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           VERSION: ${{ needs.build-apk.outputs.version }}
         run: |
           set -euo pipefail
