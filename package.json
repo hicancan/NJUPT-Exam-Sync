@@ -5,23 +5,20 @@
   "type": "module",
   "workspaces": [
     "apps/web",
-    "packages/*"
+    "academics/exam",
+    "search/browser"
   ],
   "scripts": {
     "dev": "node ./node_modules/vite/bin/vite.js --config apps/web/vite.config.ts",
-    "build": "npm run prepare:public-assets && npm run build:prepared",
+    "build": "npm run build:wasm:web && npm run build:prepared",
     "build:prepared": "node ./node_modules/typescript/bin/tsc -b && node ./node_modules/vite/bin/vite.js build --config apps/web/vite.config.ts",
-    "build:wasm:web": "node tools/wasm/packed-impact-decoder/scripts/buildWasmWeb.mjs",
-    "build:public-data": "uv run python tools/ci/prepare_public_assets.py build-all-public-data",
-    "prepare:public-assets": "npm run build:wasm:web && uv run python tools/ci/prepare_public_assets.py ensure-public-data",
-    "verify:public-assets": "uv run python tools/ci/prepare_public_assets.py verify-public-assets",
-    "check:runtime-fast-start": "uv run python tools/quality-gates/scripts/check_runtime_fast_start.py",
-    "check:source-complexity": "uv run python tools/quality-gates/scripts/check_source_complexity.py",
-    "check:tracked-byproducts": "uv run python tools/quality-gates/scripts/check_tracked_byproducts.py",
-    "check:web-bundle-size": "uv run python tools/quality-gates/scripts/check_web_bundle_sizes.py",
+    "build:wasm:web": "wasm-pack build search/wasm --target web --release --out-dir ../browser/wasm",
+    "academics:build": "uv run python -m academics.exam",
+    "academics:validate": "node ./node_modules/tsx/dist/cli.mjs ops/validate-academics.ts",
+    "search:test": "cargo test --manifest-path search/Cargo.toml --workspace",
     "lint": "node ./node_modules/eslint/bin/eslint.js .",
     "preview": "node ./node_modules/vite/bin/vite.js preview --config apps/web/vite.config.ts",
-    "test": "npm run prepare:public-assets && npm run test:prepared",
+    "test": "npm run search:test && npm run build:wasm:web && npm run test:prepared && uv run pytest academics/exam academics/room/occupancy -q",
     "test:prepared": "node ./node_modules/vitest/vitest.mjs run --config vitest.config.ts",
     "typecheck": "npm run build:wasm:web && npm run typecheck:prepared",
     "typecheck:prepared": "node ./node_modules/typescript/bin/tsc -b --noEmit"
@@ -29,8 +26,7 @@
   "dependencies": {
     "lucide-react": "^1.16.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "zod": "^4.4.3"
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

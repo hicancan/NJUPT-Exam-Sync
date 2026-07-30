@@ -1,1 +1,0 @@
-"""Hot query artifact generation."""

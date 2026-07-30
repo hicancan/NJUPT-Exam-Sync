@@ -1,0 +1,1 @@
+"""RoomOccupancy construction."""

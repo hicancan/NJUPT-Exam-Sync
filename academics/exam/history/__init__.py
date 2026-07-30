@@ -1,0 +1,1 @@
+"""ExamSnapshot history construction."""

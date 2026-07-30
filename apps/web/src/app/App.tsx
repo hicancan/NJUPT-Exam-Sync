@@ -1,12 +1,12 @@
 import { lazy, Suspense } from 'react';
 import { useAppRouter } from '@/app/routing/useAppRouter';
-import { HomePage } from '@/pages/home/HomePage';
-import { AppFooter } from '@/widgets/app-shell/AppFooter';
-import { Header } from '@/widgets/app-shell/Header';
+import { HomePage } from '@/home/HomePage';
+import { AppFooter } from '@/app/shell/AppFooter';
+import { Header } from '@/app/shell/Header';
 
-const SearchPage = lazy(() => import('@/pages/search/SearchPage').then(module => ({ default: module.SearchPage })));
-const ExamPage = lazy(() => import('@/pages/exam/ExamPage').then(module => ({ default: module.ExamPage })));
-const RoomsPage = lazy(() => import('@/pages/rooms/RoomsPage').then(module => ({ default: module.RoomsPage })));
+const SearchPage = lazy(() => import('@/search/SearchPage').then(module => ({ default: module.SearchPage })));
+const ExamPage = lazy(() => import('@/exams/ExamPage').then(module => ({ default: module.ExamPage })));
+const RoomsPage = lazy(() => import('@/rooms/RoomsPage').then(module => ({ default: module.RoomsPage })));
 
 function RouteLoading() {
     return (

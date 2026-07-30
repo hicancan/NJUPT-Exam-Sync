@@ -5,8 +5,10 @@
   },
   "include": [
     "src",
-    "../../packages/contracts/src",
-    "../../packages/search-core/src",
-    "../../packages/exam-core/src"
+    "../../search/browser/src",
+    "../../search/browser/wasm",
+    "../../academics/exam",
+    "../../academics/calendar",
+    "../../academics/room"
   ]
 }

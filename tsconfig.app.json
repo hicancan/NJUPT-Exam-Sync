@@ -33,39 +33,38 @@
             "@/*": [
                 "./apps/web/src/*"
             ],
-            "@njupt-search/contracts": [
-                "./packages/contracts/src/index.ts"
+            "@njupt-search/search-browser": [
+                "./search/browser/src/index.ts"
             ],
-            "@njupt-search/contracts/exam": [
-                "./packages/contracts/src/exam/index.ts"
+            "@njupt-search/academics-exam": [
+                "./academics/exam/index.ts"
             ],
-            "@njupt-search/contracts/search-index": [
-                "./packages/contracts/src/search-index/index.ts"
+            "@njupt-search/academics-exam/records": [
+                "./academics/exam/records/index.ts"
             ],
-            "@njupt-search/contracts/source-sitegraph": [
-                "./packages/contracts/src/source-sitegraph/index.ts"
+            "@njupt-search/academics-exam/snapshot": [
+                "./academics/exam/snapshot/index.ts"
             ],
-            "@njupt-search/search-core": [
-                "./packages/search-core/src/index.ts"
+            "@njupt-search/academics-exam/query": [
+                "./academics/exam/query/index.ts"
             ],
-            "@njupt-search/exam-core": [
-                "./packages/exam-core/src/index.ts"
+            "@njupt-search/academics-exam/history": [
+                "./academics/exam/history/index.ts"
             ],
-            "@njupt-search/exam-core/calendar": [
-                "./packages/exam-core/src/calendar/index.ts"
+            "@njupt-search/academics-calendar": [
+                "./academics/calendar/ics.ts"
             ],
-            "@njupt-search/exam-core/contract": [
-                "./packages/exam-core/src/contract/index.ts"
-            ],
-            "@njupt-search/exam-core/search": [
-                "./packages/exam-core/src/search/index.ts"
+            "@njupt-search/academics-room": [
+                "./academics/room/index.ts"
             ]
         }
     },
     "include": [
         "apps/web/src",
-        "packages/contracts/src",
-        "packages/search-core/src",
-        "packages/exam-core/src"
+        "search/browser/src",
+        "search/browser/wasm",
+        "academics/exam",
+        "academics/calendar",
+        "academics/room"
     ]
 }

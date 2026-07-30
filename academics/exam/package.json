@@ -1,0 +1,13 @@
+{
+  "name": "@njupt-search/academics-exam",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./records": "./records/index.ts",
+    "./snapshot": "./snapshot/index.ts",
+    "./query": "./query/index.ts",
+    "./history": "./history/index.ts"
+  }
+}

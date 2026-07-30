@@ -13,32 +13,3 @@ createRoot(rootElement).render(
     <App />
   </AppProviders>,
 )
-
-const cleanupLegacyServiceWorker = async (): Promise<void> => {
-  const reloadKey = 'njupt-search:sw-clean'
-  let removed = false
-
-  if ('serviceWorker' in navigator) {
-    const registrations = await navigator.serviceWorker.getRegistrations()
-    await Promise.all(registrations.map(async registration => {
-      removed = true
-      await registration.unregister()
-    }))
-  }
-
-  if ('caches' in window) {
-    const keys = await caches.keys()
-    await Promise.all(keys.map(async key => {
-      if (!key.startsWith('njupt-search') && !key.startsWith('workbox-')) return
-      removed = true
-      await caches.delete(key)
-    }))
-  }
-
-  if (removed && sessionStorage.getItem(reloadKey) !== '1') {
-    sessionStorage.setItem(reloadKey, '1')
-    window.location.reload()
-  }
-}
-
-void cleanupLegacyServiceWorker().catch(() => undefined)

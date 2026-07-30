@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
     isClassLookupQuery,
     isCompleteClassQuery,
     isExamHelperQuery,
     normalizeClassQuery,
-} from '@/features/query-router/model/examQuery';
-import { parseRoomSearchInput } from '@/features/room-occupancy/model/roomOccupancy';
-import { useUrlState } from '@/features/query-router/model/useUrlState';
+} from '@njupt-search/academics-exam/query';
+import { parseRoomSearchInput } from '@njupt-search/academics-room';
+import { useUrlState } from './useUrlState';
 
 const SAVED_CLASS_KEY = 'SAVED_CLASS';
 const SAVED_ROOM_KEY = 'SAVED_ROOM_TARGET';
@@ -72,31 +72,11 @@ export function useAppRouter() {
         if (route === 'search') return qParam || '';
         return '';
     }, [buildingParam, classParam, qParam, roomQuery, route]);
-    const [inputValue, setInputValue] = useState(routeInput);
-
-    useEffect(() => {
-        setInputValue(routeInput);
+    const [inputDraft, setInputDraft] = useState(() => ({ routeInput, value: routeInput }));
+    const inputValue = inputDraft.routeInput === routeInput ? inputDraft.value : routeInput;
+    const onInputChange = useCallback((value: string) => {
+        setInputDraft({ routeInput, value });
     }, [routeInput]);
-
-    useEffect(() => {
-        if (window.location.search && !window.location.hash) {
-            if (classParam) {
-                navigate({ route: 'exam', params: { class: classParam } }, true);
-            } else if (qParam) {
-                const query = qParam;
-                if (isExamHelperQuery(query) || isClassLookupQuery(query)) {
-                    navigate({ route: 'exam', params: { q: query } }, true);
-                } else {
-                    const roomParams = roomRouteParams(query);
-                    if (roomParams) {
-                        navigate({ route: 'rooms', params: roomParams }, true);
-                        return;
-                    }
-                    navigate({ route: 'search', params: { q: query } }, true);
-                }
-            }
-        }
-    }, [classParam, navigate, qParam]);
 
     const submit = useCallback((value: string) => {
         const trimmed = value.trim();
@@ -153,7 +133,7 @@ export function useAppRouter() {
     return {
         route,
         inputValue,
-        onInputChange: setInputValue,
+        onInputChange,
         onSubmit: submit,
         onQuickSearch: quickSearch,
         onGoHome: () => navigate({ route: 'home' }),

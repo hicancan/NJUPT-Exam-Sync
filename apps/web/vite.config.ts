@@ -5,32 +5,41 @@ import { fileURLToPath } from 'url'
 import path from 'path'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => {
+  const configuredPublic = process.env.NJUPT_SEARCH_WEB_PUBLIC_DIR
+  const configuredOut = process.env.NJUPT_SEARCH_WEB_OUT_DIR
+  if (command === 'build' && (!configuredPublic || !configuredOut)) {
+    throw new Error(
+      'production build requires NJUPT_SEARCH_WEB_PUBLIC_DIR and NJUPT_SEARCH_WEB_OUT_DIR',
+    )
+  }
+  const publicDir = configuredPublic
+    ? path.resolve(configuredPublic)
+    : path.resolve(__dirname, 'public')
+  const outDir = configuredOut
+    ? path.resolve(configuredOut)
+    : path.resolve(__dirname, '.vite-unused')
+
+  return {
   root: __dirname,
-  publicDir: path.resolve(__dirname, 'public'),
+  publicDir,
   build: {
-    outDir: path.resolve(__dirname, '../../dist'),
+    outDir,
     emptyOutDir: true,
   },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@njupt-search/contracts/exam': path.resolve(__dirname, '../../packages/contracts/src/exam/index.ts'),
-      '@njupt-search/contracts/search-index': path.resolve(__dirname, '../../packages/contracts/src/search-index/index.ts'),
-      '@njupt-search/contracts/source-sitegraph': path.resolve(__dirname, '../../packages/contracts/src/source-sitegraph/index.ts'),
-      '@njupt-search/contracts': path.resolve(__dirname, '../../packages/contracts/src/index.ts'),
-      '@njupt-search/exam-core/calendar': path.resolve(__dirname, '../../packages/exam-core/src/calendar/index.ts'),
-      '@njupt-search/exam-core/history': path.resolve(__dirname, '../../packages/exam-core/src/history/index.ts'),
-      '@njupt-search/exam-core/contract': path.resolve(__dirname, '../../packages/exam-core/src/contract/index.ts'),
-      '@njupt-search/exam-core/search': path.resolve(__dirname, '../../packages/exam-core/src/search/index.ts'),
-      '@njupt-search/exam-core': path.resolve(__dirname, '../../packages/exam-core/src/index.ts'),
-      '@njupt-search/search-core': path.resolve(__dirname, '../../packages/search-core/src/index.ts'),
+      '@njupt-search/academics-exam': path.resolve(__dirname, '../../academics/exam'),
+      '@njupt-search/academics-calendar': path.resolve(__dirname, '../../academics/calendar/ics.ts'),
+      '@njupt-search/academics-room': path.resolve(__dirname, '../../academics/room/index.ts'),
+      '@njupt-search/search-browser': path.resolve(__dirname, '../../search/browser/src/index.ts'),
     },
   },
   plugins: [
     react(),
     tailwindcss(),
   ],
+  }
 })

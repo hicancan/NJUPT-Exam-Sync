@@ -1,229 +1,122 @@
-name: Update Exam Data
+name: Build Exam Snapshot
 
 on:
   schedule:
     - cron: '0 */6 * * *'
   workflow_dispatch:
-    inputs:
-      force_deploy:
-        description: 'Deploy the current exam data even when exam.lock.json does not change.'
-        required: false
-        type: boolean
-        default: false
 
 permissions:
-  contents: write
-  actions: read
-  pages: write
-  id-token: write
+  contents: read
 
 concurrency:
-  group: production-publish-main
-  cancel-in-progress: false
+  group: exam-snapshot
+  cancel-in-progress: true
 
 jobs:
-  update-exam-data:
+  build:
     runs-on: ubuntu-latest
     env:
-      FORCE_DEPLOY: ${{ github.event.inputs.force_deploy || 'false' }}
-    outputs:
-      changed: ${{ steps.commit.outputs.changed }}
-      updated_ref: ${{ steps.commit.outputs.updated_ref }}
+      CORPUS_URL: ${{ vars.CURRENT_CORPUS_URL }}
+      CORPUS_ID: ${{ vars.CURRENT_CORPUS_ID }}
+      CORPUS_SHA256: ${{ vars.CURRENT_CORPUS_SHA256 }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version-file: '.python-version'
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v8.2.0
-
-      - name: Set up Node
-        uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: '24'
-          cache: 'npm'
+          cache: npm
 
-      - name: Install dependencies
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+
+      - uses: astral-sh/setup-uv@v8.2.0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install production build dependencies
         run: |
-          uv sync --frozen --extra test
           npm ci
+          uv sync --frozen --extra test
+          cargo install wasm-pack --version 0.15.0 --locked
 
-      - name: Update exam data lock and materialize public assets
+      - name: Test academics compilers
         run: |
-          uv run python tools/ci/prepare_public_assets.py update-exam-lock
-          uv run python tools/ci/prepare_public_assets.py build-exam-public-data
+          uv run pytest academics/exam academics/room/occupancy -q
 
-      - name: Validate generated exam public data
+      - name: Discover and build explicit academic artifacts
+        shell: pwsh
         run: |
-          uv run python tools/quality-gates/scripts/check_tracked_byproducts.py
-          uv run python tools/ci/prepare_public_assets.py verify-exam-public-data
+          uv run python -m academics.exam update-source `
+            --source academics/exam/source/current.json
+          ./ops/build-academics.ps1 `
+            -SourcePath academics/exam/source/current.json `
+            -MaterializedPath "$env:RUNNER_TEMP/exam-materialized" `
+            -CachePath "$env:RUNNER_TEMP/exam-cache" `
+            -ExamOutputPath "$env:RUNNER_TEMP/exam-snapshot" `
+            -RoomOutputPath "$env:RUNNER_TEMP/room-occupancy" `
+            -RoomCatalogPath academics/room/catalog/njupt-room-catalog.json `
+            -RefreshMaterialized
 
-      - name: Exam-only regression tests
+      - name: Validate academics artifacts
+        run: npm run academics:validate -- --exam "$RUNNER_TEMP/exam-snapshot" --room "$RUNNER_TEMP/room-occupancy"
+
+      - name: Download the explicit current corpus
         run: |
-          uv run python -m pytest tests/test_exam_history.py tests/test_exam_pipeline_failfast.py tests/test_exam_rooms.py tests/test_prepare_public_assets_download.py
-          npm run test:prepared -- apps/web/src/features/exam-schedule apps/web/src/features/room-occupancy packages/exam-core packages/contracts/tests/examDataContract.test.ts
-
-      - name: Commit exam lock changes
-        id: commit
-        run: |
-          uv run python tools/ci/commit_generated_changes.py \
-            --message "Auto-update exam data lock" \
-            --add config/data-locks/exam.lock.json \
-            --ref-output updated_ref
-
-      - name: Resolve latest verified site artifact
-        id: verified-dist
-        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          run_id=""
-          artifact_name=""
-          for candidate_run_id in $(bash .github/scripts/gh-api-with-retry.sh "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" \
-            --jq '.artifacts[] | select(.expired == false and .name == "njupt-search-production-dist") | .workflow_run.id'); do
-            run_id="$candidate_run_id"
-            artifact_name="njupt-search-production-dist"
-            break
-          done
-          for candidate_run_id in $(gh run list --repo "$GITHUB_REPOSITORY" --workflow CI --branch main --status success --limit 20 --json databaseId --jq '.[].databaseId'); do
-            if [ -n "$run_id" ]; then
-              break
-            fi
-            if bash .github/scripts/gh-api-with-retry.sh "repos/$GITHUB_REPOSITORY/actions/runs/$candidate_run_id/artifacts" \
-              --jq '.artifacts[] | select(.expired == false and .name == "njupt-search-dist") | .id' | grep -q .; then
-              run_id="$candidate_run_id"
-              artifact_name="njupt-search-dist"
-              break
-            fi
-          done
-          if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
-            echo "::error::No non-expired production dist or successful main CI dist artifact found for exam fast deploy"
-            exit 1
-          fi
-          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
-          echo "artifact_name=$artifact_name" >> "$GITHUB_OUTPUT"
-
-      - name: Download latest verified site artifact
-        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RUN_ID: ${{ steps.verified-dist.outputs.run_id }}
-          ARTIFACT_NAME: ${{ steps.verified-dist.outputs.artifact_name }}
-        run: bash .github/scripts/download-artifact-with-retry.sh "$RUN_ID" "$GITHUB_REPOSITORY" "$ARTIFACT_NAME" dist
-
-      - name: Overlay validated exam data into verified site artifact
-        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
-        run: |
-          rm -rf dist/generated/exam
-          mkdir -p dist/generated
-          cp -R apps/web/public/generated/exam dist/generated/exam
+          set -euo pipefail
+          : "${CORPUS_URL:?CURRENT_CORPUS_URL repository variable is required}"
+          : "${CORPUS_ID:?CURRENT_CORPUS_ID repository variable is required}"
+          : "${CORPUS_SHA256:?CURRENT_CORPUS_SHA256 repository variable is required}"
+          test "${#CORPUS_SHA256}" -eq 64
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/corpus.tar.zst" "$CORPUS_URL"
+          printf '%s  %s\n' "$CORPUS_SHA256" "$RUNNER_TEMP/corpus.tar.zst" | sha256sum --check -
+          mkdir "$RUNNER_TEMP/corpus"
+          tar --zstd -xf "$RUNNER_TEMP/corpus.tar.zst" -C "$RUNNER_TEMP/corpus"
           python - <<'PY'
-          import hashlib
-          import json
+          import json, os
           from pathlib import Path
-
-          marker_path = Path("dist/generated/.asset-locks.json")
-          if marker_path.exists():
-              marker = json.loads(marker_path.read_text(encoding="utf-8"))
-              marker["exam_lock_sha256"] = hashlib.sha256(Path("config/data-locks/exam.lock.json").read_bytes()).hexdigest()
-              marker_path.write_text(json.dumps(marker, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          manifest = json.loads((Path(os.environ["RUNNER_TEMP"]) / "corpus" / "manifest.json").read_text(encoding="utf-8"))
+          if manifest.get("format") != "njupt-corpus-snapshot-v2":
+              raise SystemExit("unsupported corpus format")
+          if manifest.get("snapshot_id") != os.environ["CORPUS_ID"]:
+              raise SystemExit("CURRENT_CORPUS_ID does not match manifest snapshot_id")
           PY
 
-      - name: Setup Pages
-        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
-        uses: actions/configure-pages@v6
-
-      - name: Upload exam-fast Pages artifact
-        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: dist
-
-      - name: Deploy exam-fast GitHub Pages
-        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
-        id: exam-fast-pages
-        uses: actions/deploy-pages@v5
-
-      - name: Deploy exam-fast EdgeOne Pages
-        if: ${{ (steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true') && vars.EDGEONE_PAGES_ENABLED == 'true' }}
-        env:
-          EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
-          EDGEONE_PROJECT_NAME: ${{ vars.EDGEONE_PROJECT_NAME || 'njupt-search' }}
-          EDGEONE_PAGES_AREA: ${{ vars.EDGEONE_PAGES_AREA || 'global' }}
+      - name: Reassemble the product with the new academics artifacts
+        shell: pwsh
         run: |
-          set -o pipefail
-          if [ -z "$EDGEONE_API_TOKEN" ]; then
-            echo "::error::EDGEONE_API_TOKEN secret is required"
-            exit 1
-          fi
-          project="${EDGEONE_PROJECT_NAME:-njupt-search}"
-          area="${EDGEONE_PAGES_AREA:-global}"
-          bash .github/scripts/deploy-edgeone-with-retry.sh ./dist "$project" production "$area" edgeone-exam-fast-deploy.log
-          {
-            echo "### Exam fast deploy"
-            echo
-            echo "- Base artifact run: \`${{ steps.verified-dist.outputs.run_id }}\`"
-            echo "- Base artifact name: \`${{ steps.verified-dist.outputs.artifact_name }}\`"
-            echo "- Updated ref: \`${{ steps.commit.outputs.updated_ref }}\`"
-            grep -E '^EDGEONE_(DEPLOY_URL|DEPLOY_TYPE|PROJECT_ID)=' edgeone-exam-fast-deploy.log || true
-          } >> "$GITHUB_STEP_SUMMARY"
+          ./ops/build-search-bundle.ps1 `
+            -CorpusPath "$env:RUNNER_TEMP/corpus" `
+            -BundlePath "$env:RUNNER_TEMP/search-bundle"
+          node benchmarks/search/quality.mjs `
+            --bundle "$env:RUNNER_TEMP/search-bundle"
+          ./ops/assemble-web.ps1 `
+            -SearchBundlePath "$env:RUNNER_TEMP/search-bundle" `
+            -ExamSnapshotPath "$env:RUNNER_TEMP/exam-snapshot" `
+            -RoomOccupancyPath "$env:RUNNER_TEMP/room-occupancy" `
+            -StagePath "$env:RUNNER_TEMP/web-stage" `
+            -DistPath "$env:RUNNER_TEMP/dist"
 
-      - name: Purge Cloudflare Cache
-        if: ${{ (steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true') && vars.CF_PURGE_ENABLED == '1' }}
-        env:
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
-        run: |
-          if [ -z "${CF_API_TOKEN}" ] || [ -z "${CF_ZONE_ID}" ]; then
-            echo "Skip purge: CF_API_TOKEN or CF_ZONE_ID is not set."
-            exit 0
-          fi
-          if ! curl --fail-with-body -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
-            -H "Authorization: Bearer ${CF_API_TOKEN}" \
-            -H "Content-Type: application/json" \
-            --data '{"purge_everything":true}'; then
-            echo "::warning::Cloudflare cache purge failed; static site deployments already completed."
-          fi
-
-      - name: Upload production dist baseline
-        if: ${{ steps.commit.outputs.changed == 'true' || env.FORCE_DEPLOY == 'true' }}
-        uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7
         with:
-          name: njupt-search-production-dist
-          path: dist/
+          name: njupt-exam-snapshot
+          path: ${{ runner.temp }}/exam-snapshot
+          if-no-files-found: error
           retention-days: 7
 
-      - name: Publish exam workflow summary
-        if: always()
-        env:
-          LOCK_CHANGED: ${{ steps.commit.outputs.changed || 'false' }}
-          UPDATED_REF: ${{ steps.commit.outputs.updated_ref || '' }}
-          BASE_RUN_ID: ${{ steps.verified-dist.outputs.run_id || '' }}
-          BASE_ARTIFACT_NAME: ${{ steps.verified-dist.outputs.artifact_name || '' }}
-          EDGEONE_ENABLED: ${{ vars.EDGEONE_PAGES_ENABLED || 'false' }}
-        run: |
-          should_deploy="false"
-          if [ "$LOCK_CHANGED" = "true" ] || [ "$FORCE_DEPLOY" = "true" ]; then
-            should_deploy="true"
-          fi
-          edgeone_deploy="false"
-          if [ "$should_deploy" = "true" ] && [ "$EDGEONE_ENABLED" = "true" ]; then
-            edgeone_deploy="true"
-          fi
-          {
-            echo "### Exam data update summary"
-            echo
-            echo "- Lock changed: \`$LOCK_CHANGED\`"
-            echo "- Force deploy: \`$FORCE_DEPLOY\`"
-            echo "- Deployed GitHub Pages: \`$should_deploy\`"
-            echo "- Deployed EdgeOne: \`$edgeone_deploy\`"
-            echo "- Base artifact run id: \`${BASE_RUN_ID:-none}\`"
-            echo "- Base artifact name: \`${BASE_ARTIFACT_NAME:-none}\`"
-            echo "- Final lock ref: \`${UPDATED_REF:-unchanged}\`"
-          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: njupt-search-dist
+          path: ${{ runner.temp }}/dist
+          if-no-files-found: error
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: njupt-room-occupancy
+          path: ${{ runner.temp }}/room-occupancy
+          if-no-files-found: error
+          retention-days: 7

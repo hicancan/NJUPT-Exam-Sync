@@ -22,7 +22,7 @@
       ]
     },
     {
-      "source": "/generated/exam/data_summary.json",
+      "source": "/generated/*/manifest.json*",
       "headers": [
         {
           "key": "Cache-Control",
@@ -31,128 +31,11 @@
       ]
     },
     {
-      "source": "/generated/exam/data_summary.json*",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/generated/exam/source_metadata.json",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/generated/exam/source_metadata.json*",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/generated/exam/class_index.json",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/generated/exam/class_index.json*",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/generated/exam/classes/*.json",
+      "source": "/generated/**/*",
       "headers": [
         {
           "key": "Cache-Control",
           "value": "public, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/generated/exam/classes/*.json*",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/generated/exam/history/classes/*.json",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/generated/exam/history/classes/*.json*",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/generated/exam/rooms/*",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/generated/collections/*/manifest.json",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/generated/collections/*/manifest.json*",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/generated/collections/*/*.json",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/generated/collections/*/*.json*",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store, max-age=0, must-revalidate"
         }
       ]
     },

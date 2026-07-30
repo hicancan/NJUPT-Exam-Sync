@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "njupt-search-tools"
 version = "2.2.1"
-description = "Deterministic build, exam, evaluation, and quality-gate tools for njupt-search."
+description = "Exam and room artifact compilers for njupt-search."
 requires-python = ">=3.10"
 dependencies = [
   "beautifulsoup4==4.12.3",
@@ -19,18 +19,7 @@ dependencies = [
 test = [
   "pytest==9.0.3",
 ]
-browser = [
-  "playwright==1.49.1",
-]
 
 [tool.setuptools.packages.find]
-where = [
-  "tools/collection-indexer/src",
-  "tools/exam-pipeline/src",
-  "tools/search-eval/src",
-]
-include = [
-  "njupt_search_indexer*",
-  "njupt_exam_pipeline*",
-  "njupt_search_eval*",
-]
+where = ["."]
+include = ["academics*"]

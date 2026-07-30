@@ -1,0 +1,126 @@
+name: Build Corpus Release
+
+on:
+  repository_dispatch:
+    types: [njupt-corpus-published]
+  workflow_dispatch:
+    inputs:
+      corpus_url:
+        description: Immutable NjuptCorpusSnapshot artifact URL
+        required: true
+        type: string
+      corpus_id:
+        description: NjuptCorpusSnapshot content identity
+        required: true
+        type: string
+      corpus_sha256:
+        description: SHA-256 of the compressed corpus artifact
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: corpus-release
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      CORPUS_URL: ${{ github.event.client_payload.corpus_url || inputs.corpus_url }}
+      CORPUS_ID: ${{ github.event.client_payload.corpus_id || inputs.corpus_id }}
+      CORPUS_SHA256: ${{ github.event.client_payload.corpus_sha256 || inputs.corpus_sha256 }}
+      EXAM_SNAPSHOT_URL: ${{ vars.EXAM_SNAPSHOT_URL }}
+      EXAM_SNAPSHOT_SHA256: ${{ vars.EXAM_SNAPSHOT_SHA256 }}
+      ROOM_OCCUPANCY_URL: ${{ vars.ROOM_OCCUPANCY_URL }}
+      ROOM_OCCUPANCY_SHA256: ${{ vars.ROOM_OCCUPANCY_SHA256 }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Require one explicit immutable corpus
+        run: |
+          set -euo pipefail
+          : "${CORPUS_URL:?corpus_url is required}"
+          : "${CORPUS_ID:?corpus_id is required}"
+          : "${CORPUS_SHA256:?corpus_sha256 is required}"
+          : "${EXAM_SNAPSHOT_URL:?EXAM_SNAPSHOT_URL repository variable is required}"
+          : "${EXAM_SNAPSHOT_SHA256:?EXAM_SNAPSHOT_SHA256 repository variable is required}"
+          : "${ROOM_OCCUPANCY_URL:?ROOM_OCCUPANCY_URL repository variable is required}"
+          : "${ROOM_OCCUPANCY_SHA256:?ROOM_OCCUPANCY_SHA256 repository variable is required}"
+          test "${#CORPUS_SHA256}" -eq 64
+          test "${#EXAM_SNAPSHOT_SHA256}" -eq 64
+          test "${#ROOM_OCCUPANCY_SHA256}" -eq 64
+
+      - name: Download and verify corpus
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --output corpus.tar.zst "$CORPUS_URL"
+          printf '%s  %s\n' "$CORPUS_SHA256" corpus.tar.zst | sha256sum --check -
+          mkdir corpus
+          tar --zstd -xf corpus.tar.zst -C corpus
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          manifest = json.loads(Path("corpus/manifest.json").read_text(encoding="utf-8"))
+          if manifest.get("format") != "njupt-corpus-snapshot-v2":
+              raise SystemExit("unsupported corpus format")
+          if manifest.get("snapshot_id") != os.environ["CORPUS_ID"]:
+              raise SystemExit("corpus_id does not match manifest snapshot_id")
+          PY
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install build dependencies
+        run: |
+          npm ci
+          cargo install wasm-pack --version 0.15.0 --locked
+
+      - name: Download explicit academic artifacts for assembly
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --output exam.tar.zst "$EXAM_SNAPSHOT_URL"
+          curl --fail --location --retry 3 --output rooms.tar.zst "$ROOM_OCCUPANCY_URL"
+          printf '%s  %s\n' "$EXAM_SNAPSHOT_SHA256" exam.tar.zst | sha256sum --check -
+          printf '%s  %s\n' "$ROOM_OCCUPANCY_SHA256" rooms.tar.zst | sha256sum --check -
+          mkdir exam-snapshot room-occupancy
+          tar --zstd -xf exam.tar.zst -C exam-snapshot
+          tar --zstd -xf rooms.tar.zst -C room-occupancy
+
+      - name: Compile SearchBundle and assemble the product
+        shell: pwsh
+        run: |
+          ./ops/build-search-bundle.ps1 `
+            -CorpusPath corpus `
+            -BundlePath "$env:RUNNER_TEMP/search-bundle"
+          node benchmarks/search/quality.mjs `
+            --bundle "$env:RUNNER_TEMP/search-bundle"
+          npm run build:wasm:web
+          ./ops/assemble-web.ps1 `
+            -SearchBundlePath "$env:RUNNER_TEMP/search-bundle" `
+            -ExamSnapshotPath exam-snapshot `
+            -RoomOccupancyPath room-occupancy `
+            -StagePath "$env:RUNNER_TEMP/web-stage" `
+            -DistPath "$env:RUNNER_TEMP/dist"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: njupt-search-dist
+          path: ${{ runner.temp }}/dist
+          if-no-files-found: error
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: search-bundle-${{ env.CORPUS_ID }}
+          path: ${{ runner.temp }}/search-bundle
+          if-no-files-found: error
+          retention-days: 7

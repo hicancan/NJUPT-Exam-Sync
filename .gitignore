@@ -1,82 +1,36 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-node_modules
-dist
-dist-ssr
-*.local
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-# Python
+# Dependencies and Python byproducts
+node_modules/
+.venv/
 __pycache__/
 *.py[cod]
-*$py.class
 *.egg-info/
-venv/
-.venv/
-# Test coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Rebuildable JavaScript and Rust outputs
+dist/
 coverage/
-eval/reports/eval-*.json
-# Temp files
+/search/target/
+/search/browser/wasm/
+
+# Local runtime files and secrets
+*.log
 *.tmp
-cache/
-tools/wasm/packed-impact-decoder/pkg-node/
-tools/wasm/packed-impact-decoder/pkg/
-apps/web/src/features/collection-search/wasm/*
-!apps/web/src/features/collection-search/wasm/package.json
-!apps/web/src/features/collection-search/wasm/packed_impact_decoder.js
-!apps/web/src/features/collection-search/wasm/packed_impact_decoder.d.ts
-!apps/web/src/features/collection-search/wasm/packed_impact_decoder_bg.wasm
-!apps/web/src/features/collection-search/wasm/packed_impact_decoder_bg.wasm.d.ts
-apps/web/public/generated/
-tools/search-eval/reports/
-_sitegraph/
-# Generated files
-project_structure.txt
-project_files.txt
-project_files_list.txt
-CLAUDE.md
-# Environment variables
 .env
 .env.local
 .env*.local
-# Android & Gradle
-android/.gradle/
-android/build/
-android/app/build/
-android/local.properties
-*.keystore
-*smoke.png
-project_structure.txt
-file_list.txt
-project_tree.txt
-project_structure_utf8.txt
-project_structure_v2.txt
-*.bak
-project_files_list_utf8.txt
-project-inventory.txt
-tracked-files.txt
-review-source-files.txt
 
-# Local/legacy documentation
-/AGENTS.md
-/CLAUDE.md
-/.agents/
-/.claude/
-/doc/
-/docs/
-/prompts/
-/reports/
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+
+# Android and Gradle
+/apps/android/.gradle/
+/apps/android/build/
+/apps/android/app/build/
+/apps/android/local.properties
+*.keystore

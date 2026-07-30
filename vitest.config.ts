@@ -5,25 +5,25 @@ import path from 'path';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_NJUPT_SEARCH_ARTIFACT_URL': JSON.stringify('/generated/search'),
+    'import.meta.env.VITE_NJUPT_EXAM_ARTIFACT_URL': JSON.stringify('/generated/exam'),
+    'import.meta.env.VITE_NJUPT_ROOM_ARTIFACT_URL': JSON.stringify('/generated/rooms'),
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './apps/web/src'),
-      '@njupt-search/contracts/exam': path.resolve(__dirname, './packages/contracts/src/exam/index.ts'),
-      '@njupt-search/contracts/search-index': path.resolve(__dirname, './packages/contracts/src/search-index/index.ts'),
-      '@njupt-search/contracts/source-sitegraph': path.resolve(__dirname, './packages/contracts/src/source-sitegraph/index.ts'),
-      '@njupt-search/contracts': path.resolve(__dirname, './packages/contracts/src/index.ts'),
-      '@njupt-search/exam-core/calendar': path.resolve(__dirname, './packages/exam-core/src/calendar/index.ts'),
-      '@njupt-search/exam-core/history': path.resolve(__dirname, './packages/exam-core/src/history/index.ts'),
-      '@njupt-search/exam-core/contract': path.resolve(__dirname, './packages/exam-core/src/contract/index.ts'),
-      '@njupt-search/exam-core/search': path.resolve(__dirname, './packages/exam-core/src/search/index.ts'),
-      '@njupt-search/exam-core': path.resolve(__dirname, './packages/exam-core/src/index.ts'),
-      '@njupt-search/search-core': path.resolve(__dirname, './packages/search-core/src/index.ts'),
+      '@njupt-search/academics-exam': path.resolve(__dirname, './academics/exam'),
+      '@njupt-search/academics-calendar': path.resolve(__dirname, './academics/calendar/ics.ts'),
+      '@njupt-search/academics-room': path.resolve(__dirname, './academics/room/index.ts'),
+      '@njupt-search/search-browser': path.resolve(__dirname, './search/browser/src/index.ts'),
     },
   },
   test: {
     include: [
       'apps/web/src/**/*.test.{ts,tsx}',
-      'packages/**/*.test.{ts,tsx}',
+      'academics/**/*.test.{ts,tsx}',
+      'search/browser/src/**/*.test.{ts,tsx}',
     ],
   },
 });
