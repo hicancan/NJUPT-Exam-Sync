@@ -4,7 +4,7 @@ import { ArtifactSource } from './artifacts';
 import { CacheStore } from './cache';
 import type { ArtifactRef, SearchBundleManifest } from './artifacts';
 
-const bundleId = '1f60c01d18d0c333553ec3aad4f209936059805e2fe92acf3656538971fc4812';
+const bundleId = '5b61cfcadf0592d78c9c39798ac4de6c1ff4ffb7b99af575becc967cfbd79cca';
 const bytes = new Uint8Array([1, 2, 3]);
 const reference: ArtifactRef = {
     path: 'documents.bin',
@@ -13,13 +13,11 @@ const reference: ArtifactRef = {
     sha256: '039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81',
 };
 const manifest: SearchBundleManifest = {
-    format: 'njupt-search-bundle-v2',
+    format: 'njupt-search-bundle',
     bundle_id: bundleId,
     corpus_snapshot_id: 'b'.repeat(64),
-    artifacts: {
-        documents: reference,
-        lexicon: { ...reference, path: 'lexicon.bin' },
-    },
+    documents: reference,
+    lexicon: { ...reference, path: 'lexicon.bin' },
     postings: [{ ...reference, path: 'postings-0000.bin' }],
     content: [{ ...reference, path: 'content-0000.bin' }],
 };

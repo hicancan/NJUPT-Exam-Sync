@@ -5,7 +5,7 @@ import json
 import pytest
 
 from academics.exam.snapshot.model import ExamSnapshot
-from academics.room.catalog import ROOM_CATALOG_FORMAT, room_key_for
+from academics.room.catalog import ROOM_CATALOG_FORMAT
 from academics.room.occupancy.build import (
     RoomOccupancyError,
     write_room_occupancy_artifacts,
@@ -24,14 +24,7 @@ def test_room_occupancy_fails_on_room_missing_from_catalog(tmp_path) -> None:
                         "building": "教2",
                         "floor": "2",
                         "rooms": [
-                            {
-                                "room": "201",
-                                "room_key": room_key_for(
-                                    campus="仙林",
-                                    building="教2",
-                                    room="201",
-                                ),
-                            },
+                            {"room": "201"},
                         ],
                     }
                 ],
@@ -43,14 +36,16 @@ def test_room_occupancy_fails_on_room_missing_from_catalog(tmp_path) -> None:
 
     with pytest.raises(
         RoomOccupancyError,
-        match="rooms missing from the maintained room catalog",
+        match="rooms missing from RoomCatalog",
     ):
         write_room_occupancy_artifacts(
-            output_dir=tmp_path,
+            output_dir=tmp_path / "room-occupancy",
             catalog_path=catalog_path,
             exam_snapshot=ExamSnapshot(
-                data_version="a" * 64,
-                auto_updated_at="2026-06-10T00:00:00+08:00",
+                snapshot_id="a" * 64,
+                source_id="b" * 64,
+                records_id="c" * 64,
+                source_updated_at="2026-06-10T00:00:00+08:00",
                 exam_period_id="2025-2026-2",
                 academic_year="2025-2026",
                 term_number=2,

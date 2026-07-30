@@ -80,11 +80,16 @@ createServer((request, response) => {
             manifest.bundle_id = '0'.repeat(64);
             body = Buffer.from(JSON.stringify(manifest));
         }
-        const isManifest = filePath.endsWith(`${path.sep}manifest.json`);
+        const isMutableEntry = (
+            filePath.endsWith(`${path.sep}manifest.json`)
+            || filePath.endsWith(`${path.sep}index.html`)
+        );
         response.writeHead(200, {
             'Content-Type': contentType(path.extname(filePath)),
             'Content-Length': body.length,
-            'Cache-Control': isManifest ? 'no-cache' : 'public, max-age=31536000, immutable',
+            'Cache-Control': isMutableEntry
+                ? 'no-cache'
+                : 'public, max-age=31536000, immutable',
         });
         response.end(request.method === 'HEAD' ? undefined : body);
         response.on('finish', () => appendFileSync(logPath, `${JSON.stringify({

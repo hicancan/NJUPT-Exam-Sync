@@ -4,7 +4,7 @@ import type { FilterOptions, Query, SearchResponse } from './model';
 
 export class SearchRuntime {
     private readonly source: ArtifactSource;
-    private readonly chunkBudgetBytes: number;
+    private readonly workingSetBudgetBytes: number;
     private manifestValue: SearchBundleManifest | null = null;
     private documents: ArrayBuffer | null = null;
     private lexicon: ArrayBuffer | null = null;
@@ -13,12 +13,12 @@ export class SearchRuntime {
     private loadedChunkBytes = 0;
     private metadataBytes = 0;
 
-    constructor(source: ArtifactSource, chunkBudgetBytes: number) {
-        if (!Number.isSafeInteger(chunkBudgetBytes) || chunkBudgetBytes <= 0) {
-            throw new Error('chunk budget must be a positive integer');
+    constructor(source: ArtifactSource, workingSetBudgetBytes: number) {
+        if (!Number.isSafeInteger(workingSetBudgetBytes) || workingSetBudgetBytes <= 0) {
+            throw new Error('working-set budget must be a positive integer');
         }
         this.source = source;
-        this.chunkBudgetBytes = chunkBudgetBytes;
+        this.workingSetBudgetBytes = workingSetBudgetBytes;
     }
 
     async initialize(signal?: AbortSignal): Promise<{
@@ -29,15 +29,15 @@ export class SearchRuntime {
         await initWasm();
         const manifest = await this.source.manifest(signal);
         this.metadataBytes = (
-            manifest.artifacts.documents.decoded_bytes
-            + manifest.artifacts.lexicon.decoded_bytes
+            manifest.documents.decoded_bytes
+            + manifest.lexicon.decoded_bytes
         );
-        if (this.metadataBytes > this.chunkBudgetBytes) {
+        if (this.metadataBytes > this.workingSetBudgetBytes) {
             throw new Error('search metadata exceeds the search memory budget');
         }
         const [documents, lexicon] = await Promise.all([
-            this.source.bytes(manifest.artifacts.documents, signal),
-            this.source.bytes(manifest.artifacts.lexicon, signal),
+            this.source.bytes(manifest.documents, signal),
+            this.source.bytes(manifest.lexicon, signal),
         ]);
         signal?.throwIfAborted();
         this.manifestValue = manifest;
@@ -66,9 +66,9 @@ export class SearchRuntime {
         this.engine?.free();
         this.engine = new WasmSearchEngine(
             new Uint8Array(this.documents),
-            this.requireManifest().artifacts.documents.decoded_bytes,
+            this.requireManifest().documents.decoded_bytes,
             new Uint8Array(this.lexicon),
-            this.requireManifest().artifacts.lexicon.decoded_bytes,
+            this.requireManifest().lexicon.decoded_bytes,
         );
         this.loadedChunks.clear();
         this.loadedChunkBytes = 0;
@@ -128,14 +128,14 @@ export class SearchRuntime {
             this.requireEngine().required_posting_chunks(query.query),
         ) as number[];
         let requiredBytes = this.missingBytes('postings', postingChunks);
-        if (this.metadataBytes + this.loadedChunkBytes + requiredBytes > this.chunkBudgetBytes) {
+        if (this.metadataBytes + this.loadedChunkBytes + requiredBytes > this.workingSetBudgetBytes) {
             this.resetEngine();
             postingChunks = JSON.parse(
                 this.requireEngine().required_posting_chunks(query.query),
             ) as number[];
             requiredBytes = this.missingBytes('postings', postingChunks);
         }
-        if (this.metadataBytes + requiredBytes > this.chunkBudgetBytes) {
+        if (this.metadataBytes + requiredBytes > this.workingSetBudgetBytes) {
             throw new Error('query postings exceed the search memory budget');
         }
         await this.loadChunks('postings', postingChunks, signal);
@@ -144,7 +144,7 @@ export class SearchRuntime {
             this.requireEngine().required_content_chunks(JSON.stringify(query)),
         ) as number[];
         const contentBytes = this.missingBytes('content', contentChunks);
-        if (this.metadataBytes + this.loadedChunkBytes + contentBytes > this.chunkBudgetBytes) {
+        if (this.metadataBytes + this.loadedChunkBytes + contentBytes > this.workingSetBudgetBytes) {
             this.resetEngine();
             postingChunks = JSON.parse(
                 this.requireEngine().required_posting_chunks(query.query),
@@ -159,7 +159,7 @@ export class SearchRuntime {
             + this.loadedChunkBytes
             + this.missingBytes('content', contentChunks)
         );
-        if (workingSetBytes > this.chunkBudgetBytes) {
+        if (workingSetBytes > this.workingSetBudgetBytes) {
             throw new Error('query working set exceeds the search memory budget');
         }
         await this.loadChunks('content', contentChunks, signal);
@@ -170,7 +170,11 @@ export class SearchRuntime {
     dispose(): void {
         this.engine?.free();
         this.engine = null;
+        this.manifestValue = null;
+        this.documents = null;
+        this.lexicon = null;
         this.loadedChunks.clear();
         this.loadedChunkBytes = 0;
+        this.metadataBytes = 0;
     }
 }

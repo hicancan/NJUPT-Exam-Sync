@@ -12,7 +12,6 @@ export interface RoomFloor {
     building: string;
     floor: string;
     floor_key: string;
-    room_count: number;
     room_keys: string[];
 }
 
@@ -24,37 +23,25 @@ export interface RoomArtifactRef {
 
 export interface RoomDateFloorEntry {
     floor_key: string;
-    artifact: RoomArtifactRef;
     booking_count: number;
+    artifact: RoomArtifactRef;
 }
 
 export interface RoomDateEntry {
     date: string;
-    floor_count: number;
-    booking_count: number;
     floors: RoomDateFloorEntry[];
 }
 
 export interface RoomOccupancy {
-    format: 'njupt-room-occupancy-v3';
+    format: 'njupt-room-occupancy';
     occupancy_id: string;
-    generated_at: string;
-    data_version: string;
+    exam_snapshot_id: string;
+    room_catalog_id: string;
     exam_period_id: string;
-    academic_year: string;
-    term_number: number;
-    term_label: string;
-    source_url?: string | null;
-    source_title?: string | null;
-    catalog_format: 'njupt-room-catalog-v2';
-    catalog_id: string;
-    room_count: number;
-    floor_count: number;
-    date_count: number;
+    source_updated_at: string;
     rooms: Room[];
     floors: RoomFloor[];
     dates: RoomDateEntry[];
-    diagnostics: RoomArtifactRef;
 }
 
 export interface RoomBooking {
@@ -79,16 +66,14 @@ export interface RoomBooking {
 }
 
 export interface RoomFloorOccupancy {
-    format: 'njupt-room-occupancy-floor-v2';
-    generated_at: string;
-    data_version: string;
-    exam_period_id: string;
+    format: 'njupt-room-floor-occupancy';
+    exam_snapshot_id: string;
+    room_catalog_id: string;
     date: string;
     campus: string;
     building: string;
     floor: string;
     floor_key: string;
-    room_count: number;
     booking_count: number;
     bookings: RoomBooking[];
 }

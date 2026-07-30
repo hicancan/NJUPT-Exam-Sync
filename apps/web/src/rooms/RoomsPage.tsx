@@ -231,7 +231,7 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
                 </div>
                 {index ? (
                     <div className="rounded-full bg-[#f1f3f4] px-3 py-1 text-[12px] text-[#5f6368] dark:bg-[#303134] dark:text-[#bdc1c6]">
-                        {index.room_count} 间教室 / {index.date_count} 个考试日期
+                        {index.rooms.length} 间教室 / {index.dates.length} 个考试日期
                     </div>
                 ) : null}
             </div>

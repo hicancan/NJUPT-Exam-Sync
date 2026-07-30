@@ -5,7 +5,7 @@ export type SearchWorkerRequest =
         type: 'init';
         baseUrl: string;
         cacheBudgetBytes: number;
-        chunkBudgetBytes: number;
+        workingSetBudgetBytes: number;
     }
     | {
         type: 'search';

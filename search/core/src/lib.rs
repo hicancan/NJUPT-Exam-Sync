@@ -1,13 +1,14 @@
-pub mod analysis;
-pub mod index;
-pub mod model;
-pub mod ranking;
-pub mod retrieval;
-pub mod snippet;
+mod analysis;
+mod bundle;
+mod document;
+mod query;
 
-pub use index::builder::{build_search_bundle, BuildReport};
-pub use model::{
-    FilterOption, FilterOptions, QueryRequest, SearchBundleManifest, SearchFilters, SearchResponse,
-    SearchResult, SortMode, SEARCH_BUNDLE_FORMAT,
+pub use bundle::{
+    calculate_bundle_id, compile_search_bundle, ArtifactRef, CompiledArtifact, CompiledBundle,
+    SearchBundleManifest, SEARCH_BUNDLE_FORMAT,
 };
-pub use retrieval::SearchEngine;
+pub use document::{Attachment, DocumentKind, IndexDocument};
+pub use query::{
+    FilterOption, FilterOptions, Query, SearchAttachment, SearchEngine, SearchFacet, SearchFilters,
+    SearchResponse, SearchResult, SortMode,
+};

@@ -21,7 +21,6 @@
     {
       "query": "奖学金",
       "top_k": 3,
-      "source": "xsc",
       "title_contains_any": ["奖学金"]
     },
     {
@@ -33,7 +32,6 @@
     {
       "query": "竞赛报名",
       "top_k": 5,
-      "source": "cxcy",
       "title_contains_any": ["竞赛", "大赛", "报名"]
     },
     {

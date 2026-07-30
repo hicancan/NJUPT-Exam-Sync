@@ -7,31 +7,45 @@ import type {
     SearchResponse,
     SortMode,
 } from '@njupt-search/search-browser';
-import { CollectionSearchControls } from './CollectionSearchControls';
-import { CollectionSearchResultCard } from './CollectionSearchResultCard';
-import { CollectionSearchStatus } from './CollectionSearchStatus';
-import { hasActiveFilters, resultSummary } from './collectionSearchLabels';
+import { SearchControls } from './SearchControls';
+import { SearchResultCard } from './SearchResultCard';
+import { SearchStatus } from './SearchStatus';
+import {
+    hasActiveFilters,
+    resultSummary,
+    type SearchDatePreset,
+} from './searchLabels';
 
-interface CollectionSearchSectionProps {
+interface SearchSectionProps {
     query: string;
     response: SearchResponse | null;
     searching: boolean;
     documentCount: number;
     sortMode: SortMode;
     filters: SearchFilters;
+    datePreset: SearchDatePreset;
     filterOptions: FilterOptions | null;
     onSortModeChange: (sortMode: SortMode) => void;
     onFiltersChange: (patch: SearchFilters) => void;
+    onDatePresetChange: (preset: SearchDatePreset) => void;
 }
 
 function visibleResultKey(query: string, sortMode: SortMode, filters: SearchFilters): string {
-    return `${query.trim()}\u0000${sortMode}\u0000${filters.sourceId || 'all'}\u0000${filters.facet || 'all'}\u0000${filters.dateRange || 'all'}`;
+    return [
+        query.trim(),
+        sortMode,
+        filters.sourceId ?? '',
+        filters.facet ?? '',
+        filters.publishedFrom ?? '',
+        filters.publishedTo ?? '',
+        String(filters.includeUndated ?? false),
+    ].join('\u0000');
 }
 
 function useFacetOptions(filterOptions: FilterOptions | null) {
     return useMemo(() => {
         const facets = Array.from(new Set((filterOptions?.facets || []).map(facet => facet.id)));
-        const preferred: SearchFacet[] = ['notice_article', 'policy', 'workflow', 'download', 'system', 'exam', 'news', 'external'];
+        const preferred: SearchFacet[] = ['notice_article', 'policy', 'workflow', 'download', 'exam', 'news', 'external'];
         const facetById = new Map((filterOptions?.facets || []).map(facet => [facet.id, facet]));
         return preferred
             .filter(facet => facets.includes(facet))
@@ -40,17 +54,19 @@ function useFacetOptions(filterOptions: FilterOptions | null) {
     }, [filterOptions]);
 }
 
-export function CollectionSearchSection({
+export function SearchSection({
     query,
     response,
     searching,
     documentCount,
     sortMode,
     filters,
+    datePreset,
     filterOptions,
     onSortModeChange,
     onFiltersChange,
-}: CollectionSearchSectionProps) {
+    onDatePresetChange,
+}: SearchSectionProps) {
     const trimmedQuery = query.trim();
     const [visibleState, setVisibleState] = useState({ key: '', count: 20 });
     const facetOptions = useFacetOptions(filterOptions);
@@ -70,18 +86,19 @@ export function CollectionSearchSection({
     return (
         <section>
             <div className="mb-2">
-                <CollectionSearchControls
+                <SearchControls
                     activeFilters={activeFilters}
                     facetOptions={facetOptions}
                     filterOptions={filterOptions}
                     filters={filters}
+                    datePreset={datePreset}
                     sortMode={sortMode}
                     onFiltersChange={onFiltersChange}
+                    onDatePresetChange={onDatePresetChange}
                     onSortModeChange={onSortModeChange}
                 />
-                <CollectionSearchStatus
+                <SearchStatus
                     documentCount={documentCount}
-                    elapsedMicros={response?.elapsedMicros ?? null}
                     statusText={statusText}
                 />
             </div>
@@ -89,7 +106,7 @@ export function CollectionSearchSection({
             {visibleResults.length > 0 ? (
                 <div>
                     {visibleResults.map(document => (
-                        <CollectionSearchResultCard key={document.id} document={document} />
+                        <SearchResultCard key={document.id} document={document} />
                     ))}
                     {visibleCount < results.length ? (
                         <div className="pt-4 pb-2 text-center">

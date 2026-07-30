@@ -37,8 +37,24 @@ export function useSearch(
     const [state, setState] = useState<SearchState>(emptyState);
     const trimmed = query.trim();
     const key = useMemo(
-        () => `${trimmed}\u0000${sort}\u0000${filters.sourceId ?? 'all'}\u0000${filters.facet ?? 'all'}\u0000${filters.dateRange ?? 'all'}`,
-        [trimmed, sort, filters.sourceId, filters.facet, filters.dateRange],
+        () => [
+            trimmed,
+            sort,
+            filters.sourceId ?? '',
+            filters.facet ?? '',
+            filters.publishedFrom ?? '',
+            filters.publishedTo ?? '',
+            String(filters.includeUndated ?? false),
+        ].join('\u0000'),
+        [
+            trimmed,
+            sort,
+            filters.sourceId,
+            filters.facet,
+            filters.publishedFrom,
+            filters.publishedTo,
+            filters.includeUndated,
+        ],
     );
 
     useEffect(() => {

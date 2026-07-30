@@ -7,7 +7,7 @@ from typing import Any
 import pandas as pd
 from pydantic import ValidationError
 
-from .model import FIELD_MAPPING, ExamDataError, ExamRecord
+from .model import FIELD_MAPPING, ExamDataError, ExtractedExamRow
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ def process_single_file(file_path: str | Path) -> dict[str, Any]:
             sample[key] = _json_safe_sample_value(value)
 
     current_file_mapping, mapping_details = _resolve_column_mapping(df)
-    clean_models: list[ExamRecord] = []
+    clean_models: list[ExtractedExamRow] = []
     validation_errors: list[str] = []
     parse_success_count = 0
     parse_fail_count = 0
@@ -90,13 +90,12 @@ def process_single_file(file_path: str | Path) -> dict[str, Any]:
         raw_input: dict[str, Any] = {
             "_source_file": filename,
             "_row_index": idx,
-            "id": f"{filename}-{idx}",
         }
         for std_key, original_col in current_file_mapping.items():
             raw_input[std_key] = row.get(original_col) if original_col else None
 
         try:
-            record = ExamRecord(**raw_input)
+            record = ExtractedExamRow(**raw_input)
         except ValidationError as exc:
             validation_errors.append(f"Row {idx}: {exc}")
             parse_fail_count += 1
@@ -109,7 +108,7 @@ def process_single_file(file_path: str | Path) -> dict[str, Any]:
         clean_models.append(record)
 
     serialized_data = [
-        model.model_dump(by_alias=True, exclude={"source_file", "row_index", "validation_error"})
+        model.model_dump(by_alias=True, exclude={"validation_error"})
         for model in clean_models
     ]
 

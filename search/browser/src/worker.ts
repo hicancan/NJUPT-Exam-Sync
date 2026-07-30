@@ -7,59 +7,64 @@ import type { SearchWorkerRequest, SearchWorkerResponse } from './protocol';
 
 const scope = self as DedicatedWorkerGlobalScope;
 let runtime: SearchRuntime | null = null;
-let initController: AbortController | null = null;
+let initialization: AbortController | null = null;
 const searches = new Map<number, AbortController>();
+let queue = Promise.resolve();
 
 function post(message: SearchWorkerResponse): void {
     scope.postMessage(message);
 }
 
-scope.onmessage = async (event: MessageEvent<SearchWorkerRequest>) => {
-    const request = event.data;
-    if (request.type === 'cancel') {
-        searches.get(request.requestId)?.abort();
-        searches.delete(request.requestId);
-        return;
-    }
-
+async function handle(request: Exclude<SearchWorkerRequest, { type: 'cancel' }>): Promise<void> {
     if (request.type === 'init') {
-        initController?.abort();
+        initialization?.abort();
         for (const controller of searches.values()) controller.abort();
         searches.clear();
-        const controller = new AbortController();
-        initController = controller;
         runtime?.dispose();
-        const cache = new CacheStore(request.cacheBudgetBytes);
-        runtime = new SearchRuntime(
-            new ArtifactSource(request.baseUrl, cache),
-            request.chunkBudgetBytes,
+
+        const controller = new AbortController();
+        initialization = controller;
+        const next = new SearchRuntime(
+            new ArtifactSource(
+                request.baseUrl,
+                new CacheStore(request.cacheBudgetBytes),
+            ),
+            request.workingSetBudgetBytes,
         );
+        runtime = next;
         try {
-            const {
-                manifest,
-                documentCount,
-                filterOptions,
-            } = await runtime.initialize(controller.signal);
-            post({
-                type: 'ready',
-                bundleId: manifest.bundle_id,
-                documentCount,
-                filterOptions,
-            });
+            const { manifest, documentCount, filterOptions } =
+                await next.initialize(controller.signal);
+            if (!controller.signal.aborted && runtime === next) {
+                post({
+                    type: 'ready',
+                    bundleId: manifest.bundle_id,
+                    documentCount,
+                    filterOptions,
+                });
+            }
         } catch (error) {
             if (!controller.signal.aborted) {
-                post({ type: 'error', message: error instanceof Error ? error.message : String(error) });
+                runtime = null;
+                post({
+                    type: 'error',
+                    message: error instanceof Error ? error.message : String(error),
+                });
             }
         }
         return;
     }
 
     if (!runtime) {
-        post({ type: 'error', requestId: request.requestId, message: 'search worker is not initialized' });
+        post({
+            type: 'error',
+            requestId: request.requestId,
+            message: 'search worker is not initialized',
+        });
         return;
     }
-    const controller = new AbortController();
-    searches.set(request.requestId, controller);
+    const controller = searches.get(request.requestId);
+    if (!controller || controller.signal.aborted) return;
     try {
         const response = await runtime.search(request.query, controller.signal);
         if (!controller.signal.aborted) {
@@ -74,6 +79,30 @@ scope.onmessage = async (event: MessageEvent<SearchWorkerRequest>) => {
             });
         }
     } finally {
-        searches.delete(request.requestId);
+        if (searches.get(request.requestId) === controller) {
+            searches.delete(request.requestId);
+        }
     }
+}
+
+scope.onmessage = (event: MessageEvent<SearchWorkerRequest>) => {
+    const request = event.data;
+    if (request.type === 'cancel') {
+        searches.get(request.requestId)?.abort();
+        searches.delete(request.requestId);
+        return;
+    }
+    if (request.type === 'search') {
+        const previous = searches.get(request.requestId);
+        previous?.abort();
+        searches.set(request.requestId, new AbortController());
+    }
+    queue = queue
+        .then(() => handle(request))
+        .catch(error => {
+            post({
+                type: 'error',
+                message: error instanceof Error ? error.message : String(error),
+            });
+        });
 };

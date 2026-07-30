@@ -14,7 +14,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './apps/web/src'),
       '@njupt-search/academics-exam': path.resolve(__dirname, './academics/exam'),
-      '@njupt-search/academics-calendar': path.resolve(__dirname, './academics/calendar/ics.ts'),
+      '@njupt-search/academics-exam/calendar': path.resolve(__dirname, './academics/exam/calendar.ts'),
       '@njupt-search/academics-room': path.resolve(__dirname, './academics/room/index.ts'),
       '@njupt-search/search-browser': path.resolve(__dirname, './search/browser/src/index.ts'),
     },

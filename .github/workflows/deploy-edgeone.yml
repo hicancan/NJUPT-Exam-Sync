@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       run_id:
-        description: 'Successful corpus release run id to deploy. Leave empty to use the latest successful run.'
+        description: 'Successful product assembly run id to deploy. Leave empty to use the latest successful run.'
         required: false
         type: string
         default: ''
@@ -30,7 +30,7 @@ jobs:
       - name: Checkout workflow helpers
         uses: actions/checkout@v6
 
-      - name: Resolve verified CI artifact run
+      - name: Resolve verified product artifact run
         id: resolve
         env:
           GH_TOKEN: ${{ github.token }}
@@ -55,14 +55,14 @@ jobs:
             fi
             run_id="$WORKFLOW_RUN_ID"
             if ! has_dist_artifact "$run_id"; then
-              echo "Corpus release run $run_id has no njupt-search-dist artifact; skipping EdgeOne deploy."
+              echo "Product assembly run $run_id has no njupt-search-dist artifact; skipping EdgeOne deploy."
               echo "should_deploy=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
           elif [ -n "$REQUESTED_RUN_ID" ]; then
             run_id="$REQUESTED_RUN_ID"
             if ! has_dist_artifact "$run_id"; then
-              echo "::error::Corpus release run $run_id has no unexpired njupt-search-dist artifact"
+              echo "::error::Product assembly run $run_id has no unexpired njupt-search-dist artifact"
               exit 1
             fi
           else
@@ -126,7 +126,7 @@ jobs:
           {
             echo "### EdgeOne Pages deployment"
             echo
-            echo "- Corpus release run: \`${{ needs.resolve-edgeone.outputs.run_id }}\`"
+            echo "- Product assembly run: \`${{ needs.resolve-edgeone.outputs.run_id }}\`"
             echo "- Project: \`$project\`"
             echo "- Area: \`$area\`"
             grep -E '^EDGEONE_(DEPLOY_URL|DEPLOY_TYPE|PROJECT_ID)=' edgeone-deploy.log || true

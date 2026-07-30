@@ -1,6 +1,6 @@
 import { Download, ExternalLink, FileText, Filter } from 'lucide-react';
 import type { SearchResult } from '@njupt-search/search-browser';
-import { FACET_LABELS } from './collectionSearchLabels';
+import { FACET_LABELS } from './searchLabels';
 
 const isExternalUrl = (url: string): boolean => /^https?:\/\//.test(url);
 
@@ -80,7 +80,7 @@ interface SearchResultCardProps {
     document: SearchResult;
 }
 
-export function CollectionSearchResultCard({ document }: SearchResultCardProps) {
+export function SearchResultCard({ document }: SearchResultCardProps) {
     const date = document.updatedAt || document.publishedAt;
     const wrapperProps = {
         href: document.url,

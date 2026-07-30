@@ -3,9 +3,9 @@ import {
     findFloor,
     findFloorDateArtifact,
     findRoomByTarget,
-    parseRoomQuery,
-    parseRoomSearchInput,
+    parseRoomIntent,
     pickDefaultDate,
+    resolveRoomTarget,
     roomsForFloor,
 } from '@njupt-search/academics-room';
 import { loadRoomFloorOccupancy, loadRoomOccupancy } from './roomData';
@@ -82,9 +82,11 @@ export function useRoomOccupancy(input: UseRoomOccupancyInput): RoomOccupancySta
         return () => controller.abort();
     }, []);
 
-    const roomTarget = useMemo(() => parseRoomSearchInput(input.query), [input.query]);
-    const queryFilters = useMemo(() => parseRoomQuery(input.query), [input.query]);
     const index = indexState.data;
+    const roomTarget = useMemo(
+        () => index ? resolveRoomTarget(index, parseRoomIntent(input.query)) : null,
+        [index, input.query]
+    );
     const selected = useMemo<RoomSelection>(() => {
         if (!index) return null;
         const date = input.date || pickDefaultDate(index);
@@ -92,9 +94,9 @@ export function useRoomOccupancy(input: UseRoomOccupancyInput): RoomOccupancySta
         if (roomTarget?.kind === 'room' && !selectedRoom) {
             return { error: `教室目录中不存在：${roomTarget.display}` };
         }
-        const campus = input.campus || queryFilters.campus || null;
-        const building = input.building || queryFilters.building || null;
-        const floor = selectedRoom?.floor || input.floor || queryFilters.floor || null;
+        const campus = input.campus || (roomTarget?.kind !== 'entry' ? roomTarget?.campus : null) || null;
+        const building = input.building || (roomTarget?.kind !== 'entry' ? roomTarget?.building : null) || null;
+        const floor = selectedRoom?.floor || input.floor || (roomTarget?.kind === 'room' ? roomTarget.floor : null) || null;
         const floorEntry = findFloor(index, campus, building, floor);
         if (!floorEntry) {
             if (campus || building || floor) {
@@ -114,13 +116,13 @@ export function useRoomOccupancy(input: UseRoomOccupancyInput): RoomOccupancySta
             rooms: selectedRoom ? [selectedRoom] : floorRooms,
             error: null,
         };
-    }, [index, input.building, input.campus, input.date, input.floor, queryFilters, roomTarget]);
+    }, [index, input.building, input.campus, input.date, input.floor, roomTarget]);
 
     useEffect(() => {
         if (!index || !selected) return;
         if (!('artifact' in selected) || !selected.artifact) return;
         const controller = new AbortController();
-        loadRoomFloorOccupancy(selected.artifact, index.data_version, controller.signal)
+        loadRoomFloorOccupancy(selected.artifact, index, controller.signal)
             .then((data) => setFloorState({ path: selected.artifact?.path || null, data, error: null }))
             .catch((err) => {
                 if (err instanceof DOMException && err.name === 'AbortError') return;

@@ -1,7 +1,6 @@
 export { SearchClient } from './client';
-export type { SearchClientOptions, SearchClientReady } from './client';
+export type { SearchClientOptions } from './client';
 export type {
-    DateRange,
     FilterOption,
     FilterOptions,
     Query,

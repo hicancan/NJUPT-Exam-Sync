@@ -13,12 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-academics:
     runs-on: ubuntu-latest
-    env:
-      CORPUS_URL: ${{ vars.CURRENT_CORPUS_URL }}
-      CORPUS_ID: ${{ vars.CURRENT_CORPUS_ID }}
-      CORPUS_SHA256: ${{ vars.CURRENT_CORPUS_SHA256 }}
     steps:
       - uses: actions/checkout@v6
 
@@ -33,27 +29,18 @@ jobs:
 
       - uses: astral-sh/setup-uv@v8.2.0
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-
       - name: Install production build dependencies
         run: |
           npm ci
           uv sync --frozen --extra test
-          cargo install wasm-pack --version 0.15.0 --locked
-
-      - name: Test academics compilers
-        run: |
-          uv run pytest academics/exam academics/room/occupancy -q
 
       - name: Discover and build explicit academic artifacts
         shell: pwsh
         run: |
-          uv run python -m academics.exam update-source `
-            --source academics/exam/source/current.json
+          uv run python -m academics.exam discover `
+            --output "$env:RUNNER_TEMP/exam-source.json"
           ./ops/build-academics.ps1 `
-            -SourcePath academics/exam/source/current.json `
+            -SourcePath "$env:RUNNER_TEMP/exam-source.json" `
             -MaterializedPath "$env:RUNNER_TEMP/exam-materialized" `
             -CachePath "$env:RUNNER_TEMP/exam-cache" `
             -ExamOutputPath "$env:RUNNER_TEMP/exam-snapshot" `
@@ -64,35 +51,115 @@ jobs:
       - name: Validate academics artifacts
         run: npm run academics:validate -- --exam "$RUNNER_TEMP/exam-snapshot" --room "$RUNNER_TEMP/room-occupancy"
 
-      - name: Download the explicit current corpus
+      - name: Publish immutable academic artifacts and current pointers
+        env:
+          GH_TOKEN: ${{ secrets.NJUPT_SEARCH_GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          : "${CORPUS_URL:?CURRENT_CORPUS_URL repository variable is required}"
-          : "${CORPUS_ID:?CURRENT_CORPUS_ID repository variable is required}"
-          : "${CORPUS_SHA256:?CURRENT_CORPUS_SHA256 repository variable is required}"
-          test "${#CORPUS_SHA256}" -eq 64
-          curl --fail --location --retry 3 --output "$RUNNER_TEMP/corpus.tar.zst" "$CORPUS_URL"
-          printf '%s  %s\n' "$CORPUS_SHA256" "$RUNNER_TEMP/corpus.tar.zst" | sha256sum --check -
-          mkdir "$RUNNER_TEMP/corpus"
-          tar --zstd -xf "$RUNNER_TEMP/corpus.tar.zst" -C "$RUNNER_TEMP/corpus"
-          python - <<'PY'
-          import json, os
-          from pathlib import Path
-          manifest = json.loads((Path(os.environ["RUNNER_TEMP"]) / "corpus" / "manifest.json").read_text(encoding="utf-8"))
-          if manifest.get("format") != "njupt-corpus-snapshot-v2":
-              raise SystemExit("unsupported corpus format")
-          if manifest.get("snapshot_id") != os.environ["CORPUS_ID"]:
-              raise SystemExit("CURRENT_CORPUS_ID does not match manifest snapshot_id")
-          PY
+          : "${GH_TOKEN:?NJUPT_SEARCH_GITHUB_TOKEN is required}"
+          exam_id="$(jq -r .snapshot_id "$RUNNER_TEMP/exam-snapshot/manifest.json")"
+          occupancy_id="$(jq -r .occupancy_id "$RUNNER_TEMP/room-occupancy/manifest.json")"
+          test "${#exam_id}" -eq 64
+          test "${#occupancy_id}" -eq 64
+          academics_id="$(printf '%s\0%s' "$exam_id" "$occupancy_id" | sha256sum | cut -d' ' -f1)"
+          exam_archive="njupt-exam-${exam_id}.tar.zst"
+          room_archive="njupt-room-occupancy-${occupancy_id}.tar.zst"
+          tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner \
+            --zstd -cf "$exam_archive" -C "$RUNNER_TEMP/exam-snapshot" .
+          tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner \
+            --zstd -cf "$room_archive" -C "$RUNNER_TEMP/room-occupancy" .
+          exam_sha256="$(sha256sum "$exam_archive" | cut -d' ' -f1)"
+          room_sha256="$(sha256sum "$room_archive" | cut -d' ' -f1)"
+          release_tag="academics-${academics_id}"
+          exam_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${release_tag}/${exam_archive}"
+          room_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${release_tag}/${room_archive}"
 
-      - name: Reassemble the product with the new academics artifacts
+          if ! gh release view "$release_tag" >/dev/null 2>&1; then
+            gh release create "$release_tag" "$exam_archive" "$room_archive" \
+              --title "NJUPT academics $academics_id" \
+              --notes "Immutable ExamSnapshot $exam_id and RoomOccupancy $occupancy_id"
+          else
+            mkdir published
+            for asset in "$exam_archive" "$room_archive"; do
+              gh release download "$release_tag" --pattern "$asset" --dir published
+              cmp --silent "$asset" "published/$asset" || {
+                echo "::error::Existing immutable academic artifact differs: $asset"
+                exit 1
+              }
+            done
+          fi
+
+          gh variable set EXAM_SNAPSHOT_URL --body "$exam_url"
+          gh variable set EXAM_SNAPSHOT_SHA256 --body "$exam_sha256"
+          gh variable set ROOM_OCCUPANCY_URL --body "$room_url"
+          gh variable set ROOM_OCCUPANCY_SHA256 --body "$room_sha256"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: current-exam-snapshot
+          path: ${{ runner.temp }}/exam-snapshot
+          if-no-files-found: error
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: current-room-occupancy
+          path: ${{ runner.temp }}/room-occupancy
+          if-no-files-found: error
+          retention-days: 7
+
+  assemble:
+    needs: build-academics
+    if: ${{ vars.SEARCH_BUNDLE_URL != '' && vars.SEARCH_BUNDLE_SHA256 != '' }}
+    runs-on: ubuntu-latest
+    env:
+      SEARCH_BUNDLE_URL: ${{ vars.SEARCH_BUNDLE_URL }}
+      SEARCH_BUNDLE_SHA256: ${{ vars.SEARCH_BUNDLE_SHA256 }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: current-exam-snapshot
+          path: ${{ runner.temp }}/exam-snapshot
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: current-room-occupancy
+          path: ${{ runner.temp }}/room-occupancy
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install Web build dependencies
+        run: |
+          npm ci
+          cargo install wasm-pack --version 0.15.0 --locked
+
+      - name: Download the current immutable SearchBundle
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 \
+            --output "$RUNNER_TEMP/search-bundle.tar.zst" "$SEARCH_BUNDLE_URL"
+          printf '%s  %s\n' "$SEARCH_BUNDLE_SHA256" "$RUNNER_TEMP/search-bundle.tar.zst" \
+            | sha256sum --check -
+          mkdir "$RUNNER_TEMP/search-bundle"
+          tar --zstd -xf "$RUNNER_TEMP/search-bundle.tar.zst" \
+            -C "$RUNNER_TEMP/search-bundle"
+          npm run academics:validate -- \
+            --exam "$RUNNER_TEMP/exam-snapshot" \
+            --room "$RUNNER_TEMP/room-occupancy"
+
+      - name: Assemble the complete Web product
         shell: pwsh
         run: |
-          ./ops/build-search-bundle.ps1 `
-            -CorpusPath "$env:RUNNER_TEMP/corpus" `
-            -BundlePath "$env:RUNNER_TEMP/search-bundle"
-          node benchmarks/search/quality.mjs `
-            --bundle "$env:RUNNER_TEMP/search-bundle"
+          npm run build:wasm:web
           ./ops/assemble-web.ps1 `
             -SearchBundlePath "$env:RUNNER_TEMP/search-bundle" `
             -ExamSnapshotPath "$env:RUNNER_TEMP/exam-snapshot" `
@@ -102,21 +169,7 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: njupt-exam-snapshot
-          path: ${{ runner.temp }}/exam-snapshot
-          if-no-files-found: error
-          retention-days: 7
-
-      - uses: actions/upload-artifact@v7
-        with:
           name: njupt-search-dist
           path: ${{ runner.temp }}/dist
-          if-no-files-found: error
-          retention-days: 7
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: njupt-room-occupancy
-          path: ${{ runner.temp }}/room-occupancy
           if-no-files-found: error
           retention-days: 7

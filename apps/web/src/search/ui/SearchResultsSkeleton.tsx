@@ -1,6 +1,6 @@
 import { SkeletonBlock } from '@/shared/ui/SkeletonBlock';
 
-export function CollectionResultsSkeleton() {
+export function SearchResultsSkeleton() {
     const tabWidths = ['w-12', 'w-16', 'w-16', 'w-16', 'w-16'];
 
     return (

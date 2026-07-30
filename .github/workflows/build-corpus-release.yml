@@ -6,16 +6,16 @@ on:
   workflow_dispatch:
     inputs:
       corpus_url:
-        description: Immutable NjuptCorpusSnapshot artifact URL
-        required: true
+        description: Immutable NjuptCorpusSnapshot artifact URL; empty uses the current repository pointer
+        required: false
         type: string
       corpus_id:
-        description: NjuptCorpusSnapshot content identity
-        required: true
+        description: NjuptCorpusSnapshot content identity; empty uses the current repository pointer
+        required: false
         type: string
       corpus_sha256:
-        description: SHA-256 of the compressed corpus artifact
-        required: true
+        description: SHA-256 of the compressed corpus artifact; empty uses the current repository pointer
+        required: false
         type: string
 
 permissions:
@@ -26,16 +26,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-search:
     runs-on: ubuntu-latest
     env:
-      CORPUS_URL: ${{ github.event.client_payload.corpus_url || inputs.corpus_url }}
-      CORPUS_ID: ${{ github.event.client_payload.corpus_id || inputs.corpus_id }}
-      CORPUS_SHA256: ${{ github.event.client_payload.corpus_sha256 || inputs.corpus_sha256 }}
-      EXAM_SNAPSHOT_URL: ${{ vars.EXAM_SNAPSHOT_URL }}
-      EXAM_SNAPSHOT_SHA256: ${{ vars.EXAM_SNAPSHOT_SHA256 }}
-      ROOM_OCCUPANCY_URL: ${{ vars.ROOM_OCCUPANCY_URL }}
-      ROOM_OCCUPANCY_SHA256: ${{ vars.ROOM_OCCUPANCY_SHA256 }}
+      CORPUS_URL: ${{ github.event.client_payload.corpus_url || inputs.corpus_url || vars.CURRENT_CORPUS_URL }}
+      CORPUS_ID: ${{ github.event.client_payload.corpus_id || inputs.corpus_id || vars.CURRENT_CORPUS_ID }}
+      CORPUS_SHA256: ${{ github.event.client_payload.corpus_sha256 || inputs.corpus_sha256 || vars.CURRENT_CORPUS_SHA256 }}
     steps:
       - uses: actions/checkout@v6
 
@@ -45,30 +41,102 @@ jobs:
           : "${CORPUS_URL:?corpus_url is required}"
           : "${CORPUS_ID:?corpus_id is required}"
           : "${CORPUS_SHA256:?corpus_sha256 is required}"
-          : "${EXAM_SNAPSHOT_URL:?EXAM_SNAPSHOT_URL repository variable is required}"
-          : "${EXAM_SNAPSHOT_SHA256:?EXAM_SNAPSHOT_SHA256 repository variable is required}"
-          : "${ROOM_OCCUPANCY_URL:?ROOM_OCCUPANCY_URL repository variable is required}"
-          : "${ROOM_OCCUPANCY_SHA256:?ROOM_OCCUPANCY_SHA256 repository variable is required}"
+          test "${#CORPUS_ID}" -eq 64
           test "${#CORPUS_SHA256}" -eq 64
-          test "${#EXAM_SNAPSHOT_SHA256}" -eq 64
-          test "${#ROOM_OCCUPANCY_SHA256}" -eq 64
 
-      - name: Download and verify corpus
+      - name: Download corpus
         run: |
           set -euo pipefail
           curl --fail --location --retry 3 --output corpus.tar.zst "$CORPUS_URL"
           printf '%s  %s\n' "$CORPUS_SHA256" corpus.tar.zst | sha256sum --check -
           mkdir corpus
           tar --zstd -xf corpus.tar.zst -C corpus
-          python - <<'PY'
-          import json, os
-          from pathlib import Path
-          manifest = json.loads(Path("corpus/manifest.json").read_text(encoding="utf-8"))
-          if manifest.get("format") != "njupt-corpus-snapshot-v2":
-              raise SystemExit("unsupported corpus format")
-          if manifest.get("snapshot_id") != os.environ["CORPUS_ID"]:
-              raise SystemExit("corpus_id does not match manifest snapshot_id")
-          PY
+          test "$(jq -r .snapshot_id corpus/manifest.json)" = "$CORPUS_ID"
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install build dependencies
+        run: npm ci
+
+      - name: Compile and measure SearchBundle
+        shell: pwsh
+        run: |
+          ./ops/build-search-bundle.ps1 `
+            -CorpusPath corpus `
+            -BundlePath "$env:RUNNER_TEMP/search-bundle"
+          node benchmarks/search/quality.mjs `
+            --bundle "$env:RUNNER_TEMP/search-bundle"
+
+      - name: Publish immutable SearchBundle and current pointers
+        id: search
+        env:
+          GH_TOKEN: ${{ secrets.NJUPT_SEARCH_GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          : "${GH_TOKEN:?NJUPT_SEARCH_GITHUB_TOKEN is required}"
+          bundle_id="$(jq -r .bundle_id "$RUNNER_TEMP/search-bundle/manifest.json")"
+          test "${#bundle_id}" -eq 64
+          archive="njupt-search-bundle-${bundle_id}.tar.zst"
+          tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner \
+            --zstd -cf "$archive" -C "$RUNNER_TEMP/search-bundle" .
+          archive_sha256="$(sha256sum "$archive" | cut -d' ' -f1)"
+          release_tag="search-bundle-${bundle_id}"
+          bundle_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${release_tag}/${archive}"
+
+          if ! gh release view "$release_tag" >/dev/null 2>&1; then
+            gh release create "$release_tag" "$archive" \
+              --title "NJUPT SearchBundle $bundle_id" \
+              --notes "Immutable SearchBundle $bundle_id compiled from NjuptCorpusSnapshot $CORPUS_ID"
+          else
+            mkdir published
+            gh release download "$release_tag" --pattern "$archive" --dir published
+            cmp --silent "$archive" "published/$archive" || {
+              echo "::error::Existing immutable SearchBundle differs from this build"
+              exit 1
+            }
+          fi
+
+          gh variable set SEARCH_BUNDLE_URL --body "$bundle_url"
+          gh variable set SEARCH_BUNDLE_SHA256 --body "$archive_sha256"
+          gh variable set CURRENT_CORPUS_URL --body "$CORPUS_URL"
+          gh variable set CURRENT_CORPUS_ID --body "$CORPUS_ID"
+          gh variable set CURRENT_CORPUS_SHA256 --body "$CORPUS_SHA256"
+          echo "bundle_id=$bundle_id" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: current-search-bundle
+          path: ${{ runner.temp }}/search-bundle
+          if-no-files-found: error
+          retention-days: 7
+
+  assemble:
+    needs: build-search
+    if: >-
+      ${{
+        vars.EXAM_SNAPSHOT_URL != '' &&
+        vars.EXAM_SNAPSHOT_SHA256 != '' &&
+        vars.ROOM_OCCUPANCY_URL != '' &&
+        vars.ROOM_OCCUPANCY_SHA256 != ''
+      }}
+    runs-on: ubuntu-latest
+    env:
+      EXAM_SNAPSHOT_URL: ${{ vars.EXAM_SNAPSHOT_URL }}
+      EXAM_SNAPSHOT_SHA256: ${{ vars.EXAM_SNAPSHOT_SHA256 }}
+      ROOM_OCCUPANCY_URL: ${{ vars.ROOM_OCCUPANCY_URL }}
+      ROOM_OCCUPANCY_SHA256: ${{ vars.ROOM_OCCUPANCY_SHA256 }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: current-search-bundle
+          path: ${{ runner.temp }}/search-bundle
 
       - uses: actions/setup-node@v6
         with:
@@ -79,12 +147,12 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
-      - name: Install build dependencies
+      - name: Install Web build dependencies
         run: |
           npm ci
           cargo install wasm-pack --version 0.15.0 --locked
 
-      - name: Download explicit academic artifacts for assembly
+      - name: Download and validate current academic artifacts
         run: |
           set -euo pipefail
           curl --fail --location --retry 3 --output exam.tar.zst "$EXAM_SNAPSHOT_URL"
@@ -94,15 +162,11 @@ jobs:
           mkdir exam-snapshot room-occupancy
           tar --zstd -xf exam.tar.zst -C exam-snapshot
           tar --zstd -xf rooms.tar.zst -C room-occupancy
+          npm run academics:validate -- --exam exam-snapshot --room room-occupancy
 
-      - name: Compile SearchBundle and assemble the product
+      - name: Assemble the complete Web product
         shell: pwsh
         run: |
-          ./ops/build-search-bundle.ps1 `
-            -CorpusPath corpus `
-            -BundlePath "$env:RUNNER_TEMP/search-bundle"
-          node benchmarks/search/quality.mjs `
-            --bundle "$env:RUNNER_TEMP/search-bundle"
           npm run build:wasm:web
           ./ops/assemble-web.ps1 `
             -SearchBundlePath "$env:RUNNER_TEMP/search-bundle" `
@@ -115,12 +179,5 @@ jobs:
         with:
           name: njupt-search-dist
           path: ${{ runner.temp }}/dist
-          if-no-files-found: error
-          retention-days: 7
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: search-bundle-${{ env.CORPUS_ID }}
-          path: ${{ runner.temp }}/search-bundle
           if-no-files-found: error
           retention-days: 7

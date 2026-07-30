@@ -1,34 +1,31 @@
-use crate::model::{CorpusAttachment, DocumentMeta, Posting};
+use crate::document::{Attachment, DocumentKind, DocumentMeta, Posting};
+use crate::query::SearchFacet;
 
-pub const DOCUMENT_MAGIC: &[u8; 8] = b"NSDOC001";
-pub const LEXICON_MAGIC: &[u8; 8] = b"NSLEX001";
-pub const POSTINGS_MAGIC: &[u8; 8] = b"NSPST001";
-pub const CONTENT_MAGIC: &[u8; 8] = b"NSCNT001";
+const DOCUMENT_MAGIC: &[u8; 8] = b"NSDOCZQK";
+const LEXICON_MAGIC: &[u8; 8] = b"NSLEXRHM";
+const POSTINGS_MAGIC: &[u8; 8] = b"NSPSTWJF";
+const CONTENT_MAGIC: &[u8; 8] = b"NSCNTKDX";
 
-pub struct Writer {
+struct Writer {
     bytes: Vec<u8>,
 }
 
 impl Writer {
-    pub fn new(magic: &[u8; 8]) -> Self {
+    fn new(magic: &[u8; 8]) -> Self {
         Self {
             bytes: magic.to_vec(),
         }
     }
 
-    pub fn u8(&mut self, value: u8) {
+    fn u8(&mut self, value: u8) {
         self.bytes.push(value);
     }
 
-    pub fn u16(&mut self, value: u16) {
+    fn u32(&mut self, value: u32) {
         self.bytes.extend_from_slice(&value.to_le_bytes());
     }
 
-    pub fn u32(&mut self, value: u32) {
-        self.bytes.extend_from_slice(&value.to_le_bytes());
-    }
-
-    pub fn var_u32(&mut self, mut value: u32) {
+    fn var_u32(&mut self, mut value: u32) {
         while value >= 0x80 {
             self.u8((value as u8 & 0x7f) | 0x80);
             value >>= 7;
@@ -36,12 +33,12 @@ impl Writer {
         self.u8(value as u8);
     }
 
-    pub fn string(&mut self, value: &str) {
+    fn string(&mut self, value: &str) {
         self.u32(value.len() as u32);
         self.bytes.extend_from_slice(value.as_bytes());
     }
 
-    pub fn optional_string(&mut self, value: Option<&str>) {
+    fn optional_string(&mut self, value: Option<&str>) {
         match value {
             Some(value) => {
                 self.u8(1);
@@ -51,20 +48,20 @@ impl Writer {
         }
     }
 
-    pub fn finish(self) -> Vec<u8> {
+    fn finish(self) -> Vec<u8> {
         self.bytes
     }
 }
 
-pub struct Reader<'a> {
+struct Reader<'a> {
     bytes: &'a [u8],
     offset: usize,
 }
 
 impl<'a> Reader<'a> {
-    pub fn new(bytes: &'a [u8], magic: &[u8; 8]) -> Result<Self, String> {
+    fn new(bytes: &'a [u8], magic: &[u8; 8]) -> Result<Self, String> {
         if bytes.get(..8) != Some(magic) {
-            return Err("invalid search bundle artifact header".to_string());
+            return Err("incompatible search artifact codec".to_string());
         }
         Ok(Self { bytes, offset: 8 })
     }
@@ -77,28 +74,22 @@ impl<'a> Reader<'a> {
         let value = self
             .bytes
             .get(self.offset..end)
-            .ok_or_else(|| "truncated search bundle artifact".to_string())?;
+            .ok_or_else(|| "truncated search artifact".to_string())?;
         self.offset = end;
         Ok(value)
     }
 
-    pub fn u8(&mut self) -> Result<u8, String> {
+    fn u8(&mut self) -> Result<u8, String> {
         Ok(self.take(1)?[0])
     }
 
-    pub fn u16(&mut self) -> Result<u16, String> {
-        let mut bytes = [0_u8; 2];
-        bytes.copy_from_slice(self.take(2)?);
-        Ok(u16::from_le_bytes(bytes))
-    }
-
-    pub fn u32(&mut self) -> Result<u32, String> {
+    fn u32(&mut self) -> Result<u32, String> {
         let mut bytes = [0_u8; 4];
         bytes.copy_from_slice(self.take(4)?);
         Ok(u32::from_le_bytes(bytes))
     }
 
-    pub fn var_u32(&mut self) -> Result<u32, String> {
+    fn var_u32(&mut self) -> Result<u32, String> {
         let mut value = 0_u32;
         for shift in (0..35).step_by(7) {
             let byte = self.u8()?;
@@ -107,15 +98,15 @@ impl<'a> Reader<'a> {
                 return Ok(value);
             }
         }
-        Err("invalid varint in search bundle artifact".to_string())
+        Err("invalid varint in search artifact".to_string())
     }
 
-    pub fn string(&mut self) -> Result<String, String> {
+    fn string(&mut self) -> Result<String, String> {
         let length = self.u32()? as usize;
         String::from_utf8(self.take(length)?.to_vec()).map_err(|error| error.to_string())
     }
 
-    pub fn optional_string(&mut self) -> Result<Option<String>, String> {
+    fn optional_string(&mut self) -> Result<Option<String>, String> {
         match self.u8()? {
             0 => Ok(None),
             1 => self.string().map(Some),
@@ -123,16 +114,58 @@ impl<'a> Reader<'a> {
         }
     }
 
-    pub fn finish(self) -> Result<(), String> {
+    fn finish(self) -> Result<(), String> {
         if self.offset == self.bytes.len() {
             Ok(())
         } else {
-            Err("trailing bytes in search bundle artifact".to_string())
+            Err("trailing bytes in search artifact".to_string())
         }
     }
 }
 
-pub fn encode_documents(documents: &[DocumentMeta]) -> Vec<u8> {
+fn encode_kind(kind: DocumentKind) -> u8 {
+    match kind {
+        DocumentKind::Page => 1,
+        DocumentKind::Attachment => 2,
+        DocumentKind::External => 3,
+    }
+}
+
+fn decode_kind(value: u8) -> Result<DocumentKind, String> {
+    match value {
+        1 => Ok(DocumentKind::Page),
+        2 => Ok(DocumentKind::Attachment),
+        3 => Ok(DocumentKind::External),
+        _ => Err("invalid document kind".to_string()),
+    }
+}
+
+fn encode_facet(facet: SearchFacet) -> u8 {
+    match facet {
+        SearchFacet::NoticeArticle => 1,
+        SearchFacet::Policy => 2,
+        SearchFacet::Workflow => 3,
+        SearchFacet::Download => 4,
+        SearchFacet::Exam => 5,
+        SearchFacet::News => 6,
+        SearchFacet::External => 7,
+    }
+}
+
+fn decode_facet(value: u8) -> Result<SearchFacet, String> {
+    match value {
+        1 => Ok(SearchFacet::NoticeArticle),
+        2 => Ok(SearchFacet::Policy),
+        3 => Ok(SearchFacet::Workflow),
+        4 => Ok(SearchFacet::Download),
+        5 => Ok(SearchFacet::Exam),
+        6 => Ok(SearchFacet::News),
+        7 => Ok(SearchFacet::External),
+        _ => Err("invalid search facet".to_string()),
+    }
+}
+
+pub(super) fn encode_documents(documents: &[DocumentMeta]) -> Vec<u8> {
     let mut writer = Writer::new(DOCUMENT_MAGIC);
     writer.u32(documents.len() as u32);
     for document in documents {
@@ -144,13 +177,9 @@ pub fn encode_documents(documents: &[DocumentMeta]) -> Vec<u8> {
         writer.optional_string(document.published_at.as_deref());
         writer.optional_string(document.updated_at.as_deref());
         writer.optional_string(document.section.as_deref());
-        writer.string(&document.kind);
-        writer.string(&document.facet);
+        writer.u8(encode_kind(document.kind));
+        writer.u8(encode_facet(document.facet));
         writer.u32(document.content_chunk);
-        writer.u32(document.tags.len() as u32);
-        for tag in &document.tags {
-            writer.string(tag);
-        }
         writer.u32(document.attachments.len() as u32);
         for attachment in &document.attachments {
             writer.string(&attachment.id);
@@ -162,7 +191,7 @@ pub fn encode_documents(documents: &[DocumentMeta]) -> Vec<u8> {
     writer.finish()
 }
 
-pub fn decode_documents(bytes: &[u8]) -> Result<Vec<DocumentMeta>, String> {
+pub(crate) fn decode_documents(bytes: &[u8]) -> Result<Vec<DocumentMeta>, String> {
     let mut reader = Reader::new(bytes, DOCUMENT_MAGIC)?;
     let count = reader.u32()? as usize;
     let mut documents = Vec::with_capacity(count);
@@ -175,18 +204,13 @@ pub fn decode_documents(bytes: &[u8]) -> Result<Vec<DocumentMeta>, String> {
         let published_at = reader.optional_string()?;
         let updated_at = reader.optional_string()?;
         let section = reader.optional_string()?;
-        let kind = reader.string()?;
-        let facet = reader.string()?;
+        let kind = decode_kind(reader.u8()?)?;
+        let facet = decode_facet(reader.u8()?)?;
         let content_chunk = reader.u32()?;
-        let tag_count = reader.u32()? as usize;
-        let mut tags = Vec::with_capacity(tag_count);
-        for _ in 0..tag_count {
-            tags.push(reader.string()?);
-        }
         let attachment_count = reader.u32()? as usize;
         let mut attachments = Vec::with_capacity(attachment_count);
         for _ in 0..attachment_count {
-            attachments.push(CorpusAttachment {
+            attachments.push(Attachment {
                 id: reader.string()?,
                 url: reader.string()?,
                 name: reader.string()?,
@@ -204,7 +228,6 @@ pub fn decode_documents(bytes: &[u8]) -> Result<Vec<DocumentMeta>, String> {
             section,
             kind,
             facet,
-            tags,
             attachments,
             content_chunk,
         });
@@ -213,7 +236,7 @@ pub fn decode_documents(bytes: &[u8]) -> Result<Vec<DocumentMeta>, String> {
     Ok(documents)
 }
 
-pub fn encode_lexicon(entries: &[(String, u32)]) -> Vec<u8> {
+pub(super) fn encode_lexicon(entries: &[(String, u32)]) -> Vec<u8> {
     let mut writer = Writer::new(LEXICON_MAGIC);
     writer.u32(entries.len() as u32);
     let mut previous = String::new();
@@ -233,7 +256,7 @@ pub fn encode_lexicon(entries: &[(String, u32)]) -> Vec<u8> {
     writer.finish()
 }
 
-pub fn decode_lexicon(bytes: &[u8]) -> Result<Vec<(String, u32)>, String> {
+pub(crate) fn decode_lexicon(bytes: &[u8]) -> Result<Vec<(String, u32)>, String> {
     let mut reader = Reader::new(bytes, LEXICON_MAGIC)?;
     let count = reader.u32()? as usize;
     let mut entries = Vec::with_capacity(count);
@@ -252,7 +275,7 @@ pub fn decode_lexicon(bytes: &[u8]) -> Result<Vec<(String, u32)>, String> {
     Ok(entries)
 }
 
-pub fn encode_postings(entries: &[(String, Vec<Posting>)]) -> Vec<u8> {
+pub(super) fn encode_postings(entries: &[(String, Vec<Posting>)]) -> Vec<u8> {
     let mut writer = Writer::new(POSTINGS_MAGIC);
     writer.u32(entries.len() as u32);
     for (term, postings) in entries {
@@ -269,7 +292,7 @@ pub fn encode_postings(entries: &[(String, Vec<Posting>)]) -> Vec<u8> {
     writer.finish()
 }
 
-pub fn decode_postings(bytes: &[u8]) -> Result<Vec<(String, Vec<Posting>)>, String> {
+pub(crate) fn decode_postings(bytes: &[u8]) -> Result<Vec<(String, Vec<Posting>)>, String> {
     let mut reader = Reader::new(bytes, POSTINGS_MAGIC)?;
     let count = reader.u32()? as usize;
     let mut entries = Vec::with_capacity(count);
@@ -295,7 +318,7 @@ pub fn decode_postings(bytes: &[u8]) -> Result<Vec<(String, Vec<Posting>)>, Stri
     Ok(entries)
 }
 
-pub fn encode_content(entries: &[(u32, String)]) -> Vec<u8> {
+pub(super) fn encode_content(entries: &[(u32, String)]) -> Vec<u8> {
     let mut writer = Writer::new(CONTENT_MAGIC);
     writer.u32(entries.len() as u32);
     for (document, content) in entries {
@@ -305,7 +328,7 @@ pub fn encode_content(entries: &[(u32, String)]) -> Vec<u8> {
     writer.finish()
 }
 
-pub fn decode_content(bytes: &[u8]) -> Result<Vec<(u32, String)>, String> {
+pub(crate) fn decode_content(bytes: &[u8]) -> Result<Vec<(u32, String)>, String> {
     let mut reader = Reader::new(bytes, CONTENT_MAGIC)?;
     let count = reader.u32()? as usize;
     let mut entries = Vec::with_capacity(count);
@@ -326,7 +349,7 @@ mod tests {
         bytes.push(0);
         assert_eq!(
             decode_lexicon(&bytes).unwrap_err(),
-            "trailing bytes in search bundle artifact"
+            "trailing bytes in search artifact"
         );
     }
 }

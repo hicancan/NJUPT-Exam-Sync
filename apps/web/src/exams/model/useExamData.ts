@@ -1,232 +1,176 @@
 import { useEffect, useState } from 'react';
 import { APP_CONFIG } from '@/app/config/constants';
 import {
-    assertClassDataMatchesIndex,
     assertClassIndexMatchesManifest,
     assertExamSnapshotIdentity,
-    parseExamClassData,
+    parseExamClassChunk,
     parseExamClassIndex,
-    parseManifest,
-    resolveExamDataVersion
+    parseExamSnapshotManifest,
+    selectClassFromChunk,
 } from '@njupt-search/academics-exam/snapshot';
 import { getClassNameSearchResult } from '@njupt-search/academics-exam/query';
 import { fetchArtifactJson, fetchJson } from '@/shared/lib/fetch';
+import type { ClassLookupResult } from '@njupt-search/academics-exam/query';
 import type {
-    ExamClassData,
+    ArtifactRef,
     ExamClassIndex,
     ExamClassIndexEntry,
-    Manifest,
-    SearchResult
-} from '@njupt-search/academics-exam/records';
+    ExamSnapshotManifest,
+} from '@njupt-search/academics-exam/snapshot';
 
 interface UseExamDataResult {
-    classMode: SearchResult;
+    classMode: ClassLookupResult;
     loading: boolean;
     error: string | null;
     sourceUrl: string | null;
     sourceTitle: string | null;
-    generatedAt: string | null;
-    dataVersion: string | null;
+    sourceUpdatedAt: string | null;
+    snapshotId: string | null;
     examPeriodId: string | null;
-    classIndex: ExamClassIndex | null;
-    currentClassEntry: ExamClassIndexEntry | null;
 }
 
-type ExamDataState = UseExamDataResult & {
-    requestKey: string | null;
-};
-
-const toPublicExamDataState = (state: ExamDataState): UseExamDataResult => ({
-    classMode: state.classMode,
-    loading: state.loading,
-    error: state.error,
-    sourceUrl: state.sourceUrl,
-    sourceTitle: state.sourceTitle,
-    generatedAt: state.generatedAt,
-    dataVersion: state.dataVersion,
-    examPeriodId: state.examPeriodId,
-    classIndex: state.classIndex,
-    currentClassEntry: state.currentClassEntry,
-});
+type ExamDataState = UseExamDataResult & { requestKey: string | null };
 
 interface LoadedExamIndex {
-    manifest: Manifest;
+    manifest: ExamSnapshotManifest;
     classIndex: ExamClassIndex;
-    dataVersion: string;
 }
 
-export const examDataUrlWithVersion = (url: string, dataVersion: string): string => {
-    const params = new URLSearchParams({ v: dataVersion });
-    const separator = url.includes('?') ? '&' : '?';
-    return `${url}${separator}${params.toString()}`;
+const artifactUrl = (baseUrl: string, artifact: ArtifactRef): string => {
+    const separator = artifact.path.includes('?') ? '&' : '?';
+    return `${baseUrl}/${artifact.path}${separator}sha256=${artifact.sha256}`;
 };
 
-export const examSummaryUrlWithNonce = (url: string, nonce = Date.now().toString(36)): string => {
-    const separator = url.includes('?') ? '&' : '?';
-    return `${url}${separator}fresh=${encodeURIComponent(nonce)}`;
-};
+export class ExamSnapshotClient {
+    readonly #baseUrl: string;
+    #indexPromise: Promise<LoadedExamIndex> | null = null;
 
-export async function loadExamIndex(signal?: AbortSignal): Promise<LoadedExamIndex> {
-    const nonce = Date.now().toString(36);
-    const summaryUrl = examSummaryUrlWithNonce(
-        `${APP_CONFIG.DATA_URLS.EXAM}/manifest.json`,
-        nonce,
-    );
-    const manifestPayload = await fetchJson(summaryUrl, signal, 'exam-summary');
-    const manifestData = parseManifest(manifestPayload, summaryUrl);
-    await assertExamSnapshotIdentity(manifestData);
-    const dataVersion = resolveExamDataVersion(manifestData);
-    const classIndexUrl = `${APP_CONFIG.DATA_URLS.EXAM}/${manifestData.artifacts.class_index.path}`;
+    constructor(baseUrl: string) {
+        this.#baseUrl = baseUrl.replace(/\/+$/, '');
+    }
 
-    const classIndexPayload = await fetchArtifactJson(
-        examSummaryUrlWithNonce(classIndexUrl, nonce),
-        manifestData.artifacts.class_index,
-        signal,
-        'exam-class-index'
-    );
-    const classIndex = parseExamClassIndex(classIndexPayload, classIndexUrl);
-    assertClassIndexMatchesManifest(manifestData, classIndex);
+    initialize(signal?: AbortSignal): Promise<LoadedExamIndex> {
+        if (!this.#indexPromise) {
+            this.#indexPromise = this.#loadIndex(signal).catch(error => {
+                this.#indexPromise = null;
+                throw error;
+            });
+        }
+        return this.#indexPromise;
+    }
 
-    return { manifest: manifestData, classIndex, dataVersion };
-}
+    async #loadIndex(signal?: AbortSignal): Promise<LoadedExamIndex> {
+        const manifestUrl = `${this.#baseUrl}/manifest.json`;
+        const manifest = parseExamSnapshotManifest(
+            await fetchJson(manifestUrl, { signal, cache: 'no-store' }),
+            manifestUrl
+        );
+        await assertExamSnapshotIdentity(manifest);
+        const indexUrl = artifactUrl(this.#baseUrl, manifest.class_index);
+        const classIndex = parseExamClassIndex(
+            await fetchArtifactJson(indexUrl, manifest.class_index, {
+                signal,
+                cache: 'force-cache'
+            }),
+            indexUrl
+        );
+        assertClassIndexMatchesManifest(manifest, classIndex);
+        return { manifest, classIndex };
+    }
 
-export async function loadExamClassData(
-    entry: ExamClassIndexEntry,
-    dataVersion: string,
-    signal?: AbortSignal
-): Promise<ExamClassData> {
-    const payload = await fetchArtifactJson(
-        examDataUrlWithVersion(`${APP_CONFIG.DATA_URLS.EXAM}/${entry.data.path}`, entry.data.sha256),
-        entry.data,
-        signal,
-        'exam-class-data-versioned'
-    );
-    const classData = parseExamClassData(payload, entry.data.path);
-    assertClassDataMatchesIndex(entry, classData, dataVersion);
-    classData.exams.sort((a, b) => {
-        if (a.start_timestamp && b.start_timestamp) return a.start_timestamp.localeCompare(b.start_timestamp);
-        return a.start_timestamp ? -1 : 1;
-    });
-    return classData;
-}
-
-const findClassEntry = (classIndex: ExamClassIndex, className: string | null): ExamClassIndexEntry | null => {
-    if (!className) return null;
-    return classIndex.classes.find(item => item.class_name === className) || null;
-};
-
-export async function loadExamClassSearch(
-    inputValue: string,
-    manualSelection: string | null,
-    signal?: AbortSignal
-): Promise<UseExamDataResult> {
-    const loadedIndex = await loadExamIndex(signal);
-    const classNames = loadedIndex.classIndex.classes.map(item => item.class_name);
-    const indexOnlyResult = getClassNameSearchResult(classNames, inputValue, manualSelection);
-    const currentClassName = indexOnlyResult.mode === 'DETAIL' ? indexOnlyResult.classes[0] || null : null;
-    const currentClassEntry = findClassEntry(loadedIndex.classIndex, currentClassName);
-    let classMode = indexOnlyResult;
-
-    if (currentClassEntry) {
-        const classData = await loadExamClassData(currentClassEntry, loadedIndex.dataVersion, signal);
-        classMode = {
-            mode: 'DETAIL',
-            classes: [classData.class_name],
-            exams: classData.exams,
+    async search(
+        inputValue: string,
+        manualSelection: string | null,
+        signal?: AbortSignal
+    ): Promise<UseExamDataResult> {
+        const loaded = await this.initialize(signal);
+        const classNames = loaded.classIndex.classes.map(item => item.class_name);
+        const indexResult = getClassNameSearchResult(classNames, inputValue, manualSelection);
+        let classMode = indexResult;
+        if (indexResult.mode === 'DETAIL') {
+            const className = indexResult.classes[0];
+            const entry = loaded.classIndex.classes.find(item => item.class_name === className);
+            if (!entry) throw new Error(`ExamSnapshot class is not indexed: ${className}`);
+            classMode = {
+                mode: 'DETAIL',
+                classes: [entry.class_name],
+                exams: await this.#loadClass(loaded.manifest, entry, signal)
+            };
+        }
+        return {
+            classMode,
+            loading: false,
+            error: null,
+            sourceUrl: loaded.manifest.source_url ?? null,
+            sourceTitle: loaded.manifest.source_title ?? null,
+            sourceUpdatedAt: loaded.manifest.source_updated_at,
+            snapshotId: loaded.manifest.snapshot_id,
+            examPeriodId: loaded.manifest.exam_period.id,
         };
     }
 
-    return {
-        classMode,
-        loading: false,
-        error: null,
-        sourceUrl: loadedIndex.manifest.source_url || null,
-        sourceTitle: loadedIndex.manifest.source_title || null,
-        generatedAt: loadedIndex.manifest.generated_at,
-        dataVersion: loadedIndex.dataVersion,
-        examPeriodId: loadedIndex.manifest.exam_period_id,
-        classIndex: loadedIndex.classIndex,
-        currentClassEntry,
-    };
+    async #loadClass(
+        manifest: ExamSnapshotManifest,
+        entry: ExamClassIndexEntry,
+        signal?: AbortSignal
+    ) {
+        const artifact = manifest.class_chunks.find(item => item.path === entry.chunk_path);
+        if (!artifact) throw new Error(`ExamSnapshot class chunk is missing: ${entry.chunk_path}`);
+        const url = artifactUrl(this.#baseUrl, artifact);
+        const chunk = parseExamClassChunk(
+            await fetchArtifactJson(url, artifact, { signal, cache: 'force-cache' }),
+            url
+        );
+        return [...selectClassFromChunk(manifest, entry, chunk)]
+            .sort((left, right) => left.start_timestamp.localeCompare(right.start_timestamp));
+    }
 }
 
-export function useExamData(enabled: boolean, inputValue: string, manualSelection: string | null): UseExamDataResult {
-    const requestKey = `${inputValue}\u001f${manualSelection || ''}`;
+const emptyResult = (loading: boolean): UseExamDataResult => ({
+    classMode: { mode: 'EMPTY', classes: [], exams: [] },
+    loading,
+    error: null,
+    sourceUrl: null,
+    sourceTitle: null,
+    sourceUpdatedAt: null,
+    snapshotId: null,
+    examPeriodId: null,
+});
+
+export function useExamData(
+    enabled: boolean,
+    inputValue: string,
+    manualSelection: string | null
+): UseExamDataResult {
+    const [client] = useState(
+        () => new ExamSnapshotClient(APP_CONFIG.DATA_URLS.EXAM)
+    );
+    const requestKey = `${inputValue}\u001f${manualSelection ?? ''}`;
     const [state, setState] = useState<ExamDataState>({
+        ...emptyResult(enabled),
         requestKey: null,
-        classMode: { mode: 'EMPTY', classes: [], exams: [] },
-        loading: enabled,
-        error: null,
-        sourceUrl: null,
-        sourceTitle: null,
-        generatedAt: null,
-        dataVersion: null,
-        examPeriodId: null,
-        classIndex: null,
-        currentClassEntry: null,
     });
 
     useEffect(() => {
-        if (!enabled) {
-            return;
-        }
-
+        if (!enabled) return;
         const controller = new AbortController();
-
-        loadExamClassSearch(inputValue, manualSelection, controller.signal)
-            .then((loaded) => {
-                if (controller.signal.aborted) return;
-                setState({ ...loaded, requestKey });
+        client.search(inputValue, manualSelection, controller.signal)
+            .then(result => {
+                if (!controller.signal.aborted) setState({ ...result, requestKey });
             })
-            .catch(err => {
-                if (err instanceof DOMException && err.name === 'AbortError') return;
-                console.error(err);
-                setState(previous => ({
-                    ...previous,
+            .catch(error => {
+                if (controller.signal.aborted) return;
+                setState({
+                    ...emptyResult(false),
+                    requestKey,
                     classMode: { mode: 'NOT_FOUND', classes: [], exams: [] },
-                    currentClassEntry: null,
-                    error: err instanceof Error ? err.message : '无法加载数据：未知错误',
-                    loading: false,
-                }));
+                    error: error instanceof Error ? error.message : '无法加载考试数据',
+                });
             });
-
         return () => controller.abort();
-    }, [enabled, inputValue, manualSelection, requestKey]);
+    }, [client, enabled, inputValue, manualSelection, requestKey]);
 
-    if (!enabled) {
-        return {
-            classMode: { mode: 'EMPTY', classes: [], exams: [] },
-            loading: false,
-            error: null,
-            sourceUrl: null,
-            sourceTitle: null,
-            generatedAt: null,
-            dataVersion: null,
-            examPeriodId: null,
-            classIndex: null,
-            currentClassEntry: null,
-        };
-    }
-
-    if (state.requestKey !== requestKey) {
-        return {
-            classMode: { mode: 'EMPTY', classes: [], exams: [] },
-            loading: true,
-            error: null,
-            sourceUrl: null,
-            sourceTitle: null,
-            generatedAt: null,
-            dataVersion: null,
-            examPeriodId: null,
-            classIndex: null,
-            currentClassEntry: null,
-        };
-    }
-
-    const publicState = toPublicExamDataState(state);
-    return {
-        ...publicState,
-        loading: publicState.loading,
-        error: publicState.error,
-    };
+    if (!enabled) return emptyResult(false);
+    if (state.requestKey !== requestKey) return emptyResult(true);
+    return state;
 }

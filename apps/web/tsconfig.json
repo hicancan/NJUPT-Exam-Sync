@@ -8,7 +8,6 @@
     "../../search/browser/src",
     "../../search/browser/wasm",
     "../../academics/exam",
-    "../../academics/calendar",
     "../../academics/room"
   ]
 }

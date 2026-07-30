@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-import json
 import hashlib
+import json
+import logging
+import shutil
+import uuid
 from pathlib import Path
 from typing import Any
 
 from academics.exam.snapshot.model import ExamSnapshot
 from academics.room.catalog import (
-    ParsedRoom,
+    CatalogRoom,
     floor_key_for,
     load_room_catalog,
     normalize_location,
@@ -15,30 +18,36 @@ from academics.room.catalog import (
     parse_room_location,
 )
 
+logger = logging.getLogger(__name__)
+
+ROOM_OCCUPANCY_FORMAT = "njupt-room-occupancy"
+ROOM_FLOOR_FORMAT = "njupt-room-floor-occupancy"
+
 
 class RoomOccupancyError(RuntimeError):
     """Fatal RoomOccupancy construction failure."""
 
 
-ROOM_OCCUPANCY_FORMAT = "njupt-room-occupancy-v3"
-ROOM_FLOOR_FORMAT = "njupt-room-occupancy-floor-v2"
-ROOM_DIAGNOSTICS_FORMAT = "njupt-room-occupancy-diagnostics-v2"
+def _canonical_bytes(value: Any) -> bytes:
+    return json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
 
 
-def write_json_file(path: Path, payload: Any, *, compact: bool) -> None:
+def _write_json(path: Path, payload: Any, *, pretty: bool = False) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        with path.open("w", encoding="utf-8", newline="\n") as handle:
-            if compact:
-                json.dump(payload, handle, ensure_ascii=False, separators=(",", ":"))
-            else:
-                json.dump(payload, handle, ensure_ascii=False, indent=2)
-                handle.write("\n")
-    except Exception as exc:
-        raise RoomOccupancyError(f"Failed to write {path}") from exc
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        if pretty:
+            json.dump(payload, handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+        else:
+            json.dump(payload, handle, ensure_ascii=False, separators=(",", ":"))
 
 
-def artifact_ref(root: Path, relative_path: str) -> dict[str, Any]:
+def _artifact_ref(root: Path, relative_path: str) -> dict[str, Any]:
     content = (root / relative_path).read_bytes()
     return {
         "path": relative_path,
@@ -47,121 +56,40 @@ def artifact_ref(root: Path, relative_path: str) -> dict[str, Any]:
     }
 
 
-def room_occupancy_id(
-    data_version: str,
-    catalog_id: str,
-    dates: list[dict[str, Any]],
-    diagnostics: dict[str, Any],
-) -> str:
-    identity = hashlib.sha256()
-    identity.update(ROOM_OCCUPANCY_FORMAT.encode())
-    identity.update(b"\0")
-    identity.update(data_version.encode())
-    identity.update(b"\0")
-    identity.update(catalog_id.encode())
-    for date in dates:
-        for floor in date["floors"]:
-            artifact = floor["artifact"]
-            for value in (
-                artifact["path"],
-                artifact["bytes"],
-                artifact["sha256"],
-            ):
-                identity.update(b"\0")
-                identity.update(str(value).encode())
-    for value in (
-        diagnostics["path"],
-        diagnostics["bytes"],
-        diagnostics["sha256"],
-    ):
-        identity.update(b"\0")
-        identity.update(str(value).encode())
-    return identity.hexdigest()
-
-
-def _exam_booking(record: dict[str, Any], room: ParsedRoom) -> dict[str, Any]:
+def _booking(record: dict[str, Any], room: CatalogRoom) -> dict[str, Any]:
     return {
-        "exam_id": record.get("id"),
-        "stable_key": record.get("stable_key"),
-        "class_name": record.get("class_name"),
-        "course_name": record.get("course_name"),
-        "course_code": record.get("course_code"),
-        "teacher": record.get("teacher"),
-        "count": record.get("count"),
-        "date": record.get("date"),
-        "start_timestamp": record.get("start_timestamp"),
-        "end_timestamp": record.get("end_timestamp"),
-        "duration_minutes": record.get("duration_minutes"),
-        "location": record.get("location"),
+        "exam_id": record["id"],
+        "stable_key": record["stable_key"],
+        "class_name": record["class_name"],
+        "course_name": record["course_name"],
+        "course_code": record["course_code"],
+        "teacher": record["teacher"],
+        "count": record["count"],
+        "date": record["date"],
+        "start_timestamp": record["start_timestamp"],
+        "end_timestamp": record["end_timestamp"],
+        "duration_minutes": record["duration_minutes"],
+        "location": record["location"],
         "campus": room.campus,
         "building": room.building,
         "floor": room.floor,
-        "floor_key": floor_key_for(campus=room.campus, building=room.building, floor=room.floor),
+        "floor_key": room.floor_key,
         "room": room.room,
         "room_key": room.room_key,
     }
 
 
-def write_room_occupancy_artifacts(
+def _occupancy_id(manifest_without_id: dict[str, Any]) -> str:
+    return hashlib.sha256(_canonical_bytes(manifest_without_id)).hexdigest()
+
+
+def _build(
     *,
     output_dir: Path,
     exam_snapshot: ExamSnapshot,
     catalog_path: Path,
 ) -> dict[str, Any]:
-    records = exam_snapshot.records
-    manifest = {
-        "generated_at": exam_snapshot.auto_updated_at,
-        "data_version": exam_snapshot.data_version,
-        "exam_period_id": exam_snapshot.exam_period_id,
-        "academic_year": exam_snapshot.academic_year,
-        "term_number": exam_snapshot.term_number,
-        "term_label": exam_snapshot.term_label,
-        "source_url": exam_snapshot.source_url,
-        "source_title": exam_snapshot.source_title,
-    }
     catalog = load_room_catalog(catalog_path)
-    rooms_by_key = catalog.rooms_by_key
-    rooms_dir = output_dir
-    by_floor_dir = rooms_dir / "by-floor"
-    rooms_dir.mkdir(parents=True, exist_ok=True)
-    by_floor_dir.mkdir(parents=True, exist_ok=True)
-    for stale in by_floor_dir.rglob("*.json"):
-        stale.unlink()
-    stale_by_date = rooms_dir / "by-date"
-    if stale_by_date.exists():
-        for stale in stale_by_date.glob("*.json"):
-            stale.unlink()
-        stale_by_date.rmdir()
-
-    bookings_by_date_floor: dict[tuple[str, str], list[dict[str, Any]]] = {}
-    unresolved_locations: dict[str, int] = {}
-    unknown_catalog_rooms: dict[str, int] = {}
-
-    for record in records:
-        raw_location = normalize_location(record.get("location"))
-        parsed = parse_room_location(
-            campus=record.get("campus"),
-            location=record.get("location"),
-        )
-        if parsed is None:
-            if raw_location:
-                unresolved_locations[raw_location] = unresolved_locations.get(raw_location, 0) + 1
-            continue
-        if parsed.room_key not in rooms_by_key:
-            unknown_catalog_rooms[parsed.normalized_location] = unknown_catalog_rooms.get(parsed.normalized_location, 0) + 1
-            continue
-        date = normalize_room_text(record.get("date"))
-        if not date:
-            raise RoomOccupancyError(f"Exam record has no date for room occupancy: {record.get('id')}")
-        floor_key = floor_key_for(campus=parsed.campus, building=parsed.building, floor=parsed.floor)
-        bookings_by_date_floor.setdefault((date, floor_key), []).append(_exam_booking(record, parsed))
-
-    if unknown_catalog_rooms:
-        raise RoomOccupancyError(
-            "Exam data contains rooms missing from the maintained room catalog: "
-            + json.dumps(unknown_catalog_rooms, ensure_ascii=False, sort_keys=True)
-        )
-
     room_entries = sorted(
         (
             {
@@ -172,128 +100,205 @@ def write_room_occupancy_artifacts(
                 "room": room.room,
                 "room_key": room.room_key,
             }
-            for room in rooms_by_key.values()
+            for room in catalog.rooms_by_key.values()
         ),
-        key=lambda item: (
-            item["campus"],
-            item["building"],
-            item["floor"],
-            item["room"],
+        key=lambda room: (
+            room["campus"],
+            room["building"],
+            room["floor"],
+            room["room"],
         ),
     )
-    floor_entries: list[dict[str, Any]] = []
     rooms_by_floor: dict[str, list[dict[str, Any]]] = {}
     for room in room_entries:
-        floor_key = floor_key_for(campus=room["campus"], building=room["building"], floor=room["floor"])
-        rooms_by_floor.setdefault(floor_key, []).append(room)
-    for floor_key, floor_rooms in sorted(
+        rooms_by_floor.setdefault(room["floor_key"], []).append(room)
+    floor_entries = []
+    for floor_key, rooms in sorted(
         rooms_by_floor.items(),
-        key=lambda item: (item[1][0]["campus"], item[1][0]["building"], item[1][0]["floor"]),
+        key=lambda item: (
+            item[1][0]["campus"],
+            item[1][0]["building"],
+            item[1][0]["floor"],
+        ),
     ):
-        first = floor_rooms[0]
+        first = rooms[0]
         floor_entries.append(
             {
                 "campus": first["campus"],
                 "building": first["building"],
                 "floor": first["floor"],
                 "floor_key": floor_key,
-                "room_count": len(floor_rooms),
-                "room_keys": [room["room_key"] for room in floor_rooms],
+                "room_keys": [room["room_key"] for room in rooms],
             }
         )
-    dates = sorted({date for date, _floor_key in bookings_by_date_floor})
-    date_entries: list[dict[str, Any]] = []
-    for date in dates:
-        date_dir = by_floor_dir / date
-        floor_artifacts: list[dict[str, Any]] = []
+
+    by_date_floor: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    unresolved: dict[str, int] = {}
+    unknown: dict[str, int] = {}
+    for record in exam_snapshot.records:
+        parsed = parse_room_location(
+            campus=record.get("campus"),
+            location=record.get("location"),
+        )
+        if parsed is None:
+            location = normalize_location(record.get("location"))
+            if location:
+                unresolved[location] = unresolved.get(location, 0) + 1
+            continue
+        catalog_room = catalog.rooms_by_key.get(parsed.room_key)
+        if catalog_room is None:
+            unknown[parsed.normalized_location] = (
+                unknown.get(parsed.normalized_location, 0) + 1
+            )
+            continue
+        date = normalize_room_text(record.get("date"))
+        if not date:
+            raise RoomOccupancyError(
+                f"Exam record has no date for room occupancy: {record.get('id')}"
+            )
+        by_date_floor.setdefault((date, catalog_room.floor_key), []).append(
+            _booking(record, catalog_room)
+        )
+
+    if unresolved:
+        logger.warning(
+            "Skipped %d unrecognized exam locations: %s",
+            sum(unresolved.values()),
+            json.dumps(unresolved, ensure_ascii=False, sort_keys=True),
+        )
+    if unknown:
+        raise RoomOccupancyError(
+            "Exam locations resolve to rooms missing from RoomCatalog: "
+            + json.dumps(unknown, ensure_ascii=False, sort_keys=True)
+        )
+
+    date_entries = []
+    for date in sorted({date for date, _ in by_date_floor}):
+        floor_artifacts = []
         for floor in floor_entries:
-            floor_key = floor["floor_key"]
             bookings = sorted(
-                bookings_by_date_floor.get((date, floor_key), []),
-                key=lambda item: (str(item.get("start_timestamp") or ""), item["campus"], item["building"], item["room"], str(item.get("exam_id") or "")),
+                by_date_floor.get((date, floor["floor_key"]), []),
+                key=lambda booking: (
+                    booking["start_timestamp"],
+                    booking["room"],
+                    booking["exam_id"],
+                ),
             )
             if not bookings:
                 continue
-            date_dir.mkdir(parents=True, exist_ok=True)
-            write_json_file(
-                date_dir / f"{floor_key}.json",
+            relative_path = f"floors/{date}-{floor['floor_key']}.json"
+            _write_json(
+                output_dir / relative_path,
                 {
                     "format": ROOM_FLOOR_FORMAT,
-                    "generated_at": manifest["generated_at"],
-                    "data_version": manifest["data_version"],
-                    "exam_period_id": manifest["exam_period_id"],
+                    "exam_snapshot_id": exam_snapshot.snapshot_id,
+                    "room_catalog_id": catalog.catalog_id,
                     "date": date,
                     "campus": floor["campus"],
                     "building": floor["building"],
                     "floor": floor["floor"],
-                    "floor_key": floor_key,
-                    "room_count": floor["room_count"],
+                    "floor_key": floor["floor_key"],
                     "booking_count": len(bookings),
                     "bookings": bookings,
                 },
-                compact=True,
             )
             floor_artifacts.append(
                 {
-                    "floor_key": floor_key,
-                    "artifact": artifact_ref(
-                        rooms_dir,
-                        f"by-floor/{date}/{floor_key}.json",
-                    ),
+                    "floor_key": floor["floor_key"],
                     "booking_count": len(bookings),
+                    "artifact": _artifact_ref(output_dir, relative_path),
                 }
             )
-        date_entries.append(
-            {
-                "date": date,
-                "floor_count": len(floor_artifacts),
-                "booking_count": sum(item["booking_count"] for item in floor_artifacts),
-                "floors": floor_artifacts,
-            }
-        )
+        date_entries.append({"date": date, "floors": floor_artifacts})
 
-    write_json_file(
-        rooms_dir / "diagnostics.json",
-        {
-            "format": ROOM_DIAGNOSTICS_FORMAT,
-            "generated_at": manifest["generated_at"],
-            "data_version": manifest["data_version"],
-            "exam_period_id": manifest["exam_period_id"],
-            "non_room_locations": [],
-            "unresolved_locations": [
-                {"location": location, "count": count}
-                for location, count in sorted(unresolved_locations.items())
-            ],
-            "unknown_catalog_rooms": [],
-        },
-        compact=False,
-    )
-    diagnostics = artifact_ref(rooms_dir, "diagnostics.json")
-    index_payload = {
+    manifest_without_id = {
         "format": ROOM_OCCUPANCY_FORMAT,
-        "occupancy_id": room_occupancy_id(
-            exam_snapshot.data_version,
-            catalog.content_hash,
-            date_entries,
-            diagnostics,
-        ),
-        "generated_at": manifest["generated_at"],
-        "data_version": manifest["data_version"],
-        "exam_period_id": manifest["exam_period_id"],
-        "academic_year": manifest["academic_year"],
-        "term_number": manifest["term_number"],
-        "term_label": manifest["term_label"],
-        "source_url": manifest.get("source_url"),
-        "source_title": manifest.get("source_title"),
-        "catalog_format": catalog.format,
-        "catalog_id": catalog.content_hash,
-        "room_count": len(room_entries),
-        "floor_count": len(floor_entries),
-        "date_count": len(dates),
+        "exam_snapshot_id": exam_snapshot.snapshot_id,
+        "room_catalog_id": catalog.catalog_id,
+        "exam_period_id": exam_snapshot.exam_period_id,
+        "source_updated_at": exam_snapshot.source_updated_at,
         "rooms": room_entries,
         "floors": floor_entries,
         "dates": date_entries,
-        "diagnostics": diagnostics,
     }
-    write_json_file(rooms_dir / "manifest.json", index_payload, compact=False)
-    return index_payload
+    manifest = {
+        **manifest_without_id,
+        "occupancy_id": _occupancy_id(manifest_without_id),
+    }
+    _write_json(output_dir / "manifest.json", manifest, pretty=True)
+    return manifest
+
+
+def _validate_output(output_dir: Path, manifest: dict[str, Any]) -> None:
+    identity_payload = {
+        key: value for key, value in manifest.items() if key != "occupancy_id"
+    }
+    if manifest.get("occupancy_id") != _occupancy_id(identity_payload):
+        raise RoomOccupancyError("RoomOccupancy identity self-check failed")
+    expected = {"manifest.json"}
+    for date in manifest["dates"]:
+        for floor in date["floors"]:
+            artifact = floor["artifact"]
+            path = output_dir / artifact["path"]
+            content = path.read_bytes()
+            if (
+                len(content) != artifact["bytes"]
+                or hashlib.sha256(content).hexdigest() != artifact["sha256"]
+            ):
+                raise RoomOccupancyError(
+                    f"RoomOccupancy artifact self-check failed: {artifact['path']}"
+                )
+            payload = json.loads(content)
+            if (
+                payload.get("format") != ROOM_FLOOR_FORMAT
+                or payload.get("exam_snapshot_id") != manifest["exam_snapshot_id"]
+                or payload.get("room_catalog_id") != manifest["room_catalog_id"]
+            ):
+                raise RoomOccupancyError(
+                    f"RoomOccupancy floor identity mismatch: {artifact['path']}"
+                )
+            expected.add(artifact["path"])
+    actual = {
+        path.relative_to(output_dir).as_posix()
+        for path in output_dir.rglob("*")
+        if path.is_file()
+    }
+    if actual != expected:
+        raise RoomOccupancyError(
+            f"RoomOccupancy file set mismatch: expected {sorted(expected)}, "
+            f"got {sorted(actual)}"
+        )
+
+
+def write_room_occupancy_artifacts(
+    *,
+    output_dir: Path,
+    exam_snapshot: ExamSnapshot,
+    catalog_path: Path,
+) -> dict[str, Any]:
+    output_dir = output_dir.resolve()
+    output_dir.parent.mkdir(parents=True, exist_ok=True)
+    staging = output_dir.with_name(f"{output_dir.name}.staging-{uuid.uuid4().hex}")
+    backup = output_dir.with_name(f"{output_dir.name}.backup-{uuid.uuid4().hex}")
+    staging.mkdir()
+    replaced_existing = False
+    try:
+        manifest = _build(
+            output_dir=staging,
+            exam_snapshot=exam_snapshot,
+            catalog_path=catalog_path.resolve(),
+        )
+        _validate_output(staging, manifest)
+        if output_dir.exists():
+            output_dir.replace(backup)
+            replaced_existing = True
+        staging.replace(output_dir)
+        if replaced_existing:
+            shutil.rmtree(backup)
+        return manifest
+    except Exception:
+        if staging.exists():
+            shutil.rmtree(staging)
+        if replaced_existing and backup.exists() and not output_dir.exists():
+            backup.replace(output_dir)
+        raise

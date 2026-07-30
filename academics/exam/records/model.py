@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone, timedelta
-from typing import Any, Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any
 
 import pandas as pd
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -22,16 +22,18 @@ FIELD_MAPPING = {
     "location": ["考试教室", "教室名称", "地点", "考试地点"],
     "raw_time": ["考试时间", "时间"],
     "count": ["人数", "学生人数", "考试人数"],
-    "school": ["开课学院", "学院"],
-    "student_school": ["学生所在学院", "所在学院"],
-    "major": ["专业名称", "专业"],
-    "grade": ["年级"],
     "notes": ["备注"],
 }
 
-REGEX_CHINESE = re.compile(r"(\d{4})年(\d{1,2})月(\d{1,2})日.*?(\d{1,2}:\d{2})\s*[-~至]\s*(\d{1,2}:\d{2})")
-REGEX_ISO = re.compile(r"\(?(\d{4}-\d{1,2}-\d{1,2})\)?.*?(\d{1,2}:\d{2})\s*[-~至]\s*(\d{1,2}:\d{2})")
-EXAM_PERIOD_RE = re.compile(r"(?P<academic_year>\d{4}-\d{4})\s*学年\s*第\s*(?P<term>[一二三四1-4])\s*学期")
+REGEX_CHINESE = re.compile(
+    r"(\d{4})年(\d{1,2})月(\d{1,2})日.*?(\d{1,2}:\d{2})\s*[-~至]\s*(\d{1,2}:\d{2})"
+)
+REGEX_ISO = re.compile(
+    r"\(?(\d{4}-\d{1,2}-\d{1,2})\)?.*?(\d{1,2}:\d{2})\s*[-~至]\s*(\d{1,2}:\d{2})"
+)
+EXAM_PERIOD_RE = re.compile(
+    r"(?P<academic_year>\d{4}-\d{4})\s*学年\s*第\s*(?P<term>[一二三四1-4])\s*学期"
+)
 TERM_NUMBER_BY_LABEL = {
     "一": 1,
     "二": 2,
@@ -58,14 +60,17 @@ class ExamPeriod:
     term_label: str
 
 
+def normalize_text(value: Any) -> str:
+    return re.sub(r"\s+", " ", str(value or "").replace("\xa0", " ").strip())
+
+
 def parse_exam_period(source_title: Any) -> ExamPeriod:
     title = normalize_text(source_title)
     match = EXAM_PERIOD_RE.search(title)
     if not match:
         raise ExamDataError(f"Cannot parse exam period from source_title: {title!r}")
     academic_year = match.group("academic_year")
-    term_token = match.group("term")
-    term_number = TERM_NUMBER_BY_LABEL.get(term_token)
+    term_number = TERM_NUMBER_BY_LABEL.get(match.group("term"))
     if term_number is None:
         raise ExamDataError(f"Unsupported exam term in source_title: {title!r}")
     return ExamPeriod(
@@ -76,11 +81,11 @@ def parse_exam_period(source_title: Any) -> ExamPeriod:
     )
 
 
-class ExamRecord(BaseModel):
-    id: str
+class ExtractedExamRow(BaseModel):
+    """One parsed source row before stable product identity is assigned."""
+
     source_file: str = Field(alias="_source_file")
     row_index: int = Field(alias="_row_index")
-
     campus: str = ""
     course_name: str = ""
     course_code: str = ""
@@ -89,17 +94,12 @@ class ExamRecord(BaseModel):
     location: str = ""
     raw_time: str = ""
     count: int = 0
-    school: str = ""
-    student_school: str = ""
-    major: str = ""
-    grade: str = ""
     notes: str = ""
-
-    start_timestamp: Optional[str] = None
-    end_timestamp: Optional[str] = None
+    start_timestamp: str | None = None
+    end_timestamp: str | None = None
     duration_minutes: int = 0
-    date: Optional[str] = None
-    validation_error: Optional[str] = None
+    date: str | None = None
+    validation_error: str | None = None
 
     @field_validator(
         "campus",
@@ -109,10 +109,6 @@ class ExamRecord(BaseModel):
         "teacher",
         "location",
         "raw_time",
-        "school",
-        "student_school",
-        "major",
-        "grade",
         "notes",
         mode="before",
     )
@@ -120,7 +116,7 @@ class ExamRecord(BaseModel):
     def clean_text_fields(cls, value: Any) -> str:
         if pd.isna(value) or value == "" or value is None:
             return ""
-        return str(value).replace("\xa0", " ").strip()
+        return normalize_text(value)
 
     @field_validator("count", mode="before")
     @classmethod
@@ -136,8 +132,8 @@ class ExamRecord(BaseModel):
         return count
 
     @model_validator(mode="after")
-    def parse_time_logic(self):
-        required_text_fields = (
+    def parse_time(self) -> "ExtractedExamRow":
+        required = (
             "campus",
             "course_name",
             "course_code",
@@ -146,47 +142,37 @@ class ExamRecord(BaseModel):
             "location",
             "raw_time",
         )
-        missing = [field for field in required_text_fields if not getattr(self, field)]
+        missing = [field for field in required if not getattr(self, field)]
         if missing:
             self.validation_error = "Missing required field(s): " + ", ".join(missing)
             return self
 
-        time_str = self.raw_time
-        if isinstance(time_str, (datetime, pd.Timestamp)):
-            time_str = str(time_str)
-
+        match_cn = REGEX_CHINESE.search(self.raw_time)
+        match_iso = REGEX_ISO.search(self.raw_time)
         try:
-            match_cn = REGEX_CHINESE.search(time_str)
-            match_iso = REGEX_ISO.search(time_str)
-
             if match_cn:
                 year, month, day, start_hm, end_hm = match_cn.groups()
-                date_str = f"{year}-{int(month):02d}-{int(day):02d}"
+                date_value = f"{year}-{int(month):02d}-{int(day):02d}"
             elif match_iso:
-                d_str, start_hm, end_hm = match_iso.groups()
-                try:
-                    date_str = datetime.strptime(d_str, "%Y-%m-%d").strftime("%Y-%m-%d")
-                except ValueError:
-                    date_str = d_str
+                raw_date, start_hm, end_hm = match_iso.groups()
+                date_value = datetime.strptime(raw_date, "%Y-%m-%d").strftime("%Y-%m-%d")
             else:
                 self.validation_error = "Unrecognized date format"
                 return self
-
-            beijing_tz = timezone(timedelta(hours=8))
-            start_dt = datetime.strptime(f"{date_str} {start_hm}:00", "%Y-%m-%d %H:%M:%S").replace(tzinfo=beijing_tz)
-            end_dt = datetime.strptime(f"{date_str} {end_hm}:00", "%Y-%m-%d %H:%M:%S").replace(tzinfo=beijing_tz)
-
-            self.duration_minutes = int((end_dt - start_dt).total_seconds() / 60)
-            self.start_timestamp = start_dt.isoformat()
-            self.end_timestamp = end_dt.isoformat()
-            self.date = date_str
-            self.validation_error = None
-        except Exception as exc:
-            self.validation_error = f"Parsing exception: {exc}"
-
+            beijing = timezone(timedelta(hours=8))
+            start = datetime.strptime(
+                f"{date_value} {start_hm}:00", "%Y-%m-%d %H:%M:%S"
+            ).replace(tzinfo=beijing)
+            end = datetime.strptime(
+                f"{date_value} {end_hm}:00", "%Y-%m-%d %H:%M:%S"
+            ).replace(tzinfo=beijing)
+            duration = int((end - start).total_seconds() / 60)
+            if duration <= 0:
+                raise ValueError("end time must be after start time")
+            self.start_timestamp = start.isoformat()
+            self.end_timestamp = end.isoformat()
+            self.duration_minutes = duration
+            self.date = date_value
+        except ValueError as exc:
+            self.validation_error = f"Invalid exam time: {exc}"
         return self
-
-
-def normalize_text(value: Any) -> str:
-    return re.sub(r"\s+", " ", str(value or "").replace("\xa0", " ").strip())
-

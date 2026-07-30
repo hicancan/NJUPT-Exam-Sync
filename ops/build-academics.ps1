@@ -18,8 +18,6 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$RoomCatalogPath,
 
-    [string[]]$HistoryPath = @(),
-
     [switch]$RefreshMaterialized
 )
 
@@ -45,15 +43,9 @@ try {
         throw "Materialized exam input is missing source_metadata.json: $materialized"
     }
 
-    $examArguments = @(
-        'run', 'python', '-m', 'academics.exam', 'build',
-        '--materialized', $materialized,
-        '--output', $examOutput
-    )
-    foreach ($history in $HistoryPath) {
-        $examArguments += @('--history', (Resolve-Path -LiteralPath $history).Path)
-    }
-    & uv @examArguments
+    & uv run python -m academics.exam build `
+        --materialized $materialized `
+        --output $examOutput
     if ($LASTEXITCODE -ne 0) { throw 'ExamSnapshot build failed' }
 
     & uv run python -m academics.room `

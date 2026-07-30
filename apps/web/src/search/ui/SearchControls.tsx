@@ -6,27 +6,36 @@ import type {
     SearchFilters,
     SortMode,
 } from '@njupt-search/search-browser';
-import { DATE_FILTER_LABELS, FACET_LABELS, type FacetFilter } from './collectionSearchLabels';
+import {
+    DATE_FILTER_LABELS,
+    FACET_LABELS,
+    dateFilters,
+    type SearchDatePreset,
+} from './searchLabels';
 
-interface CollectionSearchControlsProps {
+interface SearchControlsProps {
     activeFilters: boolean;
     facetOptions: Array<FilterOption & { id: SearchFacet }>;
     filterOptions: FilterOptions | null;
     filters: SearchFilters;
+    datePreset: SearchDatePreset;
     sortMode: SortMode;
     onFiltersChange: (patch: SearchFilters) => void;
+    onDatePresetChange: (preset: SearchDatePreset) => void;
     onSortModeChange: (sortMode: SortMode) => void;
 }
 
-export function CollectionSearchControls({
+export function SearchControls({
     activeFilters,
     facetOptions,
     filterOptions,
     filters,
+    datePreset,
     sortMode,
     onFiltersChange,
+    onDatePresetChange,
     onSortModeChange,
-}: CollectionSearchControlsProps) {
+}: SearchControlsProps) {
     const sourceOptions = filterOptions?.sources || [];
 
     return (
@@ -55,14 +64,14 @@ export function CollectionSearchControls({
                 <Filter size={14} aria-hidden="true" />
                 <span className="sr-only">来源筛选</span>
                 <select
-                    id="collection-search-source-filter"
-                    name="collection-search-source-filter"
-                    value={filters.sourceId || 'all'}
-                    onChange={event => onFiltersChange({ sourceId: event.target.value })}
+                    id="search-source-filter"
+                    name="search-source-filter"
+                    value={filters.sourceId || ''}
+                    onChange={event => onFiltersChange({ sourceId: event.target.value || undefined })}
                     className="max-w-[210px] bg-transparent text-sm outline-none"
                     aria-label="来源筛选"
                 >
-                    <option value="all">全部来源</option>
+                    <option value="">全部来源</option>
                     {sourceOptions.map(source => (
                         <option key={source.id} value={source.id}>{source.label} ({source.count})</option>
                     ))}
@@ -72,14 +81,16 @@ export function CollectionSearchControls({
                 <ListFilter size={14} aria-hidden="true" />
                 <span className="sr-only">类型筛选</span>
                 <select
-                    id="collection-search-facet-filter"
-                    name="collection-search-facet-filter"
-                    value={filters.facet || 'all'}
-                    onChange={event => onFiltersChange({ facet: event.target.value as FacetFilter })}
+                    id="search-facet-filter"
+                    name="search-facet-filter"
+                    value={filters.facet || ''}
+                    onChange={event => onFiltersChange({
+                        facet: (event.target.value || undefined) as SearchFacet | undefined,
+                    })}
                     className="bg-transparent text-sm outline-none"
                     aria-label="类型筛选"
                 >
-                    <option value="all">全部类型</option>
+                    <option value="">全部类型</option>
                     {facetOptions.map(facet => (
                         <option key={facet.id} value={facet.id}>{FACET_LABELS[facet.id]} ({facet.count})</option>
                     ))}
@@ -89,10 +100,10 @@ export function CollectionSearchControls({
                 <CalendarDays size={14} aria-hidden="true" />
                 <span className="sr-only">时间筛选</span>
                 <select
-                    id="collection-search-date-filter"
-                    name="collection-search-date-filter"
-                    value={filters.dateRange || 'all'}
-                    onChange={event => onFiltersChange({ dateRange: event.target.value as NonNullable<SearchFilters['dateRange']> })}
+                    id="search-date-filter"
+                    name="search-date-filter"
+                    value={datePreset}
+                    onChange={event => onDatePresetChange(event.target.value as SearchDatePreset)}
                     className="bg-transparent text-sm outline-none"
                     aria-label="时间筛选"
                 >
@@ -104,7 +115,14 @@ export function CollectionSearchControls({
             {activeFilters ? (
                 <button
                     type="button"
-                    onClick={() => onFiltersChange({ sourceId: 'all', facet: 'all', dateRange: 'all' })}
+                    onClick={() => {
+                        onFiltersChange({
+                            sourceId: undefined,
+                            facet: undefined,
+                            ...dateFilters('all'),
+                        });
+                        onDatePresetChange('all');
+                    }}
                     className="inline-flex h-9 items-center gap-1.5 rounded-md px-2 text-sm text-[#1a73e8] hover:bg-[#f1f3f4] dark:text-[#8ab4f8] dark:hover:bg-[#303134]"
                 >
                     <RotateCcw size={14} aria-hidden="true" />

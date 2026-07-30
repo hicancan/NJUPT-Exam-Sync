@@ -1,141 +1,150 @@
-use njupt_search_core::model::CorpusDocument;
-use njupt_search_core::{build_search_bundle, QueryRequest, SearchEngine};
-use std::collections::BTreeMap;
-use std::fs;
-use std::time::{SystemTime, UNIX_EPOCH};
+use njupt_search_core::{
+    compile_search_bundle, Attachment, CompiledBundle, DocumentKind, IndexDocument, Query,
+    SearchEngine,
+};
 
-fn document(id: &str, title: &str, content: &str) -> CorpusDocument {
-    CorpusDocument {
-        id: id.to_string(),
-        source: "fixture".to_string(),
-        url: format!("https://example.test/{id}"),
-        title: title.to_string(),
-        content: content.to_string(),
-        published_at: Some("2026-01-01".to_string()),
-        updated_at: None,
-        section: Some("通知".to_string()),
-        kind: "detail".to_string(),
-        tags: Vec::new(),
-        attachments: Vec::new(),
-    }
+fn documents() -> Vec<IndexDocument> {
+    vec![
+        IndexDocument {
+            id: "doc-a".to_string(),
+            source: "jwc".to_string(),
+            source_name: "教务处".to_string(),
+            url: "https://example.test/a".to_string(),
+            title: "转专业办理通知".to_string(),
+            content: "转专业 转专业 申请材料与办理流程".to_string(),
+            published_at: Some("2026-07-01".to_string()),
+            updated_at: None,
+            section: Some("通知公告".to_string()),
+            kind: DocumentKind::Page,
+            tags: vec!["本科生".to_string()],
+            attachments: vec![Attachment {
+                id: "attachment-a".to_string(),
+                url: "https://example.test/a.pdf".to_string(),
+                name: "申请表.pdf".to_string(),
+                extension: Some("pdf".to_string()),
+            }],
+        },
+        IndexDocument {
+            id: "doc-b".to_string(),
+            source: "www".to_string(),
+            source_name: "南邮主页".to_string(),
+            url: "https://example.test/b".to_string(),
+            title: "校园新闻".to_string(),
+            content: "学校新闻动态".to_string(),
+            published_at: Some("2025-01-01".to_string()),
+            updated_at: None,
+            section: Some("新闻".to_string()),
+            kind: DocumentKind::Page,
+            tags: vec![],
+            attachments: vec![],
+        },
+        IndexDocument {
+            id: "doc-c".to_string(),
+            source: "jwc".to_string(),
+            source_name: "教务处".to_string(),
+            url: "https://example.test/c".to_string(),
+            title: "专业建设实施方案".to_string(),
+            content: "专业 专业 专业 专业 专业 专业 专业 专业".to_string(),
+            published_at: Some("2026-07-02".to_string()),
+            updated_at: None,
+            section: Some("政策".to_string()),
+            kind: DocumentKind::Page,
+            tags: vec![],
+            attachments: vec![],
+        },
+    ]
 }
 
-#[test]
-fn bundle_round_trip_uses_the_single_search_semantics() {
-    let suffix = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("clock")
-        .as_nanos();
-    let root = std::env::temp_dir().join(format!("njupt-search-core-{suffix}"));
-    let source_names = BTreeMap::from([("fixture".to_string(), "Fixture Site".to_string())]);
-    let report = build_search_bundle(
-        vec![
-            document("exam", "期末考试安排", "本学期期末考试考场安排"),
-            document("award", "国家奖学金公示", "奖学金评选结果"),
-        ],
-        &source_names,
-        "fixture-snapshot",
-        &root,
-    )
-    .expect("build bundle");
+fn artifact<'a>(bundle: &'a CompiledBundle, path: &str) -> &'a [u8] {
+    &bundle
+        .artifacts
+        .iter()
+        .find(|artifact| artifact.reference.path == path)
+        .expect("artifact")
+        .bytes
+}
 
-    assert!(report
-        .manifest
-        .postings
-        .iter()
-        .all(|artifact| artifact.path.starts_with("postings-")));
-    assert!(report
-        .manifest
-        .content
-        .iter()
-        .all(|artifact| artifact.path.starts_with("content-")));
-    assert!(report
-        .manifest
-        .postings
-        .iter()
-        .all(|artifact| artifact.decoded_bytes <= 512 * 1024));
-    assert!(report
-        .manifest
-        .content
-        .iter()
-        .all(|artifact| artifact.decoded_bytes <= 512 * 1024));
-
-    let documents = fs::read(root.join("documents.bin")).expect("documents");
-    let lexicon = fs::read(root.join("lexicon.bin")).expect("lexicon");
+fn engine(bundle: &CompiledBundle) -> SearchEngine {
     let mut engine = SearchEngine::new(
-        &documents,
-        report.manifest.artifacts["documents"].decoded_bytes,
-        &lexicon,
-        report.manifest.artifacts["lexicon"].decoded_bytes,
+        artifact(bundle, "documents.bin"),
+        bundle.manifest.documents.decoded_bytes,
+        artifact(bundle, "lexicon.bin"),
+        bundle.manifest.lexicon.decoded_bytes,
     )
-    .expect("engine");
-    for (index, artifact) in report.manifest.postings.iter().enumerate() {
+    .expect("metadata");
+    for (index, reference) in bundle.manifest.postings.iter().enumerate() {
         engine
             .load_postings_chunk(
                 index as u32,
-                &fs::read(root.join(&artifact.path)).expect("postings"),
-                artifact.decoded_bytes,
+                artifact(bundle, &reference.path),
+                reference.decoded_bytes,
             )
-            .expect("decode postings");
+            .expect("postings");
     }
-    for (index, artifact) in report.manifest.content.iter().enumerate() {
+    for (index, reference) in bundle.manifest.content.iter().enumerate() {
         engine
             .load_content_chunk(
                 index as u32,
-                &fs::read(root.join(&artifact.path)).expect("content"),
-                artifact.decoded_bytes,
+                artifact(bundle, &reference.path),
+                reference.decoded_bytes,
             )
-            .expect("decode content");
+            .expect("content");
     }
+    engine
+}
+
+#[test]
+fn compiles_and_queries_the_current_bundle_contract() {
+    let bundle = compile_search_bundle(documents(), &"a".repeat(64)).expect("compile");
+    let engine = engine(&bundle);
     let response = engine
-        .search(&QueryRequest {
-            query: "期末考试".to_string(),
+        .search(&Query {
+            query: "转专业".to_string(),
             limit: 10,
             sort: Default::default(),
             filters: Default::default(),
         })
         .expect("search");
-
-    assert_eq!(response.results[0].id, "exam");
-    assert!(response.results[0].snippet.contains("期末考试"));
-    fs::remove_dir_all(root).expect("remove test bundle");
+    assert_eq!(response.total_candidates, 2);
+    assert_eq!(response.results[0].id, "doc-a");
+    assert_eq!(response.results[0].attachments[0].name, "申请表.pdf");
 }
 
 #[test]
-fn bundle_build_rejects_an_unknown_corpus_source() {
-    let suffix = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("clock")
-        .as_nanos();
-    let root = std::env::temp_dir().join(format!("njupt-search-unknown-source-{suffix}"));
-    let error = build_search_bundle(
-        vec![document("exam", "期末考试安排", "本学期期末考试考场安排")],
-        &BTreeMap::new(),
-        "fixture-snapshot",
-        &root,
-    )
-    .expect_err("unknown source must fail");
-
-    assert_eq!(error, "unknown corpus source: fixture");
-    assert!(!root.exists());
+fn output_identity_is_independent_of_corpus_provenance() {
+    let left = compile_search_bundle(documents(), &"a".repeat(64)).expect("left");
+    let right = compile_search_bundle(documents(), &"b".repeat(64)).expect("right");
+    assert_ne!(
+        left.manifest.corpus_snapshot_id,
+        right.manifest.corpus_snapshot_id
+    );
+    assert_eq!(left.manifest.bundle_id, right.manifest.bundle_id);
+    assert_eq!(
+        left.artifacts
+            .iter()
+            .map(|artifact| (&artifact.reference.path, &artifact.bytes))
+            .collect::<Vec<_>>(),
+        right
+            .artifacts
+            .iter()
+            .map(|artifact| (&artifact.reference.path, &artifact.bytes))
+            .collect::<Vec<_>>()
+    );
 }
 
 #[test]
-fn corpus_document_rejects_unknown_fields() {
-    let value = serde_json::json!({
-        "id": "exam",
-        "source": "fixture",
-        "source_name": "old duplicated field",
-        "url": "https://example.test/exam",
-        "title": "期末考试安排",
-        "content": "本学期期末考试考场安排",
-        "published_at": null,
-        "updated_at": null,
-        "section": null,
-        "kind": "page",
-        "tags": [],
-        "attachments": [],
-    });
-
-    assert!(serde_json::from_value::<CorpusDocument>(value).is_err());
+fn rejects_ui_sentinels_and_invalid_dates() {
+    let bundle = compile_search_bundle(documents(), &"a".repeat(64)).expect("compile");
+    let engine = engine(&bundle);
+    let mut query = Query {
+        query: "转专业".to_string(),
+        limit: 10,
+        sort: Default::default(),
+        filters: Default::default(),
+    };
+    query.filters.source_id = Some("all".to_string());
+    assert!(engine.search(&query).unwrap_err().contains("real source"));
+    query.filters.source_id = None;
+    query.filters.published_from = Some("2026-02-30".to_string());
+    assert!(engine.search(&query).unwrap_err().contains("invalid date"));
 }

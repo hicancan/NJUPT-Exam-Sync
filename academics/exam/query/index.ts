@@ -1,7 +1,12 @@
-import type {
-    Exam,
-    SearchResult
-} from '../records';
+import type { Exam } from '../records';
+
+export type ClassLookupMode = 'EMPTY' | 'NOT_FOUND' | 'LIST' | 'DETAIL';
+
+export interface ClassLookupResult {
+    mode: ClassLookupMode;
+    classes: string[];
+    exams: Exam[];
+}
 
 const CLASS_LOOKUP_PATTERN = /^[BFPQY]\d{2,}(?:\([A-Z0-9]+\))?$/;
 const COMPLETE_CLASS_PATTERN = /^[BFPQY]\d{6}(?:\([A-Z0-9]+\))?$/;
@@ -22,7 +27,7 @@ export const getClassNameSearchResult = (
     classNames: string[],
     inputValue: string,
     manualSelection: string | null
-): SearchResult => {
+): ClassLookupResult => {
     const trimmed = inputValue.trim();
     if (trimmed.length < 2) {
         return { mode: 'EMPTY', classes: [], exams: [] };
@@ -56,7 +61,7 @@ export const getClassSearchResult = (
     exams: Exam[],
     inputValue: string,
     manualSelection: string | null
-): SearchResult => {
+): ClassLookupResult => {
     const trimmed = inputValue.trim();
     if (trimmed.length < 2) {
         return { mode: 'EMPTY', classes: [], exams: [] };

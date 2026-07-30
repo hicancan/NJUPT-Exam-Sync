@@ -1,26 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import {
-    assertClassDataMatchesIndex,
     assertClassIndexMatchesManifest,
-    assertManifestMatchesExams,
-    DataContractError,
-    parseExamClassData,
+    ExamSnapshotContractError,
+    parseExamClassChunk,
     parseExamClassIndex,
     parseExamData,
-    parseManifest,
-    resolveExamDataVersion,
+    parseExamSnapshotManifest,
+    selectClassFromChunk,
 } from './index';
 
-const DATA_VERSION = 'a'.repeat(64);
-const GENERATED_AT = '2026-06-10T10:06:41+08:00';
-const artifact = (path: string) => ({ path, bytes: 10, sha256: 'c'.repeat(64) });
-const validExam = {
+const hash = (character: string) => character.repeat(64);
+const artifact = (path: string) => ({ path, bytes: 10, sha256: hash('c') });
+const exam = {
     id: 'exam-1',
-    stable_key: 'b240402\u001fjs113400s\u001f算法分析与设计\u001f张三',
-    content_fingerprint: 'b'.repeat(64),
+    stable_key: 'stable-1',
+    content_fingerprint: hash('b'),
     exam_period_id: '2025-2026-2',
-    duplicate_count: 1,
-    source_refs: [{ id: 'schedule.xlsx-2', source_file: 'schedule.xlsx', row_index: 2 }],
     campus: '三牌楼',
     class_name: 'B240402',
     course_name: '算法分析与设计',
@@ -33,84 +28,64 @@ const validExam = {
     start_timestamp: '2026-07-01T08:00:00+08:00',
     end_timestamp: '2026-07-01T09:50:00+08:00',
     date: '2026-07-01',
+    notes: '',
 };
-
-const validManifest = {
-    format: 'njupt-exam-snapshot-v2',
-    snapshot_id: DATA_VERSION,
-    generated_at: GENERATED_AT,
-    data_version: DATA_VERSION,
-    exam_period_id: '2025-2026-2',
-    academic_year: '2025-2026',
-    term_number: 2,
-    term_label: '第二学期',
-    files_processed: ['schedule.xlsx'],
-    total_records: 1,
+const manifest = parseExamSnapshotManifest({
+    format: 'njupt-exam-snapshot',
+    snapshot_id: hash('a'),
+    source_id: hash('b'),
+    records_id: hash('c'),
+    source_updated_at: '2026-06-10T08:14:13+00:00',
     source_url: 'https://example.test/exam',
-    source_title: '考试安排表',
-    artifacts: {
-        records: artifact('exams.json'),
-        class_index: artifact('class-index.json'),
-        history_manifest: artifact('history/manifest.json'),
+    source_title: '2025-2026学年第二学期考试安排表',
+    exam_period: {
+        id: '2025-2026-2',
+        academic_year: '2025-2026',
+        term_number: 2,
+        term_label: '第二学期',
     },
-};
+    total_records: 1,
+    records: artifact('exams.json'),
+    class_index: artifact('class-index.json'),
+    class_chunks: [artifact('classes-000.json')],
+});
 
 describe('ExamSnapshot decoder', () => {
-    it('accepts one coherent producer-shaped artifact set', () => {
-        const exams = parseExamData([validExam], 'fixture/exams.json');
-        const manifest = parseManifest(validManifest, 'fixture/manifest.json');
-        const classIndex = parseExamClassIndex({
-            version: 'exam-class-index-v2',
-            generated_at: GENERATED_AT,
-            data_version: DATA_VERSION,
-            exam_period_id: '2025-2026-2',
-            academic_year: '2025-2026',
-            term_number: 2,
-            term_label: '第二学期',
+    it('reads one producer-shaped class chunk', () => {
+        const exams = parseExamData([exam]);
+        const index = parseExamClassIndex({
+            format: 'njupt-exam-class-index',
+            records_id: manifest.records_id,
             total_records: 1,
             class_count: 1,
             classes: [{
                 class_name: 'B240402',
-                class_key: 'b240402',
-                exam_period_id: '2025-2026-2',
+                class_key: 'class-key',
                 record_count: 1,
-                data: artifact('classes/b240402.json'),
-                history: artifact('history/classes/b240402.json'),
+                chunk_path: 'classes-000.json',
+                chunk_id: hash('d'),
             }],
-        }, 'fixture/class-index.json');
-        const classData = parseExamClassData({
-            version: 'exam-class-data-v1',
-            exam_period_id: '2025-2026-2',
-            academic_year: '2025-2026',
-            term_number: 2,
-            term_label: '第二学期',
-            data_version: DATA_VERSION,
-            generated_at: GENERATED_AT,
-            class_name: 'B240402',
-            class_key: 'b240402',
-            record_count: 1,
-            exams,
-        }, 'fixture/classes/b240402.json');
-
-        assertManifestMatchesExams(manifest, exams);
-        assertClassIndexMatchesManifest(manifest, classIndex);
-        const classEntry = classIndex.classes[0];
-        if (!classEntry) throw new Error('fixture class index must contain one entry');
-        assertClassDataMatchesIndex(classEntry, classData, resolveExamDataVersion(manifest));
-        expect(classData.exams).toHaveLength(1);
+        });
+        const chunk = parseExamClassChunk({
+            format: 'njupt-exam-class-chunk',
+            records_id: manifest.records_id,
+            chunk_id: hash('d'),
+            classes: {
+                'class-key': { class_name: 'B240402', exams },
+            },
+        });
+        assertClassIndexMatchesManifest(manifest, index);
+        const entry = index.classes[0];
+        if (!entry) throw new Error('fixture class index is empty');
+        expect(selectClassFromChunk(manifest, entry, chunk)).toEqual(exams);
     });
 
-    it('rejects missing or incompatible snapshot identity', () => {
-        expect(() => parseManifest({
-            ...validManifest,
-            snapshot_id: 'not-a-hash',
-        })).toThrow(DataContractError);
-    });
-
-    it('fails fast on malformed or duplicate records', () => {
-        expect(() => parseExamData({ data: [] }, 'exams.json')).toThrow(DataContractError);
-        expect(() => parseExamData([validExam, validExam], 'exams.json')).toThrow(/duplicate id/);
-        expect(() => parseExamData([{ ...validExam, duration_minutes: 0 }], 'exams.json'))
-            .toThrow(/duration_minutes/);
+    it('rejects corrupt identities and extra record fields', () => {
+        expect(() => parseExamSnapshotManifest({ ...manifest, snapshot_id: 'not-a-hash' }))
+            .toThrow(ExamSnapshotContractError);
+        expect(() => parseExamSnapshotManifest({ ...manifest, unexpected: true }))
+            .toThrow(ExamSnapshotContractError);
+        expect(() => parseExamData([{ ...exam, unexpected: true }]))
+            .toThrow(ExamSnapshotContractError);
     });
 });

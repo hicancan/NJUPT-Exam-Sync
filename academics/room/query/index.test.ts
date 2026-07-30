@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import type { RoomBooking } from '../occupancy/model';
+import type { RoomBooking, RoomOccupancy } from '../occupancy/model';
 import {
     findAdjacentRoomDate,
     findNearestRoomDate,
     groupRoomBookings,
     isRoomSearchInput,
-    parseRoomQuery,
-    parseRoomSearchInput,
+    parseRoomIntent,
+    resolveRoomTarget,
     sortRoomDates,
 } from './index';
 
@@ -31,20 +31,51 @@ const booking = (className: string, count = 1): RoomBooking => ({
     room_key: 'room-26904f0c06438a91',
 });
 
+const occupancy: RoomOccupancy = {
+    format: 'njupt-room-occupancy',
+    occupancy_id: 'a'.repeat(64),
+    exam_snapshot_id: 'b'.repeat(64),
+    room_catalog_id: 'c'.repeat(64),
+    exam_period_id: '2025-2026-2',
+    source_updated_at: '2026-06-10T08:14:13+00:00',
+    rooms: [{
+        campus: '仙林',
+        building: '教2',
+        floor: '3',
+        floor_key: 'floor-1',
+        room: '313',
+        room_key: 'room-1',
+    }],
+    floors: [{
+        campus: '仙林',
+        building: '教2',
+        floor: '3',
+        floor_key: 'floor-1',
+        room_keys: ['room-1'],
+    }],
+    dates: [],
+};
+
 describe('room occupancy query parsing', () => {
-    it('accepts only deterministic room vertical entries', () => {
-        expect(parseRoomSearchInput('考试占用教室')).toEqual({ kind: 'entry' });
-        expect(parseRoomSearchInput('教室')).toEqual({ kind: 'entry' });
-        expect(parseRoomSearchInput('空教室')).toBeNull();
-        expect(parseRoomSearchInput('教1')).toMatchObject({ kind: 'building', building: '教1', campus: '仙林', display: '教1' });
-        expect(parseRoomSearchInput('教2')).toMatchObject({ kind: 'building', building: '教2', campus: '仙林', display: '教2' });
-        expect(parseRoomSearchInput('自动化学科楼')).toMatchObject({ kind: 'building', building: '自动化学科楼', campus: '仙林' });
-        expect(parseRoomSearchInput('图科楼')).toMatchObject({ kind: 'building', building: '图科楼', campus: '三牌楼' });
-        expect(parseRoomSearchInput('锁金')).toMatchObject({ kind: 'building', building: '锁金', campus: '锁金' });
-        expect(parseRoomSearchInput('教2-313')).toMatchObject({ kind: 'room', campus: '仙林', building: '教2', room: '313', floor: '3', display: '教2-313' });
-        expect(parseRoomSearchInput('自动化学科楼-228')).toMatchObject({ kind: 'room', campus: '仙林', building: '自动化学科楼', room: '228', floor: '2', display: '自动化学科楼-228' });
-        expect(parseRoomSearchInput('图科楼-图5')).toMatchObject({ kind: 'room', building: '图科楼', room: '图5', floor: '4', display: '图5' });
-        expect(parseRoomSearchInput('无线楼-无一')).toMatchObject({ kind: 'room', building: '无线楼', room: '无1', floor: '1', display: '无1' });
+    it('separates intent recognition from catalog-backed resolution', () => {
+        expect(parseRoomIntent('考试占用教室')).toEqual({ kind: 'entry' });
+        expect(parseRoomIntent('教室')).toEqual({ kind: 'entry' });
+        expect(parseRoomIntent('空教室')).toBeNull();
+        expect(parseRoomIntent('教2')).toEqual({ kind: 'candidate', input: '教2' });
+        expect(resolveRoomTarget(occupancy, parseRoomIntent('教2'))).toEqual({
+            kind: 'building',
+            campus: '仙林',
+            building: '教2',
+            display: '教2',
+        });
+        expect(resolveRoomTarget(occupancy, parseRoomIntent('教2-313'))).toEqual({
+            kind: 'room',
+            campus: '仙林',
+            building: '教2',
+            floor: '3',
+            room: '313',
+            display: '教2-313',
+        });
     });
 
     it('does not guess malformed or natural-language room queries', () => {
@@ -53,38 +84,8 @@ describe('room occupancy query parsing', () => {
         expect(isRoomSearchInput('教2 313')).toBe(false);
     });
 
-    it('routes bare wireless building rooms to Sanpailou wireless building floors', () => {
-        expect(parseRoomQuery('无一')).toMatchObject({
-            campus: '三牌楼',
-            building: '无线楼',
-            floor: '1',
-        });
-        expect(parseRoomQuery('无4')).toMatchObject({
-            campus: '三牌楼',
-            building: '无线楼',
-            floor: '2',
-        });
-        expect(parseRoomQuery('无线楼-无6')).toMatchObject({
-            building: '无线楼',
-            floor: '3',
-        });
-    });
-
-    it('routes library science shorthand rooms to their confirmed floors', () => {
-        expect(parseRoomQuery('图4')).toMatchObject({
-            campus: '三牌楼',
-            building: '图科楼',
-            floor: '1',
-        });
-        expect(parseRoomQuery('图5')).toMatchObject({
-            campus: '三牌楼',
-            building: '图科楼',
-            floor: '4',
-        });
-    });
-
-    it('keeps time expressions out of the room entry parser', () => {
-        expect(parseRoomQuery('教2-313 14:00')).toEqual({});
+    it('does not invent a target absent from the actual RoomCatalog projection', () => {
+        expect(resolveRoomTarget(occupancy, parseRoomIntent('无线楼-无6'))).toBeNull();
     });
 
     it('groups same room, same time and same exam into one occupancy block with all classes', () => {

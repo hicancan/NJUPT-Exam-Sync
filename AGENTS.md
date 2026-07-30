@@ -11,4 +11,4 @@
 - Keep tests next to their implementation. Put real cross-system quality and
   performance scenarios under `benchmarks`.
 - Delete replaced implementations when callers switch; do not add aliases,
-  compatibility readers, hidden scans or speculative abstractions.
+  alternate-format readers, hidden scans or speculative abstractions.

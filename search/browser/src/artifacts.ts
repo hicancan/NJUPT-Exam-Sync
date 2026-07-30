@@ -8,13 +8,11 @@ export interface ArtifactRef {
 }
 
 export interface SearchBundleManifest {
-    format: 'njupt-search-bundle-v2';
-    corpus_snapshot_id: string;
+    format: 'njupt-search-bundle';
     bundle_id: string;
-    artifacts: {
-        documents: ArtifactRef;
-        lexicon: ArtifactRef;
-    };
+    corpus_snapshot_id: string;
+    documents: ArtifactRef;
+    lexicon: ArtifactRef;
     postings: ArtifactRef[];
     content: ArtifactRef[];
 }
@@ -49,31 +47,35 @@ function artifactRef(value: unknown, label: string, expectedPath: string): Artif
 function parseManifest(value: unknown): SearchBundleManifest {
     if (!value || typeof value !== 'object') throw new Error('invalid SearchBundle manifest');
     const manifest = value as Partial<SearchBundleManifest>;
-    if (
-        !hasExactKeys(value, [
+    if (!hasExactKeys(value, [
             'format',
-            'corpus_snapshot_id',
             'bundle_id',
-            'artifacts',
+            'corpus_snapshot_id',
+            'documents',
+            'lexicon',
             'postings',
             'content',
-        ])
-        || manifest.format !== 'njupt-search-bundle-v2'
-        || typeof manifest.bundle_id !== 'string'
-        || !SHA256_PATTERN.test(manifest.bundle_id)
-        || typeof manifest.corpus_snapshot_id !== 'string'
-        || !SHA256_PATTERN.test(manifest.corpus_snapshot_id)
-        || !manifest.artifacts
-        || !hasExactKeys(manifest.artifacts, ['documents', 'lexicon'])
-        || !Array.isArray(manifest.postings)
-        || !Array.isArray(manifest.content)
-        || manifest.postings.length === 0
-        || manifest.content.length === 0
-    ) {
-        throw new Error('incompatible SearchBundle manifest');
+        ])) throw new Error('invalid SearchBundle manifest fields');
+    if (manifest.format !== 'njupt-search-bundle') {
+        throw new Error('incompatible SearchBundle format');
     }
-    artifactRef(manifest.artifacts.documents, 'documents', 'documents.bin');
-    artifactRef(manifest.artifacts.lexicon, 'lexicon', 'lexicon.bin');
+    if (typeof manifest.bundle_id !== 'string' || !SHA256_PATTERN.test(manifest.bundle_id)) {
+        throw new Error('invalid SearchBundle identity');
+    }
+    if (
+        typeof manifest.corpus_snapshot_id !== 'string'
+        || !SHA256_PATTERN.test(manifest.corpus_snapshot_id)
+    ) {
+        throw new Error('invalid corpus snapshot identity');
+    }
+    if (!Array.isArray(manifest.postings) || manifest.postings.length === 0) {
+        throw new Error('SearchBundle postings are missing');
+    }
+    if (!Array.isArray(manifest.content) || manifest.content.length === 0) {
+        throw new Error('SearchBundle content is missing');
+    }
+    artifactRef(manifest.documents, 'documents', 'documents.bin');
+    artifactRef(manifest.lexicon, 'lexicon', 'lexicon.bin');
     manifest.postings.forEach((entry, index) => (
         artifactRef(entry, `postings[${index}]`, `postings-${index.toString().padStart(4, '0')}.bin`)
     ));
@@ -89,14 +91,16 @@ async function sha256(bytes: ArrayBuffer): Promise<string> {
 }
 
 async function bundleIdentity(manifest: SearchBundleManifest): Promise<string> {
-    const hashes = [
-        manifest.corpus_snapshot_id,
-        manifest.artifacts.documents.sha256,
-        manifest.artifacts.lexicon.sha256,
-        ...manifest.postings.map(artifact => artifact.sha256),
-        ...manifest.content.map(artifact => artifact.sha256),
+    const artifacts = [
+        manifest.documents,
+        manifest.lexicon,
+        ...manifest.postings,
+        ...manifest.content,
     ];
-    return sha256(new TextEncoder().encode(hashes.join('')).buffer as ArrayBuffer);
+    const identity = artifacts
+        .map(artifact => `${artifact.path}\0${artifact.bytes}\0${artifact.sha256}\0`)
+        .join('');
+    return sha256(new TextEncoder().encode(identity).buffer as ArrayBuffer);
 }
 
 export class ArtifactSource {

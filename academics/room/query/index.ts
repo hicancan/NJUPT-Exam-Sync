@@ -33,24 +33,16 @@ export interface RoomBookingGroup {
     source_bookings: RoomBooking[];
 }
 
+export type RoomIntent =
+    | { kind: 'entry' }
+    | { kind: 'candidate'; input: string };
+
 export type RoomSearchTarget =
     | { kind: 'entry' }
-    | { kind: 'building'; campus: string | null; building: string; display: string }
-    | { kind: 'room'; campus: string | null; building: string; floor: string; room: string; display: string };
+    | { kind: 'building'; campus: string; building: string; display: string }
+    | { kind: 'room'; campus: string; building: string; floor: string; room: string; display: string };
 
 const ENTRY_TERMS = new Set(['考试占用教室', '教室']);
-const BUILDING_CAMPUSES: Record<string, string | null> = {
-    '教1': '仙林',
-    '教2': '仙林',
-    '教3': '仙林',
-    '教4': '仙林',
-    '自动化学科楼': '仙林',
-    '教东': '三牌楼',
-    '教西': '三牌楼',
-    '图科楼': '三牌楼',
-    '无线楼': '三牌楼',
-    '锁金': '锁金',
-};
 
 export const uniqueValues = (items: string[]): string[] => Array.from(new Set(items)).sort((a, b) => a.localeCompare(b, 'zh-CN'));
 
@@ -137,97 +129,57 @@ const parseClock = (value: string | null, defaultMinute: number): number => {
     return hours * 60 + minutes;
 };
 
-const wirelessRoomNumber = (room: string): number | null => {
-    const value = room.slice(1);
-    const digits: Record<string, number> = {
-        '1': 1,
-        '2': 2,
-        '3': 3,
-        '4': 4,
-        '5': 5,
-        '6': 6,
-        '一': 1,
-        '二': 2,
-        '三': 3,
-        '四': 4,
-        '五': 5,
-        '六': 6,
-    };
-    return digits[value] ?? null;
-};
+export const canonicalRoomLabel = (room: Room): string => `${room.building}-${room.room}`;
 
-const normalizeWirelessRoom = (room: string): string | null => {
-    const wirelessNumber = wirelessRoomNumber(room);
-    return wirelessNumber === null ? null : `无${wirelessNumber}`;
-};
-
-const roomFloor = (room: string): string | null => {
-    const wirelessNumber = room.startsWith('无') ? wirelessRoomNumber(room) : null;
-    if (wirelessNumber !== null) return String(Math.floor((wirelessNumber - 1) / 2) + 1);
-    if (room === '图4') return '1';
-    if (room === '图5') return '4';
-    const match = /^(\d)/.exec(room);
-    return match?.[1] || null;
-};
-
-export const canonicalRoomLabel = (room: Room): string => {
-    if (room.building === '图科楼' && /^图[45]$/.test(room.room)) return room.room;
-    if (room.building === '无线楼' && /^无[1-6]$/.test(room.room)) return room.room;
-    return `${room.building}-${room.room}`;
-};
-
-export const parseRoomSearchInput = (query: string): RoomSearchTarget | null => {
+export const parseRoomIntent = (query: string): RoomIntent | null => {
     const trimmed = query.trim();
     if (!trimmed) return null;
     if (ENTRY_TERMS.has(trimmed)) return { kind: 'entry' };
-    if (trimmed in BUILDING_CAMPUSES) {
-        return { kind: 'building', campus: BUILDING_CAMPUSES[trimmed] ?? null, building: trimmed, display: trimmed };
-    }
-
-    const bareWireless = /^无[1-6一二三四五六]$/.exec(trimmed);
-    if (bareWireless) {
-        const room = normalizeWirelessRoom(trimmed);
-        const floor = room ? roomFloor(room) : null;
-        if (!room || !floor) return null;
-        return { kind: 'room', campus: '三牌楼', building: '无线楼', floor, room, display: room };
-    }
-
-    if (/^图[45]$/.test(trimmed)) {
-        return {
-            kind: 'room',
-            campus: '三牌楼',
-            building: '图科楼',
-            floor: trimmed === '图4' ? '1' : '4',
-            room: trimmed,
-            display: trimmed,
-        };
-    }
-
-    const explicitRoom = /^(教\d|教东|教西|无线楼|图科楼|自动化学科楼|锁金)-(\d{3,4}|无[1-6一二三四五六]|图[45])$/.exec(trimmed);
-    if (!explicitRoom) return null;
-    const building = explicitRoom[1];
-    const rawRoom = explicitRoom[2];
-    if (!building || !rawRoom) return null;
-    const room = rawRoom.startsWith('无') ? normalizeWirelessRoom(rawRoom) : rawRoom;
-    if (!room) return null;
-    const floor = roomFloor(room);
-    if (!floor) return null;
-    const campus = building in BUILDING_CAMPUSES ? BUILDING_CAMPUSES[building] ?? null : null;
-    const display = (building === '图科楼' && /^图[45]$/.test(room))
-        || (building === '无线楼' && /^无[1-6]$/.test(room))
-        ? room
-        : `${building}-${room}`;
-    return { kind: 'room', campus, building, floor, room, display };
+    const looksLikeRoom = /楼$|^教(?:\d|东|西)$|^[^\s]+-[^\s]+$|^(?:图|无)[^\s]+$/.test(trimmed);
+    return looksLikeRoom ? { kind: 'candidate', input: trimmed } : null;
 };
 
-export const isRoomSearchInput = (query: string): boolean => parseRoomSearchInput(query) !== null;
+export const isRoomSearchInput = (query: string): boolean => parseRoomIntent(query) !== null;
+
+export const resolveRoomTarget = (
+    index: RoomOccupancy,
+    intent: RoomIntent | null
+): RoomSearchTarget | null => {
+    if (!intent) return null;
+    if (intent.kind === 'entry') return intent;
+    const buildings = uniqueValues(index.floors.map(floor => floor.building));
+    if (buildings.includes(intent.input)) {
+        const floors = index.floors.filter(floor => floor.building === intent.input);
+        const campuses = uniqueValues(floors.map(floor => floor.campus));
+        if (campuses.length !== 1 || !campuses[0]) return null;
+        return {
+            kind: 'building',
+            campus: campuses[0],
+            building: intent.input,
+            display: intent.input
+        };
+    }
+    const rooms = index.rooms.filter(room => (
+        canonicalRoomLabel(room) === intent.input || room.room === intent.input
+    ));
+    if (rooms.length !== 1 || !rooms[0]) return null;
+    const room = rooms[0];
+    return {
+        kind: 'room',
+        campus: room.campus,
+        building: room.building,
+        floor: room.floor,
+        room: room.room,
+        display: canonicalRoomLabel(room)
+    };
+};
 
 export const findRoomByTarget = (index: RoomOccupancy, target: RoomSearchTarget | null): Room | null => {
     if (!target || target.kind !== 'room') return null;
     return index.rooms.find(room =>
         room.room === target.room
         && room.building === target.building
-        && (!target.campus || room.campus === target.campus)
+        && room.campus === target.campus
     ) || null;
 };
 
@@ -295,8 +247,8 @@ export const groupRoomBookings = (bookings: RoomBooking[]): RoomBookingGroup[] =
     );
 };
 
-export const parseRoomQuery = (query: string): Partial<RoomFilters> => {
-    const target = parseRoomSearchInput(query);
+export const parseRoomQuery = (index: RoomOccupancy, query: string): Partial<RoomFilters> => {
+    const target = resolveRoomTarget(index, parseRoomIntent(query));
     const result: Partial<RoomFilters> = {};
     if (!target || target.kind === 'entry') return result;
     result.campus = target.campus;

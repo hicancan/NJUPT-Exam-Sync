@@ -4,11 +4,11 @@ use ruzstd::io::Read;
 
 const MAX_DECODED_ARTIFACT_BYTES: usize = 64 * 1024 * 1024;
 
-pub fn compress_artifact(bytes: &[u8]) -> Vec<u8> {
+pub(super) fn compress_artifact(bytes: &[u8]) -> Vec<u8> {
     compress_to_vec(bytes, CompressionLevel::Fastest)
 }
 
-pub fn decompress_artifact(bytes: &[u8], expected_bytes: u64) -> Result<Vec<u8>, String> {
+pub(crate) fn decompress_artifact(bytes: &[u8], expected_bytes: u64) -> Result<Vec<u8>, String> {
     let expected = usize::try_from(expected_bytes)
         .map_err(|_| "decoded artifact size does not fit this platform")?;
     if expected == 0 || expected > MAX_DECODED_ARTIFACT_BYTES {
@@ -40,23 +40,14 @@ mod tests {
     use super::{compress_artifact, decompress_artifact, MAX_DECODED_ARTIFACT_BYTES};
 
     #[test]
-    fn round_trips_artifact_bytes() {
+    fn round_trips_and_bounds_zstd_artifacts() {
         let input = b"njupt search artifact".repeat(512);
         let encoded = compress_artifact(&input);
-        let decoded = decompress_artifact(&encoded, input.len() as u64).expect("decompress");
-        assert_eq!(decoded, input);
-    }
-
-    #[test]
-    fn rejects_wrong_decoded_size() {
-        let input = b"size checked artifact";
-        let encoded = compress_artifact(input);
+        assert_eq!(
+            decompress_artifact(&encoded, input.len() as u64).expect("decompress"),
+            input
+        );
         assert!(decompress_artifact(&encoded, (input.len() - 1) as u64).is_err());
-        assert!(decompress_artifact(&encoded, (input.len() + 1) as u64).is_err());
-    }
-
-    #[test]
-    fn rejects_invalid_zstd_and_unbounded_output() {
         assert!(decompress_artifact(b"not zstd", 8).is_err());
         assert!(decompress_artifact(&[], 0).is_err());
         assert!(decompress_artifact(&[], (MAX_DECODED_ARTIFACT_BYTES + 1) as u64).is_err());

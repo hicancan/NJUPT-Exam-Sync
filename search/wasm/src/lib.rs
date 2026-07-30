@@ -1,4 +1,4 @@
-use njupt_search_core::{QueryRequest, SearchEngine as CoreSearchEngine};
+use njupt_search_core::{Query, SearchEngine as CoreSearchEngine};
 use wasm_bindgen::prelude::*;
 
 fn js_error(error: impl ToString) -> JsValue {
@@ -57,7 +57,7 @@ impl SearchEngine {
     }
 
     pub fn required_content_chunks(&self, request_json: &str) -> Result<String, JsValue> {
-        let request: QueryRequest = serde_json::from_str(request_json).map_err(js_error)?;
+        let request: Query = serde_json::from_str(request_json).map_err(js_error)?;
         serde_json::to_string(
             &self
                 .inner
@@ -76,10 +76,8 @@ impl SearchEngine {
     }
 
     pub fn search(&self, request_json: &str) -> Result<String, JsValue> {
-        let request: QueryRequest = serde_json::from_str(request_json).map_err(js_error)?;
-        let started = js_sys::Date::now();
-        let mut response = self.inner.search(&request).map_err(js_error)?;
-        response.elapsed_micros = ((js_sys::Date::now() - started) * 1_000.0) as u64;
+        let request: Query = serde_json::from_str(request_json).map_err(js_error)?;
+        let response = self.inner.search(&request).map_err(js_error)?;
         serde_json::to_string(&response).map_err(js_error)
     }
 }

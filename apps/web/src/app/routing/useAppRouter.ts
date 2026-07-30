@@ -5,20 +5,17 @@ import {
     isExamHelperQuery,
     normalizeClassQuery,
 } from '@njupt-search/academics-exam/query';
-import { parseRoomSearchInput } from '@njupt-search/academics-room';
+import { parseRoomIntent } from '@njupt-search/academics-room';
 import { useUrlState } from './useUrlState';
 
 const SAVED_CLASS_KEY = 'SAVED_CLASS';
 const SAVED_ROOM_KEY = 'SAVED_ROOM_TARGET';
 
 const roomRouteParams = (value: string): Record<string, string | null> | null => {
-    const target = parseRoomSearchInput(value);
+    const target = parseRoomIntent(value);
     if (!target) return null;
     if (target.kind === 'entry') return {};
-    if (target.kind === 'building') {
-        return { building: target.building, campus: target.campus };
-    }
-    return { room: target.display };
+    return { room: target.input };
 };
 
 const savedRoomParams = (): Record<string, string | null> | null => {

@@ -4,7 +4,7 @@ import {
     buildDefaultSelectedExamIds,
     getExamExportStatus,
     getExamExportKey,
-    type ExamExportHistory,
+    type ExamExportState,
 } from './examSelection';
 
 const baseExam: Exam = {
@@ -12,12 +12,6 @@ const baseExam: Exam = {
     stable_key: 'b240402\u001fdg1011x0s\u001f数字电路与逻辑设计b\u001f张晶',
     content_fingerprint: 'a'.repeat(64),
     exam_period_id: '2025-2026-2',
-    duplicate_count: 1,
-    source_refs: [{
-        id: '2025-2026学年第二学期考试安排表.xlsx-497',
-        source_file: '2025-2026学年第二学期考试安排表.xlsx',
-        row_index: 497,
-    }],
     campus: '仙林',
     class_name: 'B240402',
     course_name: '数字电路与逻辑设计B',
@@ -29,7 +23,8 @@ const baseExam: Exam = {
     notes: '',
     start_timestamp: '2026-07-01T18:30:00+08:00',
     end_timestamp: '2026-07-01T20:20:00+08:00',
-    duration_minutes: 110
+    duration_minutes: 110,
+    date: '2026-07-01'
 };
 
 const newExam: Exam = {
@@ -44,20 +39,21 @@ const newExam: Exam = {
     end_timestamp: '2026-06-10T12:00:00+08:00'
 };
 
-const history: ExamExportHistory = [
-    3,
-    'B240402',
-    'v1',
-    '2026-06-10T00:00:00+08:00',
-    [
-        [getExamExportKey(baseExam), baseExam.content_fingerprint],
-        [getExamExportKey(newExam), newExam.content_fingerprint],
+const exportedState: ExamExportState = {
+    className: 'B240402',
+    snapshotId: 'a'.repeat(64),
+    sourceUpdatedAt: '2026-06-10T00:00:00+08:00',
+    all: [
+        { key: getExamExportKey(baseExam), fingerprint: baseExam.content_fingerprint },
+        { key: getExamExportKey(newExam), fingerprint: newExam.content_fingerprint },
     ],
-    [[getExamExportKey(baseExam), baseExam.content_fingerprint]],
-];
+    selected: [
+        { key: getExamExportKey(baseExam), fingerprint: baseExam.content_fingerprint }
+    ],
+};
 
 describe('exam export selection defaults', () => {
-    it('selects every exam before the class has export history', () => {
+    it('selects every exam before the class has saved export state', () => {
         expect(buildDefaultSelectedExamIds([baseExam, newExam], null)).toEqual(
             new Set([baseExam.id, newExam.id])
         );
@@ -66,7 +62,7 @@ describe('exam export selection defaults', () => {
     it('keeps previously unselected exams unselected', () => {
         expect(buildDefaultSelectedExamIds(
             [baseExam, newExam],
-            history
+            exportedState
         )).toEqual(new Set([baseExam.id]));
     });
 
@@ -82,7 +78,7 @@ describe('exam export selection defaults', () => {
 
         expect(buildDefaultSelectedExamIds(
             [baseExam, newExam, trulyNewExam],
-            history
+            exportedState
         )).toEqual(new Set([baseExam.id, trulyNewExam.id]));
     });
 
@@ -93,10 +89,10 @@ describe('exam export selection defaults', () => {
             content_fingerprint: 'd'.repeat(64),
         };
 
-        expect(getExamExportStatus(baseExam, history)).toBe(0);
-        expect(getExamExportStatus({ ...baseExam, content_fingerprint: 'c'.repeat(64) }, history)).toBe(2);
-        expect(getExamExportStatus(newExam, history)).toBe(0);
-        expect(getExamExportStatus(trulyNewExam, history)).toBe(1);
+        expect(getExamExportStatus(baseExam, exportedState)).toBe(0);
+        expect(getExamExportStatus({ ...baseExam, content_fingerprint: 'c'.repeat(64) }, exportedState)).toBe(2);
+        expect(getExamExportStatus(newExam, exportedState)).toBe(0);
+        expect(getExamExportStatus(trulyNewExam, exportedState)).toBe(1);
     });
 
     it('uses a semantic export key instead of the source row id', () => {

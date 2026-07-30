@@ -2,9 +2,9 @@ mod bundle;
 mod corpus;
 
 use anyhow::{bail, Context, Result};
-use bundle::load_engine;
+use bundle::{load_engine, write_bundle};
 use corpus::read_corpus;
-use njupt_search_core::{build_search_bundle, QueryRequest};
+use njupt_search_core::{compile_search_bundle, Query};
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -29,19 +29,16 @@ fn build(args: &[String]) -> Result<()> {
     let output = PathBuf::from(argument(args, "--out")?);
     let started = Instant::now();
     let corpus = read_corpus(&corpus_path)?;
-    let report = build_search_bundle(
-        corpus.documents,
-        &corpus.source_names,
-        &corpus.snapshot_id,
-        &output,
-    )
-    .map_err(anyhow::Error::msg)?;
+    let bundle =
+        compile_search_bundle(corpus.documents, &corpus.snapshot_id).map_err(anyhow::Error::msg)?;
+    let report = write_bundle(&output, &bundle)?;
     println!(
         "{}",
         serde_json::json!({
-            "bundle_id": report.manifest.bundle_id,
-            "documents": report.document_count,
-            "lexicon_terms": report.lexicon_terms,
+            "bundle_id": bundle.manifest.bundle_id,
+            "corpus_snapshot_id": bundle.manifest.corpus_snapshot_id,
+            "documents": bundle.document_count,
+            "lexicon_terms": bundle.lexicon_terms,
             "files": report.file_count,
             "bytes": report.total_bytes,
             "elapsed_ms": started.elapsed().as_millis(),
@@ -60,7 +57,7 @@ fn query(args: &[String]) -> Result<()> {
         .unwrap_or(30);
     let (_manifest, engine) = load_engine(&bundle)?;
     let response = engine
-        .search(&QueryRequest {
+        .search(&Query {
             query,
             limit,
             sort: Default::default(),
@@ -78,8 +75,9 @@ fn benchmark(args: &[String]) -> Result<()> {
     let (_manifest, engine) = load_engine(&bundle)?;
     let mut measurements = Vec::new();
     for query in queries {
+        let started = Instant::now();
         let response = engine
-            .search(&QueryRequest {
+            .search(&Query {
                 query: query.clone(),
                 limit: 30,
                 sort: Default::default(),
@@ -88,7 +86,7 @@ fn benchmark(args: &[String]) -> Result<()> {
             .map_err(anyhow::Error::msg)?;
         measurements.push(serde_json::json!({
             "query": query,
-            "elapsed_micros": response.elapsed_micros,
+            "elapsed_micros": started.elapsed().as_micros() as u64,
             "candidates": response.total_candidates,
             "results": response.results.len(),
             "top_results": response.results.iter().map(|item| serde_json::json!({

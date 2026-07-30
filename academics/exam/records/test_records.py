@@ -42,8 +42,8 @@ def test_main_fails_fast_on_unparsable_rows(monkeypatch, tmp_path):
 
 def test_source_updated_at_is_explicit_and_timezone_aware():
     value = "2026-06-10T10:06:41.783558+00:00"
-    assert get_source_updated_at({"updated_at": value}) == value
+    assert get_source_updated_at({"source_updated_at": value}) == value
     with pytest.raises(ExamDataError):
         get_source_updated_at({})
     with pytest.raises(ExamDataError):
-        get_source_updated_at({"updated_at": "2026-06-10T10:06:41"})
+        get_source_updated_at({"source_updated_at": "2026-06-10T10:06:41"})

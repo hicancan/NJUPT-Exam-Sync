@@ -4,7 +4,7 @@ import hashlib
 import json
 import sys
 import time
-from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin
@@ -191,9 +191,26 @@ def discover_exam_files(source_url: str, *, tls_verify: bool) -> list[dict[str, 
     return selected
 
 
-def update_exam_source(source_path: Path) -> None:
-    existing = read_json(source_path) if source_path.exists() else {}
-    tls_verify = str(existing.get("tls_verify", True)).strip().lower() not in {"0", "false", "no"}
+EXAM_SOURCE_FORMAT = "njupt-exam-source"
+
+
+def _canonical_json(value: Any) -> bytes:
+    return json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+
+
+def source_descriptor_id(descriptor: dict[str, Any]) -> str:
+    identity = {key: value for key, value in descriptor.items() if key != "source_id"}
+    return hashlib.sha256(_canonical_json(identity)).hexdigest()
+
+
+def discover_exam_source(output_path: Path, *, tls_verify: bool) -> None:
+    if output_path.exists():
+        raise ExamDataError(f"Refusing to overwrite exam source descriptor: {output_path}")
     source_url, source_title = discover_latest_exam_notice(tls_verify=tls_verify)
     files = []
     for item in discover_exam_files(source_url, tls_verify=tls_verify):
@@ -213,34 +230,47 @@ def update_exam_source(source_path: Path) -> None:
                 "last_modified": response.headers.get("last-modified"),
             }
         )
-    existing_files = existing.get("files") if isinstance(existing.get("files"), list) else []
-    changed = existing.get("source_url") != source_url or existing.get("source_title") != source_title or existing_files != files
-    generated_at = datetime.now(timezone.utc).isoformat() if changed else str(existing.get("generated_at") or files[0].get("last_modified") or "")
-    write_json(
-        source_path,
-        {
-            "version": "njupt-search-exam-source-v1",
-            "source_url": source_url,
-            "source_title": source_title,
-            "generated_at": generated_at,
-            "tls_verify": tls_verify,
-            "files": files,
-        },
-    )
+    updated_values = []
+    for item in files:
+        raw_value = item.get("last_modified")
+        if not raw_value:
+            raise ExamDataError(
+                f"exam source file has no Last-Modified timestamp: {item['name']}"
+            )
+        try:
+            updated_values.append(parsedate_to_datetime(raw_value))
+        except (TypeError, ValueError) as exc:
+            raise ExamDataError(
+                f"exam source file has invalid Last-Modified timestamp: {item['name']}"
+            ) from exc
+    descriptor = {
+        "format": EXAM_SOURCE_FORMAT,
+        "source_url": source_url,
+        "source_title": source_title,
+        "source_updated_at": max(updated_values).isoformat(),
+        "tls_verify": tls_verify,
+        "files": files,
+    }
+    descriptor["source_id"] = source_descriptor_id(descriptor)
+    write_json(output_path, descriptor)
 
 
 def materialize_exam_files(*, source_path: Path, exam_dir: Path, cache_root: Path) -> None:
     source = read_json(source_path)
-    source_sha256 = sha256_file(source_path)
-    generated_at = str(source.get("generated_at") or "").strip()
-    if not generated_at:
-        raise ExamDataError(f"{source_path} missing generated_at")
+    if source.get("format") != EXAM_SOURCE_FORMAT:
+        raise ExamDataError(f"{source_path} is not an {EXAM_SOURCE_FORMAT} descriptor")
+    source_id = str(source.get("source_id") or "")
+    if source_id != source_descriptor_id(source):
+        raise ExamDataError(f"{source_path} source_id does not match its content")
+    source_updated_at = str(source.get("source_updated_at") or "").strip()
+    if not source_updated_at:
+        raise ExamDataError(f"{source_path} missing source_updated_at")
     files = source.get("files")
     if not isinstance(files, list) or not files:
         raise ExamDataError(f"{source_path} files must be a non-empty list")
 
     exam_dir.mkdir(parents=True, exist_ok=True)
-    cache_dir = cache_root / source_sha256
+    cache_dir = cache_root / source_id
     cache_dir.mkdir(parents=True, exist_ok=True)
     downloaded_names: list[str] = []
     verify_tls = str(source.get("tls_verify", True)).strip().lower() not in {"0", "false", "no"}
@@ -279,9 +309,12 @@ def materialize_exam_files(*, source_path: Path, exam_dir: Path, cache_root: Pat
         downloaded_names.append(name)
 
     expected_names = set(downloaded_names)
-    for stale_excel in exam_dir.glob("*.xls*"):
-        if stale_excel.name not in expected_names:
-            stale_excel.unlink()
+    actual_names = {path.name for path in exam_dir.glob("*.xls*")}
+    if actual_names != expected_names:
+        raise ExamDataError(
+            f"materialized exam file set mismatch: expected {sorted(expected_names)}, "
+            f"got {sorted(actual_names)}"
+        )
 
     period = parse_exam_period(source.get("source_title"))
     write_json(
@@ -294,8 +327,8 @@ def materialize_exam_files(*, source_path: Path, exam_dir: Path, cache_root: Pat
             "term_number": period.term_number,
             "term_label": period.term_label,
             "downloaded_files": downloaded_names,
-            "updated_at": generated_at,
-            "data_version": source_sha256,
+            "source_updated_at": source_updated_at,
+            "source_id": source_id,
         },
     )
 

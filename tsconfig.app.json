@@ -36,9 +36,6 @@
             "@njupt-search/search-browser": [
                 "./search/browser/src/index.ts"
             ],
-            "@njupt-search/academics-exam": [
-                "./academics/exam/index.ts"
-            ],
             "@njupt-search/academics-exam/records": [
                 "./academics/exam/records/index.ts"
             ],
@@ -48,11 +45,8 @@
             "@njupt-search/academics-exam/query": [
                 "./academics/exam/query/index.ts"
             ],
-            "@njupt-search/academics-exam/history": [
-                "./academics/exam/history/index.ts"
-            ],
-            "@njupt-search/academics-calendar": [
-                "./academics/calendar/ics.ts"
+            "@njupt-search/academics-exam/calendar": [
+                "./academics/exam/calendar.ts"
             ],
             "@njupt-search/academics-room": [
                 "./academics/room/index.ts"
@@ -64,7 +58,6 @@
         "search/browser/src",
         "search/browser/wasm",
         "academics/exam",
-        "academics/calendar",
         "academics/room"
     ]
 }

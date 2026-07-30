@@ -5,17 +5,16 @@ export type SearchFacet =
     | 'policy'
     | 'workflow'
     | 'download'
-    | 'system'
     | 'exam'
     | 'news'
     | 'external';
 
-export type DateRange = 'all' | 'past_year' | 'past_3_years' | 'past_5_years' | 'undated';
-
 export interface SearchFilters {
     sourceId?: string;
-    facet?: SearchFacet | 'all';
-    dateRange?: DateRange;
+    facet?: SearchFacet;
+    publishedFrom?: string;
+    publishedTo?: string;
+    includeUndated?: boolean;
 }
 
 export interface Query {
@@ -41,18 +40,15 @@ export interface SearchResult {
     publishedAt: string | null;
     updatedAt: string | null;
     section: string | null;
-    kind: string;
+    kind: 'page' | 'attachment' | 'external';
     facet: SearchFacet;
-    score: number;
     snippet: string;
     matchedTerms: string[];
     attachments: SearchAttachment[];
 }
 
 export interface SearchResponse {
-    query: string;
     totalCandidates: number;
-    elapsedMicros: number;
     results: SearchResult[];
 }
 

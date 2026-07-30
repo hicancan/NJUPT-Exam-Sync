@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 
-ROOM_CATALOG_FORMAT = "njupt-room-catalog-v2"
+ROOM_CATALOG_FORMAT = "njupt-room-catalog"
 
 WIRELESS_ROOM_DIGITS = {
     "1": "1",
@@ -58,7 +58,7 @@ class CatalogRoom:
 @dataclass(frozen=True)
 class RoomCatalog:
     format: str
-    content_hash: str
+    catalog_id: str
     rooms_by_key: dict[str, CatalogRoom]
 
 
@@ -253,16 +253,21 @@ def load_room_catalog(path: Path) -> RoomCatalog:
             floor=floor_id,
         )
         for entry in floor["rooms"]:
-            if not isinstance(entry, dict) or set(entry) != {"room", "room_key"}:
+            if not isinstance(entry, dict) or set(entry) not in ({"room"}, {"room", "aliases"}):
                 raise RoomCatalogError(f"invalid room catalog entry: {entry}")
             room = normalize_room_text(entry.get("room")).upper()
-            room_key = normalize_room_text(entry.get("room_key"))
-            expected_key = room_key_for(
+            room_key = room_key_for(
                 campus=campus,
                 building=building,
                 room=room,
             )
-            if not room or room_key != expected_key or room_key in rooms_by_key:
+            aliases = entry.get("aliases", [])
+            if (
+                not room
+                or room_key in rooms_by_key
+                or not isinstance(aliases, list)
+                or any(not normalize_room_text(alias) for alias in aliases)
+            ):
                 raise RoomCatalogError(f"invalid or duplicate room identity: {entry}")
             rooms_by_key[room_key] = CatalogRoom(
                 campus=campus,
@@ -274,6 +279,13 @@ def load_room_catalog(path: Path) -> RoomCatalog:
             )
     return RoomCatalog(
         format=ROOM_CATALOG_FORMAT,
-        content_hash=hashlib.sha256(raw).hexdigest(),
+        catalog_id=hashlib.sha256(
+            json.dumps(
+                payload,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest(),
         rooms_by_key=rooms_by_key,
     )
