@@ -27,6 +27,7 @@ coverage/
 .vscode/
 .idea/
 .DS_Store
+AGENTS.md
 
 # Android and Gradle
 /apps/android/.gradle/
