@@ -2,7 +2,7 @@ name: Deploy EdgeOne Pages
 
 on:
   workflow_run:
-    workflows: [ 'Build Corpus Release', 'Build Exam Snapshot' ]
+    workflows: [ 'Build Corpus Artifact', 'Build Academics Artifact' ]
     types: [ completed ]
   workflow_dispatch:
     inputs:
@@ -67,7 +67,7 @@ jobs:
             fi
           else
             run_id=""
-            for candidate_run_id in $(gh run list --repo "$GITHUB_REPOSITORY" --status success --limit 50 --json databaseId,workflowName,createdAt --jq '[.[] | select(.workflowName == "Build Corpus Release" or .workflowName == "Build Exam Snapshot")] | sort_by(.createdAt) | reverse | .[].databaseId'); do
+            for candidate_run_id in $(gh run list --repo "$GITHUB_REPOSITORY" --status success --limit 50 --json databaseId,workflowName,createdAt --jq '[.[] | select(.workflowName == "Build Corpus Artifact" or .workflowName == "Build Academics Artifact")] | sort_by(.createdAt) | reverse | .[].databaseId'); do
               if has_dist_artifact "$candidate_run_id"; then
                 run_id="$candidate_run_id"
                 break

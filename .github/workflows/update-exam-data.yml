@@ -1,4 +1,4 @@
-name: Build Exam Snapshot
+name: Build Academics Artifact
 
 on:
   schedule:
@@ -7,9 +7,10 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 concurrency:
-  group: exam-snapshot
+  group: academics-artifact
   cancel-in-progress: true
 
 jobs:
@@ -28,6 +29,11 @@ jobs:
           python-version-file: .python-version
 
       - uses: astral-sh/setup-uv@v8.2.0
+
+      - uses: oras-project/setup-oras@v1
+        with:
+          url: https://github.com/oras-project/oras/releases/download/v1.3.3/oras_1.3.3_linux_amd64.tar.gz
+          checksum: 9ce999f8d2de03fc03968b29d743077a58783e545e5eaa53917ca177352d0e59
 
       - name: Install production build dependencies
         run: |
@@ -51,12 +57,16 @@ jobs:
       - name: Validate academics artifacts
         run: npm run academics:validate -- --exam "$RUNNER_TEMP/exam-snapshot" --room "$RUNNER_TEMP/room-occupancy"
 
-      - name: Publish immutable academic artifacts and current pointers
+      - name: Publish academics and update the artifact pointer
         env:
           GH_TOKEN: ${{ secrets.NJUPT_SEARCH_GITHUB_TOKEN }}
+          REGISTRY_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           : "${GH_TOKEN:?NJUPT_SEARCH_GITHUB_TOKEN is required}"
+          printf '%s' "$REGISTRY_TOKEN" \
+            | oras login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+
           exam_id="$(jq -r .snapshot_id "$RUNNER_TEMP/exam-snapshot/manifest.json")"
           occupancy_id="$(jq -r .occupancy_id "$RUNNER_TEMP/room-occupancy/manifest.json")"
           test "${#exam_id}" -eq 64
@@ -70,29 +80,34 @@ jobs:
             --zstd -cf "$room_archive" -C "$RUNNER_TEMP/room-occupancy" .
           exam_sha256="$(sha256sum "$exam_archive" | cut -d' ' -f1)"
           room_sha256="$(sha256sum "$room_archive" | cut -d' ' -f1)"
-          release_tag="academics-${academics_id}"
-          exam_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${release_tag}/${exam_archive}"
-          room_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${release_tag}/${room_archive}"
+          registry="ghcr.io/${GITHUB_REPOSITORY_OWNER}/njupt-academics"
+          oras push \
+            --artifact-type application/vnd.njupt.academics \
+            --annotation "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+            "$registry:$academics_id,current" \
+            "$exam_archive:application/vnd.njupt.exam-snapshot+zstd" \
+            "$room_archive:application/vnd.njupt.room-occupancy+zstd"
+          digest="$(oras resolve "$registry:$academics_id")"
+          test "$(oras resolve "$registry:current")" = "$digest"
 
-          if ! gh release view "$release_tag" >/dev/null 2>&1; then
-            gh release create "$release_tag" "$exam_archive" "$room_archive" \
-              --title "NJUPT academics $academics_id" \
-              --notes "Immutable ExamSnapshot $exam_id and RoomOccupancy $occupancy_id"
-          else
-            mkdir published
-            for asset in "$exam_archive" "$room_archive"; do
-              gh release download "$release_tag" --pattern "$asset" --dir published
-              cmp --silent "$asset" "published/$asset" || {
-                echo "::error::Existing immutable academic artifact differs: $asset"
-                exit 1
-              }
-            done
-          fi
-
-          gh variable set EXAM_SNAPSHOT_URL --body "$exam_url"
-          gh variable set EXAM_SNAPSHOT_SHA256 --body "$exam_sha256"
-          gh variable set ROOM_OCCUPANCY_URL --body "$room_url"
-          gh variable set ROOM_OCCUPANCY_SHA256 --body "$room_sha256"
+          academics_artifact="$(
+            jq -cn \
+              --arg ref "$registry@$digest" \
+              --arg id "$academics_id" \
+              --arg exam_id "$exam_id" \
+              --arg exam_archive "$exam_archive" \
+              --arg exam_sha256 "$exam_sha256" \
+              --arg room_id "$occupancy_id" \
+              --arg room_archive "$room_archive" \
+              --arg room_sha256 "$room_sha256" \
+              '{
+                ref:$ref,
+                id:$id,
+                exam:{id:$exam_id,archive:$exam_archive,sha256:$exam_sha256},
+                room:{id:$room_id,archive:$room_archive,sha256:$room_sha256}
+              }'
+          )"
+          gh variable set ACADEMICS_ARTIFACT --body "$academics_artifact"
 
       - uses: actions/upload-artifact@v7
         with:
@@ -110,11 +125,10 @@ jobs:
 
   assemble:
     needs: build-academics
-    if: ${{ vars.SEARCH_BUNDLE_URL != '' && vars.SEARCH_BUNDLE_SHA256 != '' }}
+    if: ${{ vars.SEARCH_ARTIFACT != '' }}
     runs-on: ubuntu-latest
     env:
-      SEARCH_BUNDLE_URL: ${{ vars.SEARCH_BUNDLE_URL }}
-      SEARCH_BUNDLE_SHA256: ${{ vars.SEARCH_BUNDLE_SHA256 }}
+      SEARCH_ARTIFACT: ${{ vars.SEARCH_ARTIFACT }}
     steps:
       - uses: actions/checkout@v6
 
@@ -127,6 +141,11 @@ jobs:
         with:
           name: current-room-occupancy
           path: ${{ runner.temp }}/room-occupancy
+
+      - uses: oras-project/setup-oras@v1
+        with:
+          url: https://github.com/oras-project/oras/releases/download/v1.3.3/oras_1.3.3_linux_amd64.tar.gz
+          checksum: 9ce999f8d2de03fc03968b29d743077a58783e545e5eaa53917ca177352d0e59
 
       - uses: actions/setup-node@v6
         with:
@@ -142,15 +161,25 @@ jobs:
           npm ci
           cargo install wasm-pack --version 0.15.0 --locked
 
-      - name: Download the current immutable SearchBundle
+      - name: Download the current SearchBundle
+        env:
+          REGISTRY_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          curl --fail --location --retry 3 \
-            --output "$RUNNER_TEMP/search-bundle.tar.zst" "$SEARCH_BUNDLE_URL"
-          printf '%s  %s\n' "$SEARCH_BUNDLE_SHA256" "$RUNNER_TEMP/search-bundle.tar.zst" \
+          printf '%s' "$REGISTRY_TOKEN" \
+            | oras login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          ref="$(jq -er '.ref' <<< "$SEARCH_ARTIFACT")"
+          archive="$(jq -er '.archive' <<< "$SEARCH_ARTIFACT")"
+          sha256="$(jq -er '.sha256' <<< "$SEARCH_ARTIFACT")"
+          [[ "$ref" == ghcr.io/*@sha256:* ]]
+          [[ "$archive" != */* ]]
+
+          mkdir registry-download
+          oras pull "$ref" --output registry-download
+          printf '%s  %s\n' "$sha256" "registry-download/$archive" \
             | sha256sum --check -
           mkdir "$RUNNER_TEMP/search-bundle"
-          tar --zstd -xf "$RUNNER_TEMP/search-bundle.tar.zst" \
+          tar --zstd -xf "registry-download/$archive" \
             -C "$RUNNER_TEMP/search-bundle"
           npm run academics:validate -- \
             --exam "$RUNNER_TEMP/exam-snapshot" \

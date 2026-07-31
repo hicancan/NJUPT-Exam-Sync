@@ -144,9 +144,15 @@ SearchBundle + ExamSnapshot + RoomOccupancy + static Web source
 不写回源码树。benchmark 可以读取生产输出并判断质量，生产代码不知道
 benchmark 期望。
 
-云端同样保持这两个生产事务独立。`Build Corpus Release` 发布不可变
-SearchBundle 并更新其当前 URL/hash；`Build Exam Snapshot` 发布不可变
-ExamSnapshot 与 RoomOccupancy 并更新各自 URL/hash。两个 workflow 的 Web
-组装 job 只读取三个明确指针，不重新生产另一个领域的 artifact。成功组装的
-`njupt-search-dist` 通过 `workflow_run` 交给 EdgeOne 部署；没有完整三件套的
-首次 bootstrap 运行可以发布自己的 artifact，但不会产生或部署半成品 dist。
+云端同样保持这两个生产事务独立。`Build Corpus Artifact` 把 SearchBundle
+作为按内容寻址的 OCI artifact 发布；`Build Academics Artifact` 把
+ExamSnapshot 与 RoomOccupancy 作为一个 OCI artifact 原子发布。当前 corpus、
+search 和 academics 分别使用一个完整 JSON 指针，引用 OCI manifest digest、
+领域 identity、归档文件名与 SHA-256，不再把 URL/hash 拆成可能错配的多个
+变量。
+
+两个 workflow 的 Web 组装 job 只读取三个明确 artifact，不重新生产另一个
+领域的输出。成功组装的 `njupt-search-dist` 通过 `workflow_run` 交给 EdgeOne
+部署；没有完整三件套的首次 bootstrap 运行只发布自己的 artifact，不产生或
+部署半成品 dist。Git Tags 与 GitHub Releases 只表达软件版本及其 Android
+安装包；滚动数据和编译产物不会污染源码版本历史。
