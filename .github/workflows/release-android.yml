@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Validate release inputs
         id: version
@@ -53,6 +55,17 @@ jobs:
             fi
           else
             RELEASE_TAG="v$VERSION"
+          fi
+
+          tag_sha="$(git rev-list -n 1 "$RELEASE_TAG" 2>/dev/null || true)"
+          head_sha="$(git rev-parse HEAD)"
+          if [[ -z "$tag_sha" ]]; then
+            echo "::error::software release tag $RELEASE_TAG does not exist"
+            exit 1
+          fi
+          if [[ "$tag_sha" != "$head_sha" ]]; then
+            echo "::error::checkout $head_sha is not software release tag $RELEASE_TAG ($tag_sha)"
+            exit 1
           fi
 
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
