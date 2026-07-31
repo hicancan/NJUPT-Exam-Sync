@@ -123,12 +123,20 @@ jobs:
             --zstd -cf "$archive" -C "$RUNNER_TEMP/search-bundle" .
           archive_sha256="$(sha256sum "$archive" | cut -d' ' -f1)"
           registry="ghcr.io/${GITHUB_REPOSITORY_OWNER}/njupt-search-bundle"
-          oras push \
-            --artifact-type application/vnd.njupt.search-bundle \
-            --annotation "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
-            "$registry:$bundle_id,current" \
-            "$archive:application/vnd.njupt.search-bundle+zstd"
-          digest="$(oras resolve "$registry:$bundle_id")"
+          if digest="$(oras resolve "$registry:$bundle_id" 2>/dev/null)"; then
+            mkdir published
+            oras pull "$registry@$digest" --output published
+            printf '%s  %s\n' "$archive_sha256" "published/$archive" \
+              | sha256sum --check -
+          else
+            oras push \
+              --artifact-type application/vnd.njupt.search-bundle \
+              --annotation "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+              "$registry:$bundle_id" \
+              "$archive:application/vnd.njupt.search-bundle+zstd"
+            digest="$(oras resolve "$registry:$bundle_id")"
+          fi
+          oras tag "$registry@$digest" current
           test "$(oras resolve "$registry:current")" = "$digest"
           bundle_ref="$registry@$digest"
 
