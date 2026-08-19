@@ -14,7 +14,7 @@ export function ExamList({ classes, onClassClick }: ExamListProps) {
     return (
         <div className="w-full mt-2 fade-in">
             <div className="text-[14px] text-[#70757a] dark:text-[#9aa0a6] mb-6">
-                共找到 {classes.length} 个班级：
+                找到 {classes.length} 个班级
             </div>
             
             <div className="flex flex-wrap gap-3">
@@ -32,7 +32,7 @@ export function ExamList({ classes, onClassClick }: ExamListProps) {
 
             {hasMore && (
                 <p className="text-center text-sm text-[var(--color-google-grey)] dark:text-[var(--color-google-grey-dark)] mt-10 pb-10">
-                    已省略部分相似结果，输入完整班级号可精确匹配。
+                    结果较多，请输入完整班级号缩小范围。
                 </p>
             )}
         </div>

@@ -85,8 +85,8 @@ export function ExamPage({ query, className, onOpenClass, client }: ExamPageProp
 
             {classMode.mode === 'NOT_FOUND' && !error ? (
                 <section className="mt-6 rounded-xl border border-[#dadce0] bg-[#f8fbff] px-4 py-6 text-center dark:border-[#3c4043] dark:bg-[#202124]">
-                    <h2 className="text-[20px] font-medium text-[#202124] dark:text-[#e8eaed]">未找到匹配班级</h2>
-                    <p className="mt-2 text-[14px] text-[#5f6368] dark:text-[#bdc1c6]">请检查班级号后重试。</p>
+                    <h2 className="text-[20px] font-medium text-[#202124] dark:text-[#e8eaed]">没有找到这个班级</h2>
+                    <p className="mt-2 text-[14px] text-[#5f6368] dark:text-[#bdc1c6]">检查班级号后再试。</p>
                 </section>
             ) : null}
         </main>

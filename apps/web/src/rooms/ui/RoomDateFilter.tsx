@@ -33,8 +33,8 @@ export function RoomDateFilter({ value, dates, onChange }: RoomDateFilterProps) 
             <div className="grid grid-cols-[40px_minmax(0,1fr)_40px] gap-2">
                 <button
                     type="button"
-                    aria-label="上一场考试日期"
-                    title="上一场考试日期"
+                    aria-label="上一个有考试安排的日期"
+                    title="上一个有考试安排的日期"
                     disabled={!previousDate}
                     onClick={() => previousDate && onChange(previousDate)}
                     className="inline-flex h-10 items-center justify-center rounded-md border border-[#dadce0] bg-white text-[#3c4043] outline-none hover:bg-[#f8fafd] disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#e8eaed] dark:hover:bg-[#303134]"
@@ -54,8 +54,8 @@ export function RoomDateFilter({ value, dates, onChange }: RoomDateFilterProps) 
                 />
                 <button
                     type="button"
-                    aria-label="下一场考试日期"
-                    title="下一场考试日期"
+                    aria-label="下一个有考试安排的日期"
+                    title="下一个有考试安排的日期"
                     disabled={!nextDate}
                     onClick={() => nextDate && onChange(nextDate)}
                     className="inline-flex h-10 items-center justify-center rounded-md border border-[#dadce0] bg-white text-[#3c4043] outline-none hover:bg-[#f8fafd] disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#e8eaed] dark:hover:bg-[#303134]"
@@ -65,13 +65,13 @@ export function RoomDateFilter({ value, dates, onChange }: RoomDateFilterProps) 
             </div>
             {!knownDate && nearestDate ? (
                 <div className="flex items-center justify-between gap-2 text-[12px] text-[#70757a] dark:text-[#9aa0a6]">
-                    <span>当天没有考试占用记录</span>
+                    <span>当天没有考试占用记录。</span>
                     <button
                         type="button"
                         onClick={() => onChange(nearestDate)}
                         className="font-medium text-[#1a73e8] hover:underline dark:text-[#8ab4f8]"
                     >
-                        跳到最近考试日
+                        查看最近的考试日期
                     </button>
                 </div>
             ) : null}

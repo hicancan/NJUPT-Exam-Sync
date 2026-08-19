@@ -54,6 +54,14 @@ export function SearchPage({ query, client }: SearchPageProps) {
         );
     }
 
+    if (enabled && (initError || (searchError && !response))) {
+        return (
+            <main className="flex-1 max-w-6xl w-full mx-auto px-4 pt-3 pb-6">
+                <InlineErrorBanner message={initError || searchError} />
+            </main>
+        );
+    }
+
     return (
         <main className="flex-1 max-w-6xl w-full mx-auto px-4 pt-3 pb-6">
             <InlineErrorBanner message={initError || searchError} />

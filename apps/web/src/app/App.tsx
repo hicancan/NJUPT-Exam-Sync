@@ -22,7 +22,7 @@ function RouteLoading() {
     return (
         <main className="flex-1 max-w-6xl w-full mx-auto px-4 pt-6 pb-8">
             <div className="rounded-xl border border-[#dadce0] bg-white px-4 py-6 text-[14px] text-[#5f6368] dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#bdc1c6]">
-                正在加载...
+                正在打开页面…
             </div>
         </main>
     );

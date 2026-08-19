@@ -59,7 +59,7 @@ export function ExamDetail({
     const copyShareLink = () => {
         const url = window.location.href;
         if (!navigator.clipboard) {
-            showErrorNotice({ message: '复制失败，请手动复制地址栏链接' });
+            showErrorNotice({ message: '复制失败，请手动复制地址栏链接。' });
             return;
         }
 
@@ -69,7 +69,7 @@ export function ExamDetail({
                 setTimeout(() => setCopyState(false), 2000);
             })
             .catch(() => {
-                showErrorNotice({ message: '复制失败，请手动复制地址栏链接' });
+                showErrorNotice({ message: '复制失败，请手动复制地址栏链接。' });
             });
     };
 
@@ -78,7 +78,7 @@ export function ExamDetail({
         const validExams = selectedExams.filter(e => e.start_timestamp && e.end_timestamp);
 
         if (validExams.length === 0) {
-            showErrorNotice({ message: '请至少选择一门已安排时间的考试' });
+            showErrorNotice({ message: '至少选择一门有考试时间的课程。' });
             return;
         }
 
@@ -96,7 +96,7 @@ export function ExamDetail({
             onExportComplete(validExams);
         } catch (err) {
             console.error('ICS generation failed:', err);
-            showErrorNotice({ message: '日历文件生成失败，请稍后重试或联系开发者' });
+            showErrorNotice({ message: '日历导出失败，请稍后重试。' });
         }
     };
 
@@ -105,10 +105,10 @@ export function ExamDetail({
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
                 <div>
                     <h2 className="text-[28px] font-normal text-[#202124] dark:text-[#e8eaed] leading-tight mb-2">
-                        {className} 期末考试安排
+                        {className} 考试安排
                     </h2>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-[#70757a] dark:text-[#9aa0a6]">
-                        <span>已选 {selectedIds.size} / {exams.length} 门考试</span>
+                        <span>已选 {selectedIds.size} 门，共 {exams.length} 门</span>
                         <span>•</span>
                         <button
                             onClick={onSelectAll}
@@ -133,7 +133,7 @@ export function ExamDetail({
                             className={`flex items-center gap-1 hover:underline transition-colors ${copyState ? 'text-[#34A853]' : 'text-[var(--color-google-blue)] dark:text-[var(--color-google-blue-dark)]'}`}
                         >
                             <Share2 className="w-4 h-4" aria-hidden="true" />
-                            {copyState ? '链接已复制' : '分享此页面'}
+                            {copyState ? '链接已复制' : '复制分享链接'}
                         </button>
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-[#70757a] dark:text-[#9aa0a6]">
@@ -152,6 +152,7 @@ export function ExamDetail({
                 <button
                     onClick={downloadICS}
                     disabled={selectedIds.size === 0}
+                    aria-label="导出 ICS 日历文件"
                     className={`
                         inline-flex items-center justify-center gap-2 px-6 py-2 rounded-full text-[14px] font-medium transition-all shrink-0
                         ${selectedIds.size > 0
@@ -160,7 +161,7 @@ export function ExamDetail({
                     `}
                 >
                     <Download className="w-4 h-4" aria-hidden="true" />
-                    导出日历 (.ics)
+                    导出日历
                 </button>
             </div>
 

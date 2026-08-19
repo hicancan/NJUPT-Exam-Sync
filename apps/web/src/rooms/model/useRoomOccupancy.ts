@@ -77,7 +77,7 @@ export function useRoomOccupancy(client: RoomOccupancyClient, input: UseRoomOccu
             .catch((err) => {
                 if (err instanceof DOMException && err.name === 'AbortError') return;
                 console.error(err);
-                setIndexState({ data: null, error: err instanceof Error ? err.message : '无法加载教室占用索引', loaded: true });
+                setIndexState({ data: null, error: '暂时无法加载教室信息，请刷新页面后重试。', loaded: true });
             });
         return () => controller.abort();
     }, [client]);
@@ -92,7 +92,7 @@ export function useRoomOccupancy(client: RoomOccupancyClient, input: UseRoomOccu
         const date = input.date || pickDefaultDate(index);
         const selectedRoom = findRoomByTarget(index, roomTarget);
         if (roomTarget?.kind === 'room' && !selectedRoom) {
-            return { error: `教室目录中不存在：${roomTarget.display}` };
+            return { error: `没有找到“${roomTarget.display}”，请检查校区、楼栋或教室号。` };
         }
         const campus = input.campus || (roomTarget?.kind !== 'entry' ? roomTarget?.campus : null) || null;
         const building = input.building || (roomTarget?.kind !== 'entry' ? roomTarget?.building : null) || null;
@@ -100,7 +100,7 @@ export function useRoomOccupancy(client: RoomOccupancyClient, input: UseRoomOccu
         const floorEntry = findFloor(index, campus, building, floor);
         if (!floorEntry) {
             if (campus || building || floor) {
-                return { error: `教室目录中不存在：${[campus, building, floor].filter(Boolean).join(' ')}` };
+                return { error: `没有找到“${[campus, building, floor].filter(Boolean).join(' ')}”，请检查校区、楼栋或楼层。` };
             }
             return null;
         }
@@ -127,7 +127,7 @@ export function useRoomOccupancy(client: RoomOccupancyClient, input: UseRoomOccu
             .catch((err) => {
                 if (err instanceof DOMException && err.name === 'AbortError') return;
                 console.error(err);
-                setFloorState({ path: selected.artifact?.path || null, data: null, error: err instanceof Error ? err.message : '无法加载楼层占用数据' });
+                setFloorState({ path: selected.artifact?.path || null, data: null, error: '暂时无法加载该楼层的占用记录，请稍后重试。' });
             });
         return () => controller.abort();
     }, [client, index, selected]);

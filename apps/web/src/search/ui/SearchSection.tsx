@@ -62,11 +62,11 @@ export function SearchSection({
     const trimmedQuery = query.trim();
     const facetOptions = useFacetOptions(filterOptions);
     const results = response?.results ?? [];
-    const summary = resultSummary(filters, results.length, response?.totalCandidates ?? 0, sortMode);
+    const summary = resultSummary(filters, results.length, response?.totalCandidates ?? 0);
     const statusText = trimmedQuery.length < 2
-        ? '输入至少两个字符开始搜索。'
+        ? '输入至少两个字再搜索。'
         : searching
-            ? '正在搜索南邮官网信息。'
+            ? '正在搜索…'
             : summary;
     const activeFilters = hasActiveFilters(filters);
     const showSearchingEmptyState = searching && trimmedQuery.length >= 2;
@@ -104,20 +104,19 @@ export function SearchSection({
                                 disabled={searching}
                                 className="px-6 py-2 rounded-full border border-[#dadce0] dark:border-[#3c4043] bg-white dark:bg-[#202124] text-sm font-medium text-[#1a73e8] hover:bg-[#f8f9fa] dark:hover:bg-[#303134] transition-colors"
                             >
-                                加载更多结果
+                                查看更多
                             </button>
                         </div>
                     ) : null}
                 </div>
             ) : showSearchingEmptyState ? (
                 <div className="min-h-32 max-w-[692px] rounded-md border border-[#dadce0] bg-white p-6 text-[#4d5156] dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#bdc1c6]">
-                    <p>正在搜索南邮官网信息。</p>
-                    <p className="mt-2 text-sm">正在加载本次查询所需的倒排索引与正文块。</p>
+                    <p>正在搜索…</p>
                 </div>
             ) : (
                 <div className="border border-[#dadce0] dark:border-[#3c4043] rounded-md bg-white dark:bg-[#202124] p-6 text-[#4d5156] dark:text-[#bdc1c6] max-w-[692px]">
-                    <p>没有找到相关内容。</p>
-                    <p className="mt-2 text-sm">试试搜索"期末考试""四六级""计算机等级""口语考试""奖学金""大创""竞赛报名"等。</p>
+                    <p>{activeFilters ? '没有符合筛选条件的结果。' : '没有找到相关结果。'}</p>
+                    <p className="mt-2 text-sm">{activeFilters ? '减少筛选条件后再试。' : '换个关键词试试。'}</p>
                 </div>
             )}
         </section>

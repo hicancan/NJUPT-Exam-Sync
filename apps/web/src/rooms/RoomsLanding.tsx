@@ -26,7 +26,8 @@ export function RoomsLanding({ client, savedRoom, onChange, onSubmit }: RoomsLan
             })
             .catch(reason => {
                 if (controller.signal.aborted) return;
-                setError(reason instanceof Error ? reason.message : '无法加载教室占用索引');
+                console.error(reason);
+                setError('暂时无法加载教室信息，请刷新页面后重试。');
             });
         return () => controller.abort();
     }, [client]);
@@ -41,9 +42,9 @@ export function RoomsLanding({ client, savedRoom, onChange, onSubmit }: RoomsLan
         <main className="flex-1 max-w-6xl w-full mx-auto px-4 pt-6 pb-8">
             <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                    <h2 className="text-[28px] font-normal text-[#202124] dark:text-[#e8eaed]">考试占用教室</h2>
+                    <h2 className="text-[28px] font-normal text-[#202124] dark:text-[#e8eaed]">考试教室查询</h2>
                     <p className="mt-2 text-[14px] text-[#5f6368] dark:text-[#bdc1c6]">
-                        输入楼栋或教室号，按日期和楼层查看考试占用时间轴。
+                        输入楼栋或教室号，查看考试期间的教室占用情况。
                     </p>
                     <a href={`#/search?q=${encodeURIComponent('封楼')}`} className="mt-2 inline-flex items-center gap-1 text-[13px] font-medium text-[#1a73e8] hover:underline dark:text-[#8ab4f8]">
                         <Search className="h-4 w-4" aria-hidden="true" />
@@ -52,21 +53,17 @@ export function RoomsLanding({ client, savedRoom, onChange, onSubmit }: RoomsLan
                 </div>
                 {manifest ? (
                     <div className="rounded-full bg-[#f1f3f4] px-3 py-1 text-[12px] text-[#5f6368] dark:bg-[#303134] dark:text-[#bdc1c6]">
-                        {manifest.rooms.length} 间教室 / {manifest.dates.length} 个考试日期
+                        覆盖 {manifest.rooms.length} 间教室、{manifest.dates.length} 个考试日期
                     </div>
-                ) : (
-                    <div className="text-[12px] text-[#70757a] dark:text-[#9aa0a6]" aria-live="polite">正在补充教室数据…</div>
+                ) : error ? null : (
+                    <div className="text-[12px] text-[#70757a] dark:text-[#9aa0a6]" aria-live="polite">正在加载校区和楼栋…</div>
                 )}
             </div>
 
             <InlineErrorBanner message={error} />
             <section className="rounded-xl border border-[#dadce0] bg-[#f8fbff] p-4 dark:border-[#3c4043] dark:bg-[#202124]">
-                <h3 className="text-[18px] font-medium text-[#202124] dark:text-[#e8eaed]">查看教室占用</h3>
-                <p className="mt-2 text-[14px] text-[#5f6368] dark:text-[#bdc1c6]">
-                    产品入口已可使用；校区、楼栋和日期会在索引到达后自动补充。
-                </p>
                 <form
-                    className="mt-4 flex max-w-[500px] flex-col gap-3 sm:flex-row"
+                    className="flex max-w-[500px] flex-col gap-3 sm:flex-row"
                     onSubmit={event => {
                         event.preventDefault();
                         if (query.trim()) onSubmit(query);
@@ -77,11 +74,11 @@ export function RoomsLanding({ client, savedRoom, onChange, onSubmit }: RoomsLan
                         id="room-query-input"
                         value={query}
                         onChange={event => setQuery(event.target.value)}
-                        placeholder="例如 教2 或 教2-313"
+                        placeholder="输入楼栋或教室号"
                         autoComplete="off"
                         className="h-11 min-w-0 flex-1 rounded-lg border border-[#dadce0] bg-white px-3 text-[15px] text-[#202124] outline-none focus:border-[#1a73e8] dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#e8eaed]"
                     />
-                    <button type="submit" className="h-11 rounded-lg bg-[#1a73e8] px-5 text-[14px] font-medium text-white hover:bg-[#1765cc]">开始查看</button>
+                    <button type="submit" className="h-11 rounded-lg bg-[#1a73e8] px-5 text-[14px] font-medium text-white hover:bg-[#1765cc]">查询</button>
                 </form>
                 <p className="mt-2 text-[13px] text-[#70757a] dark:text-[#9aa0a6]">示例：教2、教2-313、图科楼、图5、无线楼、无1</p>
 
@@ -115,7 +112,7 @@ export function RoomsLanding({ client, savedRoom, onChange, onSubmit }: RoomsLan
                             </div>
                         ))}
                     </div>
-                ) : (
+                ) : error ? null : (
                     <div className="mt-5 h-20 animate-pulse rounded-lg bg-[#e8eaed] dark:bg-[#303134]" aria-hidden="true" />
                 )}
             </section>

@@ -12,7 +12,7 @@ export function SearchStatus({
             <p>{statusText}</p>
             {documentCount > 0 ? (
                 <p className="shrink-0 text-[12px]">
-                    语料 {documentCount.toLocaleString('zh-CN')} 篇
+                    已收录 {documentCount.toLocaleString('zh-CN')} 条信息
                 </p>
             ) : null}
         </div>

@@ -19,7 +19,7 @@ export function AppFooter() {
                     </a>
                     <a href={APP_CONFIG.ANDROID_APK} className="inline-flex items-center gap-1.5 hover:underline text-[#5f6368] dark:text-[#9aa0a6] hover:text-[#202124] dark:hover:text-[#e8eaed] transition-colors">
                         <Download className="w-4 h-4" aria-hidden="true" />
-                        Android APK
+                        Android 安装包
                     </a>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm">

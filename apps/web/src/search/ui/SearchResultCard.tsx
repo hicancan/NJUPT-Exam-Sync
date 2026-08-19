@@ -1,4 +1,4 @@
-import { Download, ExternalLink, FileText, Filter } from 'lucide-react';
+import { Download, ExternalLink, FileText } from 'lucide-react';
 import type { SearchResult } from '@njupt-search/search-browser';
 import { FACET_LABELS } from './searchLabels';
 
@@ -94,7 +94,7 @@ export function SearchResultCard({ document }: SearchResultCardProps) {
                 <span className="font-medium text-[#3c4043] dark:text-[#bdc1c6]">{FACET_LABELS[document.facet]}</span>
                 <span>{document.sourceName}</span>
                 <span>›</span>
-                <span>{document.section || '未分类'}</span>
+                <span>{document.section || '其他'}</span>
                 {date ? <><span>›</span><span>{date.slice(0, 10)}</span></> : null}
             </div>
 
@@ -107,13 +107,13 @@ export function SearchResultCard({ document }: SearchResultCardProps) {
                 {document.kind === 'external' ? (
                     <span className="inline-flex items-center gap-1 text-[#5f6368] dark:text-[#9aa0a6]">
                         <ExternalLink size={13} />
-                        仅入口记录
+                        站外页面
                     </span>
                 ) : null}
                 {document.kind === 'attachment' ? (
                     <span className="inline-flex items-center gap-1 text-[#5f6368] dark:text-[#9aa0a6]">
                         <Download size={13} />
-                        元数据附件
+                        附件
                     </span>
                 ) : null}
             </div>
@@ -135,21 +135,12 @@ export function SearchResultCard({ document }: SearchResultCardProps) {
                 />
             )}
 
-            <div className="mt-2 flex flex-wrap gap-2 text-[12px] text-[#5f6368] dark:text-[#9aa0a6]">
-                <span className="inline-flex items-center gap-1 rounded bg-[#f1f3f4] dark:bg-[#303134] px-2 py-1">
-                    <Filter size={12} />
-                    {document.section || '未分类'}
-                </span>
-                {document.attachments.length > 0 ? (
-                    <span className="inline-flex items-center gap-1 rounded bg-[#e8f0fe] dark:bg-[#263850] px-2 py-1 text-[#1967d2] dark:text-[#8ab4f8]">
-                        <FileText size={12} />
-                        附件 {document.attachments.length}
-                    </span>
-                ) : null}
-            </div>
-
             {document.attachments.length > 0 ? (
-                <div className="mt-2 flex flex-wrap gap-1.5">
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <span className="inline-flex h-6 items-center gap-1 rounded bg-[#e8f0fe] px-2 text-[12px] text-[#1967d2] dark:bg-[#263850] dark:text-[#8ab4f8]">
+                        <FileText size={12} />
+                        {document.attachments.length} 个附件
+                    </span>
                     {document.attachments.slice(0, 4).map(attachment => (
                         <span
                             key={`${attachment.id}-${attachment.url}`}

@@ -91,7 +91,7 @@ function RoomCard({
                     ? 'bg-[#fef7e0] text-[#b06000] dark:bg-[#3a2a00] dark:text-[#fdd663]'
                     : 'bg-[#e6f4ea] text-[#137333] dark:bg-[#143820] dark:text-[#81c995]'}`}
                 >
-                    {occupied ? '占用' : '空闲'}
+                    {occupied ? '有考试' : '无考试'}
                 </span>
             </div>
             {activeGroups.length ? (
@@ -100,12 +100,12 @@ function RoomCard({
                         <details key={group.group_id} className="rounded-md bg-white/60 px-2 py-1 dark:bg-black/10">
                             <summary className="cursor-pointer truncate">
                                 {formatClock(group.start_timestamp)}-{formatClock(group.end_timestamp)} {group.course_name}
-                                {group.class_count > 1 ? ` / ${group.class_count} 个班级` : ''}
-                                {group.total_count > 0 ? ` / ${group.total_count} 人` : ''}
+                                {group.class_count > 1 ? ` · ${group.class_count} 个班级` : ''}
+                                {group.total_count > 0 ? ` · ${group.total_count} 人` : ''}
                             </summary>
                             <div className="mt-1 grid gap-1 text-[12px] leading-5">
-                                <span>{group.teacher} / {group.course_code}</span>
-                                <span>班级：{group.class_summaries.map(item => `${item.class_name}(${item.count}人)`).join(' / ')}</span>
+                                <span>{[group.teacher, group.course_code].filter(Boolean).join(' · ')}</span>
+                                <span>班级：{group.class_summaries.map(item => `${item.class_name}（${item.count} 人）`).join('、')}</span>
                             </div>
                         </details>
                     ))}
@@ -120,13 +120,13 @@ function BookingDetail({ group }: { group: RoomBookingGroup }) {
         <div className="mt-2 rounded-md border border-[#d2e3fc] bg-[#f8fbff] p-3 text-[13px] text-[#3c4043] dark:border-[#394457] dark:bg-[#1f2430] dark:text-[#bdc1c6]">
             <div className="font-medium text-[#202124] dark:text-[#e8eaed]">{group.course_name}</div>
             <div className="mt-1 grid gap-1 sm:grid-cols-2">
-                <span>{formatClock(group.start_timestamp)}-{formatClock(group.end_timestamp)} / {group.duration_minutes} min</span>
+                <span>{formatClock(group.start_timestamp)}-{formatClock(group.end_timestamp)} · {group.duration_minutes} 分钟</span>
                 <span>{group.teacher}</span>
                 <span>{group.course_code}</span>
                 <span>{group.location}</span>
                 <span>合计人数：{group.total_count} 人</span>
                 <span className="sm:col-span-2">
-                    班级：{group.class_summaries.map(item => `${item.class_name}(${item.count}人)`).join(' / ')}
+                    班级：{group.class_summaries.map(item => `${item.class_name}（${item.count} 人）`).join('、')}
                 </span>
             </div>
         </div>
@@ -149,7 +149,7 @@ function RoomTimeline({ room, bookings }: { room: Room; bookings: RoomBooking[] 
                             onClick={() => setExpandedGroupId(expandedGroupId === group.group_id ? null : group.group_id)}
                             className="absolute top-1 h-6 rounded-full bg-[#1a73e8] px-2 text-left text-[11px] leading-6 text-white shadow-sm outline-none focus:ring-2 focus:ring-[#8ab4f8]"
                             style={segmentStyle(group)}
-                            title={`${group.course_name} ${formatClock(group.start_timestamp)}-${formatClock(group.end_timestamp)} ${group.class_names.join(' / ')}`}
+                            title={`${group.course_name} ${formatClock(group.start_timestamp)}-${formatClock(group.end_timestamp)} ${group.class_names.join('、')}`}
                         >
                             <span className="hidden md:inline">
                                 {group.course_name}{group.class_count > 1 ? ` · ${group.class_count}个班级` : ''}
@@ -218,10 +218,10 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
             <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h2 className="text-[28px] font-normal text-[#202124] dark:text-[#e8eaed]">
-                        考试占用教室
+                        考试教室查询
                     </h2>
                     <p className="mt-2 text-[14px] text-[#5f6368] dark:text-[#bdc1c6]">
-                        按日期、校区、楼栋、楼层查看教室占用情况。
+                        按日期、校区、楼栋和楼层查看考试占用。
                     </p>
                     <a
                         href={BUILDING_CLOSURE_SEARCH_URL}
@@ -233,7 +233,7 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
                 </div>
                 {index ? (
                     <div className="rounded-full bg-[#f1f3f4] px-3 py-1 text-[12px] text-[#5f6368] dark:bg-[#303134] dark:text-[#bdc1c6]">
-                        {index.rooms.length} 间教室 / {index.dates.length} 个考试日期
+                        覆盖 {index.rooms.length} 间教室、{index.dates.length} 个考试日期
                     </div>
                 ) : null}
             </div>
@@ -242,7 +242,7 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
 
             {state.loading && !index ? (
                 <div className="rounded-xl border border-[#dadce0] bg-white px-4 py-6 text-[#5f6368] dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#bdc1c6]">
-                    正在加载教室占用信息...
+                    正在加载教室信息…
                 </div>
             ) : null}
 
@@ -250,9 +250,8 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
                 <>
                     {!state.floorEntry && !state.error ? (
                         <section className="rounded-xl border border-[#dadce0] bg-[#f8fbff] p-4 dark:border-[#3c4043] dark:bg-[#202124]">
-                            <h3 className="text-[18px] font-medium text-[#202124] dark:text-[#e8eaed]">查看教室占用</h3>
                             <p className="mt-2 text-[14px] text-[#5f6368] dark:text-[#bdc1c6]">
-                                在搜索框输入楼栋或教室号，或直接选择楼栋开始查看。
+                                选择楼栋查看教室占用。
                             </p>
                             <p className="mt-2 text-[13px] text-[#70757a] dark:text-[#9aa0a6]">
                                 示例：教2、教2-313、图科楼、图5、无线楼、无1
@@ -312,7 +311,7 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
                                     onChange={(event) => onChange({ ...objectParams, date: state.date, start: event.target.checked ? '08:00' : null, end: event.target.checked ? '22:00' : null })}
                                     className="mb-2"
                                 />
-                                <span className="mb-1">限定时间</span>
+                                <span className="mb-1">设置时段</span>
                             </label>
                         </div>
                         {hasTimeWindow ? (
@@ -337,21 +336,21 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
                             </span>
                             <span className="inline-flex items-center gap-1 text-[13px] text-[#5f6368] dark:text-[#bdc1c6]">
                                 <Clock className="h-4 w-4" aria-hidden="true" />
-                                {state.date} {hasTimeWindow ? `${start}-${end}` : '全天时间轴'}
+                                {state.date} {hasTimeWindow ? `${start}-${end}` : '全天'}
                             </span>
                             <span className="inline-flex items-center gap-1 text-[13px] text-[#5f6368] dark:text-[#bdc1c6]">
                                 <MapPin className="h-4 w-4" aria-hidden="true" />
-                                {rooms.length} 间
+                                {rooms.length} 间教室
                             </span>
                         </div>
                         {state.date && (!selectedDateHasAnyBooking || !selectedFloorHasBooking) ? (
                             <div className="mb-3 rounded-md border border-[#d2e3fc] bg-[#f8fbff] px-3 py-2 text-[13px] text-[#3c4043] dark:border-[#394457] dark:bg-[#1f2430] dark:text-[#bdc1c6]">
-                                {selectedDateHasAnyBooking ? '该楼层当天没有考试占用记录，当前教室按空闲显示。' : '当天没有考试占用记录，当前教室按空闲显示。'}
+                                当天没有考试占用记录。
                             </div>
                         ) : null}
                         {state.loading ? (
                             <div className="space-y-2" aria-live="polite">
-                                <div className="text-[13px] text-[#5f6368] dark:text-[#bdc1c6]">正在加载当前楼层占用数据…</div>
+                                <div className="text-[13px] text-[#5f6368] dark:text-[#bdc1c6]">正在加载该楼层的占用记录…</div>
                                 <div className="h-16 animate-pulse rounded-lg bg-[#edf2f7] dark:bg-[#303134]" aria-hidden="true" />
                                 <div className="h-16 animate-pulse rounded-lg bg-[#edf2f7] dark:bg-[#303134]" aria-hidden="true" />
                             </div>

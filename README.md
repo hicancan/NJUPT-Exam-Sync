@@ -1,188 +1,115 @@
 <div align="center">
 
-<img src="./apps/web/public/assets/logo.png" alt="njupt-search logo" width="120" />
+<img src="./apps/web/public/assets/logo.png" alt="njupt-search" width="120" />
 
 # njupt-search
 
-### 南京邮电大学校园信息搜索
+### 把散落在南邮各网站里的通知、附件、考试和教室信息，放进一个好用的入口。
 
-聚合南邮官网正文与附件，并提供考试安排、日历导出和教室占用查询。<br />
-无需搜索服务器，全文检索直接在浏览器中完成。
-
-[![在线体验](https://img.shields.io/badge/在线体验-njupt.hicancan.top-4f46e5?style=for-the-badge)](https://njupt.hicancan.top)
+[![在线使用](https://img.shields.io/badge/在线使用-njupt.hicancan.top-4f46e5?style=for-the-badge)](https://njupt.hicancan.top)
 [![CI](https://img.shields.io/github/actions/workflow/status/hicancan/njupt-search/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/hicancan/njupt-search/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/hicancan/njupt-search?style=for-the-badge)](https://github.com/hicancan/njupt-search/releases/latest)
 [![License](https://img.shields.io/github/license/hicancan/njupt-search?style=for-the-badge)](LICENSE)
 
-[**在线访问**](https://njupt.hicancan.top) ·
-[**Android 下载**](https://github.com/hicancan/njupt-search/releases/latest/download/njupt-search-latest.apk) ·
-[**功能一览**](#-功能一览) ·
-[**工作原理**](#️-搜索如何工作) ·
-[**本地开发**](#-本地开发)
+[**在线使用**](https://njupt.hicancan.top) ·
+[**Android 安装包**](https://github.com/hicancan/njupt-search/releases/latest/download/njupt-search-latest.apk) ·
+[**架构文档**](docs/architecture.md) ·
+[**参与项目**](#一起完善它)
 
 </div>
 
 ---
 
-## 📖 为什么做这个项目
+## 不用先猜信息在哪个网站
 
-南邮的信息不是没有，而是太分散。
+南邮的信息很多，但通知、政策、办事流程和附件分散在学校主站、职能部门与各个
+学院的网站里。想找一条信息，常常得先猜发布部门，再翻栏目、网页和附件。
 
-通知、规章、讲座、竞赛和办事流程散落在不同学院与部门的网站里，重要内容
-还经常藏在 PDF、Word 或 Excel 附件中。想找一条信息，往往得先猜发布部门，
-再到几个站点之间来回翻找。
+不知道通知发在哪个网站，也没关系。输入关键词，njupt-search 会从已经整理好的
+学校站点信息中找到相关内容，并保留原始来源和日期。班级考试安排、日历导出和
+考试教室查询也在这里，不必在几个入口之间来回切换。
 
-`njupt-search` 把上游收集的校园网页和附件编译成统一索引，让这些内容可以在
-一个搜索框里查到。考试安排、ICS 日历和教室占用也放在同一个网站中，省去在
-多个入口之间切换的麻烦。
+目前线上收录超过 **2.2 万条信息**，覆盖学校主站、学院和职能部门等 **15 个
+来源**。项目持续更新，但每条结果仍以学校原始页面和正式发布的数据为准。
 
-当前完整开发语料包含 **15 个信息来源、20,663 条网页和文档记录，以及 8,945
-个附件**。数据由自动化任务持续更新，网站代码不需要跟着每次数据变化而修改。
+## 现在就用
 
----
+| 想做什么 | 直接打开 |
+| --- | --- |
+| 搜索通知、政策、办事流程和附件 | [全校信息搜索](https://njupt.hicancan.top/) |
+| 按班级查看考试时间、地点和考场 | [考试安排](https://njupt.hicancan.top/#/exam) |
+| 按日期、校区、楼栋和楼层查看考试占用 | [考试教室查询](https://njupt.hicancan.top/#/rooms) |
 
-## ✨ 功能一览
+网站支持桌面端和移动端，也可以安装
+[Android 版本](https://github.com/hicancan/njupt-search/releases/latest/download/njupt-search-latest.apk)。
+搜索、考试和教室页面都有明确链接，可以分享、刷新，也能正常前进和后退。
 
-| 🔎 校园信息搜索 | 📅 考试与日历 | 🏫 教室占用 | 🦀 浏览器本地检索 |
-| :--- | :--- | :--- | :--- |
-| 搜索官网正文与附件，支持按来源、内容类型和日期筛选。 | 输入班级即可查看考试时间与地点，并导出 ICS 日历。 | 按校区、教学楼、楼层和日期查看考试占用情况。 | Rust 搜索引擎通过 WebAssembly 在 Web Worker 中运行，不依赖在线搜索接口。 |
+## 它能做什么
 
-Web 页面可以直接使用；Android 版本通过 TWA 提供与网站一致的功能。
+- 搜索南邮各网站的正文与附件，并按来源、类型和时间筛选；
+- 输入班级号查看考试安排，选择课程后导出 ICS 日历；
+- 输入楼栋或教室号，查看不同日期和楼层的考试占用；
+- 在桌面浏览器、手机浏览器和 Android 中使用同一套功能；
+- 从搜索结果回到学校原始页面，核对完整通知与附件。
 
----
+## 数据从哪里来
 
-## 🛠️ 搜索如何工作
+校园搜索使用显式构建的学校站点语料。通用的网站发现与内容提取由
+[`static-site-graph`](https://github.com/hicancan/static-site-graph) 完成，
+[`njupt-site-graph`](https://github.com/hicancan/njupt-site-graph) 负责南邮站点配置
+并产出统一语料，本仓库再把语料编译成浏览器可用的搜索数据。
 
-### 1. 静态索引，而不是在线搜索服务
+考试安排来自当前考试数据快照；考试教室由同一份考试安排和经过校验的教室目录
+生成。页面会展示真实来源和更新时间。教室页面只反映**考试占用**，不包含全部
+课程、活动或临时借用，因此“没有考试占用记录”不等于教室在现实中一定空闲。
 
-校园语料会预先编译为 `SearchBundle`：
+njupt-search 不是南京邮电大学官方服务，也不会把第三方搜索结果包装成学校官方
+信息。涉及报名、考试和办事要求时，请回到结果指向的学校原始页面核对。
+
+## 为速度和可靠性做的选择
+
+全文检索在浏览器里的 Rust / WebAssembly 搜索引擎中完成，项目不设置接收搜索
+关键词的在线查询接口。Native 与 Web 共用同一套搜索语义，避免两端结果漂移；
+浏览器按需获取本次查询需要的数据，只为当前展示的结果补充摘要。
+
+搜索、考试和教室数据均以可校验的静态文件发布，并使用内容寻址和浏览器缓存。
+这样既能放在普通 CDN 上，也能在数据更新后明确切换版本。完整的检索流程、数据
+格式、缓存边界和部署方式见 [架构文档](docs/architecture.md)。
+
+## 项目组成
 
 ```text
-manifest.json
-documents.bin
-lexicon.bin
-postings-*.bin
-content-*.bin
+南邮各网站
+    │
+    ├─ static-site-graph   发现网站并提取内容
+    ├─ njupt-site-graph    整理南邮站点语料
+    └─ njupt-search        构建索引，提供搜索、考试和教室页面
 ```
 
-这些文件可以直接放在静态存储和 CDN 上。浏览器不需要连接 Elasticsearch、
-数据库或项目自建的搜索服务器，因此部署简单，也不会把用户的查询发送给搜索
-后端。
-
-### 2. Native 与 Web 共用一套 Rust 搜索引擎
-
-文本规范化、分词、索引编译、候选召回、排序和摘要都由 `search/core` 实现。
-构建索引和本地查询时直接运行这套 Rust 代码；浏览器则通过 WebAssembly 调用
-同一个 core。两端不会因为分别维护算法而出现结果漂移。
-
-### 3. 按查询加载需要的数据
-
-页面不会一上来就下载搜索索引。用户聚焦搜索框或开始输入后，WASM 初始化与
-manifest 读取并行进行，再加载文档目录和词典。查询时只取相关倒排索引块，
-完整处理查询词并完成一次准确排序后，页面马上显示标题、来源、日期和链接；
-随后只加载当前 10 条结果对应的正文，补上摘要。摘要出现前后，结果顺序不会
-变化，也不会为了首屏先生成 80 条暂时看不到的内容。
-
-这里的“先显示”不是近似搜索。Rust core 先生成一份稳定的 `QueryPlan`，结果
-骨架与正文摘要都从同一份计划读取；正文到达后只补充展示内容，不会再次召回或
-排名。正文采用约 128 KiB 的目标块大小，二进制先使用紧凑布局，再用 zstd
-压缩，以兼顾请求数量和移动网络流量。
-
-考试与教室使用独立的内容寻址静态数据：稳定 manifest 只负责发现当前
-`snapshot_id` / `occupancy_id`，其余 JSON 位于 identity 子目录并长期缓存。
-EdgeOne 对 JSON 使用浏览器原生 Brotli/Gzip 传输压缩；页面先显示不依赖数据的
-产品引导，再渐进补充班级索引、楼栋和日期。首页主入口始终进入 `#/exam` 或
-`#/rooms`，上次班级/教室只作为 landing 中明确的“继续查看”入口。
-
-### 4. 搜索运行在 Web Worker 中
-
-网络请求、解压和查询在独立 Worker 中完成，不阻塞 React 主线程。连续搜索以
-最新一次为准，新结果骨架到达前保留原结果，避免页面闪空。缓存由每个搜索实例
-自行管理，设有明确的容量预算和 LRU 淘汰；取消查询、重新初始化或关闭实例时，
-相应的请求和运行状态也会被释放。
-
-排序先区分标题完整短语、全部核心词和部分核心词，再在相同相关层级内考虑来源
-与发布时间。`大创`、`四六级`、`计算机等级` 等常用简称在同一个 Rust 查询分析
-流程中展开，不使用预制结果或人工置顶。首页的考试、教室和七个全文检索入口是
-明确的产品意图；全文入口仍然走同一套索引、召回和排名。
-
-### 最近一次完整构建
-
-| 项目 | 结果 |
-| --- | ---: |
-| 收录文档 | 20,663 |
-| SearchBundle 文件数 | 344 |
-| SearchBundle 大小 | 39.58 MiB |
-| 完整索引核心编译时间 | 7.70 秒 |
-| 查询测试 | 156 条 |
-| Native 查询 P50 / P95 | 约 5.4 ms / 16.7 ms |
-| 七个首页全文入口 | Top-1 全部满足意图，Top-10 无重复 URL |
-| 生产浏览器验收 | [两条产品入口、七个搜索入口及冷/热 A/B 均通过](benchmarks/search/browser-production-audit-2026-08-19.md) |
-
-以上数据来自 2026 年 8 月 19 日的固定完整语料重建，后续会随语料更新而变化。
-
----
-
-## 🗺️ 数据与产品链路
-
-```mermaid
-flowchart LR
-    WEB["南邮各网站"] --> SSG["static-site-graph<br/>发现并提取网页"]
-    SSG --> SP["SitePackage"]
-    SP --> NSG["njupt-site-graph<br/>整理南邮站点数据"]
-    NSG --> CS["NjuptCorpusSnapshot"]
-    CS --> BUILD["njupt-search<br/>构建搜索索引"]
-    BUILD --> SB["SearchBundle"]
-    SB --> BROWSER["Web Worker + WASM"]
-    BROWSER --> UI["Web / Android"]
-
-    EXCEL["考试安排表"] --> EXAM["ExamSnapshot"]
-    EXAM --> ROOM["RoomOccupancy"]
-    EXAM --> UI
-    ROOM --> UI
-```
-
-这三个仓库各自负责一段清楚的工作：
-
-- [`static-site-graph`](https://github.com/hicancan/static-site-graph) 提供通用的
-  网站发现、抓取和内容提取能力；
-- [`njupt-site-graph`](https://github.com/hicancan/njupt-site-graph) 保存南邮站点
-  配置，并输出统一的 `NjuptCorpusSnapshot`；
-- 本仓库读取语料快照、构建搜索索引，并提供搜索、考试和教室产品。
-
-爬取代码不在本仓库中。输入语料缺失、损坏或引用不完整时，索引构建会直接
-报错，而不是自动换用旧数据。完整的数据格式与依赖关系见
-[架构文档](docs/architecture.md)。
-
----
-
-## 🏗️ 代码结构
+本仓库按产品职责组织：
 
 ```text
 njupt-search/
 ├── apps/
 │   ├── web/          # React Web 应用
-│   └── android/      # Android TWA 外壳
+│   └── android/      # Android TWA
 ├── search/
-│   ├── core/         # Rust 搜索引擎与 SearchBundle
-│   ├── native/       # 索引构建、命令行查询与性能入口
-│   ├── wasm/         # search/core 的 WebAssembly 接口
-│   └── browser/      # Worker、缓存和 SearchClient
+│   ├── core/         # Rust 搜索语义与 SearchBundle
+│   ├── native/       # 索引构建、命令行查询和性能入口
+│   ├── wasm/         # Rust core 的 WebAssembly 接口
+│   └── browser/      # Worker、按需加载与缓存
 ├── academics/
-│   ├── exam/         # 考试源、ExamSnapshot、查询与 ICS
-│   └── room/         # 教室目录、RoomOccupancy 与查询
-├── benchmarks/       # 搜索质量、性能与浏览器测试
-├── ops/              # 本地构建、测试和 Web 组装脚本
-└── docs/             # 当前架构和数据格式说明
+│   ├── exam/         # 考试数据、班级查询与 ICS 导出
+│   └── room/         # 教室目录与考试占用
+├── benchmarks/       # 搜索质量、一致性和性能基准
+├── ops/              # 构建、验证与 Web 组装脚本
+└── docs/             # 架构与数据格式
 ```
 
-搜索、教务和界面代码按各自处理的对象组织，而不是按编程语言集中到
-`packages` 或 `tools`。Native 与 WASM 共同依赖 `search/core`，浏览器端不再
-维护另一套分词和排序逻辑。
+搜索语义只存在于 `search/core`，Native 与 WASM 共用它；Web 负责页面、Worker、
+缓存和数据编排。考试与教室数据由 `academics` 生成，不在 React 中硬编码。
 
----
-
-## 🚀 本地开发
+## 本地开发
 
 ### 环境要求
 
@@ -190,7 +117,7 @@ njupt-search/
 - Rust stable、`wasm32-unknown-unknown` 和 `wasm-pack`
 - Python 3.10+ 与 `uv`
 
-安装依赖并运行快速测试：
+安装依赖并运行快速检查：
 
 ```powershell
 npm ci
@@ -198,9 +125,9 @@ uv sync --extra test
 .\ops\test.ps1 -Mode quick
 ```
 
-### 构建搜索索引
+### 构建搜索数据
 
-源码仓库不保存语料和生成后的索引。使用外部的 `NjuptCorpusSnapshot` 构建：
+源码仓库不保存语料和生成后的索引。使用外部 `NjuptCorpusSnapshot` 构建：
 
 ```powershell
 .\ops\build-search-bundle.ps1 `
@@ -223,7 +150,10 @@ uv run python -m academics.exam discover `
   -RoomCatalogPath .\academics\room\catalog\njupt-room-catalog.json
 ```
 
-### 组装 Web 页面
+### 正式组装 Web 页面
+
+普通 `vite build` 不包含生产数据。正式页面通过组装脚本把三类数据放进同一份
+静态站点：
 
 ```powershell
 .\ops\assemble-web.ps1 `
@@ -234,7 +164,7 @@ uv run python -m academics.exam discover `
   -DistPath D:\Temp\njupt-search\dist
 ```
 
-开发服务器需要使用组装目录中的静态文件：
+开发服务器也应使用组装目录中的静态文件：
 
 ```powershell
 $env:NJUPT_SEARCH_WEB_PUBLIC_DIR = 'D:\Temp\njupt-search\stage\public'
@@ -244,42 +174,52 @@ $env:VITE_NJUPT_ROOM_ARTIFACT_URL = '/generated/rooms'
 npm run dev -- --host 127.0.0.1
 ```
 
-运行完整的 156 条查询测试：
+## 质量与验证
+
+项目持续检查 Rust 搜索核心、Web、考试和教室数据之间的一致性。常用入口如下：
 
 ```powershell
+npm test
+npm run typecheck
+npm run lint
+
 node benchmarks\search\quality.mjs `
   --bundle D:\Data\njupt-refactor\njupt-search-current\search-bundle
-
 node benchmarks\search\relevance.mjs `
   --bundle D:\Data\njupt-refactor\njupt-search-current\search-bundle
-
 node benchmarks\search\consistency.mjs `
   --bundle D:\Data\njupt-refactor\njupt-search-current\search-bundle
-
 node benchmarks\search\monotonicity.mjs `
   --bundle D:\Data\njupt-refactor\njupt-search-current\search-bundle
 ```
 
----
+质量基准覆盖常用搜索入口、筛选前后结果一致性、Native / WASM 一致性和真实数据回归。
+测试用于守住长期行为，不在 README 中保存某一次构建或部署的临时成绩。
 
-## 🔄 自动更新
+## 自动更新
 
-校园语料和教务数据分别构建，只在生成网站时组合：
+校园语料与考试数据分别构建，部署时再组合：
 
 ```text
 NjuptCorpusSnapshot → SearchBundle
 ExamSourceDescriptor → ExamSnapshot → RoomOccupancy
 ```
 
-构建结果发布到 GHCR。任意一类数据更新后，GitHub Actions 会读取三份明确的
-数据产物，重新组装网站并部署到 EdgeOne。Git Tags 和 GitHub Releases 只用于
-发布软件版本及 Android 安装包，不用于保存滚动更新的校园语料。
+构建结果发布到 GHCR。数据更新后，GitHub Actions 会读取三份明确的数据产物，
+重新组装网站并部署。Git Tags 和 GitHub Releases 用于软件版本与 Android 安装包，
+不用于保存滚动更新的校园语料。
 
----
+## 一起完善它
 
-## 📄 说明与许可
+如果你发现搜索结果不准确、来源缺失、考试或教室数据异常，欢迎提交 Issue，并附上
+查询词、页面链接和你预期看到的内容。代码改动请先运行与改动范围相符的测试；涉及
+搜索语义、数据格式或部署边界时，也请同步阅读 [架构文档](docs/architecture.md)。
 
-- 本项目不是南京邮电大学官方服务，请以学校和各部门正式发布的信息为准。
-- 校园网站及教务数据的相关权利归原发布方所有。
-- 项目主要用于学习、研究和非商业的校园信息服务。
+清楚的问题描述、可复现的例子和小而完整的改动，都很有价值。
+
+## 说明与许可
+
+- 本项目不是南京邮电大学官方服务，请以学校和各部门正式发布的信息为准；
+- 校园网站与教务数据的相关权利归原发布方所有；
+- 项目用于学习、研究和非商业的校园信息服务；
 - 源代码采用 [AGPL-3.0](LICENSE) 许可。

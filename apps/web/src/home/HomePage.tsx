@@ -38,8 +38,11 @@ export function HomePage({
             <section className="max-w-[680px] mx-auto min-h-[calc(100vh-176px)] flex flex-col items-center justify-center pb-20">
                 <img src="/assets/logo.png" alt="" className="w-16 h-16 rounded-2xl" />
                 <h1 className="mt-5 text-5xl sm:text-6xl font-normal text-[#202124] dark:text-[#e8eaed] leading-tight">njupt-search</h1>
+                <p className="mt-3 text-center text-[15px] text-[#5f6368] dark:text-[#bdc1c6]">
+                    南邮通知、考试安排和考试教室，都可以直接查。
+                </p>
 
-                <div className="mt-8 w-full">
+                <div className="mt-7 w-full">
                     <SearchInput
                         value={inputValue}
                         onChange={(value) => {

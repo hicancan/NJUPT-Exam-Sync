@@ -67,7 +67,8 @@ export function useSearch(
             setInitError(null);
         }).catch(error => {
             if (!active) return;
-            setInitError(error instanceof Error ? error.message : String(error));
+            console.error(error);
+            setInitError('暂时无法加载搜索数据，请刷新页面后重试。');
         });
         return () => {
             active = false;
@@ -99,11 +100,12 @@ export function useSearch(
                 if (active) setState({ key, response, searching: false, error: null });
             }).catch(error => {
                 if (active && !(error instanceof DOMException && error.name === 'AbortError')) {
+                    console.error(error);
                     setState(previous => ({
                         key,
                         response: previous.response,
                         searching: false,
-                        error: error instanceof Error ? error.message : String(error),
+                        error: '搜索失败，请稍后重试。',
                     }));
                 }
             });

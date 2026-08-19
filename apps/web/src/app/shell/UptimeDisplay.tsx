@@ -34,7 +34,7 @@ export function UptimeDisplay({
             <img
                 src={APP_CONFIG.VISITOR_BADGE_URL}
                 className="h-4 w-auto opacity-80 hover:opacity-100 transition-opacity grayscale hover:grayscale-0"
-                alt="visitor count"
+                alt="访问量"
                 loading="lazy"
             />
         </>

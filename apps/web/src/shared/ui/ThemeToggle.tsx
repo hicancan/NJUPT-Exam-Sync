@@ -30,7 +30,8 @@ export function ThemeToggle() {
             type="button"
             onClick={toggleTheme}
             className="p-2 rounded-full transition-colors bg-transparent text-[#5f6368] dark:text-[#bdc1c6] hover:bg-[#f1f3f4] dark:hover:bg-[#303134]"
-            title={isDark ? "切换到亮色模式" : "切换到暗黑模式"}
+            aria-label={isDark ? "切换到亮色模式" : "切换到深色模式"}
+            title={isDark ? "切换到亮色模式" : "切换到深色模式"}
         >
             {isDark ? (
                 <Sun className="w-5 h-5" aria-hidden="true" />

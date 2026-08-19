@@ -1,17 +1,16 @@
 import type {
     SearchFacet,
     SearchFilters,
-    SortMode,
 } from '@njupt-search/search-browser';
 
 export const FACET_LABELS: Record<SearchFacet, string> = {
-    notice_article: '通知文章',
+    notice_article: '通知',
     policy: '政策制度',
     workflow: '办事流程',
     download: '下载资源',
-    exam: '考试相关',
-    news: '教务快讯',
-    external: '外部链接',
+    exam: '考试信息',
+    news: '新闻动态',
+    external: '站外链接',
 };
 
 export type SearchDatePreset = 'all' | 'past_year' | 'past_3_years' | 'past_5_years';
@@ -65,13 +64,11 @@ export function resultSummary(
     filters: SearchFilters,
     returnedCount: number,
     totalCount: number,
-    sortMode: SortMode
 ): string {
     const isCapped = totalCount > returnedCount;
     const scope = hasActiveFilters(filters) ? '筛选后' : '';
-    const sortLabel = sortMode === 'date_desc' ? '时间较新的' : '相关性最高的';
     if (isCapped) {
-        return `${scope}找到 ${totalCount} 条候选，展示${sortLabel}前 ${returnedCount} 条。`;
+        return `${scope}找到 ${totalCount} 条相关结果，已显示前 ${returnedCount} 条。`;
     }
-    return `${scope}找到 ${totalCount} 条。`;
+    return `${scope}找到 ${totalCount} 条相关结果。`;
 }

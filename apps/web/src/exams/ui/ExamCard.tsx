@@ -102,7 +102,7 @@ export function ExamCard({ exam, isSelected, exportStatus, onToggle }: ExamCardP
                                     <span className="mx-1 text-[#70757a]">至</span> 
                                     <span>{formatDisplayDate(exam.end_timestamp)}</span>
                                     <span className="ml-2 text-[12px] px-1.5 py-0.5 bg-[#f1f3f4] dark:bg-[#3c4043] rounded text-[#5f6368] dark:text-[#9aa0a6]">
-                                        {exam.duration_minutes} min
+                                        {exam.duration_minutes} 分钟
                                     </span>
                                 </div>
                             </div>
@@ -126,11 +126,11 @@ export function ExamCard({ exam, isSelected, exportStatus, onToggle }: ExamCardP
                             )}
                             <span className="flex items-center gap-1.5">
                                 <User className="w-4 h-4 text-[#34a853] dark:text-[#81c995]" aria-hidden="true" />
-                                {exam.teacher || '未知'}
+                                {exam.teacher || '教师待定'}
                             </span>
                             <span className="flex items-center gap-1.5">
                                 <Users className="w-4 h-4 text-[#fbbc04] dark:text-[#fdd663]" aria-hidden="true" />
-                                {exam.count ?? '-'} 人
+                                {exam.count == null ? '人数未公布' : `${exam.count} 人`}
                             </span>
                             {exam.notes && <span className="italic">备注：{exam.notes}</span>}
                         </div>

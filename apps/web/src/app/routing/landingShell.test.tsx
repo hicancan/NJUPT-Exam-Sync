@@ -15,8 +15,9 @@ describe('product landing shells', () => {
                 onOpenClass={() => undefined}
             />,
         );
-        expect(html).toContain('考试日程已就绪');
-        expect(html).toContain('placeholder="例如 B240402"');
+        expect(html).toContain('查询考试安排');
+        expect(html).toContain('输入班级号，查看考试时间、地点和考场。');
+        expect(html).toContain('placeholder="输入班级号"');
         expect(html).toContain('继续查看 B240402');
     });
 
@@ -26,8 +27,10 @@ describe('product landing shells', () => {
         const html = renderToStaticMarkup(
             <RoomsLanding client={client} savedRoom={null} onChange={() => undefined} onSubmit={() => undefined} />,
         );
-        expect(html).toContain('考试占用教室');
-        expect(html).toContain('placeholder="例如 教2 或 教2-313"');
-        expect(html).toContain('正在补充教室数据');
+        expect(html).toContain('考试教室查询');
+        expect(html).toContain('输入楼栋或教室号，查看考试期间的教室占用情况。');
+        expect(html).toContain('placeholder="输入楼栋或教室号"');
+        expect(html).toContain('正在加载校区和楼栋');
+        expect(html).not.toMatch(/产品入口|索引到达|自动补充/);
     });
 });

@@ -47,11 +47,12 @@ export function useExamData(
             })
             .catch(error => {
                 if (controller.signal.aborted) return;
+                console.error(error);
                 setState({
                     ...emptyResult(false),
                     requestKey,
                     classMode: { mode: 'NOT_FOUND', classes: [], exams: [] },
-                    error: error instanceof Error ? error.message : '无法加载考试数据',
+                    error: '暂时无法加载考试安排，请刷新页面后重试。',
                 });
             });
         return () => controller.abort();

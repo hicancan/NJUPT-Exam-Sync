@@ -25,9 +25,9 @@ export function ExamLanding({ savedClass, onSubmit, onOpenClass, client }: ExamL
                     <div className="mx-auto w-16 h-16 bg-[#e8f0fe] dark:bg-[#3b4043] rounded-full flex items-center justify-center mb-4">
                         <CalendarDays className="w-8 h-8 text-[#1a73e8] dark:text-[#8ab4f8]" aria-hidden="true" />
                     </div>
-                    <h2 className="text-2xl font-semibold text-[#202124] dark:text-[#e8eaed] mb-2">考试日程已就绪</h2>
+                    <h2 className="text-2xl font-semibold text-[#202124] dark:text-[#e8eaed] mb-2">查询考试安排</h2>
                     <p className="text-[15px] text-[#4d5156] dark:text-[#bdc1c6]">
-                        输入完整班级号查看考试安排，也可以先输入班级号前缀筛选候选班级。
+                        输入班级号，查看考试时间、地点和考场。
                     </p>
                     <form
                         className="mx-auto mt-6 flex max-w-[440px] flex-col gap-3 sm:flex-row"
@@ -41,7 +41,7 @@ export function ExamLanding({ savedClass, onSubmit, onOpenClass, client }: ExamL
                             id="exam-class-input"
                             value={classInput}
                             onChange={event => setClassInput(event.target.value)}
-                            placeholder="例如 B240402"
+                            placeholder="输入班级号"
                             autoComplete="off"
                             className="h-11 min-w-0 flex-1 rounded-lg border border-[#dadce0] bg-white px-3 text-[15px] text-[#202124] outline-none focus:border-[#1a73e8] dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#e8eaed]"
                         />
@@ -49,11 +49,11 @@ export function ExamLanding({ savedClass, onSubmit, onOpenClass, client }: ExamL
                             type="submit"
                             className="h-11 rounded-lg bg-[#1a73e8] px-5 text-[14px] font-medium text-white hover:bg-[#1765cc]"
                         >
-                            查看考试
+                            查询
                         </button>
                     </form>
                     <p className="mt-3 text-[13px] text-[#70757a] dark:text-[#9aa0a6]">
-                        示例班级号：<button type="button" onClick={() => onSubmit('B240402')} className="font-mono text-[#1a73e8] hover:underline dark:text-[#8ab4f8]">B240402</button>
+                        试试 <button type="button" onClick={() => onSubmit('B240402')} className="font-mono text-[#1a73e8] hover:underline dark:text-[#8ab4f8]">B240402</button>
                     </p>
                     {savedClass ? (
                         <button
