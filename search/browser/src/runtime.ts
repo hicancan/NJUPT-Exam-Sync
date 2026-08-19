@@ -9,8 +9,8 @@ export class SearchRuntime {
     private documents: ArrayBuffer | null = null;
     private lexicon: ArrayBuffer | null = null;
     private engine: WasmSearchEngine | null = null;
-    private loadedChunks = new Map<string, number>();
-    private loadedChunkBytes = 0;
+    private readonly loadedPostings = new Map<string, number>();
+    private postingsBytes = 0;
     private metadataBytes = 0;
 
     constructor(source: ArtifactSource, workingSetBudgetBytes: number) {
@@ -26,12 +26,11 @@ export class SearchRuntime {
         documentCount: number;
         filterOptions: FilterOptions;
     }> {
-        await initWasm();
-        const manifest = await this.source.manifest(signal);
-        this.metadataBytes = (
-            manifest.documents.decoded_bytes
-            + manifest.lexicon.decoded_bytes
-        );
+        const [, manifest] = await Promise.all([
+            initWasm(),
+            this.source.manifest(signal),
+        ]);
+        this.metadataBytes = manifest.documents.decoded_bytes + manifest.lexicon.decoded_bytes;
         if (this.metadataBytes > this.workingSetBudgetBytes) {
             throw new Error('search metadata exceeds the search memory budget');
         }
@@ -70,8 +69,8 @@ export class SearchRuntime {
             new Uint8Array(this.lexicon),
             this.requireManifest().lexicon.decoded_bytes,
         );
-        this.loadedChunks.clear();
-        this.loadedChunkBytes = 0;
+        this.loadedPostings.clear();
+        this.postingsBytes = 0;
     }
 
     private references(kind: 'postings' | 'content', chunks: number[]): ArtifactRef[] {
@@ -83,88 +82,100 @@ export class SearchRuntime {
         });
     }
 
-    private missingBytes(kind: 'postings' | 'content', chunks: number[]): number {
-        return this.references(kind, chunks)
-            .filter(reference => !this.loadedChunks.has(reference.path))
+    private missingPostingBytes(chunks: number[]): number {
+        return this.references('postings', chunks)
+            .filter(reference => !this.loadedPostings.has(reference.path))
             .reduce((total, reference) => total + reference.decoded_bytes, 0);
     }
 
-    private async loadChunks(
-        kind: 'postings' | 'content',
-        chunks: number[],
-        signal?: AbortSignal,
-    ): Promise<void> {
+    private async loadPostings(chunks: number[], signal?: AbortSignal): Promise<void> {
+        const missing = this.references('postings', chunks)
+            .map((reference, index) => ({ reference, chunk: chunks[index] }))
+            .filter(item => item.chunk !== undefined && !this.loadedPostings.has(item.reference.path));
+        const loaded = await Promise.all(missing.map(async item => ({
+            ...item,
+            bytes: await this.source.bytes(item.reference, signal),
+        })));
+        signal?.throwIfAborted();
         const engine = this.requireEngine();
-        const references = this.references(kind, chunks);
-        await Promise.all(references.map(async (reference, index) => {
-            if (this.loadedChunks.has(reference.path)) return;
-            const bytes = await this.source.bytes(reference, signal);
-            signal?.throwIfAborted();
-            const chunk = chunks[index];
-            if (chunk === undefined) throw new Error(`missing ${kind} chunk index`);
-            if (kind === 'postings') {
-                engine.load_postings_chunk(
-                    chunk,
-                    new Uint8Array(bytes),
-                    reference.decoded_bytes,
-                );
-            } else {
-                engine.load_content_chunk(
-                    chunk,
-                    new Uint8Array(bytes),
-                    reference.decoded_bytes,
-                );
-            }
-            this.loadedChunks.set(reference.path, reference.decoded_bytes);
-            this.loadedChunkBytes += reference.decoded_bytes;
-        }));
+        for (const item of loaded) {
+            engine.load_postings_chunk(
+                item.chunk as number,
+                new Uint8Array(item.bytes),
+                item.reference.decoded_bytes,
+            );
+            this.loadedPostings.set(item.reference.path, item.reference.decoded_bytes);
+            this.postingsBytes += item.reference.decoded_bytes;
+        }
     }
 
-    async search(query: Query, signal?: AbortSignal): Promise<SearchResponse> {
+    private async ensurePostings(query: Query, signal?: AbortSignal): Promise<void> {
+        const request = JSON.stringify(query);
+        let chunks = JSON.parse(this.requireEngine().begin_search(request)) as number[];
+        let missingBytes = this.missingPostingBytes(chunks);
+        if (this.metadataBytes + this.postingsBytes + missingBytes > this.workingSetBudgetBytes) {
+            this.resetEngine();
+            chunks = JSON.parse(this.requireEngine().begin_search(request)) as number[];
+            missingBytes = this.missingPostingBytes(chunks);
+        }
+        if (this.metadataBytes + missingBytes > this.workingSetBudgetBytes) {
+            throw new Error('query postings exceed the search memory budget');
+        }
+        await this.loadPostings(chunks, signal);
+    }
+
+    private async loadContent(chunks: number[], signal?: AbortSignal): Promise<void> {
+        const references = this.references('content', chunks);
+        const decodedBytes = references.reduce(
+            (total, reference) => total + reference.decoded_bytes,
+            0,
+        );
+        if (this.metadataBytes + this.postingsBytes + decodedBytes > this.workingSetBudgetBytes) {
+            throw new Error('query content exceeds the search memory budget');
+        }
+        const loaded = await Promise.all(references.map(async (reference, index) => ({
+            reference,
+            chunk: chunks[index],
+            bytes: await this.source.bytes(reference, signal),
+        })));
+        signal?.throwIfAborted();
+        const engine = this.requireEngine();
+        engine.clear_content();
+        for (const item of loaded) {
+            if (item.chunk === undefined) throw new Error('missing content chunk index');
+            engine.load_content_chunk(
+                item.chunk,
+                new Uint8Array(item.bytes),
+                item.reference.decoded_bytes,
+            );
+        }
+    }
+
+    async search(
+        query: Query,
+        onRanked: (response: SearchResponse) => void,
+        signal?: AbortSignal,
+    ): Promise<SearchResponse> {
         if (query.query.trim().length < 2) {
             throw new Error('query must contain at least two characters');
         }
-        let postingChunks = JSON.parse(
-            this.requireEngine().required_posting_chunks(query.query),
-        ) as number[];
-        let requiredBytes = this.missingBytes('postings', postingChunks);
-        if (this.metadataBytes + this.loadedChunkBytes + requiredBytes > this.workingSetBudgetBytes) {
-            this.resetEngine();
-            postingChunks = JSON.parse(
-                this.requireEngine().required_posting_chunks(query.query),
-            ) as number[];
-            requiredBytes = this.missingBytes('postings', postingChunks);
-        }
-        if (this.metadataBytes + requiredBytes > this.workingSetBudgetBytes) {
-            throw new Error('query postings exceed the search memory budget');
-        }
-        await this.loadChunks('postings', postingChunks, signal);
-
-        let contentChunks = JSON.parse(
-            this.requireEngine().required_content_chunks(JSON.stringify(query)),
-        ) as number[];
-        const contentBytes = this.missingBytes('content', contentChunks);
-        if (this.metadataBytes + this.loadedChunkBytes + contentBytes > this.workingSetBudgetBytes) {
-            this.resetEngine();
-            postingChunks = JSON.parse(
-                this.requireEngine().required_posting_chunks(query.query),
-            ) as number[];
-            await this.loadChunks('postings', postingChunks, signal);
-            contentChunks = JSON.parse(
-                this.requireEngine().required_content_chunks(JSON.stringify(query)),
-            ) as number[];
-        }
-        const workingSetBytes = (
-            this.metadataBytes
-            + this.loadedChunkBytes
-            + this.missingBytes('content', contentChunks)
-        );
-        if (workingSetBytes > this.workingSetBudgetBytes) {
-            throw new Error('query working set exceeds the search memory budget');
-        }
-        await this.loadChunks('content', contentChunks, signal);
+        await this.ensurePostings(query, signal);
         signal?.throwIfAborted();
-        return JSON.parse(this.requireEngine().search(JSON.stringify(query))) as SearchResponse;
+        const engine = this.requireEngine();
+        const ranked = JSON.parse(engine.prepare_search()) as SearchResponse;
+        signal?.throwIfAborted();
+        onRanked(ranked);
+
+        const contentChunks = JSON.parse(
+            engine.required_content_chunks(0, query.limit),
+        ) as number[];
+        await this.loadContent(contentChunks, signal);
+        signal?.throwIfAborted();
+        try {
+            return JSON.parse(engine.hydrate_search(0, query.limit)) as SearchResponse;
+        } finally {
+            engine.clear_content();
+        }
     }
 
     dispose(): void {
@@ -173,8 +184,8 @@ export class SearchRuntime {
         this.manifestValue = null;
         this.documents = null;
         this.lexicon = null;
-        this.loadedChunks.clear();
-        this.loadedChunkBytes = 0;
+        this.loadedPostings.clear();
+        this.postingsBytes = 0;
         this.metadataBytes = 0;
     }
 }

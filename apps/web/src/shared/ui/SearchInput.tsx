@@ -19,6 +19,7 @@ interface SearchInputProps {
     placeholder?: string;
     autoFocus?: boolean;
     onSubmit?: (value: string) => void;
+    onUserFocus?: () => void;
 }
 
 export function SearchInput({
@@ -26,9 +27,11 @@ export function SearchInput({
     onChange,
     placeholder,
     autoFocus = true,
-    onSubmit
+    onSubmit,
+    onUserFocus,
 }: SearchInputProps) {
     const inputRef = useRef<HTMLInputElement>(null);
+    const programmaticFocusRef = useRef(false);
     const suggestionIndexRef = useRef(0);
     const charIndexRef = useRef(0);
     const directionRef = useRef<1 | -1>(1);
@@ -36,7 +39,9 @@ export function SearchInput({
 
     useEffect(() => {
         if (autoFocus) {
+            programmaticFocusRef.current = true;
             inputRef.current?.focus();
+            programmaticFocusRef.current = false;
         }
     }, [autoFocus]);
 
@@ -94,6 +99,9 @@ export function SearchInput({
                 placeholder={placeholder || dynamicPlaceholder}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
+                onFocus={() => {
+                    if (!programmaticFocusRef.current) onUserFocus?.();
+                }}
             />
             {value && (
                 <button 

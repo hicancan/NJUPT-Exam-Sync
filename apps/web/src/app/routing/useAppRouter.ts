@@ -7,6 +7,7 @@ import {
 } from '@njupt-search/academics-exam/query';
 import { parseRoomIntent } from '@njupt-search/academics-room';
 import { useUrlState } from './useUrlState';
+import type { ProductIntent } from './intents';
 
 const SAVED_CLASS_KEY = 'SAVED_CLASS';
 const SAVED_ROOM_KEY = 'SAVED_ROOM_TARGET';
@@ -104,28 +105,22 @@ export function useAppRouter() {
         navigate({ route: 'search', params: { q: trimmed } });
     }, [navigate]);
 
-    const quickSearch = useCallback((query: string) => {
-        if (query === '考试安排') {
+    const quickSearch = useCallback((intent: ProductIntent) => {
+        if (intent.kind === 'exam') {
             const savedClass = localStorage.getItem(SAVED_CLASS_KEY);
             if (savedClass) {
                 navigate({ route: 'exam', params: { class: savedClass } });
                 return;
             }
-            navigate({ route: 'exam', params: { q: query } });
+            navigate({ route: 'exam', params: { q: '考试安排' } });
             return;
         }
-        const roomParams = roomRouteParams(query);
-        if (roomParams) {
-            if (Object.keys(roomParams).length === 0) {
-                navigate({ route: 'rooms', params: savedRoomParams() || {} });
-            } else {
-                saveRoomParams(roomParams);
-                navigate({ route: 'rooms', params: roomParams });
-            }
+        if (intent.kind === 'rooms') {
+            navigate({ route: 'rooms', params: savedRoomParams() || {} });
             return;
         }
-        submit(query);
-    }, [navigate, submit]);
+        navigate({ route: 'search', params: { q: intent.query } });
+    }, [navigate]);
 
     return {
         route,

@@ -10,6 +10,7 @@ export interface SearchClientReady {
 interface PendingSearch {
     resolve: (response: SearchResponse) => void;
     reject: (error: Error) => void;
+    onUpdate?: (response: SearchResponse) => void;
     posted: boolean;
 }
 
@@ -76,11 +77,14 @@ export class SearchClient {
         return this.initialize();
     }
 
-    search(query: Query): { requestId: number; response: Promise<SearchResponse> } {
+    search(
+        query: Query,
+        onUpdate?: (response: SearchResponse) => void,
+    ): { requestId: number; response: Promise<SearchResponse> } {
         this.requireActive();
         const requestId = this.nextRequestId++;
         const response = new Promise<SearchResponse>((resolve, reject) => {
-            this.pending.set(requestId, { resolve, reject, posted: false });
+            this.pending.set(requestId, { resolve, reject, onUpdate, posted: false });
         });
         void this.initialize().then(() => {
             const pending = this.pending.get(requestId);
@@ -157,7 +161,12 @@ export class SearchClient {
             return;
         }
         if (message.type === 'results') {
-            this.pending.get(message.requestId)?.resolve(message.response);
+            const pending = this.pending.get(message.requestId);
+            if (message.stage === 'ranked') {
+                pending?.onUpdate?.(message.response);
+                return;
+            }
+            pending?.resolve(message.response);
             this.pending.delete(message.requestId);
             return;
         }

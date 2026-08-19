@@ -10,7 +10,8 @@ use crate::query::SearchFacet;
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap};
 
-const TARGET_CHUNK_BYTES: usize = 512 * 1024;
+const POSTINGS_TARGET_CHUNK_BYTES: usize = 512 * 1024;
+const CONTENT_TARGET_CHUNK_BYTES: usize = 128 * 1024;
 const CHUNK_HEADER_BYTES: usize = 12;
 
 fn facet_for(document: &IndexDocument) -> SearchFacet {
@@ -27,7 +28,7 @@ fn facet_for(document: &IndexDocument) -> SearchFacet {
         document.tags.join(" ")
     )
     .to_lowercase();
-    if ["考试", "补考", "重修", "考场", "四六级", "mooc"]
+    if ["考试", "补考", "重修", "考场", "准考证", "考务", "mooc"]
         .iter()
         .any(|term| text.contains(term))
     {
@@ -99,7 +100,7 @@ fn build_contents(documents: &[IndexDocument]) -> (Vec<Vec<(u32, String)>>, Vec<
     let mut assignments = vec![0_u32; documents.len()];
     for (index, document) in documents.iter().enumerate() {
         let encoded_bytes = document.content.len() + 8;
-        if !current.is_empty() && current_bytes + encoded_bytes > TARGET_CHUNK_BYTES {
+        if !current.is_empty() && current_bytes + encoded_bytes > CONTENT_TARGET_CHUNK_BYTES {
             chunks.push(std::mem::take(&mut current));
             current_bytes = CHUNK_HEADER_BYTES;
         }
@@ -180,7 +181,7 @@ pub fn compile_search_bundle(
     let mut current_bytes = CHUNK_HEADER_BYTES;
     for (term, postings) in postings_by_term {
         let encoded_bytes = posting_entry_bytes(&term, &postings);
-        if !current.is_empty() && current_bytes + encoded_bytes > TARGET_CHUNK_BYTES {
+        if !current.is_empty() && current_bytes + encoded_bytes > POSTINGS_TARGET_CHUNK_BYTES {
             postings_chunks.push(std::mem::take(&mut current));
             current_bytes = CHUNK_HEADER_BYTES;
         }

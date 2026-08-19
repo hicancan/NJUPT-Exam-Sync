@@ -47,7 +47,18 @@ New-Item -ItemType Directory -Path $public | Out-Null
 Copy-Item -Path (Join-Path $repository 'apps/web/public/*') -Destination $public -Recurse -Force
 $generated = Join-Path $public 'generated'
 New-Item -ItemType Directory -Path $generated | Out-Null
-Copy-Item -LiteralPath $searchBundle -Destination (Join-Path $generated 'search') -Recurse
+$searchRoot = Join-Path $generated 'search'
+New-Item -ItemType Directory -Path $searchRoot | Out-Null
+$searchManifest = Get-Content -LiteralPath (Join-Path $searchBundle 'manifest.json') -Raw | ConvertFrom-Json
+if ($searchManifest.bundle_id -notmatch '^[a-f0-9]{64}$') {
+    throw 'SearchBundle manifest has an invalid bundle identity'
+}
+$searchContent = Join-Path $searchRoot $searchManifest.bundle_id
+New-Item -ItemType Directory -Path $searchContent | Out-Null
+Copy-Item -LiteralPath (Join-Path $searchBundle 'manifest.json') -Destination $searchRoot
+Get-ChildItem -LiteralPath $searchBundle -File |
+    Where-Object Name -ne 'manifest.json' |
+    Copy-Item -Destination $searchContent
 Copy-Item -LiteralPath $examSnapshot -Destination (Join-Path $generated 'exam') -Recurse
 Copy-Item -LiteralPath $roomOccupancy -Destination (Join-Path $generated 'rooms') -Recurse
 

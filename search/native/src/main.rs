@@ -50,20 +50,23 @@ fn build(args: &[String]) -> Result<()> {
 
 fn query(args: &[String]) -> Result<()> {
     let bundle = PathBuf::from(argument(args, "--bundle")?);
-    let query = argument(args, "--query")?;
-    let limit = argument(args, "--limit")
-        .ok()
-        .and_then(|value| value.parse().ok())
-        .unwrap_or(30);
-    let (_manifest, engine) = load_engine(&bundle)?;
-    let response = engine
-        .search(&Query {
+    let request = if let Ok(value) = argument(args, "--request-json") {
+        serde_json::from_str::<Query>(&value).context("invalid --request-json")?
+    } else {
+        let query = argument(args, "--query")?;
+        let limit = argument(args, "--limit")
+            .ok()
+            .and_then(|value| value.parse().ok())
+            .unwrap_or(30);
+        Query {
             query,
             limit,
             sort: Default::default(),
             filters: Default::default(),
-        })
-        .map_err(anyhow::Error::msg)?;
+        }
+    };
+    let (_manifest, engine) = load_engine(&bundle)?;
+    let response = engine.search(&request).map_err(anyhow::Error::msg)?;
     println!("{}", serde_json::to_string_pretty(&response)?);
     Ok(())
 }
@@ -76,17 +79,30 @@ fn benchmark(args: &[String]) -> Result<()> {
     let mut measurements = Vec::new();
     for query in queries {
         let started = Instant::now();
-        let response = engine
-            .search(&Query {
-                query: query.clone(),
-                limit: 30,
-                sort: Default::default(),
-                filters: Default::default(),
-            })
+        let request = Query {
+            query: query.clone(),
+            limit: 30,
+            sort: Default::default(),
+            filters: Default::default(),
+        };
+        let preparation = engine.begin_query(&request).map_err(anyhow::Error::msg)?;
+        let analyze_micros = started.elapsed().as_micros() as u64;
+        let ranking_started = Instant::now();
+        let plan = engine
+            .plan_query(&preparation)
             .map_err(anyhow::Error::msg)?;
+        let rank_micros = ranking_started.elapsed().as_micros() as u64;
+        let snippet_started = Instant::now();
+        let response = engine
+            .hydrate_results(&plan, 0, request.limit)
+            .map_err(anyhow::Error::msg)?;
+        let snippet_micros = snippet_started.elapsed().as_micros() as u64;
         measurements.push(serde_json::json!({
             "query": query,
             "elapsed_micros": started.elapsed().as_micros() as u64,
+            "analyze_micros": analyze_micros,
+            "rank_micros": rank_micros,
+            "snippet_micros": snippet_micros,
             "candidates": response.total_candidates,
             "results": response.results.len(),
             "top_results": response.results.iter().map(|item| serde_json::json!({
@@ -94,6 +110,7 @@ fn benchmark(args: &[String]) -> Result<()> {
                 "title": item.title,
                 "source": item.source,
                 "url": item.url,
+                "published_at": item.published_at,
             })).collect::<Vec<_>>(),
         }));
     }

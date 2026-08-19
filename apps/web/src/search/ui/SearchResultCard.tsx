@@ -118,15 +118,22 @@ export function SearchResultCard({ document }: SearchResultCardProps) {
                 ) : null}
             </div>
 
-            <p
-                data-testid="collection-result-snippet"
-                className="mt-2 text-[14px] text-[#4d5156] dark:text-[#bdc1c6] line-clamp-3 sm:line-clamp-2 break-words"
-            >
-                <HighlightedText
-                    text={document.snippet}
-                    terms={document.matchedTerms}
+            {document.snippet ? (
+                <p
+                    data-testid="search-result-snippet"
+                    className="mt-2 text-[14px] text-[#4d5156] dark:text-[#bdc1c6] line-clamp-3 sm:line-clamp-2 break-words"
+                >
+                    <HighlightedText
+                        text={document.snippet}
+                        terms={document.matchedTerms}
+                    />
+                </p>
+            ) : (
+                <div
+                    data-testid="search-result-snippet-loading"
+                    className="mt-2 h-4 w-4/5 animate-pulse rounded bg-[#f1f3f4] dark:bg-[#303134]"
                 />
-            </p>
+            )}
 
             <div className="mt-2 flex flex-wrap gap-2 text-[12px] text-[#5f6368] dark:text-[#9aa0a6]">
                 <span className="inline-flex items-center gap-1 rounded bg-[#f1f3f4] dark:bg-[#303134] px-2 py-1">

@@ -46,7 +46,8 @@ IndexDocument
   -> SearchBundle
 
 SearchBundle + Query
-  -> SearchEngine
+  -> QueryPreparation
+  -> QueryPlan
   -> SearchResponse
 ```
 
@@ -76,12 +77,37 @@ zstd 才减少传输字节。reader 验证 magic、哈希、声明大小和解�
 `includeUndated`，产品层负责把“近一年”转换成日期。`SearchResponse` 只暴露
 `totalCandidates` 与 results；benchmark 在调用入口外计时。
 
-浏览器先加载 manifest、documents 和 lexicon；查询时加载所需 postings，
-确定 Top-K 后加载正文块。`SearchClient` 拥有一个 Worker，生命周期为
+查询只分析和排名一次。`QueryPreparation` 保存规范化结果、召回词和概念别名；
+postings 到齐后，core 生成稳定的 `QueryPlan`，其中只有排好序的文档编号、命中
+词和分页位置。计划先生成不含正文的准确结果骨架，再为当前页生成 snippet。
+骨架不是近似结果：它已经处理完本次查询需要的 postings，并使用最终排序；
+hydration 只补充正文摘要，不会改变结果集合和顺序。
+
+相关性按明确层级比较：标题完整短语优先，其次是标题全部核心词、正文全部核心
+词、minimum-should-match，最后才是部分 n-gram 召回。常用简称在同一个 Rust
+查询分析中展开为概念短语，只用最长覆盖词拉取候选，较短词用于候选覆盖判断。
+同一相关层级内再考虑产品意图对应的来源、发布时间、词频和稳定 ID；因此时效性
+不会让新但无关的页面压过旧而准确的结果。结果选择折叠完全相同的 URL；对于
+发布时间相同、只相差明确部门前缀且其余标题完全相同的转载，同一结果页也只
+展示排序更高的一条。这只是展示多样性，不生成业务身份，也不修改或删除上游
+corpus 事实。
+
+浏览器在用户聚焦搜索框或开始输入时准备搜索；WASM 初始化和 manifest 请求
+并行，随后并行加载 documents 与 lexicon。查询时加载所需 postings，准确
+Top-K 骨架就绪后先交给 React，再按 10 条一页加载约 128 KiB 目标大小的正文
+块并补齐 snippet。加载更多复用同一 QueryPlan，不为未展示结果预取正文。
+
+`SearchClient` 拥有一个 Worker，生命周期为
 idle → initializing → ready → disposed。Worker 严格串行执行查询，协议只有
 `init/search/cancel` 与 `ready/results/error`。压缩 artifact 缓存采用实例
 LRU 字节预算；WASM decoded working set 使用独立预算。取消、重初始化和
-dispose 都会释放相应请求与运行时状态。
+dispose 都会释放相应请求与运行时状态。postings 可以在预算内复用，content
+只在当前页摘要生成期间解码，生成后立即释放，不会因正文累计而重建整个引擎。
+
+manifest 使用稳定入口 `/generated/search/manifest.json`，要求重新验证；其余
+artifact 放在 `/generated/search/<bundle_id>/...`，以内容身份寻址并使用长期
+immutable 缓存。每个 artifact 仍由 manifest 中的大小与 SHA-256 校验，部署
+新 bundle 不会把旧分块误配给新 manifest。
 
 Bundle 写出使用外部空 staging，全部写完后由当前 reader 自校验，再原子替换
 目标目录。失败不会把半成品暴露成完整 bundle。
@@ -130,6 +156,11 @@ Python 拥有 ExamSnapshot 和 RoomOccupancy 写出；每种 artifact 在 TypeSc
 `apps/web/src` 按产品能力组织：`app` 只做启动、路由和 shell；`home`、
 `search`、`exams`、`rooms` 各自拥有完整交互；`shared` 只容纳至少两个能力
 共同使用的 UI/HTTP 原语。
+
+首页快捷入口使用判别联合表达 `exam`、`rooms` 或 `search` 意图，而不是依靠
+按钮文字触发隐藏分支。七个全文入口只提供查询意图，随后仍由 SearchClient →
+Worker → WASM → Rust core 完成统一搜索；不存在热词结果、独立排名或 UI
+fallback。
 
 ```text
 CorpusSnapshot -> SearchBundle

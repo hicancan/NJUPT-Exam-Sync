@@ -2,6 +2,7 @@ import { CalendarDays, Download, FileText, Shuffle, Trophy, Waypoints } from 'lu
 import { QUICK_SEARCHES, QuickSearchIcon } from './searchPresets';
 import { ThemeToggle } from '@/shared/ui/ThemeToggle';
 import { SearchInput } from '@/shared/ui/SearchInput';
+import type { ProductIntent } from '@/app/routing/intents';
 
 const QUICK_SEARCH_ICONS: Record<QuickSearchIcon, typeof CalendarDays> = {
     calendar: CalendarDays,
@@ -14,16 +15,18 @@ const QUICK_SEARCH_ICONS: Record<QuickSearchIcon, typeof CalendarDays> = {
 
 interface HomePageProps {
     inputValue: string;
-    onQuickSearch: (query: string) => void;
+    onQuickSearch: (intent: ProductIntent) => void;
     onInputChange: (value: string) => void;
     onSubmit: (value: string) => void;
+    onSearchWarm: () => void;
 }
 
 export function HomePage({
     inputValue,
     onQuickSearch,
     onInputChange,
-    onSubmit
+    onSubmit,
+    onSearchWarm,
 }: HomePageProps) {
     return (
         <main className="flex-1 px-4">
@@ -35,7 +38,15 @@ export function HomePage({
                 <h1 className="mt-5 text-5xl sm:text-6xl font-normal text-[#202124] dark:text-[#e8eaed] leading-tight">njupt-search</h1>
 
                 <div className="mt-8 w-full">
-                    <SearchInput value={inputValue} onChange={onInputChange} onSubmit={onSubmit} />
+                    <SearchInput
+                        value={inputValue}
+                        onChange={(value) => {
+                            if (value.trim().length === 1) onSearchWarm();
+                            onInputChange(value);
+                        }}
+                        onSubmit={onSubmit}
+                        onUserFocus={onSearchWarm}
+                    />
                 </div>
 
                 <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
@@ -45,7 +56,7 @@ export function HomePage({
                             <button
                                 key={item.label}
                                 type="button"
-                                onClick={() => onQuickSearch(item.query)}
+                                onClick={() => onQuickSearch(item.intent)}
                                 className="inline-flex items-center gap-2 h-10 px-4 rounded-full border border-[#dadce0] dark:border-[#3c4043] bg-white dark:bg-[#202124] text-sm text-[#3c4043] dark:text-[#e8eaed] hover:border-[#8ab4f8] transition-colors"
                             >
                                 <Icon className="w-4 h-4" aria-hidden="true" />

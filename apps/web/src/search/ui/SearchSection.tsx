@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type {
     FilterOption,
     FilterOptions,
@@ -28,18 +28,7 @@ interface SearchSectionProps {
     onSortModeChange: (sortMode: SortMode) => void;
     onFiltersChange: (patch: SearchFilters) => void;
     onDatePresetChange: (preset: SearchDatePreset) => void;
-}
-
-function visibleResultKey(query: string, sortMode: SortMode, filters: SearchFilters): string {
-    return [
-        query.trim(),
-        sortMode,
-        filters.sourceId ?? '',
-        filters.facet ?? '',
-        filters.publishedFrom ?? '',
-        filters.publishedTo ?? '',
-        String(filters.includeUndated ?? false),
-    ].join('\u0000');
+    onLoadMore: () => void;
 }
 
 function useFacetOptions(filterOptions: FilterOptions | null) {
@@ -66,14 +55,11 @@ export function SearchSection({
     onSortModeChange,
     onFiltersChange,
     onDatePresetChange,
+    onLoadMore,
 }: SearchSectionProps) {
     const trimmedQuery = query.trim();
-    const [visibleState, setVisibleState] = useState({ key: '', count: 20 });
     const facetOptions = useFacetOptions(filterOptions);
-    const visibleKey = visibleResultKey(trimmedQuery, sortMode, filters);
-    const visibleCount = visibleState.key === visibleKey ? visibleState.count : 20;
     const results = response?.results ?? [];
-    const visibleResults = results.slice(0, visibleCount);
     const summary = resultSummary(filters, results.length, response?.totalCandidates ?? 0, sortMode);
     const statusText = trimmedQuery.length < 2
         ? '输入至少两个字符开始搜索。'
@@ -103,16 +89,17 @@ export function SearchSection({
                 />
             </div>
 
-            {visibleResults.length > 0 ? (
+            {results.length > 0 ? (
                 <div>
-                    {visibleResults.map(document => (
+                    {results.map(document => (
                         <SearchResultCard key={document.id} document={document} />
                     ))}
-                    {visibleCount < results.length ? (
+                    {results.length < (response?.totalCandidates ?? 0) ? (
                         <div className="pt-4 pb-2 text-center">
                             <button
                                 type="button"
-                                onClick={() => setVisibleState({ key: visibleKey, count: visibleCount + 20 })}
+                                onClick={onLoadMore}
+                                disabled={searching}
                                 className="px-6 py-2 rounded-full border border-[#dadce0] dark:border-[#3c4043] bg-white dark:bg-[#202124] text-sm font-medium text-[#1a73e8] hover:bg-[#f8f9fa] dark:hover:bg-[#303134] transition-colors"
                             >
                                 加载更多结果

@@ -1,5 +1,20 @@
 use unicode_normalization::UnicodeNormalization;
 
+#[derive(Clone, Debug)]
+pub(crate) struct PhraseGroup {
+    pub phrase: String,
+    pub title_terms: Vec<String>,
+    pub body_terms: Vec<String>,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct QueryAnalysis {
+    pub normalized: String,
+    pub retrieval_terms: Vec<String>,
+    pub phrase_groups: Vec<PhraseGroup>,
+    pub preferred_sources: &'static [&'static str],
+}
+
 pub fn normalize_text(value: &str) -> String {
     normalize_with_mapping(value).text
 }
@@ -109,6 +124,78 @@ pub fn analyze_query(value: &str, max_cjk_n: usize) -> Vec<String> {
         .collect()
 }
 
+fn coverage_terms(value: &str, width: usize) -> Vec<String> {
+    let tokens = analyze_query(value, width);
+    let longest = tokens
+        .iter()
+        .map(|token| token.chars().count().min(width))
+        .max()
+        .unwrap_or(0);
+    tokens
+        .into_iter()
+        .filter(|token| token.chars().count() == longest && token.chars().count() <= width)
+        .collect()
+}
+
+fn alias_profile(normalized: &str) -> Option<(&'static [&'static str], &'static [&'static str])> {
+    match normalized {
+        "大创" => Some((
+            &["大学生创新创业训练计划", "大学生创新训练计划"],
+            &["cxcy", "jwc"],
+        )),
+        "四六级" | "四、六级" => Some((
+            &[
+                "全国大学英语四六级考试",
+                "全国大学英语四六级口语考试",
+                "全国大学英语四、六级考试",
+                "大学英语四六级考试",
+                "大学英语四六级口语考试",
+                "大学英语四、六级考试",
+                "四六级考试",
+                "cet-4",
+                "cet-6",
+            ],
+            &["jwc"],
+        )),
+        "计算机等级" | "计算机等级考试" => Some((
+            &[
+                "全国计算机等级考试",
+                "江苏省高等学校计算机等级考试",
+                "计算机等级考试",
+            ],
+            &["jwc"],
+        )),
+        _ => None,
+    }
+}
+
+pub(crate) fn analyze_search_query(value: &str) -> QueryAnalysis {
+    let normalized = normalize_text(value);
+    let profile = alias_profile(&normalized);
+    let phrases: Vec<String> = profile
+        .map(|(values, _)| values.iter().map(|value| normalize_text(value)).collect())
+        .unwrap_or_else(|| vec![normalized.clone()]);
+    let mut retrieval_terms = analyze_query(&normalized, 4);
+    for phrase in &phrases {
+        retrieval_terms.extend(coverage_terms(phrase, 4));
+    }
+    retrieval_terms.sort();
+    retrieval_terms.dedup();
+    QueryAnalysis {
+        normalized,
+        retrieval_terms,
+        phrase_groups: phrases
+            .into_iter()
+            .map(|phrase| PhraseGroup {
+                title_terms: coverage_terms(&phrase, 4),
+                body_terms: coverage_terms(&phrase, 2),
+                phrase,
+            })
+            .collect(),
+        preferred_sources: profile.map(|(_, sources)| sources).unwrap_or(&[]),
+    }
+}
+
 pub fn analyze_document(value: &str, max_cjk_n: usize) -> Vec<String> {
     analyzed_tokens(value, max_cjk_n)
 }
@@ -120,7 +207,7 @@ pub fn token_weight(token: &str) -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use super::{analyze_document, analyze_query, normalize_text};
+    use super::{analyze_document, analyze_query, analyze_search_query, normalize_text};
 
     #[test]
     fn normalizes_and_builds_cjk_ngrams() {
@@ -147,5 +234,15 @@ mod tests {
                 .count(),
             1
         );
+    }
+
+    #[test]
+    fn expands_product_aliases_without_precomputing_results() {
+        let analysis = analyze_search_query("大创");
+        assert!(analysis
+            .phrase_groups
+            .iter()
+            .any(|group| group.phrase == "大学生创新创业训练计划"));
+        assert!(analysis.retrieval_terms.contains(&"创新创业".to_string()));
     }
 }

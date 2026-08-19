@@ -42,7 +42,7 @@ export interface SearchResult {
     section: string | null;
     kind: 'page' | 'attachment' | 'external';
     facet: SearchFacet;
-    snippet: string;
+    snippet: string | null;
     matchedTerms: string[];
     attachments: SearchAttachment[];
 }

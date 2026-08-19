@@ -46,7 +46,7 @@ describe('ArtifactSource', () => {
 
         expect(fetchMock).toHaveBeenNthCalledWith(
             2,
-            `/generated/search/documents.bin?bundle=${bundleId}`,
+            `/generated/search/${bundleId}/documents.bin`,
             expect.objectContaining({ cache: 'force-cache' }),
         );
     });
@@ -61,5 +61,43 @@ describe('ArtifactSource', () => {
         const source = new ArtifactSource('/generated/search', new CacheStore(1024));
 
         await expect(source.manifest()).rejects.toThrow('SearchBundle identity mismatch');
+    });
+
+    it('rejects missing and corrupted immutable artifacts', async () => {
+        const missingFetch = vi.fn()
+            .mockResolvedValueOnce(new Response(JSON.stringify(manifest), { status: 200 }))
+            .mockResolvedValueOnce(new Response('missing', { status: 404 }));
+        vi.stubGlobal('fetch', missingFetch);
+        const missing = new ArtifactSource('/generated/search', new CacheStore(1024));
+        await expect(missing.bytes(reference)).rejects.toThrow(
+            'failed to load SearchBundle artifact documents.bin (404)',
+        );
+
+        const corruptFetch = vi.fn()
+            .mockResolvedValueOnce(new Response(JSON.stringify(manifest), { status: 200 }))
+            .mockResolvedValueOnce(new Response(new Uint8Array([3, 2, 1]), { status: 200 }));
+        vi.stubGlobal('fetch', corruptFetch);
+        const corrupt = new ArtifactSource('/generated/search', new CacheStore(1024));
+        await expect(corrupt.bytes(reference)).rejects.toThrow(
+            'hash mismatch for SearchBundle artifact documents.bin',
+        );
+    });
+
+    it('uses one request for concurrent readers of the same immutable artifact', async () => {
+        let release: ((response: Response) => void) | undefined;
+        const artifactResponse = new Promise<Response>(resolve => { release = resolve; });
+        const fetchMock = vi.fn()
+            .mockResolvedValueOnce(new Response(JSON.stringify(manifest), { status: 200 }))
+            .mockReturnValueOnce(artifactResponse);
+        vi.stubGlobal('fetch', fetchMock);
+        const source = new ArtifactSource('/generated/search', new CacheStore(1024));
+
+        const first = source.bytes(reference);
+        const second = source.bytes(reference);
+        await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+        release?.(new Response(bytes, { status: 200 }));
+
+        await expect(Promise.all([first, second])).resolves.toHaveLength(2);
+        expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 });

@@ -66,9 +66,23 @@ async function handle(request: Exclude<SearchWorkerRequest, { type: 'cancel' }>)
     const controller = searches.get(request.requestId);
     if (!controller || controller.signal.aborted) return;
     try {
-        const response = await runtime.search(request.query, controller.signal);
+        const response = await runtime.search(request.query, ranked => {
+            if (!controller.signal.aborted) {
+                post({
+                    type: 'results',
+                    requestId: request.requestId,
+                    stage: 'ranked',
+                    response: ranked,
+                });
+            }
+        }, controller.signal);
         if (!controller.signal.aborted) {
-            post({ type: 'results', requestId: request.requestId, response });
+            post({
+                type: 'results',
+                requestId: request.requestId,
+                stage: 'hydrated',
+                response,
+            });
         }
     } catch (error) {
         if (!controller.signal.aborted) {
@@ -93,8 +107,8 @@ scope.onmessage = (event: MessageEvent<SearchWorkerRequest>) => {
         return;
     }
     if (request.type === 'search') {
-        const previous = searches.get(request.requestId);
-        previous?.abort();
+        for (const controller of searches.values()) controller.abort();
+        searches.clear();
         searches.set(request.requestId, new AbortController());
     }
     queue = queue

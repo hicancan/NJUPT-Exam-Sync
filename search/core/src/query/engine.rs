@@ -1,17 +1,21 @@
 use super::model::{
     FilterOption, FilterOptions, Query, SearchAttachment, SearchResponse, SearchResult, SortMode,
 };
-use super::ranking::{document_boost, posting_score};
+use super::ranking::posting_score;
 use super::snippet::build_snippet;
-use crate::analysis::{analyze_query, normalize_text};
+use crate::analysis::{analyze_search_query, normalize_text, QueryAnalysis};
 use crate::bundle::{
     decode_content, decode_documents, decode_lexicon, decode_postings, decompress_artifact,
 };
-use crate::document::{DocumentMeta, Posting};
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use crate::document::{DocumentKind, DocumentMeta, Posting};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+
+const PARTIAL_FALLBACK_FLOOR: usize = 20;
+const DIRECT_TITLE_FLOOR: usize = 5;
 
 pub struct SearchEngine {
     documents: Vec<DocumentMeta>,
+    normalized_titles: Vec<String>,
     lexicon: HashMap<String, u32>,
     postings: HashMap<String, Vec<Posting>>,
     loaded_posting_chunks: BTreeSet<u32>,
@@ -19,11 +23,90 @@ pub struct SearchEngine {
     loaded_content_chunks: BTreeSet<u32>,
 }
 
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+enum MatchTier {
+    Partial,
+    MinimumShouldMatch,
+    AllBodyTerms,
+    AllTitleTerms,
+    TitleContains,
+    TitleStartsWith,
+    TitleEquals,
+}
+
+impl MatchTier {
+    fn relevance_band(self) -> u8 {
+        match self {
+            Self::TitleEquals | Self::TitleStartsWith | Self::TitleContains => 5,
+            Self::AllTitleTerms => 4,
+            Self::AllBodyTerms => 3,
+            Self::MinimumShouldMatch => 2,
+            Self::Partial => 1,
+        }
+    }
+}
+
+#[derive(Default)]
+struct CandidateState {
+    score: f32,
+    title_terms: BTreeSet<String>,
+    body_terms: BTreeSet<String>,
+    matched_terms: BTreeSet<String>,
+}
+
 struct RankedCandidate {
     document: u32,
     score: f32,
-    title_phrase_match: bool,
+    tier: MatchTier,
+    source_fit: bool,
     matched_terms: Vec<String>,
+}
+
+fn display_terms(terms: BTreeSet<String>) -> Vec<String> {
+    let mut terms: Vec<_> = terms.into_iter().collect();
+    terms.sort_by(|left, right| {
+        right
+            .chars()
+            .count()
+            .cmp(&left.chars().count())
+            .then_with(|| left.cmp(right))
+    });
+    let mut selected: Vec<String> = Vec::new();
+    for term in terms {
+        if selected.iter().any(|longer| longer.contains(&term)) {
+            continue;
+        }
+        selected.push(term);
+        if selected.len() == 12 {
+            break;
+        }
+    }
+    selected.sort();
+    selected
+}
+
+fn presentation_title_key(value: &str) -> String {
+    let normalized = normalize_text(value);
+    let trimmed = normalized
+        .trim_start_matches(|character: char| character.is_whitespace() || character == '\u{200b}');
+    let without_department = trimmed
+        .strip_prefix('【')
+        .and_then(|rest| rest.find('】').map(|end| &rest[end + '】'.len_utf8()..]))
+        .unwrap_or(trimmed);
+    without_department.trim().to_string()
+}
+
+/// The exact, stable ordering for one query. Callers may page and hydrate it,
+/// but cannot observe or reinterpret ranking scores.
+pub struct QueryPlan {
+    query: String,
+    total_candidates: usize,
+    ranked: Vec<RankedCandidate>,
+}
+
+pub struct QueryPreparation {
+    request: Query,
+    analysis: QueryAnalysis,
 }
 
 impl SearchEngine {
@@ -33,8 +116,14 @@ impl SearchEngine {
         lexicon: &[u8],
         lexicon_bytes: u64,
     ) -> Result<Self, String> {
+        let documents = decode_documents(&decompress_artifact(documents, document_bytes)?)?;
+        let normalized_titles = documents
+            .iter()
+            .map(|document| normalize_text(&document.title))
+            .collect();
         Ok(Self {
-            documents: decode_documents(&decompress_artifact(documents, document_bytes)?)?,
+            documents,
+            normalized_titles,
             lexicon: decode_lexicon(&decompress_artifact(lexicon, lexicon_bytes)?)?
                 .into_iter()
                 .collect(),
@@ -81,27 +170,47 @@ impl SearchEngine {
         Ok(())
     }
 
-    pub fn required_posting_chunks(&self, query: &str) -> Vec<u32> {
-        analyze_query(query, 4)
-            .into_iter()
-            .filter_map(|term| self.lexicon.get(&term).copied())
+    pub fn clear_content(&mut self) {
+        self.content.clear();
+        self.loaded_content_chunks.clear();
+    }
+
+    pub fn begin_query(&self, request: &Query) -> Result<QueryPreparation, String> {
+        Self::validate_request(request)?;
+        Ok(QueryPreparation {
+            request: request.clone(),
+            analysis: analyze_search_query(&request.query),
+        })
+    }
+
+    pub fn required_posting_chunks(&self, preparation: &QueryPreparation) -> Vec<u32> {
+        preparation
+            .analysis
+            .retrieval_terms
+            .iter()
+            .filter_map(|term| self.lexicon.get(term).copied())
             .filter(|chunk| !self.loaded_posting_chunks.contains(chunk))
             .collect::<BTreeSet<_>>()
             .into_iter()
             .collect()
     }
 
-    pub fn required_content_chunks(&self, request: &Query) -> Result<Vec<u32>, String> {
-        let candidates = self.rank_candidates(request)?;
-        Ok(candidates
-            .into_iter()
-            .take(request.limit)
+    pub fn required_content_chunks(
+        &self,
+        plan: &QueryPlan,
+        offset: usize,
+        limit: usize,
+    ) -> Vec<u32> {
+        plan.ranked
+            .iter()
+            .skip(offset)
+            .take(limit)
             .filter_map(|candidate| self.documents.get(candidate.document as usize))
             .map(|document| document.content_chunk)
             .filter(|chunk| !self.loaded_content_chunks.contains(chunk))
             .collect::<BTreeSet<_>>()
             .into_iter()
-            .collect())
+            .collect()
     }
 
     pub fn filter_options(&self) -> FilterOptions {
@@ -201,19 +310,89 @@ impl SearchEngine {
         true
     }
 
-    fn rank_candidates(&self, request: &Query) -> Result<Vec<RankedCandidate>, String> {
-        Self::validate_request(request)?;
-        let query_terms = analyze_query(&request.query, 4);
-        let missing = self.required_posting_chunks(&request.query);
+    fn match_tier(
+        &self,
+        document_index: usize,
+        state: &CandidateState,
+        analysis: &QueryAnalysis,
+    ) -> MatchTier {
+        let title = &self.normalized_titles[document_index];
+        let mut tier = analysis
+            .phrase_groups
+            .iter()
+            .map(|group| {
+                if title == &group.phrase {
+                    MatchTier::TitleEquals
+                } else if title.starts_with(&group.phrase) {
+                    MatchTier::TitleStartsWith
+                } else if title.contains(&group.phrase) {
+                    MatchTier::TitleContains
+                } else if !group.title_terms.is_empty()
+                    && group
+                        .title_terms
+                        .iter()
+                        .all(|term| state.title_terms.contains(term))
+                {
+                    MatchTier::AllTitleTerms
+                } else if !group.body_terms.is_empty()
+                    && group
+                        .body_terms
+                        .iter()
+                        .all(|term| state.body_terms.contains(term))
+                {
+                    MatchTier::AllBodyTerms
+                } else {
+                    let matched = group
+                        .body_terms
+                        .iter()
+                        .filter(|term| {
+                            state.title_terms.contains(*term) || state.body_terms.contains(*term)
+                        })
+                        .count();
+                    let required = (group.body_terms.len() * 3).div_ceil(5);
+                    if !group.body_terms.is_empty() && matched >= required {
+                        MatchTier::MinimumShouldMatch
+                    } else {
+                        MatchTier::Partial
+                    }
+                }
+            })
+            .max()
+            .unwrap_or(MatchTier::Partial);
+
+        if self.documents[document_index].kind == DocumentKind::External
+            && tier > MatchTier::MinimumShouldMatch
+        {
+            tier = MatchTier::MinimumShouldMatch;
+        }
+        if self.documents[document_index].published_at.is_none() && tier > MatchTier::AllTitleTerms
+        {
+            tier = MatchTier::AllTitleTerms;
+        }
+        tier
+    }
+
+    pub fn plan_query(&self, preparation: &QueryPreparation) -> Result<QueryPlan, String> {
+        let request = &preparation.request;
+        let analysis = &preparation.analysis;
+        let missing = analysis
+            .retrieval_terms
+            .iter()
+            .filter_map(|term| self.lexicon.get(term).copied())
+            .filter(|chunk| !self.loaded_posting_chunks.contains(chunk))
+            .collect::<BTreeSet<_>>();
         if !missing.is_empty() {
             return Err(format!(
                 "required postings chunks are not loaded: {missing:?}"
             ));
         }
-        let mut scores: HashMap<u32, (f32, bool, BTreeSet<String>)> = HashMap::new();
-        let normalized_query = normalize_text(&request.query);
-        for term in query_terms {
-            let Some(postings) = self.postings.get(&term) else {
+
+        let mut states: Vec<Option<CandidateState>> = std::iter::repeat_with(|| None)
+            .take(self.documents.len())
+            .collect();
+        let mut touched = Vec::new();
+        for term in &analysis.retrieval_terms {
+            let Some(postings) = self.postings.get(term) else {
                 continue;
             };
             for posting in postings {
@@ -226,50 +405,81 @@ impl SearchEngine {
                 if !Self::matches_filters(document, request) {
                     continue;
                 }
-                let entry = scores.entry(posting.document).or_default();
-                entry.0 += posting_score(
-                    &term,
+                let slot = &mut states[posting.document as usize];
+                if slot.is_none() {
+                    *slot = Some(CandidateState::default());
+                    touched.push(posting.document);
+                }
+                let state = slot.as_mut().expect("candidate state");
+                state.score += posting_score(
+                    term,
                     *posting,
                     postings.len(),
                     self.documents.len(),
-                    term == normalized_query,
+                    term == &analysis.normalized,
                 );
-                entry.1 |= term == normalized_query && posting.title_hits > 0;
-                entry.2.insert(term.clone());
+                if posting.title_hits > 0 {
+                    state.title_terms.insert(term.clone());
+                }
+                if posting.body_hits > 0 {
+                    state.body_terms.insert(term.clone());
+                }
+                state.matched_terms.insert(term.clone());
             }
         }
-        let mut ranked: Vec<_> = scores
+
+        let mut ranked: Vec<_> = touched
             .into_iter()
-            .map(|(index, (score, title_phrase_match, terms))| {
-                let document = &self.documents[index as usize];
+            .map(|document| {
+                let state = states[document as usize]
+                    .take()
+                    .expect("touched candidate state");
                 RankedCandidate {
-                    document: index,
-                    score: score + document_boost(document, &request.query),
-                    title_phrase_match,
-                    matched_terms: terms.into_iter().collect(),
+                    document,
+                    score: state.score,
+                    tier: self.match_tier(document as usize, &state, analysis),
+                    source_fit: analysis
+                        .preferred_sources
+                        .contains(&self.documents[document as usize].source.as_str()),
+                    matched_terms: display_terms(state.matched_terms),
                 }
             })
             .collect();
+
+        let direct_title_matches = ranked
+            .iter()
+            .filter(|candidate| candidate.tier.relevance_band() == 5)
+            .count();
+        let title_matches = ranked
+            .iter()
+            .filter(|candidate| candidate.tier >= MatchTier::AllTitleTerms)
+            .count();
+        let minimum_matches = ranked
+            .iter()
+            .filter(|candidate| candidate.tier >= MatchTier::MinimumShouldMatch)
+            .count();
+        if direct_title_matches >= DIRECT_TITLE_FLOOR {
+            ranked.retain(|candidate| candidate.tier.relevance_band() == 5);
+        } else if analysis.normalized.chars().count() == 2 && title_matches >= 2 {
+            ranked.retain(|candidate| candidate.tier >= MatchTier::AllTitleTerms);
+        } else if minimum_matches >= PARTIAL_FALLBACK_FLOOR {
+            ranked.retain(|candidate| candidate.tier >= MatchTier::MinimumShouldMatch);
+        }
+
         match request.sort {
             SortMode::Relevance => ranked.sort_by(|left, right| {
                 right
-                    .title_phrase_match
-                    .cmp(&left.title_phrase_match)
-                    .then_with(|| {
-                        if left.title_phrase_match && right.title_phrase_match {
-                            self.documents[right.document as usize]
-                                .published_at
-                                .cmp(&self.documents[left.document as usize].published_at)
-                        } else {
-                            std::cmp::Ordering::Equal
-                        }
-                    })
-                    .then_with(|| right.score.total_cmp(&left.score))
+                    .tier
+                    .relevance_band()
+                    .cmp(&left.tier.relevance_band())
+                    .then_with(|| right.source_fit.cmp(&left.source_fit))
                     .then_with(|| {
                         self.documents[right.document as usize]
                             .published_at
                             .cmp(&self.documents[left.document as usize].published_at)
                     })
+                    .then_with(|| right.tier.cmp(&left.tier))
+                    .then_with(|| right.score.total_cmp(&left.score))
                     .then_with(|| {
                         self.documents[left.document as usize]
                             .id
@@ -280,6 +490,7 @@ impl SearchEngine {
                 self.documents[right.document as usize]
                     .published_at
                     .cmp(&self.documents[left.document as usize].published_at)
+                    .then_with(|| right.tier.cmp(&left.tier))
                     .then_with(|| right.score.total_cmp(&left.score))
                     .then_with(|| {
                         self.documents[left.document as usize]
@@ -288,15 +499,38 @@ impl SearchEngine {
                     })
             }),
         }
-        Ok(ranked)
+
+        let mut seen_urls = HashSet::new();
+        let mut seen_presentations = HashSet::new();
+        ranked.retain(|candidate| {
+            let document = &self.documents[candidate.document as usize];
+            if !seen_urls.insert(document.url.clone()) {
+                return false;
+            }
+            let Some(date) = &document.published_at else {
+                return true;
+            };
+            let title = presentation_title_key(&document.title);
+            if title.chars().count() < 6 {
+                return true;
+            }
+            seen_presentations.insert((date.clone(), title))
+        });
+        Ok(QueryPlan {
+            query: request.query.clone(),
+            total_candidates: ranked.len(),
+            ranked,
+        })
     }
 
-    pub fn search(&self, request: &Query) -> Result<SearchResponse, String> {
-        let ranked = self.rank_candidates(request)?;
-        let total_candidates = ranked.len();
-        let mut results = Vec::new();
-        for candidate in ranked.into_iter().take(request.limit) {
-            let document = &self.documents[candidate.document as usize];
+    fn result(
+        &self,
+        plan: &QueryPlan,
+        candidate: &RankedCandidate,
+        with_snippet: bool,
+    ) -> Result<SearchResult, String> {
+        let document = &self.documents[candidate.document as usize];
+        let snippet = if with_snippet {
             if !self.loaded_content_chunks.contains(&document.content_chunk) {
                 return Err(format!(
                     "required content chunk is not loaded: {}",
@@ -308,25 +542,34 @@ impl SearchEngine {
                 .get(&candidate.document)
                 .map(String::as_str)
                 .unwrap_or("");
-            results.push(SearchResult {
-                id: document.id.clone(),
-                source: document.source.clone(),
-                source_name: document.source_name.clone(),
-                url: document.url.clone(),
-                title: document.title.clone(),
-                published_at: document.published_at.clone(),
-                updated_at: document.updated_at.clone(),
-                section: document.section.clone(),
-                kind: document.kind,
-                facet: document.facet,
-                snippet: build_snippet(
-                    content,
-                    &document.title,
-                    &request.query,
-                    &candidate.matched_terms,
-                ),
-                matched_terms: candidate.matched_terms,
-                attachments: document
+            Some(build_snippet(
+                content,
+                &document.title,
+                &plan.query,
+                &candidate.matched_terms,
+            ))
+        } else {
+            None
+        };
+        Ok(SearchResult {
+            id: document.id.clone(),
+            source: document.source.clone(),
+            source_name: document.source_name.clone(),
+            url: document.url.clone(),
+            title: document.title.clone(),
+            published_at: document.published_at.clone(),
+            updated_at: document.updated_at.clone(),
+            section: document.section.clone(),
+            kind: document.kind,
+            facet: document.facet,
+            snippet,
+            matched_terms: if with_snippet {
+                candidate.matched_terms.clone()
+            } else {
+                Vec::new()
+            },
+            attachments: if with_snippet {
+                document
                     .attachments
                     .iter()
                     .map(|attachment| SearchAttachment {
@@ -335,13 +578,55 @@ impl SearchEngine {
                         name: attachment.name.clone(),
                         extension: attachment.extension.clone(),
                     })
-                    .collect(),
-            });
-        }
+                    .collect()
+            } else {
+                Vec::new()
+            },
+        })
+    }
+
+    fn page(
+        &self,
+        plan: &QueryPlan,
+        offset: usize,
+        limit: usize,
+        with_snippet: bool,
+    ) -> Result<SearchResponse, String> {
+        let results = plan
+            .ranked
+            .iter()
+            .skip(offset)
+            .take(limit)
+            .map(|candidate| self.result(plan, candidate, with_snippet))
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(SearchResponse {
-            total_candidates,
+            total_candidates: plan.total_candidates,
             results,
         })
+    }
+
+    pub fn result_shells(
+        &self,
+        plan: &QueryPlan,
+        offset: usize,
+        limit: usize,
+    ) -> Result<SearchResponse, String> {
+        self.page(plan, offset, limit, false)
+    }
+
+    pub fn hydrate_results(
+        &self,
+        plan: &QueryPlan,
+        offset: usize,
+        limit: usize,
+    ) -> Result<SearchResponse, String> {
+        self.page(plan, offset, limit, true)
+    }
+
+    pub fn search(&self, request: &Query) -> Result<SearchResponse, String> {
+        let preparation = self.begin_query(request)?;
+        let plan = self.plan_query(&preparation)?;
+        self.hydrate_results(&plan, 0, request.limit)
     }
 }
 

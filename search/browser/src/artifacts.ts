@@ -107,6 +107,8 @@ export class ArtifactSource {
     private readonly baseUrl: string;
     private readonly cache: CacheStore;
     private manifestValue: SearchBundleManifest | null = null;
+    private manifestRequest: Promise<SearchBundleManifest> | null = null;
+    private readonly requests = new Map<string, Promise<ArrayBuffer>>();
 
     constructor(baseUrl: string, cache: CacheStore) {
         this.baseUrl = baseUrl.replace(/\/+$/, '');
@@ -115,19 +117,26 @@ export class ArtifactSource {
 
     async manifest(signal?: AbortSignal): Promise<SearchBundleManifest> {
         if (this.manifestValue) return this.manifestValue;
-        const response = await fetch(`${this.baseUrl}/manifest.json`, {
-            cache: 'no-cache',
-            signal,
-        });
-        if (!response.ok) {
-            throw new Error(`failed to load SearchBundle manifest (${response.status})`);
+        if (!this.manifestRequest) {
+            this.manifestRequest = (async () => {
+                const response = await fetch(`${this.baseUrl}/manifest.json`, {
+                    cache: 'no-cache',
+                    signal,
+                });
+                if (!response.ok) {
+                    throw new Error(`failed to load SearchBundle manifest (${response.status})`);
+                }
+                const manifest = parseManifest(await response.json());
+                if (await bundleIdentity(manifest) !== manifest.bundle_id) {
+                    throw new Error('SearchBundle identity mismatch');
+                }
+                this.manifestValue = manifest;
+                return manifest;
+            })().finally(() => {
+                this.manifestRequest = null;
+            });
         }
-        const manifest = parseManifest(await response.json());
-        if (await bundleIdentity(manifest) !== manifest.bundle_id) {
-            throw new Error('SearchBundle identity mismatch');
-        }
-        this.manifestValue = manifest;
-        return this.manifestValue;
+        return this.manifestRequest;
     }
 
     async bytes(reference: ArtifactRef, signal?: AbortSignal): Promise<ArrayBuffer> {
@@ -136,25 +145,31 @@ export class ArtifactSource {
         const cached = this.cache.get(key);
         if (cached) return cached;
 
-        const artifactUrl = (
-            `${this.baseUrl}/${reference.path}`
-            + `?bundle=${encodeURIComponent(manifest.bundle_id)}`
-        );
-        const response = await fetch(artifactUrl, {
-            cache: 'force-cache',
-            signal,
+        const active = this.requests.get(key);
+        if (active) return active;
+
+        const artifactUrl = `${this.baseUrl}/${manifest.bundle_id}/${reference.path}`;
+        const request = (async () => {
+            const response = await fetch(artifactUrl, {
+                cache: 'force-cache',
+                signal,
+            });
+            if (!response.ok) {
+                throw new Error(`failed to load SearchBundle artifact ${reference.path} (${response.status})`);
+            }
+            const bytes = await response.arrayBuffer();
+            if (bytes.byteLength !== reference.bytes) {
+                throw new Error(`size mismatch for SearchBundle artifact ${reference.path}`);
+            }
+            if (await sha256(bytes) !== reference.sha256) {
+                throw new Error(`hash mismatch for SearchBundle artifact ${reference.path}`);
+            }
+            this.cache.set(key, bytes);
+            return bytes;
+        })().finally(() => {
+            this.requests.delete(key);
         });
-        if (!response.ok) {
-            throw new Error(`failed to load SearchBundle artifact ${reference.path} (${response.status})`);
-        }
-        const bytes = await response.arrayBuffer();
-        if (bytes.byteLength !== reference.bytes) {
-            throw new Error(`size mismatch for SearchBundle artifact ${reference.path}`);
-        }
-        if (await sha256(bytes) !== reference.sha256) {
-            throw new Error(`hash mismatch for SearchBundle artifact ${reference.path}`);
-        }
-        this.cache.set(key, bytes);
-        return bytes;
+        this.requests.set(key, request);
+        return request;
     }
 }

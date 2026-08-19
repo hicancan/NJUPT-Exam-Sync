@@ -34,6 +34,46 @@ afterEach(() => {
 });
 
 describe('SearchClient', () => {
+    it('delivers stable ranked shells before resolving hydrated results', async () => {
+        vi.stubGlobal('Worker', FakeWorker);
+        const client = new SearchClient({ baseUrl: '/explicit/search' });
+        const worker = FakeWorker.instances[0];
+        if (!worker) throw new Error('SearchClient did not create its Worker');
+        const ready = client.initialize();
+        worker.emit({
+            type: 'ready',
+            bundleId: 'a'.repeat(64),
+            documentCount: 12,
+            filterOptions: { sources: [], facets: [] },
+        });
+        await ready;
+        const onUpdate = vi.fn();
+        const pending = client.search({
+            query: '计算机等级',
+            limit: 10,
+            sort: 'relevance',
+            filters: {},
+        }, onUpdate);
+        await Promise.resolve();
+        const ranked = { totalCandidates: 3, results: [] };
+        worker.emit({
+            type: 'results',
+            requestId: pending.requestId,
+            stage: 'ranked',
+            response: ranked,
+        });
+        expect(onUpdate).toHaveBeenCalledWith(ranked);
+        const hydrated = { totalCandidates: 3, results: [] };
+        worker.emit({
+            type: 'results',
+            requestId: pending.requestId,
+            stage: 'hydrated',
+            response: hydrated,
+        });
+        await expect(pending.response).resolves.toBe(hydrated);
+        client.dispose();
+    });
+
     it('owns initialization, cancellation, pending requests, and disposal', async () => {
         vi.stubGlobal('Worker', FakeWorker);
         const client = new SearchClient({

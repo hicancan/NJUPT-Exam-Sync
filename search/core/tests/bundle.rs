@@ -111,6 +111,52 @@ fn compiles_and_queries_the_current_bundle_contract() {
 }
 
 #[test]
+fn one_query_plan_keeps_exact_order_while_snippets_are_hydrated() {
+    let bundle = compile_search_bundle(documents(), &"a".repeat(64)).expect("compile");
+    let mut engine = engine(&bundle);
+    let request = Query {
+        query: "转专业".to_string(),
+        limit: 10,
+        sort: Default::default(),
+        filters: Default::default(),
+    };
+    let preparation = engine.begin_query(&request).expect("analysis");
+    let plan = engine.plan_query(&preparation).expect("ranking");
+    let shells = engine.result_shells(&plan, 0, 10).expect("shells");
+    assert!(shells.results.iter().all(|result| result.snippet.is_none()));
+
+    engine.clear_content();
+    let chunks = engine.required_content_chunks(&plan, 0, 10);
+    for chunk in chunks {
+        let reference = &bundle.manifest.content[chunk as usize];
+        engine
+            .load_content_chunk(
+                chunk,
+                artifact(&bundle, &reference.path),
+                reference.decoded_bytes,
+            )
+            .expect("content");
+    }
+    let hydrated = engine.hydrate_results(&plan, 0, 10).expect("hydrated");
+    assert_eq!(
+        shells
+            .results
+            .iter()
+            .map(|result| &result.id)
+            .collect::<Vec<_>>(),
+        hydrated
+            .results
+            .iter()
+            .map(|result| &result.id)
+            .collect::<Vec<_>>()
+    );
+    assert!(hydrated
+        .results
+        .iter()
+        .all(|result| result.snippet.is_some()));
+}
+
+#[test]
 fn output_identity_is_independent_of_corpus_provenance() {
     let left = compile_search_bundle(documents(), &"a".repeat(64)).expect("left");
     let right = compile_search_bundle(documents(), &"b".repeat(64)).expect("right");
@@ -147,4 +193,56 @@ fn rejects_ui_sentinels_and_invalid_dates() {
     query.filters.source_id = None;
     query.filters.published_from = Some("2026-02-30".to_string());
     assert!(engine.search(&query).unwrap_err().contains("invalid date"));
+}
+
+#[test]
+fn result_page_does_not_repeat_same_day_department_reposts() {
+    let mut values = documents();
+    values.push(IndexDocument {
+        id: "contest-jwc".to_string(),
+        source: "jwc".to_string(),
+        source_name: "教务处".to_string(),
+        url: "https://jwc.example.test/contest".to_string(),
+        title: "【实践科】2026年全国大学生数学建模竞赛报名通知".to_string(),
+        content: "数学建模竞赛报名".to_string(),
+        published_at: Some("2026-05-25".to_string()),
+        updated_at: None,
+        section: Some("通知公告".to_string()),
+        kind: DocumentKind::Page,
+        tags: vec![],
+        attachments: vec![],
+    });
+    values.push(IndexDocument {
+        id: "contest-cxcy".to_string(),
+        source: "cxcy".to_string(),
+        source_name: "创新创业教育学院".to_string(),
+        url: "https://cxcy.example.test/contest".to_string(),
+        title: "2026年全国大学生数学建模竞赛报名通知".to_string(),
+        content: "数学建模竞赛报名".to_string(),
+        published_at: Some("2026-05-25".to_string()),
+        updated_at: None,
+        section: Some("通知公告".to_string()),
+        kind: DocumentKind::Page,
+        tags: vec![],
+        attachments: vec![],
+    });
+    let bundle = compile_search_bundle(values, &"a".repeat(64)).expect("compile");
+    let response = engine(&bundle)
+        .search(&Query {
+            query: "数学建模竞赛报名".to_string(),
+            limit: 10,
+            sort: Default::default(),
+            filters: Default::default(),
+        })
+        .expect("search");
+    assert_eq!(
+        response
+            .results
+            .iter()
+            .filter(|result| result
+                .title
+                .contains("2026年全国大学生数学建模竞赛报名通知"))
+            .count(),
+        1
+    );
 }

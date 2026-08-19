@@ -13,7 +13,7 @@ pub enum SearchFacet {
     External,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct SearchFilters {
     pub source_id: Option<String>,
@@ -24,7 +24,7 @@ pub struct SearchFilters {
     pub include_undated: bool,
 }
 
-#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SortMode {
     #[default]
@@ -32,7 +32,7 @@ pub enum SortMode {
     DateDesc,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct Query {
     pub query: String,
@@ -70,7 +70,7 @@ pub struct SearchResult {
     pub section: Option<String>,
     pub kind: DocumentKind,
     pub facet: SearchFacet,
-    pub snippet: String,
+    pub snippet: Option<String>,
     pub matched_terms: Vec<String>,
     pub attachments: Vec<SearchAttachment>,
 }

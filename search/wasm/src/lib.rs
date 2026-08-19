@@ -1,4 +1,4 @@
-use njupt_search_core::{Query, SearchEngine as CoreSearchEngine};
+use njupt_search_core::{Query, QueryPlan, QueryPreparation, SearchEngine as CoreSearchEngine};
 use wasm_bindgen::prelude::*;
 
 fn js_error(error: impl ToString) -> JsValue {
@@ -8,6 +8,10 @@ fn js_error(error: impl ToString) -> JsValue {
 #[wasm_bindgen]
 pub struct SearchEngine {
     inner: CoreSearchEngine,
+    preparation: Option<QueryPreparation>,
+    plan: Option<QueryPlan>,
+    plan_request: Option<Query>,
+    page_limit: usize,
 }
 
 #[wasm_bindgen]
@@ -27,6 +31,10 @@ impl SearchEngine {
                 lexicon_bytes.into(),
             )
             .map_err(js_error)?,
+            preparation: None,
+            plan: None,
+            plan_request: None,
+            page_limit: 0,
         })
     }
 
@@ -52,19 +60,77 @@ impl SearchEngine {
             .map_err(js_error)
     }
 
-    pub fn required_posting_chunks(&self, query: &str) -> Result<String, JsValue> {
-        serde_json::to_string(&self.inner.required_posting_chunks(query)).map_err(js_error)
+    pub fn clear_content(&mut self) {
+        self.inner.clear_content();
     }
 
-    pub fn required_content_chunks(&self, request_json: &str) -> Result<String, JsValue> {
+    pub fn begin_search(&mut self, request_json: &str) -> Result<String, JsValue> {
         let request: Query = serde_json::from_str(request_json).map_err(js_error)?;
-        serde_json::to_string(
-            &self
-                .inner
-                .required_content_chunks(&request)
-                .map_err(js_error)?,
-        )
+        self.page_limit = request.limit;
+        let same_query = self.plan_request.as_ref().is_some_and(|previous| {
+            previous.query == request.query
+                && previous.sort == request.sort
+                && previous.filters == request.filters
+        });
+        if same_query && self.plan.is_some() {
+            return serde_json::to_string(&Vec::<u32>::new()).map_err(js_error);
+        }
+        let preparation = self.inner.begin_query(&request).map_err(js_error)?;
+        let chunks = self.inner.required_posting_chunks(&preparation);
+        self.preparation = Some(preparation);
+        self.plan = None;
+        self.plan_request = Some(request);
+        serde_json::to_string(&chunks).map_err(js_error)
+    }
+
+    pub fn prepare_search(&mut self) -> Result<String, JsValue> {
+        if self.plan.is_none() {
+            self.plan = Some(
+                self.inner
+                    .plan_query(
+                        self.preparation
+                            .as_ref()
+                            .ok_or_else(|| js_error("query is not prepared"))?,
+                    )
+                    .map_err(js_error)?,
+            );
+        }
+        let response = self
+            .inner
+            .result_shells(
+                self.plan
+                    .as_ref()
+                    .ok_or_else(|| js_error("query is not prepared"))?,
+                0,
+                self.page_limit,
+            )
+            .map_err(js_error)?;
+        serde_json::to_string(&response).map_err(js_error)
+    }
+
+    pub fn required_content_chunks(&self, offset: u32, limit: u32) -> Result<String, JsValue> {
+        let plan = self
+            .plan
+            .as_ref()
+            .ok_or_else(|| js_error("query is not prepared"))?;
+        serde_json::to_string(&self.inner.required_content_chunks(
+            plan,
+            offset as usize,
+            limit as usize,
+        ))
         .map_err(js_error)
+    }
+
+    pub fn hydrate_search(&self, offset: u32, limit: u32) -> Result<String, JsValue> {
+        let plan = self
+            .plan
+            .as_ref()
+            .ok_or_else(|| js_error("query is not prepared"))?;
+        let response = self
+            .inner
+            .hydrate_results(plan, offset as usize, limit as usize)
+            .map_err(js_error)?;
+        serde_json::to_string(&response).map_err(js_error)
     }
 
     pub fn filter_options(&self) -> Result<String, JsValue> {
@@ -73,11 +139,5 @@ impl SearchEngine {
 
     pub fn document_count(&self) -> u32 {
         self.inner.document_count() as u32
-    }
-
-    pub fn search(&self, request_json: &str) -> Result<String, JsValue> {
-        let request: Query = serde_json::from_str(request_json).map_err(js_error)?;
-        let response = self.inner.search(&request).map_err(js_error)?;
-        serde_json::to_string(&response).map_err(js_error)
     }
 }

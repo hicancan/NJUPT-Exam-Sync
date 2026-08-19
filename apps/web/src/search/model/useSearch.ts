@@ -1,12 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-    SearchClient,
+    type SearchClient,
     type FilterOptions,
     type SearchFilters,
     type SearchResponse,
     type SortMode,
 } from '@njupt-search/search-browser';
-import { APP_CONFIG } from '@/app/config/constants';
 
 interface SearchState {
     key: string;
@@ -23,13 +22,13 @@ const emptyState: SearchState = {
 };
 
 export function useSearch(
+    client: SearchClient,
     query: string,
     enabled: boolean,
     sort: SortMode,
     filters: SearchFilters,
     limit: number,
 ) {
-    const clientRef = useRef<SearchClient | null>(null);
     const [ready, setReady] = useState(false);
     const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null);
     const [documentCount, setDocumentCount] = useState(0);
@@ -59,8 +58,6 @@ export function useSearch(
 
     useEffect(() => {
         if (!enabled) return;
-        const client = new SearchClient({ baseUrl: APP_CONFIG.DATA_URLS.SEARCH });
-        clientRef.current = client;
         let active = true;
         client.initialize().then(value => {
             if (!active) return;
@@ -74,43 +71,50 @@ export function useSearch(
         });
         return () => {
             active = false;
-            client.dispose();
-            if (clientRef.current === client) clientRef.current = null;
         };
-    }, [enabled]);
+    }, [client, enabled]);
 
     useEffect(() => {
-        const client = clientRef.current;
-        if (!enabled || !ready || !client || trimmed.length < 2) return;
+        if (!enabled || !ready || trimmed.length < 2) return;
         let active = true;
+        let requestId: number | null = null;
         queueMicrotask(() => {
-            if (active) setState({ key, response: null, searching: true, error: null });
-        });
-        const pending = client.search({
-            query: trimmed,
-            limit,
-            sort,
-            filters,
-        });
-        pending.response.then(response => {
-            if (active) setState({ key, response, searching: false, error: null });
-        }).catch(error => {
-            if (active && !(error instanceof DOMException && error.name === 'AbortError')) {
-                setState({
-                    key,
-                    response: null,
-                    searching: false,
-                    error: error instanceof Error ? error.message : String(error),
-                });
-            }
+            if (!active) return;
+            setState(previous => ({
+                key,
+                response: previous.response,
+                searching: true,
+                error: null,
+            }));
+            const pending = client.search({
+                query: trimmed,
+                limit,
+                sort,
+                filters,
+            }, ranked => {
+                if (active) setState({ key, response: ranked, searching: true, error: null });
+            });
+            requestId = pending.requestId;
+            pending.response.then(response => {
+                if (active) setState({ key, response, searching: false, error: null });
+            }).catch(error => {
+                if (active && !(error instanceof DOMException && error.name === 'AbortError')) {
+                    setState(previous => ({
+                        key,
+                        response: previous.response,
+                        searching: false,
+                        error: error instanceof Error ? error.message : String(error),
+                    }));
+                }
+            });
         });
         return () => {
             active = false;
-            client.cancel(pending.requestId);
+            if (requestId !== null) client.cancel(requestId);
         };
-    }, [enabled, ready, key, trimmed, limit, sort, filters]);
+    }, [client, enabled, ready, key, trimmed, limit, sort, filters]);
 
-    const current = state.key === key ? state : emptyState;
+    const current = enabled ? state : emptyState;
     return {
         response: current.response,
         searching: current.searching,

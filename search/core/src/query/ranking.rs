@@ -1,5 +1,5 @@
-use crate::analysis::{normalize_text, token_weight};
-use crate::document::{DocumentMeta, Posting};
+use crate::analysis::token_weight;
+use crate::document::Posting;
 
 pub(super) fn posting_score(
     token: &str,
@@ -12,20 +12,6 @@ pub(super) fn posting_score(
     let title_weight = if exact_query_term { 64.0 } else { 6.0 };
     let hits = posting.title_hits as f32 * title_weight + posting.body_hits.min(12) as f32;
     token_weight(token) * idf * hits
-}
-
-pub(super) fn document_boost(document: &DocumentMeta, query: &str) -> f32 {
-    let title = normalize_text(&document.title);
-    let query = normalize_text(query);
-    if title == query {
-        120.0
-    } else if title.starts_with(&query) {
-        70.0
-    } else if title.contains(&query) {
-        45.0
-    } else {
-        0.0
-    }
 }
 
 #[cfg(test)]

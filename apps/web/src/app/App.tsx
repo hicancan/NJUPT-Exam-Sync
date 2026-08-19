@@ -1,8 +1,10 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useMemo } from 'react';
 import { useAppRouter } from '@/app/routing/useAppRouter';
 import { HomePage } from '@/home/HomePage';
 import { AppFooter } from '@/app/shell/AppFooter';
 import { Header } from '@/app/shell/Header';
+import { SearchClient } from '@njupt-search/search-browser';
+import { APP_CONFIG } from '@/app/config/constants';
 
 const SearchPage = lazy(() => import('@/search/SearchPage').then(module => ({ default: module.SearchPage })));
 const ExamPage = lazy(() => import('@/exams/ExamPage').then(module => ({ default: module.ExamPage })));
@@ -20,6 +22,15 @@ function RouteLoading() {
 
 function App() {
     const router = useAppRouter();
+    const searchClient = useMemo(() => new SearchClient({
+        baseUrl: APP_CONFIG.DATA_URLS.SEARCH,
+    }), []);
+    useEffect(() => () => searchClient.dispose(), [searchClient]);
+    const warmSearch = () => {
+        void searchClient.initialize().catch(() => {
+            // SearchPage presents initialization errors and can retry this client.
+        });
+    };
 
     return (
         <div className="min-h-screen flex flex-col bg-white dark:bg-[#202124] text-[#202124] dark:text-[#e8eaed] transition-colors duration-200 font-sans">
@@ -35,14 +46,20 @@ function App() {
             {router.route === 'home' ? (
                 <HomePage
                     inputValue={router.inputValue}
-                    onQuickSearch={router.onQuickSearch}
+                    onQuickSearch={(intent) => {
+                        if (intent.kind === 'search') warmSearch();
+                        router.onQuickSearch(intent);
+                    }}
                     onInputChange={router.onInputChange}
                     onSubmit={router.onSubmit}
+                    onSearchWarm={warmSearch}
                 />
             ) : null}
 
             <Suspense fallback={<RouteLoading />}>
-                {router.route === 'search' ? <SearchPage query={router.search.query} /> : null}
+                {router.route === 'search' ? (
+                    <SearchPage query={router.search.query} client={searchClient} />
+                ) : null}
 
                 {router.route === 'exam' ? (
                     <ExamPage

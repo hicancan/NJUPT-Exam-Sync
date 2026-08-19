@@ -9,6 +9,6 @@ pub use bundle::{
 };
 pub use document::{Attachment, DocumentKind, IndexDocument};
 pub use query::{
-    FilterOption, FilterOptions, Query, SearchAttachment, SearchEngine, SearchFacet, SearchFilters,
-    SearchResponse, SearchResult, SortMode,
+    FilterOption, FilterOptions, Query, QueryPlan, QueryPreparation, SearchAttachment,
+    SearchEngine, SearchFacet, SearchFilters, SearchResponse, SearchResult, SortMode,
 };

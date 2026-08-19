@@ -3,7 +3,7 @@ import { useSearch } from './model/useSearch';
 import { SearchResultsSkeleton } from './ui/SearchResultsSkeleton';
 import { SearchSection } from './ui/SearchSection';
 import { InlineErrorBanner } from '@/shared/ui/InlineErrorBanner';
-import type { SearchFilters, SortMode } from '@njupt-search/search-browser';
+import type { SearchClient, SearchFilters, SortMode } from '@njupt-search/search-browser';
 import { APP_CONFIG } from '@/app/config/constants';
 import {
     dateFilters,
@@ -12,14 +12,23 @@ import {
 
 interface SearchPageProps {
     query: string;
+    client: SearchClient;
 }
 
-export function SearchPage({ query }: SearchPageProps) {
+export function SearchPage({ query, client }: SearchPageProps) {
     const trimmedQuery = query.trim();
     const enabled = trimmedQuery.length >= 2;
     const [sortMode, setSortMode] = useState<SortMode>('relevance');
     const [filters, setFilters] = useState<SearchFilters>({});
     const [datePreset, setDatePreset] = useState<SearchDatePreset>('all');
+    const paginationKey = JSON.stringify([trimmedQuery, sortMode, filters]);
+    const [pagination, setPagination] = useState({
+        key: paginationKey,
+        limit: APP_CONFIG.SEARCH_RESULT_LIMIT,
+    });
+    const limit = pagination.key === paginationKey
+        ? pagination.limit
+        : APP_CONFIG.SEARCH_RESULT_LIMIT;
     const {
         response,
         searching,
@@ -29,11 +38,12 @@ export function SearchPage({ query }: SearchPageProps) {
         loading: indexLoading,
         initError,
     } = useSearch(
+        client,
         trimmedQuery,
         enabled,
         sortMode,
         filters,
-        APP_CONFIG.SEARCH_RESULT_LIMIT,
+        limit,
     );
 
     if (enabled && indexLoading) {
@@ -62,6 +72,10 @@ export function SearchPage({ query }: SearchPageProps) {
                     setDatePreset(preset);
                     setFilters(previous => ({ ...previous, ...dateFilters(preset) }));
                 }}
+                onLoadMore={() => setPagination({
+                    key: paginationKey,
+                    limit: Math.min(limit + 10, 100),
+                })}
             />
         </main>
     );

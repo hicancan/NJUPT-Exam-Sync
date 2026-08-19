@@ -8,18 +8,19 @@ export type QuickSearchIcon =
 
 export interface QuickSearchPreset {
     label: string;
-    query: string;
     icon: QuickSearchIcon;
+    intent: ProductIntent;
 }
 
 export const QUICK_SEARCHES: QuickSearchPreset[] = [
-    { label: '考试安排', query: '考试安排', icon: 'calendar' },
-    { label: '考试占用教室', query: '考试占用教室', icon: 'waypoints' },
-    { label: '校历', query: '校历', icon: 'calendar' },
-    { label: '四六级', query: '四六级', icon: 'file-text' },
-    { label: '计算机等级', query: '计算机等级', icon: 'file-text' },
-    { label: '普通话', query: '普通话考试', icon: 'file-text' },
-    { label: '比赛报名', query: '竞赛报名', icon: 'trophy' },
-    { label: '奖学金', query: '奖学金', icon: 'trophy' },
-    { label: '大创', query: '大创', icon: 'trophy' },
+    { label: '考试安排', icon: 'calendar', intent: { kind: 'exam' } },
+    { label: '考试占用教室', icon: 'waypoints', intent: { kind: 'rooms' } },
+    { label: '校历', icon: 'calendar', intent: { kind: 'search', query: '校历' } },
+    { label: '四六级', icon: 'file-text', intent: { kind: 'search', query: '四六级' } },
+    { label: '计算机等级', icon: 'file-text', intent: { kind: 'search', query: '计算机等级' } },
+    { label: '普通话', icon: 'file-text', intent: { kind: 'search', query: '普通话考试' } },
+    { label: '比赛报名', icon: 'trophy', intent: { kind: 'search', query: '竞赛报名' } },
+    { label: '奖学金', icon: 'trophy', intent: { kind: 'search', query: '奖学金' } },
+    { label: '大创', icon: 'trophy', intent: { kind: 'search', query: '大创' } },
 ];
+import type { ProductIntent } from '@/app/routing/intents';
