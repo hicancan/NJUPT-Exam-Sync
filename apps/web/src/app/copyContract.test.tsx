@@ -7,6 +7,7 @@ import { SearchStatus } from '@/search/ui/SearchStatus';
 import { SearchSection } from '@/search/ui/SearchSection';
 import { ThemeToggle } from '@/shared/ui/ThemeToggle';
 import { resultSummary } from '@/search/ui/searchLabels';
+import { HomePage } from '@/home/HomePage';
 
 describe('product copy contract', () => {
     it('describes search results without exposing ranking internals', () => {
@@ -61,7 +62,22 @@ describe('product copy contract', () => {
         expect(html).not.toContain('Android APK');
     });
 
-    it('keeps temporary task reports out of the README', () => {
+    it('keeps the home page focused on search without a subtitle', () => {
+        const html = renderToStaticMarkup(
+            <HomePage
+                inputValue=""
+                onQuickSearch={() => undefined}
+                onInputChange={() => undefined}
+                onSubmit={() => undefined}
+                onSearchWarm={() => undefined}
+                onIntentWarm={() => undefined}
+            />,
+        );
+        expect(html).toContain('njupt-search');
+        expect(html).not.toContain('南邮通知、考试安排和考试教室，都可以直接查。');
+    });
+
+    it('keeps the README focused on the product and reusable local commands', () => {
         const readme = readFileSync(resolve(process.cwd(), 'README.md'), 'utf8');
         for (const phrase of [
             '本轮完成了',
@@ -74,8 +90,11 @@ describe('product copy contract', () => {
         ]) {
             expect(readme).not.toContain(phrase);
         }
-        expect(readme).toContain('不用先猜信息在哪个网站');
-        expect(readme).toContain('不知道通知发在哪个网站，也没关系。');
+        expect(readme).toContain('南京邮电大学校园信息搜索');
+        expect(readme).toContain('这个项目没有后端的搜索 API');
+        expect(readme).toContain("$corpusPath = 'D:\\path\\to\\njupt-corpus'");
+        expect(readme).not.toContain('可以分享、刷新，也能正常前进和后退');
+        expect(readme).not.toContain('为速度和可靠性做的选择');
     });
 
     it('uses concise Chinese metadata for installation and sharing', () => {
@@ -87,6 +106,7 @@ describe('product copy contract', () => {
 
         expect(manifest.lang).toBe('zh-CN');
         expect(manifest.description).toBe('搜索南邮通知，查询考试安排和考试教室。');
-        expect(index).toContain('南邮通知、考试安排和考试教室，都可以直接查。');
+        expect(index).toContain('搜索南邮网站的通知和附件，查询班级考试安排与考试教室。');
+        expect(index).not.toContain('南邮通知、考试安排和考试教室，都可以直接查。');
     });
 });

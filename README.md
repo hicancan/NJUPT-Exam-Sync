@@ -4,222 +4,160 @@
 
 # njupt-search
 
-### 把散落在南邮各网站里的通知、附件、考试和教室信息，放进一个好用的入口。
+南京邮电大学校园信息搜索
 
 [![在线使用](https://img.shields.io/badge/在线使用-njupt.hicancan.top-4f46e5?style=for-the-badge)](https://njupt.hicancan.top)
 [![CI](https://img.shields.io/github/actions/workflow/status/hicancan/njupt-search/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/hicancan/njupt-search/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/hicancan/njupt-search?style=for-the-badge)](https://github.com/hicancan/njupt-search/releases/latest)
 [![License](https://img.shields.io/github/license/hicancan/njupt-search?style=for-the-badge)](LICENSE)
 
-[**在线使用**](https://njupt.hicancan.top) ·
-[**Android 安装包**](https://github.com/hicancan/njupt-search/releases/latest/download/njupt-search-latest.apk) ·
-[**架构文档**](docs/architecture.md) ·
-[**参与项目**](#一起完善它)
+[在线使用](https://njupt.hicancan.top) ·
+[Android 安装包](https://github.com/hicancan/njupt-search/releases/latest/download/njupt-search-latest.apk) ·
+[架构文档](docs/architecture.md)
 
 </div>
 
 ---
 
-## 不用先猜信息在哪个网站
+南邮的通知散落在学校主站以及各个学院、部门网站里，有些关键信息甚至藏在 PDF、Word 或 Excel 附件中。`njupt-search` 将这些内容汇总成了一个支持全文检索的入口，同时附带了班级考试安排和空闲教室查询功能。
 
-南邮的信息很多，但通知、政策、办事流程和附件分散在学校主站、职能部门与各个
-学院的网站里。想找一条信息，常常得先猜发布部门，再翻栏目、网页和附件。
+## 功能
 
-不知道通知发在哪个网站，也没关系。输入关键词，njupt-search 会从已经整理好的
-学校站点信息中找到相关内容，并保留原始来源和日期。班级考试安排、日历导出和
-考试教室查询也在这里，不必在几个入口之间来回切换。
+- **校园搜索**：检索各校区网页与附件，支持按来源、类型和时间过滤。
+- **考试安排**：输入班级号即可查看考试时间、地点，支持导出 ICS 日历。
+- **考试教室**：按日期、校区、楼栋和楼层，查询考场占用情况。
+- **Web 与 Android**：直接在浏览器中使用，也提供 Android 安装包。
 
-目前线上收录超过 **2.2 万条信息**，覆盖学校主站、学院和职能部门等 **15 个
-来源**。项目持续更新，但每条结果仍以学校原始页面和正式发布的数据为准。
+直接打开：
 
-## 现在就用
+- [校园搜索](https://njupt.hicancan.top/)
+- [考试安排](https://njupt.hicancan.top/#/exam)
+- [考试教室](https://njupt.hicancan.top/#/rooms)
 
-| 想做什么 | 直接打开 |
-| --- | --- |
-| 搜索通知、政策、办事流程和附件 | [全校信息搜索](https://njupt.hicancan.top/) |
-| 按班级查看考试时间、地点和考场 | [考试安排](https://njupt.hicancan.top/#/exam) |
-| 按日期、校区、楼栋和楼层查看考试占用 | [考试教室查询](https://njupt.hicancan.top/#/rooms) |
+> 注：搜索结果会保留原始网页链接和发布日期。教室页面仅反映教务处的“考试占用”数据，不代表日常上课或临时借用的情况。
 
-网站支持桌面端和移动端，也可以安装
-[Android 版本](https://github.com/hicancan/njupt-search/releases/latest/download/njupt-search-latest.apk)。
-搜索、考试和教室页面都有明确链接，可以分享、刷新，也能正常前进和后退。
+## 搜索如何工作
 
-## 它能做什么
+这个项目没有后端的搜索 API。在构建阶段，校园语料会被预编译为自定义的二进制切片（`SearchBundle`）。用户搜索时，浏览器会按需拉取对应的倒排表和正文，**搜索词永远留在本地，不会发给任何服务器**。
 
-- 搜索南邮各网站的正文与附件，并按来源、类型和时间筛选；
-- 输入班级号查看考试安排，选择课程后导出 ICS 日历；
-- 输入楼栋或教室号，查看不同日期和楼层的考试占用；
-- 在桌面浏览器、手机浏览器和 Android 中使用同一套功能；
-- 从搜索结果回到学校原始页面，核对完整通知与附件。
+分词、召回、打分和摘要生成全部在 [`search/core`](search/core) 里用 Rust 实现。不仅本地的命令行工具调这套代码，网页端也通过 WebAssembly 原封不动地跑这套逻辑，确保了 Native 和 Web 两端搜索规则的绝对一致。至于 HTTP 请求、浏览器缓存和 Worker 调度，则交由 `search/browser` 处理。
 
-## 数据从哪里来
+为了兼顾速度，搜索结果会瞬间渲染出标题和来源，等对应的正文切片下载完毕后，再补上高亮摘要（补充摘要的过程不会导致列表重新排序，避免画面跳动）。具体的数据格式、缓存策略和部署方式，可以参考 [架构文档](docs/architecture.md)。
 
-校园搜索使用显式构建的学校站点语料。通用的网站发现与内容提取由
-[`static-site-graph`](https://github.com/hicancan/static-site-graph) 完成，
-[`njupt-site-graph`](https://github.com/hicancan/njupt-site-graph) 负责南邮站点配置
-并产出统一语料，本仓库再把语料编译成浏览器可用的搜索数据。
+## 数据
 
-考试安排来自当前考试数据快照；考试教室由同一份考试安排和经过校验的教室目录
-生成。页面会展示真实来源和更新时间。教室页面只反映**考试占用**，不包含全部
-课程、活动或临时借用，因此“没有考试占用记录”不等于教室在现实中一定空闲。
-
-njupt-search 不是南京邮电大学官方服务，也不会把第三方搜索结果包装成学校官方
-信息。涉及报名、考试和办事要求时，请回到结果指向的学校原始页面核对。
-
-## 为速度和可靠性做的选择
-
-全文检索在浏览器里的 Rust / WebAssembly 搜索引擎中完成，项目不设置接收搜索
-关键词的在线查询接口。Native 与 Web 共用同一套搜索语义，避免两端结果漂移；
-浏览器按需获取本次查询需要的数据，只为当前展示的结果补充摘要。
-
-搜索、考试和教室数据均以可校验的静态文件发布，并使用内容寻址和浏览器缓存。
-这样既能放在普通 CDN 上，也能在数据更新后明确切换版本。完整的检索流程、数据
-格式、缓存边界和部署方式见 [架构文档](docs/architecture.md)。
-
-## 项目组成
+网页抓取、站点配置和最终的搜索展示，被拆分在了三个仓库中：
 
 ```text
-南邮各网站
-    │
-    ├─ static-site-graph   发现网站并提取内容
-    ├─ njupt-site-graph    整理南邮站点语料
-    └─ njupt-search        构建索引，提供搜索、考试和教室页面
+static-site-graph  爬虫，负责抓取和解析网页
+        ↓ SitePackage
+njupt-site-graph   南邮专属配置，清洗并导出统一语料
+        ↓ NjuptCorpusSnapshot
+njupt-search       构建 SearchBundle 索引，提供 Web / Android 页面
 ```
 
-本仓库按产品职责组织：
+前两步爬虫和清洗工作分别由 [`static-site-graph`](https://github.com/hicancan/static-site-graph) 和 [`njupt-site-graph`](https://github.com/hicancan/njupt-site-graph) 负责。
+
+考试编排数据会被单独编译为 `ExamSnapshot`，再由此派生出考试教室数据 `RoomOccupancy`。本仓库源码里不包含任何真实的校园语料或生成好的数据文件，部署时脚本会把这三类产物组装成一个纯静态站点。
+
+## 目录
 
 ```text
 njupt-search/
 ├── apps/
-│   ├── web/          # React Web 应用
-│   └── android/      # Android TWA
+│   ├── web/          React 前端
+│   └── android/      Android TWA 套壳
 ├── search/
-│   ├── core/         # Rust 搜索语义与 SearchBundle
-│   ├── native/       # 索引构建、命令行查询和性能入口
-│   ├── wasm/         # Rust core 的 WebAssembly 接口
-│   └── browser/      # Worker、按需加载与缓存
+│   ├── core/         Rust 搜索引擎核心与 SearchBundle 定义
+│   ├── native/       命令行构建器、查询和 Benchmark
+│   ├── wasm/         WebAssembly FFI 接口
+│   └── browser/      浏览器端的 Worker、网络切片拉取与缓存
 ├── academics/
-│   ├── exam/         # 考试数据、班级查询与 ICS 导出
-│   └── room/         # 教室目录与考试占用
-├── benchmarks/       # 搜索质量、一致性和性能基准
-├── ops/              # 构建、验证与 Web 组装脚本
-└── docs/             # 架构与数据格式
+│   ├── exam/         考试数据清洗、班级查询与 ICS 导出
+│   └── room/         教室目录和考试占用
+├── benchmarks/       搜索质量与性能基准测试
+├── ops/              各种构建、验证和 Web 组装脚本
+└── docs/             架构与数据格式设计文档
 ```
-
-搜索语义只存在于 `search/core`，Native 与 WASM 共用它；Web 负责页面、Worker、
-缓存和数据编排。考试与教室数据由 `academics` 生成，不在 React 中硬编码。
 
 ## 本地开发
 
-### 环境要求
-
-- Node.js 24
-- Rust stable、`wasm32-unknown-unknown` 和 `wasm-pack`
-- Python 3.10+ 与 `uv`
-
-安装依赖并运行快速检查：
+环境依赖：Node.js 24、Rust stable (`wasm32-unknown-unknown` target、`wasm-pack`) 以及 Python 3.12 (`uv`)。
 
 ```powershell
 npm ci
+uv venv
 uv sync --extra test
 .\ops\test.ps1 -Mode quick
 ```
 
-### 构建搜索数据
+### 构建数据
 
-源码仓库不保存语料和生成后的索引。使用外部 `NjuptCorpusSnapshot` 构建：
+你需要先在本地指定外部语料和构建产物的存放路径：
+
+```powershell
+$corpusPath = 'D:\path\to\njupt-corpus'
+$dataPath = 'D:\path\to\njupt-search-data'
+$bundlePath = "$dataPath\search-bundle"
+$examPath = "$dataPath\exam-snapshot"
+$roomPath = "$dataPath\room-occupancy"
+```
+
+构建倒排索引：
 
 ```powershell
 .\ops\build-search-bundle.ps1 `
-  -CorpusPath D:\Data\njupt-refactor\corpus-current `
-  -BundlePath D:\Data\njupt-refactor\njupt-search-current\search-bundle
+  -CorpusPath $corpusPath `
+  -BundlePath $bundlePath
 ```
 
-### 构建考试与教室数据
+构建考试和教室数据快照：
 
 ```powershell
 uv run python -m academics.exam discover `
-  --output D:\Data\njupt-refactor\njupt-search-current\exam-source.json
+  --output "$dataPath\exam-source.json"
 
 .\ops\build-academics.ps1 `
-  -SourcePath D:\Data\njupt-refactor\njupt-search-current\exam-source.json `
-  -MaterializedPath D:\Data\njupt-refactor\njupt-search-current\exam-materialized `
-  -CachePath D:\Cache\njupt-search\exam-source `
-  -ExamOutputPath D:\Data\njupt-refactor\njupt-search-current\exam-snapshot `
-  -RoomOutputPath D:\Data\njupt-refactor\njupt-search-current\room-occupancy `
+  -SourcePath "$dataPath\exam-source.json" `
+  -MaterializedPath "$dataPath\exam-materialized" `
+  -CachePath "$dataPath\exam-cache" `
+  -ExamOutputPath $examPath `
+  -RoomOutputPath $roomPath `
   -RoomCatalogPath .\academics\room\catalog\njupt-room-catalog.json
 ```
 
-### 正式组装 Web 页面
-
-普通 `vite build` 不包含生产数据。正式页面通过组装脚本把三类数据放进同一份
-静态站点：
+常规的 `vite build` 是不包含上面这些产物的。如果需要预览完整的 Web 页面，必须使用组装脚本：
 
 ```powershell
 .\ops\assemble-web.ps1 `
-  -SearchBundlePath D:\Data\njupt-refactor\njupt-search-current\search-bundle `
-  -ExamSnapshotPath D:\Data\njupt-refactor\njupt-search-current\exam-snapshot `
-  -RoomOccupancyPath D:\Data\njupt-refactor\njupt-search-current\room-occupancy `
-  -StagePath D:\Temp\njupt-search\stage `
-  -DistPath D:\Temp\njupt-search\dist
+  -SearchBundlePath $bundlePath `
+  -ExamSnapshotPath $examPath `
+  -RoomOccupancyPath $roomPath `
+  -StagePath "$dataPath\web-stage" `
+  -DistPath "$dataPath\web-dist"
 ```
 
-开发服务器也应使用组装目录中的静态文件：
-
-```powershell
-$env:NJUPT_SEARCH_WEB_PUBLIC_DIR = 'D:\Temp\njupt-search\stage\public'
-$env:VITE_NJUPT_SEARCH_ARTIFACT_URL = '/generated/search'
-$env:VITE_NJUPT_EXAM_ARTIFACT_URL = '/generated/exam'
-$env:VITE_NJUPT_ROOM_ARTIFACT_URL = '/generated/rooms'
-npm run dev -- --host 127.0.0.1
-```
-
-## 质量与验证
-
-项目持续检查 Rust 搜索核心、Web、考试和教室数据之间的一致性。常用入口如下：
+### 测试
 
 ```powershell
 npm test
 npm run typecheck
 npm run lint
-
-node benchmarks\search\quality.mjs `
-  --bundle D:\Data\njupt-refactor\njupt-search-current\search-bundle
-node benchmarks\search\relevance.mjs `
-  --bundle D:\Data\njupt-refactor\njupt-search-current\search-bundle
-node benchmarks\search\consistency.mjs `
-  --bundle D:\Data\njupt-refactor\njupt-search-current\search-bundle
-node benchmarks\search\monotonicity.mjs `
-  --bundle D:\Data\njupt-refactor\njupt-search-current\search-bundle
 ```
 
-质量基准覆盖常用搜索入口、筛选前后结果一致性、Native / WASM 一致性和真实数据回归。
-测试用于守住长期行为，不在 README 中保存某一次构建或部署的临时成绩。
+如果你想跑搜索质量测试，需要提供一份已构建好的 `SearchBundle`：
 
-## 自动更新
-
-校园语料与考试数据分别构建，部署时再组合：
-
-```text
-NjuptCorpusSnapshot → SearchBundle
-ExamSourceDescriptor → ExamSnapshot → RoomOccupancy
+```powershell
+node benchmarks\search\quality.mjs --bundle $bundlePath
+node benchmarks\search\relevance.mjs --bundle $bundlePath
+node benchmarks\search\monotonicity.mjs --bundle $bundlePath
+node benchmarks\search\consistency.mjs --bundle $bundlePath
 ```
 
-构建结果发布到 GHCR。数据更新后，GitHub Actions 会读取三份明确的数据产物，
-重新组装网站并部署。Git Tags 和 GitHub Releases 用于软件版本与 Android 安装包，
-不用于保存滚动更新的校园语料。
+## 参与开发
 
-## 一起完善它
+如果你搜不到某条通知、发现排序很怪，或者考试数据报错，欢迎提 Issue。提问时最好能带上搜索关键词、页面链接和你预期看到的结果，这样方便大家复现排查。如果你准备提交代码修改搜索规则或数据格式，请先花点时间过一遍 [架构文档](docs/architecture.md)，并在提交前跑通所有测试。
 
-如果你发现搜索结果不准确、来源缺失、考试或教室数据异常，欢迎提交 Issue，并附上
-查询词、页面链接和你预期看到的内容。代码改动请先运行与改动范围相符的测试；涉及
-搜索语义、数据格式或部署边界时，也请同步阅读 [架构文档](docs/architecture.md)。
+## 许可协议
 
-清楚的问题描述、可复现的例子和小而完整的改动，都很有价值。
-
-## 说明与许可
-
-- 本项目不是南京邮电大学官方服务，请以学校和各部门正式发布的信息为准；
-- 校园网站与教务数据的相关权利归原发布方所有；
-- 项目用于学习、研究和非商业的校园信息服务；
-- 源代码采用 [AGPL-3.0](LICENSE) 许可。
+本项目源码采用 [AGPL-3.0](LICENSE) 许可。`njupt-search` 并非南京邮电大学官方服务，所有涉及报名、考试等关键信息的办事要求，请一律以结果链接指向的学校原文为准。
