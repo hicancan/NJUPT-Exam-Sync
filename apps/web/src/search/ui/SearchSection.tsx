@@ -25,6 +25,7 @@ interface SearchSectionProps {
     filters: SearchFilters;
     datePreset: SearchDatePreset;
     filterOptions: FilterOptions | null;
+    canLoadMore: boolean;
     onSortModeChange: (sortMode: SortMode) => void;
     onFiltersChange: (patch: SearchFilters) => void;
     onDatePresetChange: (preset: SearchDatePreset) => void;
@@ -52,6 +53,7 @@ export function SearchSection({
     filters,
     datePreset,
     filterOptions,
+    canLoadMore,
     onSortModeChange,
     onFiltersChange,
     onDatePresetChange,
@@ -94,7 +96,7 @@ export function SearchSection({
                     {results.map(document => (
                         <SearchResultCard key={document.id} document={document} />
                     ))}
-                    {results.length < (response?.totalCandidates ?? 0) ? (
+                    {canLoadMore ? (
                         <div className="pt-4 pb-2 text-center">
                             <button
                                 type="button"

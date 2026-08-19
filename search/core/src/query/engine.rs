@@ -11,6 +11,7 @@ use crate::document::{DocumentKind, DocumentMeta, Posting};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 const PARTIAL_FALLBACK_FLOOR: usize = 20;
+const MAX_QUERY_LIMIT: usize = 1_000;
 
 pub struct SearchEngine {
     documents: Vec<DocumentMeta>,
@@ -250,8 +251,10 @@ impl SearchEngine {
         if normalize_text(&request.query).chars().count() < 2 {
             return Err("query must contain at least two normalized characters".to_string());
         }
-        if !(1..=100).contains(&request.limit) {
-            return Err("query limit must be between 1 and 100".to_string());
+        if !(1..=MAX_QUERY_LIMIT).contains(&request.limit) {
+            return Err(format!(
+                "query limit must be between 1 and {MAX_QUERY_LIMIT}"
+            ));
         }
         if request
             .filters

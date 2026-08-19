@@ -504,3 +504,34 @@ fn canonical_reposts_preserve_filter_monotonicity_after_deduplication() {
         .collect::<BTreeSet<_>>();
     assert!(source_keys.is_subset(&all_keys));
 }
+
+#[test]
+fn query_plan_can_page_beyond_the_old_one_hundred_result_ui_cap() {
+    let values = (0..101)
+        .map(|index| IndexDocument {
+            id: format!("page-{index}"),
+            source: "source".to_string(),
+            source_name: "来源".to_string(),
+            url: format!("https://page.example.test/{index}"),
+            title: format!("第{index}项肖甫工作动态"),
+            content: "肖甫参加活动".to_string(),
+            published_at: Some("2026-01-01".to_string()),
+            updated_at: None,
+            section: Some("新闻".to_string()),
+            kind: DocumentKind::Page,
+            tags: vec![],
+            attachments: vec![],
+        })
+        .collect();
+    let bundle = compile_search_bundle(values, &"a".repeat(64)).expect("compile");
+    let response = engine(&bundle)
+        .search(&Query {
+            query: "肖甫".to_string(),
+            limit: 101,
+            sort: SortMode::Relevance,
+            filters: Default::default(),
+        })
+        .expect("search");
+    assert_eq!(response.total_candidates, 101);
+    assert_eq!(response.results.len(), 101);
+}

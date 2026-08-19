@@ -66,6 +66,11 @@ export function SearchPage({ query, client }: SearchPageProps) {
                 filters={filters}
                 datePreset={datePreset}
                 filterOptions={filterOptions}
+                canLoadMore={Boolean(
+                    response
+                    && response.results.length < response.totalCandidates
+                    && limit < APP_CONFIG.SEARCH_RESULT_MAX
+                )}
                 onSortModeChange={setSortMode}
                 onFiltersChange={(patch) => setFilters(previous => ({ ...previous, ...patch }))}
                 onDatePresetChange={(preset) => {
@@ -74,7 +79,7 @@ export function SearchPage({ query, client }: SearchPageProps) {
                 }}
                 onLoadMore={() => setPagination({
                     key: paginationKey,
-                    limit: Math.min(limit + 10, 100),
+                    limit: Math.min(limit + 10, APP_CONFIG.SEARCH_RESULT_MAX),
                 })}
             />
         </main>
