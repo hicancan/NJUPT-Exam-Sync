@@ -111,6 +111,7 @@ manifest 读取并行进行，再加载文档目录和词典。查询时只取�
 | 查询测试 | 156 条 |
 | Native 查询 P50 / P95 | 约 5.4 ms / 16.7 ms |
 | 七个首页全文入口 | Top-1 全部满足意图，Top-10 无重复 URL |
+| 生产浏览器验收 | [两条产品入口、七个搜索入口及冷/热 A/B 均通过](benchmarks/search/browser-production-audit-2026-08-19.md) |
 
 以上数据来自 2026 年 8 月 19 日的固定完整语料重建，后续会随语料更新而变化。
 
@@ -241,6 +242,15 @@ npm run dev -- --host 127.0.0.1
 
 ```powershell
 node benchmarks\search\quality.mjs `
+  --bundle D:\Data\njupt-refactor\njupt-search-current\search-bundle
+
+node benchmarks\search\relevance.mjs `
+  --bundle D:\Data\njupt-refactor\njupt-search-current\search-bundle
+
+node benchmarks\search\consistency.mjs `
+  --bundle D:\Data\njupt-refactor\njupt-search-current\search-bundle
+
+node benchmarks\search\monotonicity.mjs `
   --bundle D:\Data\njupt-refactor\njupt-search-current\search-bundle
 ```
 

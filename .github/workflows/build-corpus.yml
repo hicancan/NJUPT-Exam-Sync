@@ -105,6 +105,10 @@ jobs:
             -BundlePath "$env:RUNNER_TEMP/search-bundle"
           node benchmarks/search/quality.mjs `
             --bundle "$env:RUNNER_TEMP/search-bundle"
+          node benchmarks/search/relevance.mjs `
+            --bundle "$env:RUNNER_TEMP/search-bundle"
+          node benchmarks/search/monotonicity.mjs `
+            --bundle "$env:RUNNER_TEMP/search-bundle"
 
       - name: Publish SearchBundle and update artifact pointers
         env:
@@ -230,6 +234,8 @@ jobs:
         shell: pwsh
         run: |
           npm run build:wasm:web
+          node benchmarks/search/consistency.mjs `
+            --bundle "$env:RUNNER_TEMP/search-bundle"
           ./ops/assemble-web.ps1 `
             -SearchBundlePath "$env:RUNNER_TEMP/search-bundle" `
             -ExamSnapshotPath exam-snapshot `

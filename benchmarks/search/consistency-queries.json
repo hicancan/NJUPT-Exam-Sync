@@ -24,5 +24,25 @@
       "publishedTo": "2026-12-31",
       "includeUndated": false
     }
+  },
+  {
+    "query": "肖甫",
+    "limit": 100,
+    "sort": "relevance",
+    "filters": {}
+  },
+  {
+    "query": "肖甫",
+    "limit": 100,
+    "sort": "relevance",
+    "filters": {
+      "sourceId": "scie"
+    }
+  },
+  {
+    "query": "肖甫",
+    "limit": 100,
+    "sort": "date_desc",
+    "filters": {}
   }
 ]

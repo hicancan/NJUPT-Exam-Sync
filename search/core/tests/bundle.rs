@@ -1,7 +1,8 @@
 use njupt_search_core::{
     compile_search_bundle, Attachment, CompiledBundle, DocumentKind, IndexDocument, Query,
-    SearchEngine,
+    SearchEngine, SearchFacet, SortMode,
 };
+use std::collections::BTreeSet;
 
 fn documents() -> Vec<IndexDocument> {
     vec![
@@ -91,6 +92,81 @@ fn engine(bundle: &CompiledBundle) -> SearchEngine {
             .expect("content");
     }
     engine
+}
+
+fn candidate_contract_documents() -> Vec<IndexDocument> {
+    let mut values = Vec::new();
+    for index in 0..5 {
+        values.push(IndexDocument {
+            id: format!("title-{index}"),
+            source: "source-a".to_string(),
+            source_name: "来源 A".to_string(),
+            url: format!("https://a.example.test/{index}"),
+            title: format!("肖甫参加第{index}场校务活动"),
+            content: "活动报道".to_string(),
+            published_at: Some(format!("2026-07-{:02}", index + 1)),
+            updated_at: None,
+            section: Some("新闻".to_string()),
+            kind: if index == 4 {
+                DocumentKind::External
+            } else {
+                DocumentKind::Page
+            },
+            tags: vec![],
+            attachments: vec![],
+        });
+    }
+    for index in 0..9 {
+        values.push(IndexDocument {
+            id: format!("body-{index}"),
+            source: "source-b".to_string(),
+            source_name: "来源 B".to_string(),
+            url: format!("https://b.example.test/{index}"),
+            title: if index < 3 {
+                format!("第{index}场考试工作动态")
+            } else {
+                format!("第{index}场学院工作动态")
+            },
+            content: "会议由肖甫主持并作总结".to_string(),
+            published_at: Some(format!("2026-08-{:02}", index + 1)),
+            updated_at: None,
+            section: Some("通知公告".to_string()),
+            kind: DocumentKind::Page,
+            tags: vec![],
+            attachments: vec![],
+        });
+    }
+    values
+}
+
+fn request(query: &str) -> Query {
+    Query {
+        query: query.to_string(),
+        limit: 100,
+        sort: SortMode::Relevance,
+        filters: Default::default(),
+    }
+}
+
+fn urls(response: &njupt_search_core::SearchResponse) -> BTreeSet<&str> {
+    response
+        .results
+        .iter()
+        .map(|result| result.url.as_str())
+        .collect()
+}
+
+fn presentation_identity(result: &njupt_search_core::SearchResult) -> String {
+    let title = result
+        .title
+        .strip_prefix('【')
+        .and_then(|rest| rest.find('】').map(|end| &rest[end + '】'.len_utf8()..]))
+        .unwrap_or(&result.title)
+        .trim();
+    format!(
+        "{}\u{1f}{title}",
+        result.published_at.as_deref().unwrap_or("")
+    )
 }
 
 #[test]
@@ -245,4 +321,186 @@ fn result_page_does_not_repeat_same_day_department_reposts() {
             .count(),
         1
     );
+}
+
+#[test]
+fn complete_body_matches_survive_title_matches_and_source_filtering_is_monotone() {
+    let bundle =
+        compile_search_bundle(candidate_contract_documents(), &"a".repeat(64)).expect("compile");
+    let engine = engine(&bundle);
+    let all = engine.search(&request("肖甫")).expect("all sources");
+    assert_eq!(all.total_candidates, 14);
+
+    let mut source_request = request("肖甫");
+    source_request.filters.source_id = Some("source-b".to_string());
+    let source = engine.search(&source_request).expect("source B");
+    assert_eq!(source.total_candidates, 9);
+    assert!(urls(&source).is_subset(&urls(&all)));
+    assert!(all.results[0].title.contains("肖甫"));
+    assert_eq!(
+        source
+            .results
+            .iter()
+            .filter(|result| result.title.contains("肖甫"))
+            .count(),
+        0
+    );
+}
+
+#[test]
+fn date_facet_and_sort_only_narrow_or_reorder_the_stable_candidate_set() {
+    let bundle =
+        compile_search_bundle(candidate_contract_documents(), &"a".repeat(64)).expect("compile");
+    let engine = engine(&bundle);
+    let all = engine.search(&request("肖甫")).expect("all");
+
+    let mut dated_request = request("肖甫");
+    dated_request.filters.published_from = Some("2026-08-01".to_string());
+    let dated = engine.search(&dated_request).expect("date filter");
+    assert!(urls(&dated).is_subset(&urls(&all)));
+
+    let mut facet_request = request("肖甫");
+    facet_request.filters.facet = Some(SearchFacet::Exam);
+    let faceted = engine.search(&facet_request).expect("facet filter");
+    assert_eq!(faceted.total_candidates, 3);
+    assert!(urls(&faceted).is_subset(&urls(&all)));
+
+    let mut date_sort_request = request("肖甫");
+    date_sort_request.sort = SortMode::DateDesc;
+    let date_sorted = engine.search(&date_sort_request).expect("date sort");
+    assert_eq!(date_sorted.total_candidates, all.total_candidates);
+    assert_eq!(urls(&date_sorted), urls(&all));
+    assert_ne!(
+        date_sorted
+            .results
+            .iter()
+            .map(|result| &result.id)
+            .collect::<Vec<_>>(),
+        all.results
+            .iter()
+            .map(|result| &result.id)
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn filters_cannot_reenable_partial_fallback_candidates() {
+    let mut values = Vec::new();
+    for index in 0..20 {
+        values.push(IndexDocument {
+            id: format!("complete-{index}"),
+            source: "complete".to_string(),
+            source_name: "完整匹配来源".to_string(),
+            url: format!("https://complete.example.test/{index}"),
+            title: format!("第{index}项工作通知"),
+            content: "项目申报工作".to_string(),
+            published_at: Some("2025-01-01".to_string()),
+            updated_at: None,
+            section: Some("通知公告".to_string()),
+            kind: DocumentKind::Page,
+            tags: vec![],
+            attachments: vec![],
+        });
+    }
+    for index in 0..5 {
+        values.push(IndexDocument {
+            id: format!("partial-{index}"),
+            source: "partial".to_string(),
+            source_name: "局部匹配来源".to_string(),
+            url: format!("https://partial.example.test/{index}"),
+            title: format!("第{index}项考试安排"),
+            content: "项目进展".to_string(),
+            published_at: Some("2026-01-01".to_string()),
+            updated_at: None,
+            section: Some("考试通知".to_string()),
+            kind: DocumentKind::Page,
+            tags: vec![],
+            attachments: vec![],
+        });
+    }
+    let bundle = compile_search_bundle(values, &"a".repeat(64)).expect("compile");
+    let engine = engine(&bundle);
+    let all = engine.search(&request("项目申报")).expect("all");
+    assert_eq!(all.total_candidates, 20);
+
+    let mut source_request = request("项目申报");
+    source_request.filters.source_id = Some("partial".to_string());
+    assert_eq!(
+        engine
+            .search(&source_request)
+            .expect("source")
+            .total_candidates,
+        0
+    );
+
+    let mut date_request = request("项目申报");
+    date_request.filters.published_from = Some("2026-01-01".to_string());
+    assert_eq!(
+        engine.search(&date_request).expect("date").total_candidates,
+        0
+    );
+
+    let mut facet_request = request("项目申报");
+    facet_request.filters.facet = Some(SearchFacet::Exam);
+    assert_eq!(
+        engine
+            .search(&facet_request)
+            .expect("facet")
+            .total_candidates,
+        0
+    );
+}
+
+#[test]
+fn canonical_reposts_preserve_filter_monotonicity_after_deduplication() {
+    let values = vec![
+        IndexDocument {
+            id: "repost-a".to_string(),
+            source: "source-a".to_string(),
+            source_name: "来源 A".to_string(),
+            url: "https://a.example.test/repost".to_string(),
+            title: "【实践科】肖甫竞赛报名通知".to_string(),
+            content: "肖甫竞赛报名通知".to_string(),
+            published_at: Some("2026-05-25".to_string()),
+            updated_at: None,
+            section: Some("通知公告".to_string()),
+            kind: DocumentKind::Page,
+            tags: vec![],
+            attachments: vec![],
+        },
+        IndexDocument {
+            id: "repost-b".to_string(),
+            source: "source-b".to_string(),
+            source_name: "来源 B".to_string(),
+            url: "https://b.example.test/repost".to_string(),
+            title: "肖甫竞赛报名通知".to_string(),
+            content: "肖甫竞赛报名通知".to_string(),
+            published_at: Some("2026-05-25".to_string()),
+            updated_at: None,
+            section: Some("通知公告".to_string()),
+            kind: DocumentKind::Page,
+            tags: vec![],
+            attachments: vec![],
+        },
+    ];
+    let bundle = compile_search_bundle(values, &"a".repeat(64)).expect("compile");
+    let engine = engine(&bundle);
+    let all = engine.search(&request("肖甫")).expect("all");
+    assert_eq!(all.total_candidates, 1);
+
+    let mut source_request = request("肖甫");
+    source_request.filters.source_id = Some("source-b".to_string());
+    let source = engine.search(&source_request).expect("source B");
+    assert_eq!(source.total_candidates, 1);
+    let all_keys = all
+        .results
+        .iter()
+        .map(presentation_identity)
+        .collect::<BTreeSet<_>>();
+    let source_keys = source
+        .results
+        .iter()
+        .map(presentation_identity)
+        .collect::<BTreeSet<_>>();
+    assert!(source_keys.is_subset(&all_keys));
 }

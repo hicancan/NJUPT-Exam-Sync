@@ -11,7 +11,6 @@ use crate::document::{DocumentKind, DocumentMeta, Posting};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 const PARTIAL_FALLBACK_FLOOR: usize = 20;
-const DIRECT_TITLE_FLOOR: usize = 5;
 
 pub struct SearchEngine {
     documents: Vec<DocumentMeta>,
@@ -96,8 +95,10 @@ fn presentation_title_key(value: &str) -> String {
     without_department.trim().to_string()
 }
 
-/// The exact, stable ordering for one query. Callers may page and hydrate it,
-/// but cannot observe or reinterpret ranking scores.
+/// The exact, stable ordering for one query and its filters. Candidate
+/// admission is decided before filters are applied, so narrowing a query can
+/// only remove canonical results. Callers may page and hydrate the plan, but
+/// cannot observe or reinterpret ranking scores.
 pub struct QueryPlan {
     query: String,
     total_candidates: usize,
@@ -396,14 +397,11 @@ impl SearchEngine {
                 continue;
             };
             for posting in postings {
-                let Some(document) = self.documents.get(posting.document as usize) else {
+                if self.documents.get(posting.document as usize).is_none() {
                     return Err(format!(
                         "posting references missing document: {}",
                         posting.document
                     ));
-                };
-                if !Self::matches_filters(document, request) {
-                    continue;
                 }
                 let slot = &mut states[posting.document as usize];
                 if slot.is_none() {
@@ -446,25 +444,21 @@ impl SearchEngine {
             })
             .collect();
 
-        let direct_title_matches = ranked
-            .iter()
-            .filter(|candidate| candidate.tier.relevance_band() == 5)
-            .count();
-        let title_matches = ranked
-            .iter()
-            .filter(|candidate| candidate.tier >= MatchTier::AllTitleTerms)
-            .count();
+        // Candidate admission is a property of the analyzed query, never of
+        // the selected source, facet, date range, or sort mode. Complete and
+        // minimum-coverage matches are always admitted. Partial matches are a
+        // fallback only when the unfiltered query has too few stronger
+        // candidates; filters cannot turn that fallback on or off.
         let minimum_matches = ranked
             .iter()
             .filter(|candidate| candidate.tier >= MatchTier::MinimumShouldMatch)
             .count();
-        if direct_title_matches >= DIRECT_TITLE_FLOOR {
-            ranked.retain(|candidate| candidate.tier.relevance_band() == 5);
-        } else if analysis.normalized.chars().count() == 2 && title_matches >= 2 {
-            ranked.retain(|candidate| candidate.tier >= MatchTier::AllTitleTerms);
-        } else if minimum_matches >= PARTIAL_FALLBACK_FLOOR {
+        if minimum_matches >= PARTIAL_FALLBACK_FLOOR {
             ranked.retain(|candidate| candidate.tier >= MatchTier::MinimumShouldMatch);
         }
+        ranked.retain(|candidate| {
+            Self::matches_filters(&self.documents[candidate.document as usize], request)
+        });
 
         match request.sort {
             SortMode::Relevance => ranked.sort_by(|left, right| {

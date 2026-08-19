@@ -50,6 +50,10 @@ fn build(args: &[String]) -> Result<()> {
 
 fn query(args: &[String]) -> Result<()> {
     let bundle = PathBuf::from(argument(args, "--bundle")?);
+    let offset = argument(args, "--offset")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(0);
     let request = if let Ok(value) = argument(args, "--request-json") {
         serde_json::from_str::<Query>(&value).context("invalid --request-json")?
     } else {
@@ -66,7 +70,13 @@ fn query(args: &[String]) -> Result<()> {
         }
     };
     let (_manifest, engine) = load_engine(&bundle)?;
-    let response = engine.search(&request).map_err(anyhow::Error::msg)?;
+    let preparation = engine.begin_query(&request).map_err(anyhow::Error::msg)?;
+    let plan = engine
+        .plan_query(&preparation)
+        .map_err(anyhow::Error::msg)?;
+    let response = engine
+        .hydrate_results(&plan, offset, request.limit)
+        .map_err(anyhow::Error::msg)?;
     println!("{}", serde_json::to_string_pretty(&response)?);
     Ok(())
 }

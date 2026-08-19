@@ -64,12 +64,20 @@ for (const query of queries) {
     const wasmResponse = JSON.parse(wasm.hydrate_search(0, query.limit));
     wasm.free();
 
+    if (nativeResponse.totalCandidates !== wasmResponse.totalCandidates) {
+        throw new Error(`${query.query}: Native and WASM candidate totals differ`);
+    }
     const nativeIds = nativeResponse.results.map(result => result.id);
     const wasmIds = wasmResponse.results.map(result => result.id);
     if (JSON.stringify(nativeIds) !== JSON.stringify(wasmIds)) {
         throw new Error(`${query.query}: Native and WASM result order differ`);
     }
-    reports.push({ query, result_count: nativeIds.length, ids: nativeIds });
+    reports.push({
+        query,
+        total_candidates: nativeResponse.totalCandidates,
+        result_count: nativeIds.length,
+        ids: nativeIds,
+    });
 }
 
 process.stdout.write(`${JSON.stringify({ passed: reports.length, reports }, null, 2)}\n`);
