@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { examSnapshotIdentityText } from '@njupt-search/academics-exam/snapshot';
 import type { ExamSnapshotManifest } from '@njupt-search/academics-exam/snapshot';
-import { ExamSnapshotClient } from './useExamData';
+import { ExamSnapshotClient } from './ExamSnapshotClient';
 
 const encode = (value: unknown) => JSON.stringify(value);
 const sha256 = async (value: string): Promise<string> => {
@@ -84,12 +84,24 @@ describe('ExamSnapshotClient', () => {
             ...manifestWithoutIdentity,
             snapshot_id: await sha256(examSnapshotIdentityText(manifestWithoutIdentity))
         };
-        const manifestText = encode(manifest);
-        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+        let manifestText = encode(manifest);
+        let delayClassChunk = false;
+        const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
             const url = String(input);
             if (url.includes('manifest.json')) return new Response(manifestText);
             if (url.includes('class-index.json')) return new Response(indexText);
-            if (url.includes('classes-000.json')) return new Response(chunkText);
+            if (url.includes('classes-000.json')) {
+                if (delayClassChunk) {
+                    return await new Promise<Response>((_resolve, reject) => {
+                        if (init?.signal?.aborted) {
+                            reject(new DOMException('aborted', 'AbortError'));
+                            return;
+                        }
+                        init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')), { once: true });
+                    });
+                }
+                return new Response(chunkText);
+            }
             return new Response('missing', { status: 404 });
         });
         vi.stubGlobal('fetch', fetchMock);
@@ -97,11 +109,41 @@ describe('ExamSnapshotClient', () => {
         const client = new ExamSnapshotClient('https://artifact.test/exam');
         const detail = await client.search('B240402', null);
         const empty = await client.search('B', null);
+        await client.search('B240402', null);
 
         expect(detail.classMode.exams).toEqual([exam]);
         expect(empty.classMode.mode).toBe('EMPTY');
         expect(fetchMock.mock.calls.filter(call => String(call[0]).includes('manifest.json'))).toHaveLength(1);
         expect(fetchMock.mock.calls.filter(call => String(call[0]).includes('class-index.json'))).toHaveLength(1);
         expect(fetchMock.mock.calls.filter(call => String(call[0]).includes('classes-000.json'))).toHaveLength(1);
+        expect(String(fetchMock.mock.calls.find(call => String(call[0]).includes('class-index.json'))?.[0]))
+            .toContain(`/exam/${manifest.snapshot_id}/class-index.json`);
+        expect(String(fetchMock.mock.calls.find(call => String(call[0]).includes('classes-000.json'))?.[0]))
+            .toContain(`/exam/${manifest.snapshot_id}/classes-000.json`);
+
+        const updatedManifestWithoutIdentity: ExamSnapshotManifest = {
+            ...manifestWithoutIdentity,
+            source_updated_at: '2026-06-11T08:14:13+00:00',
+        };
+        const updatedManifest = {
+            ...updatedManifestWithoutIdentity,
+            snapshot_id: await sha256(examSnapshotIdentityText(updatedManifestWithoutIdentity)),
+        };
+        manifestText = encode(updatedManifest);
+        await expect(client.refresh()).resolves.toMatchObject({
+            manifest: { snapshot_id: updatedManifest.snapshot_id },
+        });
+        expect(client.snapshotId).toBe(updatedManifest.snapshot_id);
+
+        const latestClient = new ExamSnapshotClient('https://artifact.test/exam');
+        await latestClient.initialize();
+        delayClassChunk = true;
+        const older = latestClient.search('B240402', null);
+        await Promise.resolve();
+        const newer = latestClient.search('B', null);
+        await expect(older).rejects.toMatchObject({ name: 'AbortError' });
+        await expect(newer).resolves.toMatchObject({ classMode: { mode: 'EMPTY' } });
+        latestClient.dispose();
+        client.dispose();
     });
 });

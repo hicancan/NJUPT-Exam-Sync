@@ -8,7 +8,7 @@ import {
     resolveRoomTarget,
     roomsForFloor,
 } from '@njupt-search/academics-room';
-import { loadRoomFloorOccupancy, loadRoomOccupancy } from './roomData';
+import type { RoomOccupancyClient } from './RoomOccupancyClient';
 import type {
     Room,
     RoomArtifactRef,
@@ -58,7 +58,7 @@ type RoomSelection =
     | { error: string }
     | null;
 
-export function useRoomOccupancy(input: UseRoomOccupancyInput): RoomOccupancyState {
+export function useRoomOccupancy(client: RoomOccupancyClient, input: UseRoomOccupancyInput): RoomOccupancyState {
     const [indexState, setIndexState] = useState<{
         data: RoomOccupancy | null;
         error: string | null;
@@ -72,7 +72,7 @@ export function useRoomOccupancy(input: UseRoomOccupancyInput): RoomOccupancySta
 
     useEffect(() => {
         const controller = new AbortController();
-        loadRoomOccupancy(controller.signal)
+        client.initialize(controller.signal)
             .then((data) => setIndexState({ data, error: null, loaded: true }))
             .catch((err) => {
                 if (err instanceof DOMException && err.name === 'AbortError') return;
@@ -80,7 +80,7 @@ export function useRoomOccupancy(input: UseRoomOccupancyInput): RoomOccupancySta
                 setIndexState({ data: null, error: err instanceof Error ? err.message : '无法加载教室占用索引', loaded: true });
             });
         return () => controller.abort();
-    }, []);
+    }, [client]);
 
     const index = indexState.data;
     const roomTarget = useMemo(
@@ -122,7 +122,7 @@ export function useRoomOccupancy(input: UseRoomOccupancyInput): RoomOccupancySta
         if (!index || !selected) return;
         if (!('artifact' in selected) || !selected.artifact) return;
         const controller = new AbortController();
-        loadRoomFloorOccupancy(selected.artifact, index, controller.signal)
+        client.loadFloor(selected.artifact, index, controller.signal)
             .then((data) => setFloorState({ path: selected.artifact?.path || null, data, error: null }))
             .catch((err) => {
                 if (err instanceof DOMException && err.name === 'AbortError') return;
@@ -130,7 +130,7 @@ export function useRoomOccupancy(input: UseRoomOccupancyInput): RoomOccupancySta
                 setFloorState({ path: selected.artifact?.path || null, data: null, error: err instanceof Error ? err.message : '无法加载楼层占用数据' });
             });
         return () => controller.abort();
-    }, [index, selected]);
+    }, [client, index, selected]);
 
     const selectedPath = selected && 'artifact' in selected ? selected.artifact?.path || null : null;
     const currentFloorData = selectedPath && floorState.path === selectedPath ? floorState.data : null;

@@ -19,6 +19,7 @@ interface HomePageProps {
     onInputChange: (value: string) => void;
     onSubmit: (value: string) => void;
     onSearchWarm: () => void;
+    onIntentWarm: (intent: ProductIntent) => void;
 }
 
 export function HomePage({
@@ -27,6 +28,7 @@ export function HomePage({
     onInputChange,
     onSubmit,
     onSearchWarm,
+    onIntentWarm,
 }: HomePageProps) {
     return (
         <main className="flex-1 px-4">
@@ -57,6 +59,9 @@ export function HomePage({
                                 key={item.label}
                                 type="button"
                                 onClick={() => onQuickSearch(item.intent)}
+                                onPointerEnter={() => onIntentWarm(item.intent)}
+                                onPointerDown={() => onIntentWarm(item.intent)}
+                                onFocus={() => onIntentWarm(item.intent)}
                                 className="inline-flex items-center gap-2 h-10 px-4 rounded-full border border-[#dadce0] dark:border-[#3c4043] bg-white dark:bg-[#202124] text-sm text-[#3c4043] dark:text-[#e8eaed] hover:border-[#8ab4f8] transition-colors"
                             >
                                 <Icon className="w-4 h-4" aria-hidden="true" />

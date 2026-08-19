@@ -143,6 +143,19 @@ manifest 拥有 `snapshot_id`、`source_id`、`records_id`、上游更新时间�
 class chunk；浏览器初始化一次 manifest/index，之后只加载目标班级所在块。
 当前没有持久的多个快照输入，因此不生成历史 artifact 或历史 UI。
 
+Web 交付不改变上述领域格式，但把稳定发现入口与不可变内容分开：
+
+```text
+/generated/exam/manifest.json
+/generated/exam/<snapshot_id>/exams.json
+/generated/exam/<snapshot_id>/class-index.json
+/generated/exam/<snapshot_id>/classes-*.json
+```
+
+稳定 manifest 每次冷启动允许重新验证；它引用的 artifact 在部署层统一加入
+`snapshot_id`，使用一年 immutable 缓存。浏览器仍按领域 manifest 的原始
+`path`、`bytes` 和 `sha256` 严格校验，不存在旧稳定路径副本或 fallback。
+
 `RoomCatalog` 是校区、楼宇、楼层、教室和必要 alias 的唯一事实源；源 JSON
 不保存派生 key。Python 编译器稳定派生 room/floor key。TypeScript 只先识别
 房间查询意图，最终目标必须用 RoomOccupancy 携带的 catalog 投影解析。
@@ -151,6 +164,17 @@ class chunk；浏览器初始化一次 manifest/index，之后只加载目标班
 `occupancy_id`、输入 `exam_snapshot_id`、`room_catalog_id`、rooms、floors、
 dates，以及每个 date/floor 文件的路径、大小和哈希。普通无法解析地点只作为
 CLI 诊断；已经解析为教室却不在 catalog 时构建失败。诊断不是生产 artifact。
+
+RoomOccupancy 使用相同的稳定指针/不可变内容契约：
+
+```text
+/generated/rooms/manifest.json
+/generated/rooms/<occupancy_id>/floors/*.json
+```
+
+manifest 重新验证当前 `occupancy_id`；floor artifact 只按当前日期和楼层加载，
+不预取完整分片。组装器验证输入的精确文件集合，并且只写出稳定 manifest 与
+identity 子目录。
 
 日历能力位于 `academics/exam/calendar.ts`，只把公开 ExamRecord 转换为 ICS。
 Python 拥有 ExamSnapshot 和 RoomOccupancy 写出；每种 artifact 在 TypeScript
@@ -167,6 +191,31 @@ Python 拥有 ExamSnapshot 和 RoomOccupancy 写出；每种 artifact 在 TypeSc
 Worker → WASM → Rust core 完成统一搜索；不存在热词结果、独立排名或 UI
 fallback。
 
+产品路由把“进入产品”和“恢复状态”分开：`#/exam`、`#/rooms` 永远表示可分享、
+可刷新且不含本地历史的 landing；`class`、`q`、`room`、`campus/building/floor`
+参数才表示详情。首页主按钮始终进入 landing，保存的班级或教室只通过 landing
+中的“继续查看”次级按钮暴露。`考试安排` 输入直接进入 `#/exam`，不再把
+`q=考试安排` 当内部哨兵。
+
+Exam 与 Rooms landing 是初始 App bundle 中的小型静态产品壳，不等待页面详情
+模块或业务 artifact；Rooms 在壳出现后才补充校区、楼栋、教室数和日期数。
+详情页面继续 lazy load，首页按钮的 pointerenter、focus 和 pointerdown 会并行
+预载详情模块与对应 manifest/index。
+
+三个浏览器客户端都由 App 显式创建并在卸载时 dispose：
+
+```text
+App
+├── SearchClient
+├── ExamSnapshotClient
+└── RoomOccupancyClient
+```
+
+Exam/Room 客户端在同一 SPA 会话中复用 manifest、class index、已访问班级 chunk
+和已访问 floor；显式 refresh 发现 identity 改变时清除旧 identity 缓存。调用者
+的 AbortSignal 只取消该次等待，最新详情/楼层请求会取消旧请求，初始化预热则由
+App 生命周期拥有，避免页面切换破坏可复用状态。
+
 ```text
 CorpusSnapshot -> SearchBundle
 ExamSourceDescriptor -> ExamSnapshot -> RoomOccupancy
@@ -179,6 +228,13 @@ SearchBundle + ExamSnapshot + RoomOccupancy + static Web source
 路径并排列生产入口；workflow 只负责云端下载、重试和调用相同入口。生成物
 不写回源码树。benchmark 可以读取生产输出并判断质量，生产代码不知道
 benchmark 期望。
+
+EdgeOne Pages 对稳定 Academics manifest 使用 `no-cache, max-age=0,
+must-revalidate`，对 identity 路径使用 `public, max-age=31536000, immutable`。
+传输压缩采用 EdgeOne 对 `application/json` 的原生 Brotli/Gzip 智能压缩，浏览器
+原生解压后再执行领域大小与 SHA-256 校验；仓库不生成无人消费的 `.br` 副本，
+也不在业务代码中引入第二套压缩格式。边缘首次 Miss 可能先返回原文，缓存命中后
+按客户端 `Accept-Encoding` 返回 Brotli/Gzip，这是 CDN 层而不是领域格式语义。
 
 云端同样保持这两个生产事务独立。`Build Corpus Artifact` 把 SearchBundle
 作为按内容寻址的 OCI artifact 发布；`Build Academics Artifact` 把

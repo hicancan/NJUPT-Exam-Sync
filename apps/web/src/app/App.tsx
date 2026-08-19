@@ -5,10 +5,18 @@ import { AppFooter } from '@/app/shell/AppFooter';
 import { Header } from '@/app/shell/Header';
 import { SearchClient } from '@njupt-search/search-browser';
 import { APP_CONFIG } from '@/app/config/constants';
+import { ExamSnapshotClient } from '@/exams/model/ExamSnapshotClient';
+import { RoomOccupancyClient } from '@/rooms/model/RoomOccupancyClient';
+import type { ProductIntent } from '@/app/routing/intents';
+import { ExamLanding } from '@/exams/ExamLanding';
+import { RoomsLanding } from '@/rooms/RoomsLanding';
 
-const SearchPage = lazy(() => import('@/search/SearchPage').then(module => ({ default: module.SearchPage })));
-const ExamPage = lazy(() => import('@/exams/ExamPage').then(module => ({ default: module.ExamPage })));
-const RoomsPage = lazy(() => import('@/rooms/RoomsPage').then(module => ({ default: module.RoomsPage })));
+const loadSearchPage = () => import('@/search/SearchPage').then(module => ({ default: module.SearchPage }));
+const loadExamPage = () => import('@/exams/ExamPage').then(module => ({ default: module.ExamPage }));
+const loadRoomsPage = () => import('@/rooms/RoomsPage').then(module => ({ default: module.RoomsPage }));
+const SearchPage = lazy(loadSearchPage);
+const ExamPage = lazy(loadExamPage);
+const RoomsPage = lazy(loadRoomsPage);
 
 function RouteLoading() {
     return (
@@ -25,10 +33,34 @@ function App() {
     const searchClient = useMemo(() => new SearchClient({
         baseUrl: APP_CONFIG.DATA_URLS.SEARCH,
     }), []);
-    useEffect(() => () => searchClient.dispose(), [searchClient]);
+    const examClient = useMemo(() => new ExamSnapshotClient(APP_CONFIG.DATA_URLS.EXAM), []);
+    const roomClient = useMemo(() => new RoomOccupancyClient(APP_CONFIG.DATA_URLS.ROOM), []);
+    useEffect(() => () => {
+        searchClient.dispose();
+        examClient.dispose();
+        roomClient.dispose();
+    }, [examClient, roomClient, searchClient]);
     const warmSearch = () => {
+        void loadSearchPage();
         void searchClient.initialize().catch(() => {
             // SearchPage presents initialization errors and can retry this client.
+        });
+    };
+    const warmIntent = (intent: ProductIntent) => {
+        if (intent.kind === 'search') {
+            warmSearch();
+            return;
+        }
+        if (intent.kind === 'exam') {
+            void loadExamPage();
+            void examClient.initialize().catch(() => {
+                // ExamPage presents artifact errors and can retry through navigation.
+            });
+            return;
+        }
+        void loadRoomsPage();
+        void roomClient.initialize().catch(() => {
+            // RoomsPage presents artifact errors and can retry through navigation.
         });
     };
 
@@ -47,12 +79,13 @@ function App() {
                 <HomePage
                     inputValue={router.inputValue}
                     onQuickSearch={(intent) => {
-                        if (intent.kind === 'search') warmSearch();
+                        warmIntent(intent);
                         router.onQuickSearch(intent);
                     }}
                     onInputChange={router.onInputChange}
                     onSubmit={router.onSubmit}
                     onSearchWarm={warmSearch}
+                    onIntentWarm={warmIntent}
                 />
             ) : null}
 
@@ -62,24 +95,44 @@ function App() {
                 ) : null}
 
                 {router.route === 'exam' ? (
-                    <ExamPage
-                        query={router.exam.query}
-                        className={router.exam.className}
-                        onOpenClass={(className) => router.onSubmit(className)}
-                    />
+                    !router.exam.query && !router.exam.className ? (
+                        <ExamLanding
+                            savedClass={router.exam.savedClass}
+                            onSubmit={router.onSubmit}
+                            onOpenClass={(className) => router.onSubmit(className)}
+                            client={examClient}
+                        />
+                    ) : (
+                        <ExamPage
+                            query={router.exam.query}
+                            className={router.exam.className}
+                            onOpenClass={(className) => router.onSubmit(className)}
+                            client={examClient}
+                        />
+                    )
                 ) : null}
 
                 {router.route === 'rooms' ? (
-                    <RoomsPage
-                        query={router.rooms.query}
-                        date={router.rooms.date}
-                        campus={router.rooms.campus}
-                        building={router.rooms.building}
-                        floor={router.rooms.floor}
-                        start={router.rooms.start}
-                        end={router.rooms.end}
-                        onChange={router.navigateRooms}
-                    />
+                    !router.rooms.query && !router.rooms.campus && !router.rooms.building && !router.rooms.floor ? (
+                        <RoomsLanding
+                            client={roomClient}
+                            savedRoom={router.rooms.savedRoom}
+                            onChange={router.navigateRooms}
+                            onSubmit={router.onSubmit}
+                        />
+                    ) : (
+                        <RoomsPage
+                            query={router.rooms.query}
+                            date={router.rooms.date}
+                            campus={router.rooms.campus}
+                            building={router.rooms.building}
+                            floor={router.rooms.floor}
+                            start={router.rooms.start}
+                            end={router.rooms.end}
+                            onChange={router.navigateRooms}
+                            client={roomClient}
+                        />
+                    )
                 ) : null}
             </Suspense>
 

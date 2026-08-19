@@ -6,6 +6,7 @@ import { useRoomOccupancy } from './model/useRoomOccupancy';
 import { RoomDateFilter } from './ui/RoomDateFilter';
 import type { RoomBookingGroup } from '@njupt-search/academics-room';
 import type { Room, RoomBooking } from '@njupt-search/academics-room';
+import type { RoomOccupancyClient } from './model/RoomOccupancyClient';
 
 interface RoomsPageProps {
     query: string;
@@ -16,6 +17,7 @@ interface RoomsPageProps {
     start: string | null;
     end: string | null;
     onChange: (params: Record<string, string | null>, replace?: boolean) => void;
+    client: RoomOccupancyClient;
 }
 
 const DAY_START = 8 * 60;
@@ -167,8 +169,8 @@ function RoomTimeline({ room, bookings }: { room: Room; bookings: RoomBooking[] 
     );
 }
 
-export function RoomsPage({ query, date, campus, building, floor, start, end, onChange }: RoomsPageProps) {
-    const state = useRoomOccupancy({ query, date, campus, building, floor, start, end });
+export function RoomsPage({ query, date, campus, building, floor, start, end, onChange, client }: RoomsPageProps) {
+    const state = useRoomOccupancy(client, { query, date, campus, building, floor, start, end });
     const index = state.index;
     const rooms = state.rooms;
     const bookingsByRoom = new Map<string, RoomBooking[]>();
@@ -347,7 +349,13 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
                                 {selectedDateHasAnyBooking ? '该楼层当天没有考试占用记录，当前教室按空闲显示。' : '当天没有考试占用记录，当前教室按空闲显示。'}
                             </div>
                         ) : null}
-                        {hasTimeWindow ? (
+                        {state.loading ? (
+                            <div className="space-y-2" aria-live="polite">
+                                <div className="text-[13px] text-[#5f6368] dark:text-[#bdc1c6]">正在加载当前楼层占用数据…</div>
+                                <div className="h-16 animate-pulse rounded-lg bg-[#edf2f7] dark:bg-[#303134]" aria-hidden="true" />
+                                <div className="h-16 animate-pulse rounded-lg bg-[#edf2f7] dark:bg-[#303134]" aria-hidden="true" />
+                            </div>
+                        ) : hasTimeWindow ? (
                             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                                 {rooms.map(room => (
                                     <RoomCard

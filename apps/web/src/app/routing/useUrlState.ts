@@ -20,15 +20,15 @@ interface NavigateOptions {
     params?: Record<string, string | null>;
 }
 
-const routeFromHashPath = (path: string): AppRoute => {
+export const routeFromHashPath = (path: string): AppRoute => {
     if (path === '/search') return 'search';
     if (path === '/exam') return 'exam';
     if (path === '/rooms') return 'rooms';
     return 'home';
 };
 
-const readUrlState = (): UrlState => {
-    const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : '';
+export const parseHashState = (hashValue: string): UrlState => {
+    const hash = hashValue.startsWith('#') ? hashValue.slice(1) : hashValue;
     const [hashPath = '/', hashSearch = ''] = hash.split('?');
     const hashParams = new URLSearchParams(hashSearch);
     const route = routeFromHashPath(hashPath || '/');
@@ -47,15 +47,19 @@ const readUrlState = (): UrlState => {
     };
 };
 
-const buildHash = ({ route, params = {} }: NavigateOptions): string => {
-    if (route === 'home') return window.location.pathname;
+const readUrlState = (): UrlState => parseHashState(window.location.hash);
+
+export const buildHashPath = ({ route, params = {} }: NavigateOptions): string => {
+    if (route === 'home') return '';
     const nextParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
         if (value) nextParams.set(key, value);
     });
     const query = nextParams.toString();
-    return `${window.location.pathname}#/${route}${query ? `?${query}` : ''}`;
+    return `#/${route}${query ? `?${query}` : ''}`;
 };
+
+const buildHash = (options: NavigateOptions): string => `${window.location.pathname}${buildHashPath(options)}`;
 
 export function useUrlState() {
     const [state, setState] = useState<UrlState>(() => readUrlState());
