@@ -57,7 +57,8 @@ describe('product copy contract', () => {
     it('keeps meaningful project status and uses a natural download label', () => {
         const html = renderToStaticMarkup(<><ThemeToggle /><AppFooter /></>);
         expect(html).toContain('已运行');
-        expect(html).toContain('Android 安装包');
+        expect(html).toContain('Android');
+        expect(html).not.toContain('Android 安装包');
         expect(html).toContain('alt="访问量"');
         expect(html).toContain('aria-label="切换到深色模式"');
         expect(html).not.toContain('Android APK');
