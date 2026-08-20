@@ -9,6 +9,12 @@ from .model import ExamDataError, normalize_text
 
 
 IDENTITY_FIELDS = ("class_name", "course_code", "course_name", "teacher")
+HISTORY_IDENTITY_FIELDS = (
+    "exam_period_id",
+    "class_name",
+    "course_code",
+    "course_name",
+)
 CONTENT_FIELDS = (
     "exam_period_id",
     "class_name",
@@ -47,6 +53,24 @@ def _business_identity(record: dict[str, Any]) -> str:
     return "\u001f".join(
         normalize_text(record.get(field)).lower() for field in IDENTITY_FIELDS
     )
+
+
+def history_identity(record: dict[str, Any]) -> str:
+    """Return the stable logical-exam identity used by ExamHistory.
+
+    One class/course can be split into several source rows for different rooms,
+    teachers, or student counts.  Those rows intentionally share one history
+    identity so any of those mutable scheduling fields can be compared without
+    fuzzy record pairing.
+    """
+
+    identity = "\u001f".join(
+        normalize_text(record.get(field)).lower()
+        for field in HISTORY_IDENTITY_FIELDS
+    )
+    if any(not normalize_text(record.get(field)) for field in HISTORY_IDENTITY_FIELDS):
+        raise ExamDataError("Cannot assign ExamHistory identity with missing fields")
+    return "history-" + _digest(identity)[:20]
 
 
 def _source_order(record: dict[str, Any]) -> tuple[str, int]:
@@ -90,6 +114,7 @@ def canonicalize_exam_records(records: list[dict[str, Any]]) -> list[dict[str, A
         for fingerprint_text in sorted(grouped[identity]):
             source_rows = sorted(grouped[identity][fingerprint_text], key=_source_order)
             record = _normalized_record(source_rows[0])
+            record["history_key"] = history_identity(record)
             record["content_fingerprint"] = _digest(fingerprint_text)
             record["id"] = "exam-" + _digest(identity + "\u001f" + fingerprint_text)[:20]
             records_for_identity.append(record)

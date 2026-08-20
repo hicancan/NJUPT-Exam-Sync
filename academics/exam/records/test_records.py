@@ -5,6 +5,7 @@ import pytest
 from academics.exam.records.model import ExamDataError
 from academics.exam.records.extract import process_single_file
 from academics.exam.snapshot.build import get_source_updated_at, publish_exam_artifacts
+from academics.exam.records.identity import canonicalize_exam_records
 
 
 def test_process_single_file_fails_fast_on_corrupt_xlsx(tmp_path):
@@ -47,3 +48,32 @@ def test_source_updated_at_is_explicit_and_timezone_aware():
         get_source_updated_at({})
     with pytest.raises(ExamDataError):
         get_source_updated_at({"source_updated_at": "2026-06-10T10:06:41"})
+
+
+def test_history_key_groups_split_rows_without_using_mutable_schedule_fields():
+    base = {
+        "exam_period_id": "2025-2026-2",
+        "class_name": "B240402",
+        "course_name": "算法分析与设计",
+        "course_code": "JS113400S",
+        "teacher": "张三",
+        "campus": "仙林",
+        "location": "教2-313",
+        "raw_time": "2026年07月01日(08:00-09:50)",
+        "count": 30,
+        "start_timestamp": "2026-07-01T08:00:00+08:00",
+        "end_timestamp": "2026-07-01T09:50:00+08:00",
+        "duration_minutes": 110,
+        "date": "2026-07-01",
+        "notes": "",
+        "_source_file": "schedule.xlsx",
+        "_row_index": 2,
+    }
+    records = canonicalize_exam_records([
+        base,
+        {**base, "teacher": "李四", "location": "教2-314", "_row_index": 3},
+    ])
+
+    assert len(records) == 2
+    assert len({record["history_key"] for record in records}) == 1
+    assert len({record["stable_key"] for record in records}) == 2

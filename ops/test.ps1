@@ -10,6 +10,7 @@ param(
     [string]$ExamMaterializedPath,
     [string]$ExamCachePath,
     [string]$ExamSnapshotPath,
+    [string]$ExamHistoryPath,
     [string]$RoomOccupancyPath,
     [string]$RoomCatalogPath,
     [string]$WebStagePath,
@@ -70,6 +71,7 @@ try {
             ExamMaterializedPath = $ExamMaterializedPath
             ExamCachePath = $ExamCachePath
             ExamSnapshotPath = $ExamSnapshotPath
+            ExamHistoryPath = $ExamHistoryPath
             RoomOccupancyPath = $RoomOccupancyPath
             RoomCatalogPath = $RoomCatalogPath
             WebStagePath = $WebStagePath
@@ -98,17 +100,20 @@ try {
             -MaterializedPath $ExamMaterializedPath `
             -CachePath $ExamCachePath `
             -ExamOutputPath $ExamSnapshotPath `
+            -HistoryOutputPath $ExamHistoryPath `
             -RoomOutputPath $RoomOccupancyPath `
             -RoomCatalogPath $RoomCatalogPath
         Invoke-Checked {
             npm run academics:validate -- `
                 --exam $ExamSnapshotPath `
+                --history $ExamHistoryPath `
                 --room $RoomOccupancyPath
         } 'Academics producer/consumer validation failed'
 
         & (Join-Path $PSScriptRoot 'assemble-web.ps1') `
             -SearchBundlePath $BundlePath `
             -ExamSnapshotPath $ExamSnapshotPath `
+            -ExamHistoryPath $ExamHistoryPath `
             -RoomOccupancyPath $RoomOccupancyPath `
             -StagePath $WebStagePath `
             -DistPath $WebDistPath

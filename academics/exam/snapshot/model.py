@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from ..records.model import ExamDataError
+from ..records.identity import history_identity
 
 EXAM_SNAPSHOT_FORMAT = "njupt-exam-snapshot"
 CLASS_INDEX_FORMAT = "njupt-exam-class-index"
@@ -30,6 +31,7 @@ EXAM_PERIOD_FIELDS = {"id", "academic_year", "term_number", "term_label"}
 EXAM_RECORD_FIELDS = {
     "id",
     "stable_key",
+    "history_key",
     "content_fingerprint",
     "exam_period_id",
     "class_name",
@@ -230,6 +232,8 @@ def load_exam_snapshot(snapshot_dir: Path) -> ExamSnapshot:
         raise ExamDataError("ExamSnapshot total_records does not match exams.json")
     if any(not isinstance(record, dict) or set(record) != EXAM_RECORD_FIELDS for record in records):
         raise ExamDataError("ExamSnapshot contains an invalid exam record")
+    if any(record.get("history_key") != history_identity(record) for record in records):
+        raise ExamDataError("ExamSnapshot contains an invalid history_key")
     record_ids = [record["id"] for record in records]
     if (
         any(not isinstance(record_id, str) or not record_id for record_id in record_ids)

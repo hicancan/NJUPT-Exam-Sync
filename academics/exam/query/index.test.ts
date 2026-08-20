@@ -12,6 +12,7 @@ import {
 const exam = (id: string, className: string, courseName = '算法分析与设计'): Exam => ({
     id,
     stable_key: `${className}\u001f${courseName}\u001f${id}`,
+    history_key: `history-${className}-${courseName}`,
     content_fingerprint: id.padEnd(64, '0').slice(0, 64),
     exam_period_id: '2025-2026-2',
     campus: '仙林',

@@ -1,15 +1,21 @@
 import { CalendarDays } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import type { ExamSnapshotClient } from './model/ExamSnapshotClient';
+import type { ExamHistoryClient } from './model/ExamHistoryClient';
+
+const ExamHistoryLanding = lazy(() => import('./ExamHistoryLanding').then(module => ({
+    default: module.ExamHistoryLanding,
+})));
 
 interface ExamLandingProps {
     savedClass: string | null;
     onSubmit: (value: string) => void;
     onOpenClass: (className: string) => void;
     client: ExamSnapshotClient;
+    historyClient: ExamHistoryClient | null;
 }
 
-export function ExamLanding({ savedClass, onSubmit, onOpenClass, client }: ExamLandingProps) {
+export function ExamLanding({ savedClass, onSubmit, onOpenClass, client, historyClient }: ExamLandingProps) {
     const [classInput, setClassInput] = useState('');
     useEffect(() => {
         const controller = new AbortController();
@@ -65,6 +71,11 @@ export function ExamLanding({ savedClass, onSubmit, onOpenClass, client }: ExamL
                         </button>
                     ) : null}
                 </div>
+                {historyClient ? (
+                    <Suspense fallback={null}>
+                        <ExamHistoryLanding client={historyClient} />
+                    </Suspense>
+                ) : null}
             </section>
         </main>
     );

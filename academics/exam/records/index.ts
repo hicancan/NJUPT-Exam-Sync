@@ -1,6 +1,7 @@
 export interface Exam {
     id: string;
     stable_key: string;
+    history_key: string;
     content_fingerprint: string;
     exam_period_id: string;
     class_name: string;

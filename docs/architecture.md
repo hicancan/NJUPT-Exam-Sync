@@ -125,6 +125,10 @@ ExamSourceDescriptor
   -> ExamRecord[]
   -> ExamSnapshot
        |-> RoomCatalog -> RoomOccupancy
+       |-> ExamHistoryCompiler
+       |      + previous ExamHistory
+       |      + previous trusted ExamSnapshot
+       |      `-> ExamHistory
        `-> ICS
 ```
 
@@ -141,7 +145,28 @@ classes-*.json
 manifest 拥有 `snapshot_id`、`source_id`、`records_id`、上游更新时间、
 考试周期和全部 artifact 引用。class index 把班级映射到按目标字节形成的
 class chunk；浏览器初始化一次 manifest/index，之后只加载目标班级所在块。
-当前没有持久的多个快照输入，因此不生成历史 artifact 或历史 UI。
+每条 `ExamRecord` 同时拥有行级 `stable_key` 和课程级 `history_key`。同班同课程
+因教师、教室或人数拆成的多条记录共享一个 `history_key`；因此历史比较以明确的
+课程考试身份聚合可变字段，不依赖行号，也不做模糊配对。
+
+`ExamHistory` 的唯一当前格式是 `njupt-exam-history`：
+
+```text
+manifest.json
+events.json
+class-index.json
+classes-*.json
+```
+
+第一次观察到一个考试周期时只建立可信基线，不伪造此前变化。后续构建必须同时
+读取当前历史头及其声明的上一 `ExamSnapshot`；快照身份相同则逐字复用历史，身份
+变化才追加观察事件。事件时间只使用来源更新时间。记录顺序和精确重复不会产生
+变化；时间、地点、校区、人数、教师和备注按字段比较。不同考试周期重新建立基线，
+不跨学期串联。
+
+历史只保存全局事件、班级索引和发生变化的字段，不复制历次完整快照。manifest、
+所有分块大小、SHA-256、快照链和 `history_id` 都由 Python reader 自校验；TypeScript
+使用同一严格契约读取，不接受旧格式。
 
 Web 交付不改变上述领域格式，但把稳定发现入口与不可变内容分开：
 
@@ -155,6 +180,19 @@ Web 交付不改变上述领域格式，但把稳定发现入口与不可变内�
 稳定 manifest 每次冷启动允许重新验证；它引用的 artifact 在部署层统一加入
 `snapshot_id`，使用一年 immutable 缓存。浏览器仍按领域 manifest 的原始
 `path`、`bytes` 和 `sha256` 严格校验，不存在旧稳定路径副本或 fallback。
+
+ExamHistory 使用独立的稳定发现入口和内容身份：
+
+```text
+/generated/exam/history/manifest.json
+/generated/exam/history/<history_id>/events.json
+/generated/exam/history/<history_id>/class-index.json
+/generated/exam/history/<history_id>/classes-*.json
+```
+
+稳定 manifest 重新验证；`history_id` 路径长期 immutable。组装器要求历史头的
+`current_snapshot_id` 与同一站点中的 ExamSnapshot 完全一致，拒绝混合新考试与
+旧历史。
 
 `RoomCatalog` 是校区、楼宇、楼层、教室和必要 alias 的唯一事实源；源 JSON
 不保存派生 key。Python 编译器稳定派生 room/floor key。TypeScript 只先识别
@@ -216,25 +254,31 @@ Exam 与 Rooms landing 是初始 App bundle 中的小型静态产品壳，不等
 详情页面继续 lazy load，首页按钮的 pointerenter、focus 和 pointerdown 会并行
 预载详情模块与对应 manifest/index。
 
-三个浏览器客户端都由 App 显式创建并在卸载时 dispose：
+四个浏览器客户端都由 App 显式创建并在卸载时 dispose：
 
 ```text
 App
 ├── SearchClient
 ├── ExamSnapshotClient
+├── ExamHistoryClient
 └── RoomOccupancyClient
 ```
 
-Exam/Room 客户端在同一 SPA 会话中复用 manifest、class index、已访问班级 chunk
+Exam/History/Room 客户端在同一 SPA 会话中复用 manifest、class index、已访问班级 chunk
 和已访问 floor；显式 refresh 发现 identity 改变时清除旧 identity 缓存。调用者
 的 AbortSignal 只取消该次等待，最新详情/楼层请求会取消旧请求，初始化预热则由
 App 生命周期拥有，避免页面切换破坏可复用状态。
 
+`ExamHistoryClient` 先验证历史头与当前 ExamSnapshot，再并行读取全局事件和班级
+索引；班级分块只在查看该班时加载。考试卡片仍优先显示，历史失败只影响更新记录
+区域。服务端历史回答“学校发布的数据经历了哪些变化”；考试卡片的“新增/有更新”
+继续只表示相对本浏览器上次导出的日历发生变化，两者不共用状态。
+
 ```text
 CorpusSnapshot -> SearchBundle
-ExamSourceDescriptor -> ExamSnapshot -> RoomOccupancy
+ExamSourceDescriptor -> ExamSnapshot -> ExamHistory + RoomOccupancy
 
-SearchBundle + ExamSnapshot + RoomOccupancy + static Web source
+SearchBundle + ExamSnapshot + ExamHistory + RoomOccupancy + static Web source
   -> external staging -> Web dist
 ```
 
@@ -252,13 +296,19 @@ must-revalidate`，对 identity 路径使用 `public, max-age=31536000, immutabl
 
 云端同样保持这两个生产事务独立。`Build Corpus Artifact` 把 SearchBundle
 作为按内容寻址的 OCI artifact 发布；`Build Academics Artifact` 把
-ExamSnapshot 与 RoomOccupancy 作为一个 OCI artifact 原子发布。当前 corpus、
+ExamSnapshot、ExamHistory 与 RoomOccupancy 作为三个明确组件放进一个内容寻址的
+Academics OCI artifact。组合 identity 由三个组件 identity 共同确定。当前 corpus、
 search 和 academics 分别使用一个完整 JSON 指针，引用 OCI manifest digest、
 领域 identity、归档文件名与 SHA-256，不再把 URL/hash 拆成可能错配的多个
 变量。
 
-两个 workflow 的 Web 组装 job 只读取三个明确 artifact，不重新生产另一个
-领域的输出。成功组装的 `njupt-search-dist` 通过 `workflow_run` 交给 EdgeOne
-部署；没有完整三件套的首次 bootstrap 运行只发布自己的 artifact，不产生或
-部署半成品 dist。Git Tags 与 GitHub Releases 只表达软件版本及其 Android
-安装包；滚动数据和编译产物不会污染源码版本历史。
+更新 Academics 时，workflow 先严格下载当前三组件 artifact，验证历史头与上一
+快照一致，再构建新快照和增量历史。三个不可变归档都发布成功后才更新唯一的
+`ACADEMICS_ARTIFACT` 指针；失败不会移动历史头。Actions 短期 artifact 只负责把
+同一次构建交给 Web 组装，不承担历史保存。
+
+两个 workflow 的 Web 组装 job 只读取 SearchBundle 和 Academics 三组件这四个
+明确 artifact，不重新生产另一个领域的输出。只有四者全部通过身份校验，才会
+生成 `njupt-search-dist` 并通过 `workflow_run` 交给 EdgeOne 部署。Git Tags 与
+GitHub Releases 只表达软件版本及其 Android 安装包；滚动数据和编译产物不会
+污染源码版本历史。

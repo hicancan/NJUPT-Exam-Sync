@@ -42,6 +42,9 @@
             "@njupt-search/academics-exam/snapshot": [
                 "./academics/exam/snapshot/index.ts"
             ],
+            "@njupt-search/academics-exam/history": [
+                "./academics/exam/history/index.ts"
+            ],
             "@njupt-search/academics-exam/query": [
                 "./academics/exam/query/index.ts"
             ],

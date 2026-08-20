@@ -10,6 +10,7 @@ import {
 const baseExam: Exam = {
     id: '2025-2026学年第二学期考试安排表.xlsx-497',
     stable_key: 'b240402\u001fdg1011x0s\u001f数字电路与逻辑设计b\u001f张晶',
+    history_key: 'history-dg1011x0s',
     content_fingerprint: 'a'.repeat(64),
     exam_period_id: '2025-2026-2',
     campus: '仙林',
@@ -31,6 +32,7 @@ const newExam: Exam = {
     ...baseExam,
     id: '2025-2026学年第二学期考试安排表.xlsx-2182',
     stable_key: 'b240402\u001frw1003t0c\u001f国家安全教育和军事理论\u001f李四',
+    history_key: 'history-rw1003t0c',
     content_fingerprint: 'b'.repeat(64),
     course_name: '国家安全教育和军事理论',
     course_code: 'RW1003T0C',
@@ -71,6 +73,7 @@ describe('exam export selection defaults', () => {
             ...newExam,
             id: '2025-2026学年第二学期考试安排表.xlsx-3000',
             stable_key: 'b240402\u001fjs140101s\u001f离散数学\u001f刘茜萍',
+            history_key: 'history-js140101s',
             content_fingerprint: 'd'.repeat(64),
             course_name: '离散数学',
             course_code: 'JS140101S',
@@ -86,6 +89,7 @@ describe('exam export selection defaults', () => {
         const trulyNewExam = {
             ...newExam,
             stable_key: 'b240402\u001fjs140101s\u001f离散数学\u001f刘茜萍',
+            history_key: 'history-js140101s',
             content_fingerprint: 'd'.repeat(64),
         };
 

@@ -19,6 +19,10 @@ export const APP_CONFIG = {
             'ExamSnapshot',
             import.meta.env.VITE_NJUPT_EXAM_ARTIFACT_URL,
         ),
+        EXAM_HISTORY: requiredArtifactUrl(
+            'ExamHistory',
+            import.meta.env.VITE_NJUPT_EXAM_HISTORY_ARTIFACT_URL,
+        ),
         ROOM: requiredArtifactUrl(
             'RoomOccupancy',
             import.meta.env.VITE_NJUPT_ROOM_ARTIFACT_URL,

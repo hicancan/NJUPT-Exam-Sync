@@ -14,6 +14,7 @@ const artifact = (path: string) => ({ path, bytes: 10, sha256: hash('c') });
 const exam = {
     id: 'exam-1',
     stable_key: 'stable-1',
+    history_key: 'history-1',
     content_fingerprint: hash('b'),
     exam_period_id: '2025-2026-2',
     campus: '三牌楼',

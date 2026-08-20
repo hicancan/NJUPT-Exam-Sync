@@ -129,6 +129,7 @@ const parseExam = (value: unknown, source: string): Exam => {
     if (!isObject(value) || !hasExactKeys(value, [
         'id',
         'stable_key',
+        'history_key',
         'content_fingerprint',
         'exam_period_id',
         'class_name',
@@ -154,6 +155,7 @@ const parseExam = (value: unknown, source: string): Exam => {
     const exam: Exam = {
         id: requireString(value.id, 'id', source),
         stable_key: requireString(value.stable_key, 'stable_key', source),
+        history_key: requireString(value.history_key, 'history_key', source),
         content_fingerprint: requireHash(value.content_fingerprint, 'content_fingerprint', source),
         exam_period_id: examPeriodId,
         class_name: requireString(value.class_name, 'class_name', source),

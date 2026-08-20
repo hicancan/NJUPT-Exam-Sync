@@ -58,7 +58,7 @@ njupt-search       构建 SearchBundle 索引，提供 Web / Android 页面
 
 前两步爬虫和清洗工作分别由 [`static-site-graph`](https://github.com/hicancan/static-site-graph) 和 [`njupt-site-graph`](https://github.com/hicancan/njupt-site-graph) 负责。
 
-考试编排数据会被单独编译为 `ExamSnapshot`，再由此派生出考试教室数据 `RoomOccupancy`。本仓库源码里不包含任何真实的校园语料或生成好的数据文件，部署时脚本会把这三类产物组装成一个纯静态站点。
+考试编排数据会被单独编译为 `ExamSnapshot`。可信的连续快照会形成 `ExamHistory`，用于展示全局更新和本班变化；当前快照同时派生考试教室数据 `RoomOccupancy`。本仓库源码里不包含任何真实的校园语料或生成好的数据文件，部署时脚本会把这些产物组装成一个纯静态站点。
 
 ## 目录
 
@@ -73,7 +73,7 @@ njupt-search/
 │   ├── wasm/         WebAssembly FFI 接口
 │   └── browser/      浏览器端的 Worker、网络切片拉取与缓存
 ├── academics/
-│   ├── exam/         考试数据清洗、班级查询与 ICS 导出
+│   ├── exam/         考试快照、更新历史、班级查询与 ICS 导出
 │   └── room/         教室目录和考试占用
 ├── benchmarks/       搜索质量与性能基准测试
 ├── ops/              各种构建、验证和 Web 组装脚本
@@ -100,6 +100,7 @@ $corpusPath = 'D:\path\to\njupt-corpus'
 $dataPath = 'D:\path\to\njupt-search-data'
 $bundlePath = "$dataPath\search-bundle"
 $examPath = "$dataPath\exam-snapshot"
+$historyPath = "$dataPath\exam-history"
 $roomPath = "$dataPath\room-occupancy"
 ```
 
@@ -122,6 +123,7 @@ uv run python -m academics.exam discover `
   -MaterializedPath "$dataPath\exam-materialized" `
   -CachePath "$dataPath\exam-cache" `
   -ExamOutputPath $examPath `
+  -HistoryOutputPath $historyPath `
   -RoomOutputPath $roomPath `
   -RoomCatalogPath .\academics\room\catalog\njupt-room-catalog.json
 ```
@@ -132,6 +134,7 @@ uv run python -m academics.exam discover `
 .\ops\assemble-web.ps1 `
   -SearchBundlePath $bundlePath `
   -ExamSnapshotPath $examPath `
+  -ExamHistoryPath $historyPath `
   -RoomOccupancyPath $roomPath `
   -StagePath "$dataPath\web-stage" `
   -DistPath "$dataPath\web-dist"

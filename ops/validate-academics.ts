@@ -17,6 +17,17 @@ import {
     parseRoomOccupancy,
 } from '../academics/room/index.ts';
 import { generateICSContent } from '../academics/exam/calendar.ts';
+import {
+    assertExamHistoryClassChunkIdentity,
+    assertExamHistoryIdentity,
+    assertExamHistoryMatchesSnapshot,
+    assertExamHistoryPayloads,
+    parseExamHistoryClassChunk,
+    parseExamHistoryClassIndex,
+    parseExamHistoryEvents,
+    parseExamHistoryManifest,
+    selectExamClassHistory,
+} from '../academics/exam/history/index.ts';
 
 function argument(name: string): string {
     const index = process.argv.indexOf(name);
@@ -47,6 +58,7 @@ function artifactJson(root: string, artifact: ArtifactReference): unknown {
 }
 
 const examRoot = argument('--exam');
+const historyRoot = argument('--history');
 const roomRoot = argument('--room');
 const manifest = parseExamSnapshotManifest(json(examRoot, 'manifest.json'));
 await assertExamSnapshotIdentity(manifest);
@@ -72,6 +84,33 @@ for (const entry of classIndex.classes) {
     indexedRecords += selectClassFromChunk(manifest, entry, chunk).length;
 }
 if (indexedRecords !== exams.length) throw new Error('ExamSnapshot class index is incomplete');
+
+const historyManifest = parseExamHistoryManifest(json(historyRoot, 'manifest.json'));
+await assertExamHistoryIdentity(historyManifest);
+assertExamHistoryMatchesSnapshot(historyManifest, manifest);
+const historyEvents = parseExamHistoryEvents(
+    artifactJson(historyRoot, historyManifest.events),
+    historyManifest.events.path,
+);
+const historyIndex = parseExamHistoryClassIndex(
+    artifactJson(historyRoot, historyManifest.class_index),
+    historyManifest.class_index.path,
+);
+assertExamHistoryPayloads(historyManifest, historyEvents, historyIndex);
+const historyChunks = new Map();
+for (const artifact of historyManifest.class_chunks) {
+    const chunk = parseExamHistoryClassChunk(
+        artifactJson(historyRoot, artifact),
+        artifact.path,
+    );
+    await assertExamHistoryClassChunkIdentity(chunk);
+    historyChunks.set(artifact.path, chunk);
+}
+for (const entry of historyIndex.classes) {
+    const chunk = historyChunks.get(entry.chunk_path);
+    if (!chunk) throw new Error(`Missing ExamHistory class chunk: ${entry.chunk_path}`);
+    selectExamClassHistory(historyManifest, entry, chunk);
+}
 
 const calendarClass = classIndex.classes[0];
 if (!calendarClass) throw new Error('ExamSnapshot has no class for ICS validation');
@@ -120,6 +159,9 @@ process.stdout.write(`${JSON.stringify({
     exams: exams.length,
     classes: classIndex.classes.length,
     class_chunks: manifest.class_chunks.length,
+    exam_history_id: historyManifest.history_id,
+    observed_exam_snapshots: historyManifest.observed_snapshot_count,
+    history_classes: historyIndex.classes.length,
     ics_class: calendarClass.class_name,
     ics_events: calendarExams.length,
     room_occupancy_id: roomManifest.occupancy_id,

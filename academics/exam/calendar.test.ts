@@ -5,6 +5,7 @@ import { generateICSContent, getExamCalendarIdentity } from './calendar';
 const baseExam: Exam = {
     id: 'exam-a',
     stable_key: 'stable-a',
+    history_key: 'history-a',
     content_fingerprint: 'a'.repeat(64),
     exam_period_id: '2025-2026-2',
     campus: '仙林',

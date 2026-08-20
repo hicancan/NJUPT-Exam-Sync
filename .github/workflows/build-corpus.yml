@@ -213,22 +213,28 @@ jobs:
           ref="$(jq -er '.ref' <<< "$ACADEMICS_ARTIFACT")"
           exam_archive="$(jq -er '.exam.archive' <<< "$ACADEMICS_ARTIFACT")"
           exam_sha256="$(jq -er '.exam.sha256' <<< "$ACADEMICS_ARTIFACT")"
+          history_archive="$(jq -er '.history.archive' <<< "$ACADEMICS_ARTIFACT")"
+          history_sha256="$(jq -er '.history.sha256' <<< "$ACADEMICS_ARTIFACT")"
           room_archive="$(jq -er '.room.archive' <<< "$ACADEMICS_ARTIFACT")"
           room_sha256="$(jq -er '.room.sha256' <<< "$ACADEMICS_ARTIFACT")"
           [[ "$ref" == ghcr.io/*@sha256:* ]]
           [[ "$exam_archive" != */* ]]
+          [[ "$history_archive" != */* ]]
           [[ "$room_archive" != */* ]]
 
           mkdir registry-download
           oras pull "$ref" --output registry-download
           printf '%s  %s\n' "$exam_sha256" "registry-download/$exam_archive" \
             | sha256sum --check -
+          printf '%s  %s\n' "$history_sha256" "registry-download/$history_archive" \
+            | sha256sum --check -
           printf '%s  %s\n' "$room_sha256" "registry-download/$room_archive" \
             | sha256sum --check -
-          mkdir exam-snapshot room-occupancy
+          mkdir exam-snapshot exam-history room-occupancy
           tar --zstd -xf "registry-download/$exam_archive" -C exam-snapshot
+          tar --zstd -xf "registry-download/$history_archive" -C exam-history
           tar --zstd -xf "registry-download/$room_archive" -C room-occupancy
-          npm run academics:validate -- --exam exam-snapshot --room room-occupancy
+          npm run academics:validate -- --exam exam-snapshot --history exam-history --room room-occupancy
 
       - name: Assemble the complete Web product
         shell: pwsh
@@ -239,6 +245,7 @@ jobs:
           ./ops/assemble-web.ps1 `
             -SearchBundlePath "$env:RUNNER_TEMP/search-bundle" `
             -ExamSnapshotPath exam-snapshot `
+            -ExamHistoryPath exam-history `
             -RoomOccupancyPath room-occupancy `
             -StagePath "$env:RUNNER_TEMP/web-stage" `
             -DistPath "$env:RUNNER_TEMP/dist"

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { ExamDetailSkeleton } from './ui/ExamDetailSkeleton';
 import { ExamListSkeleton } from './ui/ExamListSkeleton';
 import { ExamDetail } from './ui/ExamDetail';
@@ -7,15 +7,21 @@ import { useExamData } from './model/useExamData';
 import { useSelectedExamIds } from './model/useSelectedExamIds';
 import { InlineErrorBanner } from '@/shared/ui/InlineErrorBanner';
 import type { ExamSnapshotClient } from './model/ExamSnapshotClient';
+import type { ExamHistoryClient } from './model/ExamHistoryClient';
+
+const ExamClassHistory = lazy(() => import('./ExamClassHistory').then(module => ({
+    default: module.ExamClassHistory,
+})));
 
 interface ExamPageProps {
     query: string;
     className: string | null;
     onOpenClass: (className: string) => void;
     client: ExamSnapshotClient;
+    historyClient: ExamHistoryClient | null;
 }
 
-export function ExamPage({ query, className, onOpenClass, client }: ExamPageProps) {
+export function ExamPage({ query, className, onOpenClass, client, historyClient }: ExamPageProps) {
     const [reminders, setReminders] = useState<number[]>([30, 60]);
     const {
         classMode,
@@ -80,6 +86,11 @@ export function ExamPage({ query, className, onOpenClass, client }: ExamPageProp
                         sourceTitle={sourceTitle}
                         sourceUpdatedAt={sourceUpdatedAt}
                     />
+                    {historyClient && currentClass ? (
+                        <Suspense fallback={null}>
+                            <ExamClassHistory client={historyClient} className={currentClass} />
+                        </Suspense>
+                    ) : null}
                 </section>
             ) : null}
 

@@ -4,12 +4,14 @@ import { ExamLanding } from '@/exams/ExamLanding';
 import { RoomsLanding } from '@/rooms/RoomsLanding';
 import type { RoomOccupancyClient } from '@/rooms/model/RoomOccupancyClient';
 import type { ExamSnapshotClient } from '@/exams/model/ExamSnapshotClient';
+import type { ExamHistoryClient } from '@/exams/model/ExamHistoryClient';
 
 describe('product landing shells', () => {
     it('renders the exam guide and explicit resume action without artifact data', () => {
         const html = renderToStaticMarkup(
             <ExamLanding
                 client={{ initialize: () => new Promise<never>(() => undefined) } as unknown as ExamSnapshotClient}
+                historyClient={{ initialize: () => new Promise<never>(() => undefined) } as unknown as ExamHistoryClient}
                 savedClass="B240402"
                 onSubmit={() => undefined}
                 onOpenClass={() => undefined}
@@ -19,6 +21,7 @@ describe('product landing shells', () => {
         expect(html).toContain('输入班级号，查看考试时间、地点和考场。');
         expect(html).toContain('placeholder="输入班级号"');
         expect(html).toContain('继续查看 B240402');
+        expect(html).not.toContain('正在读取更新记录');
     });
 
     it('renders the rooms shell before the manifest promise can resolve', () => {

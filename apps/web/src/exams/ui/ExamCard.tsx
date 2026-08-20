@@ -17,16 +17,18 @@ const formatDisplayDate = (isoString?: string | null): string => {
     });
 };
 
-const statusBadge = (status: ExamExportStatus): { text: string; className: string } | null => {
+const statusBadge = (status: ExamExportStatus): { text: string; description: string; className: string } | null => {
     if (status === 2) {
         return {
             text: '有更新',
+            description: '相对本浏览器上次导出的日历有更新',
             className: 'bg-[#fef7e0] text-[#b06000] border-[#fbbc04] dark:bg-[#3a2a00] dark:text-[#fdd663] dark:border-[#fdd663]',
         };
     }
     if (status === 1) {
         return {
             text: '新增',
+            description: '相对本浏览器上次导出的日历新增',
             className: 'bg-[#e6f4ea] text-[#137333] border-[#34a853] dark:bg-[#143820] dark:text-[#81c995] dark:border-[#81c995]',
         };
     }
@@ -87,7 +89,11 @@ export function ExamCard({ exam, isSelected, exportStatus, onToggle }: ExamCardP
                             </span>
                         )}
                         {badge ? (
-                            <span className={`shrink-0 rounded border px-2.5 py-0.5 text-[12px] font-medium ${badge.className}`}>
+                            <span
+                                aria-label={badge.description}
+                                title={badge.description}
+                                className={`shrink-0 rounded border px-2.5 py-0.5 text-[12px] font-medium ${badge.className}`}
+                            >
                                 {badge.text}
                             </span>
                         ) : null}

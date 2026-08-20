@@ -21,6 +21,7 @@ describe('ExamSnapshotClient', () => {
         const exam = {
             id: 'exam-1',
             stable_key: 'stable-1',
+            history_key: 'history-1',
             content_fingerprint: 'a'.repeat(64),
             exam_period_id: '2025-2026-2',
             campus: '仙林',

@@ -13,10 +13,17 @@ param(
     [string]$ExamOutputPath,
 
     [Parameter(Mandatory = $true)]
+    [string]$HistoryOutputPath,
+
+    [Parameter(Mandatory = $true)]
     [string]$RoomOutputPath,
 
     [Parameter(Mandatory = $true)]
     [string]$RoomCatalogPath,
+
+    [string]$PreviousExamSnapshotPath,
+
+    [string]$PreviousExamHistoryPath,
 
     [switch]$RefreshMaterialized
 )
@@ -28,7 +35,12 @@ $catalog = (Resolve-Path -LiteralPath $RoomCatalogPath).Path
 $materialized = [System.IO.Path]::GetFullPath($MaterializedPath)
 $cache = [System.IO.Path]::GetFullPath($CachePath)
 $examOutput = [System.IO.Path]::GetFullPath($ExamOutputPath)
+$historyOutput = [System.IO.Path]::GetFullPath($HistoryOutputPath)
 $roomOutput = [System.IO.Path]::GetFullPath($RoomOutputPath)
+
+if ([string]::IsNullOrWhiteSpace($PreviousExamSnapshotPath) -ne [string]::IsNullOrWhiteSpace($PreviousExamHistoryPath)) {
+    throw 'PreviousExamSnapshotPath and PreviousExamHistoryPath must be provided together'
+}
 
 Push-Location $repository
 try {
@@ -47,6 +59,20 @@ try {
         --materialized $materialized `
         --output $examOutput
     if ($LASTEXITCODE -ne 0) { throw 'ExamSnapshot build failed' }
+
+    $historyArguments = @(
+        '-m', 'academics.exam', 'history',
+        '--current-snapshot', $examOutput,
+        '--output', $historyOutput
+    )
+    if ($PreviousExamSnapshotPath) {
+        $historyArguments += @(
+            '--previous-snapshot', ([System.IO.Path]::GetFullPath($PreviousExamSnapshotPath)),
+            '--previous-history', ([System.IO.Path]::GetFullPath($PreviousExamHistoryPath))
+        )
+    }
+    & uv run python @historyArguments
+    if ($LASTEXITCODE -ne 0) { throw 'ExamHistory build failed' }
 
     & uv run python -m academics.room `
         --exam $examOutput `

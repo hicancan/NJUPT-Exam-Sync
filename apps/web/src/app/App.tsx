@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppRouter } from '@/app/routing/useAppRouter';
 import { HomePage } from '@/home/HomePage';
 import { AppFooter } from '@/app/shell/AppFooter';
@@ -6,6 +6,7 @@ import { Header } from '@/app/shell/Header';
 import { SearchClient } from '@njupt-search/search-browser';
 import { APP_CONFIG } from '@/app/config/constants';
 import { ExamSnapshotClient } from '@/exams/model/ExamSnapshotClient';
+import type { ExamHistoryClient } from '@/exams/model/ExamHistoryClient';
 import { RoomOccupancyClient } from '@/rooms/model/RoomOccupancyClient';
 import type { ProductIntent } from '@/app/routing/intents';
 import { ExamLanding } from '@/exams/ExamLanding';
@@ -38,12 +39,36 @@ function App() {
         baseUrl: APP_CONFIG.DATA_URLS.SEARCH,
     }), []);
     const examClient = useMemo(() => new ExamSnapshotClient(APP_CONFIG.DATA_URLS.EXAM), []);
+    const historyClientRef = useRef<ExamHistoryClient | null>(null);
+    const historyClientPromiseRef = useRef<Promise<ExamHistoryClient> | null>(null);
+    const [examHistoryClient, setExamHistoryClient] = useState<ExamHistoryClient | null>(null);
+    const loadExamHistoryClient = useCallback((): Promise<ExamHistoryClient> => {
+        if (historyClientRef.current) return Promise.resolve(historyClientRef.current);
+        if (!historyClientPromiseRef.current) {
+            historyClientPromiseRef.current = import('@/exams/model/ExamHistoryClient').then(module => {
+                const client = new module.ExamHistoryClient(APP_CONFIG.DATA_URLS.EXAM_HISTORY, examClient);
+                historyClientRef.current = client;
+                setExamHistoryClient(client);
+                return client;
+            });
+        }
+        return historyClientPromiseRef.current;
+    }, [examClient]);
     const roomClient = useMemo(() => new RoomOccupancyClient(APP_CONFIG.DATA_URLS.ROOM), []);
     useEffect(() => () => {
         searchClient.dispose();
         examClient.dispose();
+        historyClientRef.current?.dispose();
         roomClient.dispose();
     }, [examClient, roomClient, searchClient]);
+    useEffect(() => {
+        if (router.route !== 'exam') return;
+        void loadExamHistoryClient()
+            .then(client => client.initialize())
+            .catch(() => {
+                // Exam history is supplementary and reports its own failure state.
+            });
+    }, [loadExamHistoryClient, router.route]);
     const warmSearch = () => {
         void loadSearchPage();
         void searchClient.initialize().catch(() => {
@@ -60,6 +85,11 @@ function App() {
             void examClient.initialize().catch(() => {
                 // ExamPage presents artifact errors and can retry through navigation.
             });
+            void loadExamHistoryClient()
+                .then(client => client.initialize())
+                .catch(() => {
+                    // Exam history is supplementary and reports its own failure state.
+                });
             return;
         }
         void loadRoomsPage();
@@ -105,6 +135,7 @@ function App() {
                             onSubmit={router.onSubmit}
                             onOpenClass={(className) => router.onSubmit(className)}
                             client={examClient}
+                            historyClient={examHistoryClient}
                         />
                     ) : (
                         <ExamPage
@@ -112,6 +143,7 @@ function App() {
                             className={router.exam.className}
                             onOpenClass={(className) => router.onSubmit(className)}
                             client={examClient}
+                            historyClient={examHistoryClient}
                         />
                     )
                 ) : null}

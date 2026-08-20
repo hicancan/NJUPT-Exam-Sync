@@ -6,6 +6,7 @@
   "exports": {
     "./records": "./records/index.ts",
     "./snapshot": "./snapshot/index.ts",
+    "./history": "./history/index.ts",
     "./query": "./query/index.ts",
     "./calendar": "./calendar.ts"
   }

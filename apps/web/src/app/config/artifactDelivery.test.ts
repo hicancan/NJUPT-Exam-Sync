@@ -18,6 +18,7 @@ describe('academic artifact delivery rules', () => {
         expect(cacheControl('/generated/exam/*')).toBe('public, max-age=31536000, immutable');
         expect(cacheControl('/generated/rooms/*')).toBe('public, max-age=31536000, immutable');
         expect(cacheControl('/generated/exam/manifest.json')).toBe('no-cache, max-age=0, must-revalidate');
+        expect(cacheControl('/generated/exam/history/manifest.json')).toBe('no-cache, max-age=0, must-revalidate');
         expect(cacheControl('/generated/rooms/manifest.json')).toBe('no-cache, max-age=0, must-revalidate');
     });
 });

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 from .snapshot.build import publish_exam_artifacts
+from .history.build import publish_exam_history_artifacts
 from .source.discovery import discover_exam_source, materialize_exam_files
 from pathlib import Path
 
@@ -23,6 +24,13 @@ def main() -> None:
     build = subparsers.add_parser("build", help="Build one ExamSnapshot from materialized input.")
     build.add_argument("--materialized", type=Path, required=True)
     build.add_argument("--output", type=Path, required=True)
+    history = subparsers.add_parser(
+        "history", help="Build one ExamHistory from current and previous trusted artifacts."
+    )
+    history.add_argument("--current-snapshot", type=Path, required=True)
+    history.add_argument("--output", type=Path, required=True)
+    history.add_argument("--previous-history", type=Path)
+    history.add_argument("--previous-snapshot", type=Path)
     args = parser.parse_args()
 
     if args.command == "discover":
@@ -35,3 +43,10 @@ def main() -> None:
         )
     elif args.command == "build":
         publish_exam_artifacts(input_dir=args.materialized, output_dir=args.output)
+    elif args.command == "history":
+        publish_exam_history_artifacts(
+            current_snapshot_dir=args.current_snapshot,
+            output_dir=args.output,
+            previous_history_dir=args.previous_history,
+            previous_snapshot_dir=args.previous_snapshot,
+        )

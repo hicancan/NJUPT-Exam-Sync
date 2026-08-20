@@ -7,6 +7,9 @@ param(
     [string]$ExamSnapshotPath,
 
     [Parameter(Mandatory = $true)]
+    [string]$ExamHistoryPath,
+
+    [Parameter(Mandatory = $true)]
     [string]$RoomOccupancyPath,
 
     [Parameter(Mandatory = $true)]
@@ -20,6 +23,7 @@ $ErrorActionPreference = 'Stop'
 $repository = Split-Path -Parent $PSScriptRoot
 $searchBundle = (Resolve-Path -LiteralPath $SearchBundlePath).Path
 $examSnapshot = (Resolve-Path -LiteralPath $ExamSnapshotPath).Path
+$examHistory = (Resolve-Path -LiteralPath $ExamHistoryPath).Path
 $roomOccupancy = (Resolve-Path -LiteralPath $RoomOccupancyPath).Path
 $stage = [System.IO.Path]::GetFullPath($StagePath)
 $dist = [System.IO.Path]::GetFullPath($DistPath)
@@ -92,7 +96,7 @@ function Copy-ContentAddressedArtifact {
     }
 }
 
-foreach ($artifact in @($searchBundle, $examSnapshot, $roomOccupancy)) {
+foreach ($artifact in @($searchBundle, $examSnapshot, $examHistory, $roomOccupancy)) {
     if (-not (Test-Path -LiteralPath (Join-Path $artifact 'manifest.json') -PathType Leaf)) {
         throw "Artifact manifest is missing: $artifact"
     }
@@ -139,6 +143,21 @@ Copy-ContentAddressedArtifact `
     -Identity $examManifest.snapshot_id `
     -ArtifactPaths $examArtifactPaths
 
+$historyManifest = Get-Content -LiteralPath (Join-Path $examHistory 'manifest.json') -Raw | ConvertFrom-Json
+if ($historyManifest.current_snapshot_id -ne $examManifest.snapshot_id) {
+    throw 'ExamHistory does not identify the assembled ExamSnapshot'
+}
+$historyArtifactPaths = @(
+    $historyManifest.events.path
+    $historyManifest.class_index.path
+    $historyManifest.class_chunks | ForEach-Object { $_.path }
+)
+Copy-ContentAddressedArtifact `
+    -Source $examHistory `
+    -Destination (Join-Path $generated 'exam/history') `
+    -Identity $historyManifest.history_id `
+    -ArtifactPaths $historyArtifactPaths
+
 $roomManifest = Get-Content -LiteralPath (Join-Path $roomOccupancy 'manifest.json') -Raw | ConvertFrom-Json
 $roomArtifactPaths = @($roomManifest.dates | ForEach-Object {
     $_.floors | ForEach-Object { $_.artifact.path }
@@ -153,12 +172,14 @@ $previousPublic = $env:NJUPT_SEARCH_WEB_PUBLIC_DIR
 $previousOut = $env:NJUPT_SEARCH_WEB_OUT_DIR
 $previousSearchUrl = $env:VITE_NJUPT_SEARCH_ARTIFACT_URL
 $previousExamUrl = $env:VITE_NJUPT_EXAM_ARTIFACT_URL
+$previousHistoryUrl = $env:VITE_NJUPT_EXAM_HISTORY_ARTIFACT_URL
 $previousRoomUrl = $env:VITE_NJUPT_ROOM_ARTIFACT_URL
 try {
     $env:NJUPT_SEARCH_WEB_PUBLIC_DIR = $public
     $env:NJUPT_SEARCH_WEB_OUT_DIR = $dist
     $env:VITE_NJUPT_SEARCH_ARTIFACT_URL = '/generated/search'
     $env:VITE_NJUPT_EXAM_ARTIFACT_URL = '/generated/exam'
+    $env:VITE_NJUPT_EXAM_HISTORY_ARTIFACT_URL = '/generated/exam/history'
     $env:VITE_NJUPT_ROOM_ARTIFACT_URL = '/generated/rooms'
     Push-Location $repository
     try {
@@ -176,5 +197,6 @@ finally {
     $env:NJUPT_SEARCH_WEB_OUT_DIR = $previousOut
     $env:VITE_NJUPT_SEARCH_ARTIFACT_URL = $previousSearchUrl
     $env:VITE_NJUPT_EXAM_ARTIFACT_URL = $previousExamUrl
+    $env:VITE_NJUPT_EXAM_HISTORY_ARTIFACT_URL = $previousHistoryUrl
     $env:VITE_NJUPT_ROOM_ARTIFACT_URL = $previousRoomUrl
 }

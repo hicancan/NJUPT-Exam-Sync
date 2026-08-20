@@ -39,6 +39,7 @@ export function StaticRoutePage({ route }: { route: AppRoute }) {
                     onSubmit={noop}
                     onOpenClass={noop}
                     client={examClient}
+            historyClient={null}
                 />
             ) : null}
             {route === 'rooms' ? (
