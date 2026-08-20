@@ -108,7 +108,7 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Deploy to EdgeOne Pages
+      - name: Deploy to EdgeOne Makers
         env:
           EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
           EDGEONE_PROJECT_NAME: ${{ vars.EDGEONE_PROJECT_NAME || 'njupt-search' }}
@@ -121,16 +121,31 @@ jobs:
           fi
           project="${EDGEONE_PROJECT_NAME:-njupt-search}"
           area="${EDGEONE_PAGES_AREA:-global}"
-          echo "Deploying verified CI artifact to EdgeOne Pages project '$project' in area '$area'."
-          bash .github/scripts/deploy-edgeone-with-retry.sh ./dist "$project" production "$area" edgeone-deploy.log
-          {
-            echo "### EdgeOne Pages deployment"
-            echo
-            echo "- Product assembly run: \`${{ needs.resolve-edgeone.outputs.run_id }}\`"
-            echo "- Project: \`$project\`"
-            echo "- Area: \`$area\`"
-            grep -E '^EDGEONE_(DEPLOY_URL|DEPLOY_TYPE|PROJECT_ID)=' edgeone-deploy.log || true
-          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Deploying verified CI artifact to EdgeOne Makers project '$project' in area '$area'."
+          bash .github/scripts/deploy-edgeone-with-retry.sh ./dist "$project" production "$area" edgeone-deploy.json
+          EDGEONE_DEPLOY_RESULT_PATH=edgeone-deploy.json \
+          EDGEONE_PRODUCT_RUN_ID='${{ needs.resolve-edgeone.outputs.run_id }}' \
+          EDGEONE_PROJECT="$project" \
+          EDGEONE_AREA="$area" \
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs';
+
+          const result = JSON.parse(readFileSync(process.env.EDGEONE_DEPLOY_RESULT_PATH, 'utf8'));
+          const summary = [
+            '### EdgeOne Makers deployment',
+            '',
+            `- Product assembly run: \`${process.env.EDGEONE_PRODUCT_RUN_ID}\``,
+            `- Project: \`${process.env.EDGEONE_PROJECT}\``,
+            `- Area: \`${process.env.EDGEONE_AREA}\``,
+            `- Deployment URL: ${result.url}`,
+            `- Type: \`${result.type}\``,
+            `- Project ID: \`${result.projectId}\``,
+            `- Deployment ID: \`${result.deploymentId}\``,
+            `- Console: ${result.consoleUrl}`,
+            '',
+          ].join('\n');
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+          NODE
 
       - name: Purge Cloudflare Cache
         if: ${{ vars.CF_PURGE_ENABLED == '1' }}

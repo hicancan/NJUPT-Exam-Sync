@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [ "$#" -ne 5 ]; then
-  echo "::error::usage: $0 <dist-dir> <project> <environment> <area> <log-path>"
+  echo "::error::usage: $0 <dist-dir> <project> <environment> <area> <result-path>"
   exit 2
 fi
 
@@ -10,7 +10,8 @@ dist_dir="$1"
 project="$2"
 environment="$3"
 area="$4"
-log_path="$5"
+result_path="$5"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 if [ -z "${EDGEONE_API_TOKEN:-}" ]; then
   echo "::error::EDGEONE_API_TOKEN secret is required"
@@ -27,20 +28,24 @@ is_transient_edgeone_failure() {
   grep -Eiq 'ECONNRESET|ETIMEDOUT|EAI_AGAIN|ENOTFOUND|API request failed \(5[0-9][0-9]\)|API request failed \(522\)|API request failed \(524\)|HTTP 5[0-9][0-9]|502|503|504|522|524' "$log_file"
 }
 
-rm -f "$log_path"
+rm -f "$result_path" "${result_path}.failure.log"
 
 for attempt in 1 2 3 4 5; do
-  attempt_log="${log_path}.attempt-${attempt}"
+  attempt_log="${result_path}.attempt-${attempt}.log"
   rm -f "$attempt_log"
   echo "EdgeOne deploy attempt ${attempt}/5 for project '${project}' in area '${area}'."
 
-  if npx --yes edgeone@latest pages deploy "$dist_dir" -n "$project" -t "$EDGEONE_API_TOKEN" -e "$environment" -a "$area" 2>&1 | tee "$attempt_log"; then
-    cp "$attempt_log" "$log_path"
+  if PAGES_SOURCE=skills npx --yes edgeone@latest makers deploy "$dist_dir" -n "$project" -t "$EDGEONE_API_TOKEN" -e "$environment" -a "$area" --json 2>&1 | tee "$attempt_log"; then
+    if ! node "$script_dir/parse-edgeone-deploy-result.mjs" "$attempt_log" > "$result_path"; then
+      cp "$attempt_log" "${result_path}.failure.log"
+      echo "::error::EdgeOne deploy command exited successfully without a valid structured success result."
+      exit 1
+    fi
     echo "EdgeOne deploy succeeded on attempt ${attempt}."
     exit 0
   fi
 
-  cp "$attempt_log" "$log_path"
+  cp "$attempt_log" "${result_path}.failure.log"
   if ! is_transient_edgeone_failure "$attempt_log"; then
     echo "::error::EdgeOne deploy failed with a non-transient error on attempt ${attempt}; not retrying."
     exit 1
