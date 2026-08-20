@@ -5,7 +5,7 @@ import {
     resolveQuickIntent,
     resolveSubmission,
 } from './routeContract';
-import { buildHashPath, parseHashState } from './useUrlState';
+import { buildPath, parseUrlState, routeFromPathname } from './useUrlState';
 
 describe('product route contract', () => {
     it('routes product entry intents to canonical parameter-free landings', () => {
@@ -33,27 +33,33 @@ describe('product route contract', () => {
             label: '教2-313',
             params: { room: '教2-313' },
         });
-        expect(resolveQuickIntent({ kind: 'exam' })).toEqual({ route: 'exam' });
-        expect(resolveQuickIntent({ kind: 'rooms' })).toEqual({ route: 'rooms' });
     });
 
-    it('round-trips landing and detail routes for reload, back and forward state', () => {
-        const hashes = [
-            '#/exam',
-            '#/exam?class=B240402',
-            '#/exam?q=B2404',
-            '#/rooms',
-            '#/rooms?room=%E6%95%992-313',
-            '#/rooms?campus=%E4%BB%99%E6%9E%97&building=%E6%95%992&floor=3',
-            '#/search?q=%E8%82%96%E7%94%AB',
-        ];
-        const states = hashes.map(parseHashState);
+    it('round-trips clean landing and detail URLs for reload, back and forward state', () => {
+        const urls = [
+            ['/exam', ''],
+            ['/exam', '?class=B240402'],
+            ['/exam', '?q=B2404'],
+            ['/rooms', ''],
+            ['/rooms', '?room=%E6%95%992-313'],
+            ['/rooms', '?campus=%E4%BB%99%E6%9E%97&building=%E6%95%992&floor=3'],
+            ['/search', '?q=%E8%82%96%E7%94%AB'],
+        ] as const;
+        const states = urls.map(([pathname, search]) => parseUrlState(pathname, search));
         expect(states.map(state => state.route)).toEqual(['exam', 'exam', 'exam', 'rooms', 'rooms', 'rooms', 'search']);
         expect(states[0]?.qParam).toBeNull();
         expect(states[1]?.classParam).toBe('B240402');
         expect(states[4]?.roomQuery).toBe('教2-313');
         expect(states[5]).toMatchObject({ campusParam: '仙林', buildingParam: '教2', floorParam: '3' });
-        expect(buildHashPath({ route: 'exam' })).toBe('#/exam');
-        expect(buildHashPath({ route: 'rooms', params: { room: '教2-313' } })).toBe('#/rooms?room=%E6%95%992-313');
+        expect(buildPath({ route: 'exam' })).toBe('/exam');
+        expect(buildPath({ route: 'rooms', params: { room: '教2-313' } })).toBe('/rooms?room=%E6%95%992-313');
+    });
+
+    it('accepts only the four current application paths', () => {
+        expect(routeFromPathname('/')).toBe('home');
+        expect(routeFromPathname('/search')).toBe('search');
+        expect(routeFromPathname('/exam')).toBe('exam');
+        expect(routeFromPathname('/rooms')).toBe('rooms');
+        expect(() => routeFromPathname('/missing')).toThrow('Unsupported application route');
     });
 });

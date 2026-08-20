@@ -4,6 +4,7 @@ export type AppRoute = 'home' | 'search' | 'exam' | 'rooms';
 
 export interface UrlState {
     route: AppRoute;
+    search: string;
     classParam: string | null;
     qParam: string | null;
     roomQuery: string | null;
@@ -15,51 +16,47 @@ export interface UrlState {
     endParam: string | null;
 }
 
-interface NavigateOptions {
+export interface NavigateOptions {
     route: AppRoute;
     params?: Record<string, string | null>;
 }
 
-export const routeFromHashPath = (path: string): AppRoute => {
-    if (path === '/search') return 'search';
-    if (path === '/exam') return 'exam';
-    if (path === '/rooms') return 'rooms';
-    return 'home';
+export const routeFromPathname = (pathname: string): AppRoute => {
+    if (pathname === '/') return 'home';
+    if (pathname === '/search') return 'search';
+    if (pathname === '/exam') return 'exam';
+    if (pathname === '/rooms') return 'rooms';
+    throw new Error(`Unsupported application route: ${pathname}`);
 };
 
-export const parseHashState = (hashValue: string): UrlState => {
-    const hash = hashValue.startsWith('#') ? hashValue.slice(1) : hashValue;
-    const [hashPath = '/', hashSearch = ''] = hash.split('?');
-    const hashParams = new URLSearchParams(hashSearch);
-    const route = routeFromHashPath(hashPath || '/');
-
+export const parseUrlState = (pathname: string, search: string): UrlState => {
+    const params = new URLSearchParams(search);
     return {
-        route,
-        classParam: hashParams.get('class') || null,
-        qParam: hashParams.get('q') || null,
-        roomQuery: hashParams.get('room') || null,
-        dateParam: hashParams.get('date') || null,
-        campusParam: hashParams.get('campus') || null,
-        buildingParam: hashParams.get('building') || null,
-        floorParam: hashParams.get('floor') || null,
-        startParam: hashParams.get('start') || null,
-        endParam: hashParams.get('end') || null,
+        route: routeFromPathname(pathname),
+        search,
+        classParam: params.get('class') || null,
+        qParam: params.get('q') || null,
+        roomQuery: params.get('room') || null,
+        dateParam: params.get('date') || null,
+        campusParam: params.get('campus') || null,
+        buildingParam: params.get('building') || null,
+        floorParam: params.get('floor') || null,
+        startParam: params.get('start') || null,
+        endParam: params.get('end') || null,
     };
 };
 
-const readUrlState = (): UrlState => parseHashState(window.location.hash);
+const readUrlState = (): UrlState => parseUrlState(window.location.pathname, window.location.search);
 
-export const buildHashPath = ({ route, params = {} }: NavigateOptions): string => {
-    if (route === 'home') return '';
+export const buildPath = ({ route, params = {} }: NavigateOptions): string => {
+    const pathname = route === 'home' ? '/' : `/${route}`;
     const nextParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
         if (value) nextParams.set(key, value);
     });
     const query = nextParams.toString();
-    return `#/${route}${query ? `?${query}` : ''}`;
+    return `${pathname}${query ? `?${query}` : ''}`;
 };
-
-const buildHash = (options: NavigateOptions): string => `${window.location.pathname}${buildHashPath(options)}`;
 
 export function useUrlState() {
     const [state, setState] = useState<UrlState>(() => readUrlState());
@@ -67,16 +64,12 @@ export function useUrlState() {
     useEffect(() => {
         const handleLocationChange = () => setState(readUrlState());
         window.addEventListener('popstate', handleLocationChange);
-        window.addEventListener('hashchange', handleLocationChange);
-        return () => {
-            window.removeEventListener('popstate', handleLocationChange);
-            window.removeEventListener('hashchange', handleLocationChange);
-        };
+        return () => window.removeEventListener('popstate', handleLocationChange);
     }, []);
 
     const navigate = useCallback((options: NavigateOptions, replace = false) => {
-        const nextUrl = buildHash(options);
-        const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        const nextUrl = buildPath(options);
+        const currentUrl = `${window.location.pathname}${window.location.search}`;
         if (currentUrl === nextUrl) return;
         if (replace) {
             window.history.replaceState(null, '', nextUrl);

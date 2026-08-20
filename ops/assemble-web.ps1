@@ -164,6 +164,8 @@ try {
     try {
         & npm run build:prepared
         if ($LASTEXITCODE -ne 0) { throw 'Web production build failed' }
+        & npm run seo:validate -- --dist $dist
+        if ($LASTEXITCODE -ne 0) { throw 'Web SEO validation failed' }
     }
     finally {
         Pop-Location

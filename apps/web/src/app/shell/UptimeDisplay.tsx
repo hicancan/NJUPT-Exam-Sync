@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { APP_CONFIG } from '@/app/config/constants';
+import { PRODUCT_CONFIG } from '@/app/config/product';
 
 interface UptimeDisplayProps {
     startTime?: string;
 }
 
 export function UptimeDisplay({
-    startTime = APP_CONFIG.START_TIME_DEFAULT
+    startTime = PRODUCT_CONFIG.START_TIME_DEFAULT
 }: UptimeDisplayProps) {
     const [uptime, setUptime] = useState<string>('');
 
@@ -32,7 +32,7 @@ export function UptimeDisplay({
             </span>
             <span className="hidden lg:inline text-[#dadce0] dark:text-[#3c4043]">|</span>
             <img
-                src={APP_CONFIG.VISITOR_BADGE_URL}
+                src={PRODUCT_CONFIG.VISITOR_BADGE_URL}
                 className="h-4 w-auto opacity-80 hover:opacity-100 transition-opacity grayscale hover:grayscale-0"
                 alt="访问量"
                 loading="lazy"

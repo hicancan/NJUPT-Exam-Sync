@@ -191,11 +191,25 @@ Python 拥有 ExamSnapshot 和 RoomOccupancy 写出；每种 artifact 在 TypeSc
 Worker → WASM → Rust core 完成统一搜索；不存在热词结果、独立排名或 UI
 fallback。
 
-产品路由把“进入产品”和“恢复状态”分开：`#/exam`、`#/rooms` 永远表示可分享、
-可刷新且不含本地历史的 landing；`class`、`q`、`room`、`campus/building/floor`
-参数才表示详情。首页主按钮始终进入 landing，保存的班级或教室只通过 landing
-中的“继续查看”次级按钮暴露。`考试安排` 输入直接进入 `#/exam`，不再把
-`q=考试安排` 当内部哨兵。
+产品路由只读取 `pathname` 与标准 query string。`/exam`、`/rooms` 永远表示
+可分享、可刷新且不含本地历史的 landing；`class`、`q`、`room`、
+`campus/building/floor` 参数才表示详情。首页主按钮始终进入 landing，保存的班级
+或教室只通过 landing 中的“继续查看”次级按钮暴露。`考试安排` 输入直接进入
+`/exam`，不使用查询参数充当内部哨兵。站内导航使用 History API，返回、前进和
+刷新都由同一套 URL 状态驱动。
+
+Web 构建只生成当前四个产品路径：`/`、`/search`、`/exam`、`/rooms`。构建结束
+后复用现有 React landing 组件写出 `index.html`、`exam/index.html`、
+`rooms/index.html` 与 `search/index.html`；浏览器启动后接管相同 DOM。原始响应
+已经含有 H1、真实链接和页面专属 metadata，不等待 SearchBundle、ExamSnapshot
+或 RoomOccupancy。根目录 `404.html` 由 EdgeOne 作为真实 404 返回，部署配置不
+设置全站页面回退。
+
+`app/seo/pageSeo.ts` 是 title、description、robots、canonical、Open Graph 与
+WebSite JSON-LD 的唯一来源。只有 `/`、`/exam`、`/rooms` 允许索引；`/search`
+以及带查询参数的考试、教室状态使用 `noindex, follow`，不进入 sitemap，也不
+复制学校文章生成本站内容页。`robots.txt` 只声明抓取与 sitemap 入口；sitemap
+只列出三个稳定 canonical URL。
 
 Exam 与 Rooms landing 是初始 App bundle 中的小型静态产品壳，不等待页面详情
 模块或业务 artifact；Rooms 在壳出现后才补充校区、楼栋、教室数和日期数。

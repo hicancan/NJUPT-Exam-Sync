@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://njupt.hicancan.top/sitemap.xml

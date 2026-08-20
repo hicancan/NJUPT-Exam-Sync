@@ -64,6 +64,7 @@ export function useAppRouter() {
 
     return {
         route,
+        hasQueryParams: url.search.length > 1,
         inputValue,
         onInputChange,
         onSubmit: submit,

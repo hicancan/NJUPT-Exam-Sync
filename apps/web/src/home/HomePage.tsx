@@ -3,6 +3,8 @@ import { QUICK_SEARCHES, QuickSearchIcon } from './searchPresets';
 import { ThemeToggle } from '@/shared/ui/ThemeToggle';
 import { SearchInput } from '@/shared/ui/SearchInput';
 import type { ProductIntent } from '@/app/routing/intents';
+import { resolveQuickIntent } from '@/app/routing/routeContract';
+import { buildPath } from '@/app/routing/useUrlState';
 
 const QUICK_SEARCH_ICONS: Record<QuickSearchIcon, typeof CalendarDays> = {
     calendar: CalendarDays,
@@ -55,10 +57,13 @@ export function HomePage({
                     {QUICK_SEARCHES.map(item => {
                         const Icon = QUICK_SEARCH_ICONS[item.icon];
                         return (
-                            <button
+                            <a
                                 key={item.label}
-                                type="button"
-                                onClick={() => onQuickSearch(item.intent)}
+                                href={buildPath(resolveQuickIntent(item.intent))}
+                                onClick={(event) => {
+                                    event.preventDefault();
+                                    onQuickSearch(item.intent);
+                                }}
                                 onPointerEnter={() => onIntentWarm(item.intent)}
                                 onPointerDown={() => onIntentWarm(item.intent)}
                                 onFocus={() => onIntentWarm(item.intent)}
@@ -66,7 +71,7 @@ export function HomePage({
                             >
                                 <Icon className="w-4 h-4" aria-hidden="true" />
                                 {item.label}
-                            </button>
+                            </a>
                         );
                     })}
                 </div>

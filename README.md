@@ -19,7 +19,7 @@
 
 ---
 
-南邮的通知散落在学校主站以及各个学院、部门网站里，有些关键信息甚至藏在 PDF、Word 或 Excel 附件中。`njupt-search` 将这些内容汇总成了一个支持全文检索的入口，同时附带了班级考试安排和空闲教室查询功能。
+南邮的通知散落在学校主站以及各个学院、部门网站里，有些关键信息甚至藏在 PDF、Word 或 Excel 附件中。`njupt-search` 将这些内容汇总成了一个支持全文检索的入口，同时提供班级考试安排和考试教室查询。
 
 ## 功能
 
@@ -31,8 +31,8 @@
 直接打开：
 
 - [校园搜索](https://njupt.hicancan.top/)
-- [考试安排](https://njupt.hicancan.top/#/exam)
-- [考试教室](https://njupt.hicancan.top/#/rooms)
+- [考试安排](https://njupt.hicancan.top/exam)
+- [考试教室](https://njupt.hicancan.top/rooms)
 
 > 注：搜索结果会保留原始网页链接和发布日期。教室页面仅反映教务处的“考试占用”数据，不代表日常上课或临时借用的情况。
 

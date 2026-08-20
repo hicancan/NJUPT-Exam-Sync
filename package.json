@@ -11,10 +11,11 @@
   "scripts": {
     "dev": "node ./node_modules/vite/bin/vite.js --config apps/web/vite.config.ts",
     "build": "npm run build:wasm:web && npm run build:prepared",
-    "build:prepared": "node ./node_modules/typescript/bin/tsc -b && node ./node_modules/vite/bin/vite.js build --config apps/web/vite.config.ts",
+    "build:prepared": "node ./node_modules/typescript/bin/tsc -b && node ./node_modules/vite/bin/vite.js build --config apps/web/vite.config.ts && node ./node_modules/tsx/dist/cli.mjs --tsconfig tsconfig.app.json ops/render-seo-pages.tsx",
     "build:wasm:web": "wasm-pack build search/wasm --target web --release --out-dir ../browser/wasm",
     "academics:build": "uv run python -m academics.exam",
     "academics:validate": "node ./node_modules/tsx/dist/cli.mjs ops/validate-academics.ts",
+    "seo:validate": "node ops/validate-seo.mjs",
     "search:test": "cargo test --manifest-path search/Cargo.toml --workspace",
     "lint": "node ./node_modules/eslint/bin/eslint.js .",
     "preview": "node ./node_modules/vite/bin/vite.js preview --config apps/web/vite.config.ts",

@@ -42,11 +42,11 @@ export function RoomsLanding({ client, savedRoom, onChange, onSubmit }: RoomsLan
         <main className="flex-1 max-w-6xl w-full mx-auto px-4 pt-6 pb-8">
             <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                    <h2 className="text-[28px] font-normal text-[#202124] dark:text-[#e8eaed]">考试教室查询</h2>
+                    <h1 className="text-[28px] font-normal text-[#202124] dark:text-[#e8eaed]">考试教室查询</h1>
                     <p className="mt-2 text-[14px] text-[#5f6368] dark:text-[#bdc1c6]">
                         输入楼栋或教室号，查看考试期间的教室占用情况。
                     </p>
-                    <a href={`#/search?q=${encodeURIComponent('封楼')}`} className="mt-2 inline-flex items-center gap-1 text-[13px] font-medium text-[#1a73e8] hover:underline dark:text-[#8ab4f8]">
+                    <a href={`/search?q=${encodeURIComponent('封楼')}`} className="mt-2 inline-flex items-center gap-1 text-[13px] font-medium text-[#1a73e8] hover:underline dark:text-[#8ab4f8]">
                         <Search className="h-4 w-4" aria-hidden="true" />
                         查看封楼通知
                     </a>

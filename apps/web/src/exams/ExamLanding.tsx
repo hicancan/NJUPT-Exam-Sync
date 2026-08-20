@@ -25,7 +25,7 @@ export function ExamLanding({ savedClass, onSubmit, onOpenClass, client }: ExamL
                     <div className="mx-auto w-16 h-16 bg-[#e8f0fe] dark:bg-[#3b4043] rounded-full flex items-center justify-center mb-4">
                         <CalendarDays className="w-8 h-8 text-[#1a73e8] dark:text-[#8ab4f8]" aria-hidden="true" />
                     </div>
-                    <h2 className="text-2xl font-semibold text-[#202124] dark:text-[#e8eaed] mb-2">查询考试安排</h2>
+                    <h1 className="text-2xl font-semibold text-[#202124] dark:text-[#e8eaed] mb-2">查询考试安排</h1>
                     <p className="text-[15px] text-[#4d5156] dark:text-[#bdc1c6]">
                         输入班级号，查看考试时间、地点和考场。
                     </p>

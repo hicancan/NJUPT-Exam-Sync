@@ -10,6 +10,7 @@ import { RoomOccupancyClient } from '@/rooms/model/RoomOccupancyClient';
 import type { ProductIntent } from '@/app/routing/intents';
 import { ExamLanding } from '@/exams/ExamLanding';
 import { RoomsLanding } from '@/rooms/RoomsLanding';
+import { applyPageSeo, resolvePageSeo } from '@/app/seo/pageSeo';
 
 const loadSearchPage = () => import('@/search/SearchPage').then(module => ({ default: module.SearchPage }));
 const loadExamPage = () => import('@/exams/ExamPage').then(module => ({ default: module.ExamPage }));
@@ -30,6 +31,9 @@ function RouteLoading() {
 
 function App() {
     const router = useAppRouter();
+    useEffect(() => {
+        applyPageSeo(resolvePageSeo(router.route, router.hasQueryParams));
+    }, [router.hasQueryParams, router.route]);
     const searchClient = useMemo(() => new SearchClient({
         baseUrl: APP_CONFIG.DATA_URLS.SEARCH,
     }), []);

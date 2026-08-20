@@ -9,6 +9,7 @@ import {
     dateFilters,
     type SearchDatePreset,
 } from './ui/searchLabels';
+import { SearchLanding } from './SearchLanding';
 
 interface SearchPageProps {
     query: string;
@@ -46,7 +47,9 @@ export function SearchPage({ query, client }: SearchPageProps) {
         limit,
     );
 
-    if (enabled && indexLoading) {
+    if (!enabled) return <SearchLanding />;
+
+    if (indexLoading) {
         return (
             <main className="flex-1 max-w-6xl w-full mx-auto px-4 pt-3 pb-6">
                 <SearchResultsSkeleton />
@@ -54,7 +57,7 @@ export function SearchPage({ query, client }: SearchPageProps) {
         );
     }
 
-    if (enabled && (initError || (searchError && !response))) {
+    if (initError || (searchError && !response)) {
         return (
             <main className="flex-1 max-w-6xl w-full mx-auto px-4 pt-3 pb-6">
                 <InlineErrorBanner message={initError || searchError} />

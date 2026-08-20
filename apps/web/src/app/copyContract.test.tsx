@@ -8,6 +8,7 @@ import { SearchSection } from '@/search/ui/SearchSection';
 import { ThemeToggle } from '@/shared/ui/ThemeToggle';
 import { resultSummary } from '@/search/ui/searchLabels';
 import { HomePage } from '@/home/HomePage';
+import { renderPageHead, resolvePageSeo } from '@/app/seo/pageSeo';
 
 describe('product copy contract', () => {
     it('describes search results without exposing ranking internals', () => {
@@ -102,11 +103,47 @@ describe('product copy contract', () => {
             resolve(process.cwd(), 'apps/web/public/manifest.webmanifest'),
             'utf8',
         )) as { description: string; lang: string };
-        const index = readFileSync(resolve(process.cwd(), 'apps/web/index.html'), 'utf8');
+        const indexTemplate = readFileSync(resolve(process.cwd(), 'apps/web/index.html'), 'utf8');
+        const homeHead = renderPageHead(resolvePageSeo('home'));
 
         expect(manifest.lang).toBe('zh-CN');
         expect(manifest.description).toBe('搜索南邮通知，查询考试安排和考试教室。');
-        expect(index).toContain('搜索南邮网站的通知和附件，查询班级考试安排与考试教室。');
-        expect(index).not.toContain('南邮通知、考试安排和考试教室，都可以直接查。');
+        expect(indexTemplate).toContain('<!-- njupt-seo:head -->');
+        expect(homeHead).toContain('njupt-search｜南邮校园信息搜索');
+        expect(homeHead).toContain('搜索南京邮电大学各网站的通知、附件和办事信息，查询班级考试安排与考试教室。');
+        expect(homeHead).not.toContain('meta name="keywords"');
+        expect(homeHead).not.toContain('南邮通知、考试安排和考试教室，都可以直接查。');
+    });
+
+    it('keeps stable products indexable and query states out of the index', () => {
+        expect(resolvePageSeo('home')).toMatchObject({ indexable: true, canonical: 'https://njupt.hicancan.top/' });
+        expect(resolvePageSeo('exam')).toMatchObject({ indexable: true, canonical: 'https://njupt.hicancan.top/exam' });
+        expect(resolvePageSeo('rooms')).toMatchObject({ indexable: true, canonical: 'https://njupt.hicancan.top/rooms' });
+        expect(resolvePageSeo('search')).toMatchObject({ indexable: false, canonical: null });
+        expect(resolvePageSeo('exam', true)).toMatchObject({ indexable: false, canonical: null });
+        expect(resolvePageSeo('rooms', true)).toMatchObject({ indexable: false, canonical: null });
+
+        const homeHead = renderPageHead(resolvePageSeo('home'));
+        const examDetailHead = renderPageHead(resolvePageSeo('exam', true));
+        expect(homeHead).toContain('"@type":"WebSite"');
+        expect(homeHead).not.toContain('"@type":"Organization"');
+        expect(examDetailHead).toContain('noindex, follow');
+        expect(examDetailHead).not.toContain('rel="canonical"');
+        expect(examDetailHead).not.toContain('application/ld+json');
+    });
+
+    it('keeps pathname routing and Android entry points on clean URLs', () => {
+        const routing = readFileSync(resolve(process.cwd(), 'apps/web/src/app/routing/useUrlState.ts'), 'utf8');
+        const twa = JSON.parse(readFileSync(
+            resolve(process.cwd(), 'apps/android/twa-manifest.json'),
+            'utf8',
+        )) as { startUrl: string };
+
+        expect(routing).toContain('window.location.pathname');
+        expect(routing).toContain("window.addEventListener('popstate'");
+        expect(routing).not.toContain('location.hash');
+        expect(routing).not.toContain('hashchange');
+        expect(routing).not.toContain("'#/");
+        expect(twa.startUrl).toBe('/');
     });
 });

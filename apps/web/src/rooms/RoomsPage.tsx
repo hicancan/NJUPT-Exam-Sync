@@ -22,7 +22,7 @@ interface RoomsPageProps {
 
 const DAY_START = 8 * 60;
 const DAY_END = 22 * 60;
-const BUILDING_CLOSURE_SEARCH_URL = `#/search?q=${encodeURIComponent('封楼')}`;
+const BUILDING_CLOSURE_SEARCH_URL = `/search?q=${encodeURIComponent('封楼')}`;
 
 const formatClock = (timestamp: string): string => {
     const date = new Date(timestamp);
