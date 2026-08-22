@@ -21,6 +21,8 @@ describe('product landing shells', () => {
         expect(html).toContain('输入班级号，查看考试时间、地点和考场。');
         expect(html).toContain('placeholder="输入班级号"');
         expect(html).toContain('继续查看 B240402');
+        expect(html).toContain('grid-cols-[minmax(0,1fr)_88px]');
+        expect(html).not.toContain('flex-col gap-3 sm:flex-row');
         expect(html).not.toContain('正在读取更新记录');
     });
 

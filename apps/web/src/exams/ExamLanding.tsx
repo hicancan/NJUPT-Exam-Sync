@@ -25,18 +25,18 @@ export function ExamLanding({ savedClass, onSubmit, onOpenClass, client, history
         return () => controller.abort();
     }, [client]);
     return (
-        <main className="flex-1 max-w-6xl w-full mx-auto px-4 pt-3 pb-6">
-            <section className="mt-8">
-                <div className="border border-[#dadce0] dark:border-[#3c4043] rounded-xl bg-[#f8fafc] dark:bg-[#2d2e30] p-8 text-center max-w-[692px] mx-auto shadow-sm">
-                    <div className="mx-auto w-16 h-16 bg-[#e8f0fe] dark:bg-[#3b4043] rounded-full flex items-center justify-center mb-4">
-                        <CalendarDays className="w-8 h-8 text-[#1a73e8] dark:text-[#8ab4f8]" aria-hidden="true" />
+        <main className="mx-auto flex-1 w-full max-w-6xl px-4 pb-6 pt-2 sm:pt-3">
+            <section className="mt-4 sm:mt-8">
+                <div className="mx-auto max-w-[692px] rounded-xl border border-[#dadce0] bg-[#f8fafc] px-5 py-6 text-center shadow-sm dark:border-[#3c4043] dark:bg-[#2d2e30] sm:p-8">
+                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#e8f0fe] dark:bg-[#3b4043] sm:mb-4 sm:h-16 sm:w-16">
+                        <CalendarDays className="h-6 w-6 text-[#1a73e8] dark:text-[#8ab4f8] sm:h-8 sm:w-8" aria-hidden="true" />
                     </div>
-                    <h1 className="text-2xl font-semibold text-[#202124] dark:text-[#e8eaed] mb-2">查询考试安排</h1>
-                    <p className="text-[15px] text-[#4d5156] dark:text-[#bdc1c6]">
+                    <h1 className="mb-2 text-[23px] font-semibold leading-tight text-[#202124] dark:text-[#e8eaed] sm:text-2xl">查询考试安排</h1>
+                    <p className="text-[14px] leading-6 text-[#4d5156] dark:text-[#bdc1c6] sm:text-[15px]">
                         输入班级号，查看考试时间、地点和考场。
                     </p>
                     <form
-                        className="mx-auto mt-6 flex max-w-[440px] flex-col gap-3 sm:flex-row"
+                        className="mx-auto mt-5 grid max-w-[440px] grid-cols-[minmax(0,1fr)_88px] gap-2 sm:mt-6 sm:grid-cols-[minmax(0,1fr)_96px] sm:gap-3"
                         onSubmit={(event) => {
                             event.preventDefault();
                             if (classInput.trim()) onSubmit(classInput);
@@ -49,27 +49,33 @@ export function ExamLanding({ savedClass, onSubmit, onOpenClass, client, history
                             onChange={event => setClassInput(event.target.value)}
                             placeholder="输入班级号"
                             autoComplete="off"
-                            className="h-11 min-w-0 flex-1 rounded-lg border border-[#dadce0] bg-white px-3 text-[15px] text-[#202124] outline-none focus:border-[#1a73e8] dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#e8eaed]"
+                            className="h-12 min-w-0 w-full rounded-lg border border-[#dadce0] bg-white px-3 text-[15px] text-[#202124] outline-none focus:border-[#1a73e8] dark:border-[#3c4043] dark:bg-[#202124] dark:text-[#e8eaed] sm:h-11"
                         />
                         <button
                             type="submit"
-                            className="h-11 rounded-lg bg-[#1a73e8] px-5 text-[14px] font-medium text-white hover:bg-[#1765cc]"
+                            className="h-12 w-full rounded-lg bg-[#1a73e8] px-3 text-[14px] font-medium text-white hover:bg-[#1765cc] sm:h-11"
                         >
                             查询
                         </button>
                     </form>
-                    <p className="mt-3 text-[13px] text-[#70757a] dark:text-[#9aa0a6]">
-                        试试 <button type="button" onClick={() => onSubmit('B240402')} className="font-mono text-[#1a73e8] hover:underline dark:text-[#8ab4f8]">B240402</button>
-                    </p>
-                    {savedClass ? (
+                    <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-[13px]">
                         <button
                             type="button"
-                            onClick={() => onOpenClass(savedClass)}
-                            className="mt-5 rounded-full border border-[#d2e3fc] bg-white px-4 py-2 text-[14px] font-medium text-[#174ea6] hover:bg-[#e8f0fe] dark:border-[#394457] dark:bg-[#202124] dark:text-[#8ab4f8] dark:hover:bg-[#1f2430]"
+                            onClick={() => onSubmit('B240402')}
+                            className="inline-flex h-9 items-center rounded-full px-3 text-[#5f6368] hover:bg-white dark:text-[#bdc1c6] dark:hover:bg-[#202124]"
                         >
-                            继续查看 {savedClass}
+                            试试&nbsp;<span className="font-mono text-[#1a73e8] dark:text-[#8ab4f8]">B240402</span>
                         </button>
-                    ) : null}
+                        {savedClass ? (
+                            <button
+                                type="button"
+                                onClick={() => onOpenClass(savedClass)}
+                                className="inline-flex h-9 items-center rounded-full border border-[#d2e3fc] bg-white px-3 font-medium text-[#174ea6] hover:bg-[#e8f0fe] dark:border-[#394457] dark:bg-[#202124] dark:text-[#8ab4f8] dark:hover:bg-[#1f2430]"
+                            >
+                                继续查看 {savedClass}
+                            </button>
+                        ) : null}
+                    </div>
                 </div>
                 {historyClient ? (
                     <Suspense fallback={null}>
