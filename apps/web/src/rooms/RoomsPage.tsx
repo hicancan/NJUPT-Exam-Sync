@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Building2, Clock, MapPin, Search, SlidersHorizontal } from 'lucide-react';
+import { Building2, Clock, MapPin, SlidersHorizontal } from 'lucide-react';
 import { InlineErrorBanner } from '@/shared/ui/InlineErrorBanner';
 import { canonicalRoomLabel, groupRoomBookings, overlapsWindow, uniqueValues } from '@njupt-search/academics-room';
 import { useRoomOccupancy } from './model/useRoomOccupancy';
 import { RoomDateFilter } from './ui/RoomDateFilter';
+import { RoomBuildingPicker } from './ui/RoomBuildingPicker';
+import { RoomsProductHeader } from './ui/RoomsProductHeader';
 import type { RoomBookingGroup } from '@njupt-search/academics-room';
 import type { Room, RoomBooking } from '@njupt-search/academics-room';
 import type { RoomOccupancyClient } from './model/RoomOccupancyClient';
@@ -22,8 +24,6 @@ interface RoomsPageProps {
 
 const DAY_START = 8 * 60;
 const DAY_END = 22 * 60;
-const BUILDING_CLOSURE_SEARCH_URL = `/search?q=${encodeURIComponent('封楼')}`;
-
 const formatClock = (timestamp: string): string => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -207,36 +207,13 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
     const objectParams = state.selectedRoom
         ? { room: selectedRoomLabel, campus: null, building: null, floor: null }
         : { room: null, campus: state.campus, building: state.building, floor: state.floor };
-    const buildingsByCampus = index
-        ? Array.from(new Map(index.floors.map(item => [item.campus, uniqueValues(index.floors
-            .filter(floorItem => floorItem.campus === item.campus)
-            .map(floorItem => floorItem.building))])).entries())
-        : [];
-
     return (
-        <main className="flex-1 max-w-6xl w-full mx-auto px-4 pt-6 pb-8">
-            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                    <h2 className="text-[28px] font-normal text-[#202124] dark:text-[#e8eaed]">
-                        考试教室查询
-                    </h2>
-                    <p className="mt-2 text-[14px] text-[#5f6368] dark:text-[#bdc1c6]">
-                        按日期、校区、楼栋和楼层查看考试占用。
-                    </p>
-                    <a
-                        href={BUILDING_CLOSURE_SEARCH_URL}
-                        className="mt-2 inline-flex items-center gap-1 text-[13px] font-medium text-[#1a73e8] hover:underline dark:text-[#8ab4f8]"
-                    >
-                        <Search className="h-4 w-4" aria-hidden="true" />
-                        查看封楼通知
-                    </a>
-                </div>
-                {index ? (
-                    <div className="rounded-full bg-[#f1f3f4] px-3 py-1 text-[12px] text-[#5f6368] dark:bg-[#303134] dark:text-[#bdc1c6]">
-                        覆盖 {index.rooms.length} 间教室、{index.dates.length} 个考试日期
-                    </div>
-                ) : null}
-            </div>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-8 pt-4 sm:pt-6">
+            <RoomsProductHeader
+                description="按日期、校区、楼栋和楼层查看考试占用。"
+                roomCount={index?.rooms.length}
+                dateCount={index?.dates.length}
+            />
 
             <InlineErrorBanner message={state.error} />
 
@@ -249,33 +226,11 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
             {index ? (
                 <>
                     {!state.floorEntry && !state.error ? (
-                        <section className="rounded-xl border border-[#dadce0] bg-[#f8fbff] p-4 dark:border-[#3c4043] dark:bg-[#202124]">
-                            <p className="mt-2 text-[14px] text-[#5f6368] dark:text-[#bdc1c6]">
-                                选择楼栋查看教室占用。
-                            </p>
-                            <p className="mt-2 text-[13px] text-[#70757a] dark:text-[#9aa0a6]">
-                                示例：教2、教2-313、图科楼、图5、无线楼、无1
-                            </p>
-                            <div className="mt-4 grid gap-4 md:grid-cols-2">
-                                {buildingsByCampus.map(([campusName, campusBuildings]) => (
-                                    <div key={campusName} className="rounded-lg border border-[#dadce0] bg-white p-3 dark:border-[#3c4043] dark:bg-[#202124]">
-                                        <div className="mb-2 text-[14px] font-medium text-[#202124] dark:text-[#e8eaed]">{campusName}</div>
-                                        <div className="flex flex-wrap gap-2">
-                                            {campusBuildings.map(item => (
-                                                <button
-                                                    key={`${campusName}-${item}`}
-                                                    type="button"
-                                                    onClick={() => onChange({ campus: campusName, building: item, room: null, floor: null, date: state.date, start: null, end: null })}
-                                                    className="rounded-full border border-[#d2e3fc] bg-white px-3 py-1.5 text-[13px] text-[#174ea6] hover:bg-[#e8f0fe] dark:border-[#394457] dark:bg-[#202124] dark:text-[#8ab4f8] dark:hover:bg-[#1f2430]"
-                                                >
-                                                    {item}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
+                        <RoomBuildingPicker
+                            floors={index.floors}
+                            heading="选择楼栋"
+                            onSelect={(campusName, buildingName) => onChange({ campus: campusName, building: buildingName, room: null, floor: null, date: state.date, start: null, end: null })}
+                        />
                     ) : null}
 
                     {state.floorEntry ? (

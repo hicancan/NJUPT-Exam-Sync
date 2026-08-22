@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { ExamLanding } from '@/exams/ExamLanding';
 import { RoomsLanding } from '@/rooms/RoomsLanding';
+import { RoomBuildingPicker } from '@/rooms/ui/RoomBuildingPicker';
 import type { RoomOccupancyClient } from '@/rooms/model/RoomOccupancyClient';
 import type { ExamSnapshotClient } from '@/exams/model/ExamSnapshotClient';
 import type { ExamHistoryClient } from '@/exams/model/ExamHistoryClient';
@@ -36,6 +37,26 @@ describe('product landing shells', () => {
         expect(html).toContain('输入楼栋或教室号，查看考试期间的教室占用情况。');
         expect(html).toContain('placeholder="输入楼栋或教室号"');
         expect(html).toContain('正在加载校区和楼栋');
+        expect(html).toContain('grid-cols-[minmax(0,1fr)_88px]');
+        expect(html).not.toContain('flex max-w-[500px] flex-col');
         expect(html).not.toMatch(/产品入口|索引到达|自动补充/);
+    });
+
+    it('renders one shared, touch-friendly building picker', () => {
+        const html = renderToStaticMarkup(
+            <RoomBuildingPicker
+                heading="按楼栋查看"
+                floors={[
+                    { campus: '三牌楼', building: '教东', floor: '1', floor_key: 'a', room_keys: [] },
+                    { campus: '三牌楼', building: '教东', floor: '2', floor_key: 'b', room_keys: [] },
+                    { campus: '仙林', building: '教2', floor: '1', floor_key: 'c', room_keys: [] },
+                ]}
+                onSelect={() => undefined}
+            />,
+        );
+        expect(html).toContain('按楼栋查看');
+        expect(html.match(/>教东<\/button>/g)).toHaveLength(1);
+        expect(html.match(/>教2<\/button>/g)).toHaveLength(1);
+        expect(html).toContain('inline-flex h-9 items-center');
     });
 });
