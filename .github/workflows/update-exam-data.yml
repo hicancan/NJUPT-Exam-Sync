@@ -58,42 +58,32 @@ jobs:
           history_sha256="$(jq -er '.history.sha256' <<< "$ACADEMICS_ARTIFACT")"
           room_archive="$(jq -er '.room.archive' <<< "$ACADEMICS_ARTIFACT")"
           room_sha256="$(jq -er '.room.sha256' <<< "$ACADEMICS_ARTIFACT")"
-          has_teaching_components="$(jq -r 'has("timetable") and has("classrooms")' <<< "$ACADEMICS_ARTIFACT")"
+          timetable_archive="$(jq -er '.timetable.archive' <<< "$ACADEMICS_ARTIFACT")"
+          timetable_sha256="$(jq -er '.timetable.sha256' <<< "$ACADEMICS_ARTIFACT")"
+          classrooms_archive="$(jq -er '.classrooms.archive' <<< "$ACADEMICS_ARTIFACT")"
+          classrooms_sha256="$(jq -er '.classrooms.sha256' <<< "$ACADEMICS_ARTIFACT")"
           [[ "$ref" == ghcr.io/*@sha256:* ]]
-          [[ "$exam_archive" != */* && "$history_archive" != */* && "$room_archive" != */* ]]
+          [[ "$exam_archive" != */* && "$history_archive" != */* && "$room_archive" != */* && "$timetable_archive" != */* && "$classrooms_archive" != */* ]]
 
           mkdir "$RUNNER_TEMP/previous-registry"
           oras pull "$ref" --output "$RUNNER_TEMP/previous-registry"
           printf '%s  %s\n' "$exam_sha256" "$RUNNER_TEMP/previous-registry/$exam_archive" | sha256sum --check -
           printf '%s  %s\n' "$history_sha256" "$RUNNER_TEMP/previous-registry/$history_archive" | sha256sum --check -
           printf '%s  %s\n' "$room_sha256" "$RUNNER_TEMP/previous-registry/$room_archive" | sha256sum --check -
-          mkdir "$RUNNER_TEMP/previous-exam-snapshot" "$RUNNER_TEMP/previous-exam-history" "$RUNNER_TEMP/previous-room-occupancy"
+          printf '%s  %s\n' "$timetable_sha256" "$RUNNER_TEMP/previous-registry/$timetable_archive" | sha256sum --check -
+          printf '%s  %s\n' "$classrooms_sha256" "$RUNNER_TEMP/previous-registry/$classrooms_archive" | sha256sum --check -
+          mkdir "$RUNNER_TEMP/previous-exam-snapshot" "$RUNNER_TEMP/previous-exam-history" "$RUNNER_TEMP/previous-room-occupancy" "$RUNNER_TEMP/previous-timetable" "$RUNNER_TEMP/previous-classrooms"
           tar --zstd -xf "$RUNNER_TEMP/previous-registry/$exam_archive" -C "$RUNNER_TEMP/previous-exam-snapshot"
           tar --zstd -xf "$RUNNER_TEMP/previous-registry/$history_archive" -C "$RUNNER_TEMP/previous-exam-history"
           tar --zstd -xf "$RUNNER_TEMP/previous-registry/$room_archive" -C "$RUNNER_TEMP/previous-room-occupancy"
-          if [ "$has_teaching_components" = true ]; then
-            timetable_archive="$(jq -er '.timetable.archive' <<< "$ACADEMICS_ARTIFACT")"
-            timetable_sha256="$(jq -er '.timetable.sha256' <<< "$ACADEMICS_ARTIFACT")"
-            classrooms_archive="$(jq -er '.classrooms.archive' <<< "$ACADEMICS_ARTIFACT")"
-            classrooms_sha256="$(jq -er '.classrooms.sha256' <<< "$ACADEMICS_ARTIFACT")"
-            [[ "$timetable_archive" != */* && "$classrooms_archive" != */* ]]
-            printf '%s  %s\n' "$timetable_sha256" "$RUNNER_TEMP/previous-registry/$timetable_archive" | sha256sum --check -
-            printf '%s  %s\n' "$classrooms_sha256" "$RUNNER_TEMP/previous-registry/$classrooms_archive" | sha256sum --check -
-            mkdir "$RUNNER_TEMP/previous-timetable" "$RUNNER_TEMP/previous-classrooms"
-            tar --zstd -xf "$RUNNER_TEMP/previous-registry/$timetable_archive" -C "$RUNNER_TEMP/previous-timetable"
-            tar --zstd -xf "$RUNNER_TEMP/previous-registry/$classrooms_archive" -C "$RUNNER_TEMP/previous-classrooms"
-            npm run academics:validate -- \
-              --exam "$RUNNER_TEMP/previous-exam-snapshot" \
-              --history "$RUNNER_TEMP/previous-exam-history" \
-              --room "$RUNNER_TEMP/previous-room-occupancy" \
-              --timetable "$RUNNER_TEMP/previous-timetable" \
-              --classrooms "$RUNNER_TEMP/previous-classrooms"
-          else
-            EXAM_ROOT="$RUNNER_TEMP/previous-exam-snapshot" \
-            HISTORY_ROOT="$RUNNER_TEMP/previous-exam-history" \
-              uv run python -c \
-                'import os; from pathlib import Path; from academics.exam.snapshot.model import load_exam_snapshot; from academics.exam.history.model import load_exam_history; snapshot = load_exam_snapshot(Path(os.environ["EXAM_ROOT"])); history = load_exam_history(Path(os.environ["HISTORY_ROOT"])); assert history.current_snapshot_id == snapshot.snapshot_id'
-          fi
+          tar --zstd -xf "$RUNNER_TEMP/previous-registry/$timetable_archive" -C "$RUNNER_TEMP/previous-timetable"
+          tar --zstd -xf "$RUNNER_TEMP/previous-registry/$classrooms_archive" -C "$RUNNER_TEMP/previous-classrooms"
+          npm run academics:validate -- \
+            --exam "$RUNNER_TEMP/previous-exam-snapshot" \
+            --history "$RUNNER_TEMP/previous-exam-history" \
+            --room "$RUNNER_TEMP/previous-room-occupancy" \
+            --timetable "$RUNNER_TEMP/previous-timetable" \
+            --classrooms "$RUNNER_TEMP/previous-classrooms"
 
       - name: Download the current teaching source
         env:
