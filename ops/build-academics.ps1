@@ -19,6 +19,15 @@ param(
     [string]$RoomOutputPath,
 
     [Parameter(Mandatory = $true)]
+    [string]$TeachingSourcePath,
+
+    [Parameter(Mandatory = $true)]
+    [string]$TeachingOutputPath,
+
+    [Parameter(Mandatory = $true)]
+    [string]$TeachingRoomOutputPath,
+
+    [Parameter(Mandatory = $true)]
     [string]$RoomCatalogPath,
 
     [string]$PreviousExamSnapshotPath,
@@ -37,6 +46,9 @@ $cache = [System.IO.Path]::GetFullPath($CachePath)
 $examOutput = [System.IO.Path]::GetFullPath($ExamOutputPath)
 $historyOutput = [System.IO.Path]::GetFullPath($HistoryOutputPath)
 $roomOutput = [System.IO.Path]::GetFullPath($RoomOutputPath)
+$teachingSource = (Resolve-Path -LiteralPath $TeachingSourcePath).Path
+$teachingOutput = [System.IO.Path]::GetFullPath($TeachingOutputPath)
+$teachingRoomOutput = [System.IO.Path]::GetFullPath($TeachingRoomOutputPath)
 
 if ([string]::IsNullOrWhiteSpace($PreviousExamSnapshotPath) -ne [string]::IsNullOrWhiteSpace($PreviousExamHistoryPath)) {
     throw 'PreviousExamSnapshotPath and PreviousExamHistoryPath must be provided together'
@@ -79,6 +91,14 @@ try {
         --catalog $catalog `
         --output $roomOutput
     if ($LASTEXITCODE -ne 0) { throw 'RoomOccupancy build failed' }
+
+    & uv run python -m academics.timetable `
+        --source $teachingSource `
+        --snapshot $teachingOutput `
+        --occupancy $teachingRoomOutput `
+        --catalog $catalog `
+        --exam $examOutput
+    if ($LASTEXITCODE -ne 0) { throw 'TeachingSchedule build failed' }
 }
 finally {
     Pop-Location

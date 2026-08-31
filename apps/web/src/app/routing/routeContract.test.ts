@@ -11,6 +11,8 @@ describe('product route contract', () => {
     it('routes product entry intents to canonical parameter-free landings', () => {
         expect(resolveQuickIntent({ kind: 'exam' })).toEqual({ route: 'exam' });
         expect(resolveQuickIntent({ kind: 'rooms' })).toEqual({ route: 'rooms' });
+        expect(resolveQuickIntent({ kind: 'timetable' })).toEqual({ route: 'timetable' });
+        expect(resolveQuickIntent({ kind: 'classrooms' })).toEqual({ route: 'classrooms' });
         expect(resolveSubmission('考试安排')).toEqual({ route: 'exam' });
         expect(resolveSubmission('考试占用教室')).toEqual({ route: 'rooms' });
     });
@@ -44,22 +46,28 @@ describe('product route contract', () => {
             ['/rooms', '?room=%E6%95%992-313'],
             ['/rooms', '?campus=%E4%BB%99%E6%9E%97&building=%E6%95%992&floor=3'],
             ['/search', '?q=%E8%82%96%E7%94%AB'],
+            ['/timetable', '?class=B240402&week=13'],
+            ['/classrooms', '?week=1&weekday=2&period=3&campus=%E4%BB%99%E6%9E%97'],
         ] as const;
         const states = urls.map(([pathname, search]) => parseUrlState(pathname, search));
-        expect(states.map(state => state.route)).toEqual(['exam', 'exam', 'exam', 'rooms', 'rooms', 'rooms', 'search']);
+        expect(states.map(state => state.route)).toEqual(['exam', 'exam', 'exam', 'rooms', 'rooms', 'rooms', 'search', 'timetable', 'classrooms']);
         expect(states[0]?.qParam).toBeNull();
         expect(states[1]?.classParam).toBe('B240402');
         expect(states[4]?.roomQuery).toBe('教2-313');
         expect(states[5]).toMatchObject({ campusParam: '仙林', buildingParam: '教2', floorParam: '3' });
+        expect(states[7]).toMatchObject({ classParam: 'B240402', weekParam: '13' });
+        expect(states[8]).toMatchObject({ weekParam: '1', weekdayParam: '2', periodParam: '3', campusParam: '仙林' });
         expect(buildPath({ route: 'exam' })).toBe('/exam');
         expect(buildPath({ route: 'rooms', params: { room: '教2-313' } })).toBe('/rooms?room=%E6%95%992-313');
     });
 
-    it('accepts only the four current application paths', () => {
+    it('accepts only the six current application paths', () => {
         expect(routeFromPathname('/')).toBe('home');
         expect(routeFromPathname('/search')).toBe('search');
         expect(routeFromPathname('/exam')).toBe('exam');
         expect(routeFromPathname('/rooms')).toBe('rooms');
+        expect(routeFromPathname('/timetable')).toBe('timetable');
+        expect(routeFromPathname('/classrooms')).toBe('classrooms');
         expect(() => routeFromPathname('/missing')).toThrow('Unsupported application route');
     });
 });

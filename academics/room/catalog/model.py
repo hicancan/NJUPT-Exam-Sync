@@ -26,9 +26,15 @@ WIRELESS_ROOM_DIGITS = {
 }
 WIRELESS_BUILDING_RE = re.compile(r"^无(?P<room>[1-6一二三四五六])$")
 LIBRARY_SCIENCE_ROOM_FLOORS = {"图4": "1", "图5": "4"}
-STANDARD_LOCATION_RE = re.compile(r"^(?P<building>.+?)-(?P<room>\d{3,4}[A-Za-z]?)$")
-KNOWN_COMPACT_BUILDINGS = ("自动化学科楼",)
-SANPAILOU_BUILDINGS = {"教东", "教西", "图科楼", "无线楼"}
+ROOM_TOKEN = r"\d{3,4}[A-Za-z]?(?:-\d+|\(\d+\))?"
+STANDARD_LOCATION_RE = re.compile(rf"^(?P<building>.+?)-(?P<room>{ROOM_TOKEN})$")
+LABELED_STANDARD_LOCATION_RE = re.compile(rf"(?P<building>教\d+)-(?P<room>{ROOM_TOKEN})\)?$")
+KNOWN_COMPACT_BUILDINGS = ("自动化学科楼", "有线楼")
+LABELED_COMPACT_LOCATION_RE = re.compile(
+    rf"(?P<building>{'|'.join(map(re.escape, KNOWN_COMPACT_BUILDINGS))})-?(?P<room>{ROOM_TOKEN})\)?$"
+)
+SANPAILOU_BUILDINGS = {"教东", "教西", "图科楼", "无线楼", "有线楼"}
+CAMPUS_ALIASES = {"本部": "三牌楼", "锁金村": "锁金"}
 
 
 class RoomCatalogError(RuntimeError):
@@ -125,6 +131,33 @@ def parse_room_location(*, campus: Any, location: Any) -> ParsedRoom | None:
             normalized_location=normalized_location,
         )
 
+    if re.fullmatch(r"图\d{3,4}[A-Za-z]?", normalized_location):
+        room = normalized_location[1:]
+        return _parsed_room(
+            campus="三牌楼",
+            building="图科楼",
+            room=room,
+            normalized_location=f"图科楼-{room}",
+        )
+
+    labeled_match = LABELED_STANDARD_LOCATION_RE.search(normalized_location)
+    if labeled_match:
+        return _parsed_room(
+            campus=campus,
+            building=labeled_match.group("building"),
+            room=labeled_match.group("room"),
+            normalized_location=f"{labeled_match.group('building')}-{labeled_match.group('room')}",
+        )
+
+    labeled_compact_match = LABELED_COMPACT_LOCATION_RE.search(normalized_location)
+    if labeled_compact_match:
+        return _parsed_room(
+            campus=campus,
+            building=labeled_compact_match.group("building"),
+            room=labeled_compact_match.group("room"),
+            normalized_location=f"{labeled_compact_match.group('building')}-{labeled_compact_match.group('room')}",
+        )
+
     match = STANDARD_LOCATION_RE.match(normalized_location)
     if not match:
         for building in KNOWN_COMPACT_BUILDINGS:
@@ -161,7 +194,7 @@ def _parsed_room(
     normalized_campus = (
         "三牌楼"
         if normalized_building in SANPAILOU_BUILDINGS
-        else normalize_room_text(campus)
+        else CAMPUS_ALIASES.get(normalize_room_text(campus), normalize_room_text(campus))
     )
     normalized_room = normalize_room_text(room).upper()
     floor = digits_match.group(0)[0]

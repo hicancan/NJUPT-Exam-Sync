@@ -19,7 +19,7 @@
     "search:test": "cargo test --manifest-path search/Cargo.toml --workspace",
     "lint": "node ./node_modules/eslint/bin/eslint.js .",
     "preview": "node ./node_modules/vite/bin/vite.js preview --config apps/web/vite.config.ts",
-    "test": "npm run search:test && npm run build:wasm:web && npm run test:prepared && uv run pytest academics/exam academics/room/occupancy -q",
+    "test": "npm run search:test && npm run build:wasm:web && npm run test:prepared && uv run pytest academics/exam academics/room/occupancy academics/timetable -q",
     "test:prepared": "node ./node_modules/vitest/vitest.mjs run --config vitest.config.ts",
     "typecheck": "npm run build:wasm:web && npm run typecheck:prepared",
     "typecheck:prepared": "node ./node_modules/typescript/bin/tsc -b --noEmit"

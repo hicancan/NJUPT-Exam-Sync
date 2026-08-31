@@ -13,6 +13,12 @@ param(
     [string]$RoomOccupancyPath,
 
     [Parameter(Mandatory = $true)]
+    [string]$TeachingSchedulePath,
+
+    [Parameter(Mandatory = $true)]
+    [string]$TeachingRoomOccupancyPath,
+
+    [Parameter(Mandatory = $true)]
     [string]$StagePath,
 
     [Parameter(Mandatory = $true)]
@@ -25,6 +31,8 @@ $searchBundle = (Resolve-Path -LiteralPath $SearchBundlePath).Path
 $examSnapshot = (Resolve-Path -LiteralPath $ExamSnapshotPath).Path
 $examHistory = (Resolve-Path -LiteralPath $ExamHistoryPath).Path
 $roomOccupancy = (Resolve-Path -LiteralPath $RoomOccupancyPath).Path
+$teachingSchedule = (Resolve-Path -LiteralPath $TeachingSchedulePath).Path
+$teachingRoomOccupancy = (Resolve-Path -LiteralPath $TeachingRoomOccupancyPath).Path
 $stage = [System.IO.Path]::GetFullPath($StagePath)
 $dist = [System.IO.Path]::GetFullPath($DistPath)
 
@@ -96,7 +104,7 @@ function Copy-ContentAddressedArtifact {
     }
 }
 
-foreach ($artifact in @($searchBundle, $examSnapshot, $examHistory, $roomOccupancy)) {
+foreach ($artifact in @($searchBundle, $examSnapshot, $examHistory, $roomOccupancy, $teachingSchedule, $teachingRoomOccupancy)) {
     if (-not (Test-Path -LiteralPath (Join-Path $artifact 'manifest.json') -PathType Leaf)) {
         throw "Artifact manifest is missing: $artifact"
     }
@@ -168,12 +176,42 @@ Copy-ContentAddressedArtifact `
     -Identity $roomManifest.occupancy_id `
     -ArtifactPaths $roomArtifactPaths
 
+$teachingManifest = Get-Content -LiteralPath (Join-Path $teachingSchedule 'manifest.json') -Raw | ConvertFrom-Json
+$teachingArtifactPaths = @(
+    $teachingManifest.term.path
+    $teachingManifest.periods.path
+    $teachingManifest.class_index.path
+    $teachingManifest.class_chunks | ForEach-Object { $_.path }
+    $teachingManifest.meeting_chunks | ForEach-Object { $_.path }
+)
+Copy-ContentAddressedArtifact `
+    -Source $teachingSchedule `
+    -Destination (Join-Path $generated 'timetable') `
+    -Identity $teachingManifest.snapshot_id `
+    -ArtifactPaths $teachingArtifactPaths
+
+$teachingRoomManifest = Get-Content -LiteralPath (Join-Path $teachingRoomOccupancy 'manifest.json') -Raw | ConvertFrom-Json
+if ($teachingRoomManifest.teaching_snapshot_id -ne $teachingManifest.snapshot_id) {
+    throw 'TeachingRoomOccupancy does not identify the assembled TeachingScheduleSnapshot'
+}
+if ($teachingRoomManifest.exam_snapshot_id -ne $examManifest.snapshot_id) {
+    throw 'TeachingRoomOccupancy does not identify the assembled ExamSnapshot'
+}
+$teachingRoomArtifactPaths = @($teachingRoomManifest.days | ForEach-Object { $_.artifact.path })
+Copy-ContentAddressedArtifact `
+    -Source $teachingRoomOccupancy `
+    -Destination (Join-Path $generated 'classrooms') `
+    -Identity $teachingRoomManifest.occupancy_id `
+    -ArtifactPaths $teachingRoomArtifactPaths
+
 $previousPublic = $env:NJUPT_SEARCH_WEB_PUBLIC_DIR
 $previousOut = $env:NJUPT_SEARCH_WEB_OUT_DIR
 $previousSearchUrl = $env:VITE_NJUPT_SEARCH_ARTIFACT_URL
 $previousExamUrl = $env:VITE_NJUPT_EXAM_ARTIFACT_URL
 $previousHistoryUrl = $env:VITE_NJUPT_EXAM_HISTORY_ARTIFACT_URL
 $previousRoomUrl = $env:VITE_NJUPT_ROOM_ARTIFACT_URL
+$previousTimetableUrl = $env:VITE_NJUPT_TIMETABLE_ARTIFACT_URL
+$previousClassroomsUrl = $env:VITE_NJUPT_CLASSROOMS_ARTIFACT_URL
 try {
     $env:NJUPT_SEARCH_WEB_PUBLIC_DIR = $public
     $env:NJUPT_SEARCH_WEB_OUT_DIR = $dist
@@ -181,6 +219,8 @@ try {
     $env:VITE_NJUPT_EXAM_ARTIFACT_URL = '/generated/exam'
     $env:VITE_NJUPT_EXAM_HISTORY_ARTIFACT_URL = '/generated/exam/history'
     $env:VITE_NJUPT_ROOM_ARTIFACT_URL = '/generated/rooms'
+    $env:VITE_NJUPT_TIMETABLE_ARTIFACT_URL = '/generated/timetable'
+    $env:VITE_NJUPT_CLASSROOMS_ARTIFACT_URL = '/generated/classrooms'
     Push-Location $repository
     try {
         & npm run build:prepared
@@ -199,4 +239,6 @@ finally {
     $env:VITE_NJUPT_EXAM_ARTIFACT_URL = $previousExamUrl
     $env:VITE_NJUPT_EXAM_HISTORY_ARTIFACT_URL = $previousHistoryUrl
     $env:VITE_NJUPT_ROOM_ARTIFACT_URL = $previousRoomUrl
+    $env:VITE_NJUPT_TIMETABLE_ARTIFACT_URL = $previousTimetableUrl
+    $env:VITE_NJUPT_CLASSROOMS_ARTIFACT_URL = $previousClassroomsUrl
 }

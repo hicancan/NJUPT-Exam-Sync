@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ACADEMICS_ARTIFACT: ${{ vars.ACADEMICS_ARTIFACT }}
+      TEACHING_SOURCE_ARTIFACT: ${{ vars.TEACHING_SOURCE_ARTIFACT }}
     steps:
       - uses: actions/checkout@v6
 
@@ -57,22 +58,50 @@ jobs:
           history_sha256="$(jq -er '.history.sha256' <<< "$ACADEMICS_ARTIFACT")"
           room_archive="$(jq -er '.room.archive' <<< "$ACADEMICS_ARTIFACT")"
           room_sha256="$(jq -er '.room.sha256' <<< "$ACADEMICS_ARTIFACT")"
+          timetable_archive="$(jq -er '.timetable.archive' <<< "$ACADEMICS_ARTIFACT")"
+          timetable_sha256="$(jq -er '.timetable.sha256' <<< "$ACADEMICS_ARTIFACT")"
+          classrooms_archive="$(jq -er '.classrooms.archive' <<< "$ACADEMICS_ARTIFACT")"
+          classrooms_sha256="$(jq -er '.classrooms.sha256' <<< "$ACADEMICS_ARTIFACT")"
           [[ "$ref" == ghcr.io/*@sha256:* ]]
-          [[ "$exam_archive" != */* && "$history_archive" != */* && "$room_archive" != */* ]]
+          [[ "$exam_archive" != */* && "$history_archive" != */* && "$room_archive" != */* && "$timetable_archive" != */* && "$classrooms_archive" != */* ]]
 
           mkdir "$RUNNER_TEMP/previous-registry"
           oras pull "$ref" --output "$RUNNER_TEMP/previous-registry"
           printf '%s  %s\n' "$exam_sha256" "$RUNNER_TEMP/previous-registry/$exam_archive" | sha256sum --check -
           printf '%s  %s\n' "$history_sha256" "$RUNNER_TEMP/previous-registry/$history_archive" | sha256sum --check -
           printf '%s  %s\n' "$room_sha256" "$RUNNER_TEMP/previous-registry/$room_archive" | sha256sum --check -
-          mkdir "$RUNNER_TEMP/previous-exam-snapshot" "$RUNNER_TEMP/previous-exam-history" "$RUNNER_TEMP/previous-room-occupancy"
+          printf '%s  %s\n' "$timetable_sha256" "$RUNNER_TEMP/previous-registry/$timetable_archive" | sha256sum --check -
+          printf '%s  %s\n' "$classrooms_sha256" "$RUNNER_TEMP/previous-registry/$classrooms_archive" | sha256sum --check -
+          mkdir "$RUNNER_TEMP/previous-exam-snapshot" "$RUNNER_TEMP/previous-exam-history" "$RUNNER_TEMP/previous-room-occupancy" "$RUNNER_TEMP/previous-timetable" "$RUNNER_TEMP/previous-classrooms"
           tar --zstd -xf "$RUNNER_TEMP/previous-registry/$exam_archive" -C "$RUNNER_TEMP/previous-exam-snapshot"
           tar --zstd -xf "$RUNNER_TEMP/previous-registry/$history_archive" -C "$RUNNER_TEMP/previous-exam-history"
           tar --zstd -xf "$RUNNER_TEMP/previous-registry/$room_archive" -C "$RUNNER_TEMP/previous-room-occupancy"
+          tar --zstd -xf "$RUNNER_TEMP/previous-registry/$timetable_archive" -C "$RUNNER_TEMP/previous-timetable"
+          tar --zstd -xf "$RUNNER_TEMP/previous-registry/$classrooms_archive" -C "$RUNNER_TEMP/previous-classrooms"
           npm run academics:validate -- \
             --exam "$RUNNER_TEMP/previous-exam-snapshot" \
             --history "$RUNNER_TEMP/previous-exam-history" \
-            --room "$RUNNER_TEMP/previous-room-occupancy"
+            --room "$RUNNER_TEMP/previous-room-occupancy" \
+            --timetable "$RUNNER_TEMP/previous-timetable" \
+            --classrooms "$RUNNER_TEMP/previous-classrooms"
+
+      - name: Download the current teaching source
+        env:
+          REGISTRY_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test -n "$TEACHING_SOURCE_ARTIFACT"
+          ref="$(jq -er '.ref' <<< "$TEACHING_SOURCE_ARTIFACT")"
+          archive="$(jq -er '.archive' <<< "$TEACHING_SOURCE_ARTIFACT")"
+          sha256="$(jq -er '.sha256' <<< "$TEACHING_SOURCE_ARTIFACT")"
+          source_id="$(jq -er '.id' <<< "$TEACHING_SOURCE_ARTIFACT")"
+          [[ "$ref" == ghcr.io/*@sha256:* ]]
+          [[ "$archive" != */* ]]
+          mkdir "$RUNNER_TEMP/teaching-source-registry" "$RUNNER_TEMP/teaching-source"
+          oras pull "$ref" --output "$RUNNER_TEMP/teaching-source-registry"
+          printf '%s  %s\n' "$sha256" "$RUNNER_TEMP/teaching-source-registry/$archive" | sha256sum --check -
+          tar --zstd -xf "$RUNNER_TEMP/teaching-source-registry/$archive" -C "$RUNNER_TEMP/teaching-source"
+          test "$(jq -r .source_id "$RUNNER_TEMP/teaching-source/manifest.json")" = "$source_id"
 
       - name: Discover and build explicit academic artifacts
         shell: pwsh
@@ -86,13 +115,16 @@ jobs:
             -ExamOutputPath "$env:RUNNER_TEMP/exam-snapshot" `
             -HistoryOutputPath "$env:RUNNER_TEMP/exam-history" `
             -RoomOutputPath "$env:RUNNER_TEMP/room-occupancy" `
+            -TeachingSourcePath "$env:RUNNER_TEMP/teaching-source" `
+            -TeachingOutputPath "$env:RUNNER_TEMP/timetable" `
+            -TeachingRoomOutputPath "$env:RUNNER_TEMP/classrooms" `
             -RoomCatalogPath academics/room/catalog/njupt-room-catalog.json `
             -PreviousExamSnapshotPath "$env:RUNNER_TEMP/previous-exam-snapshot" `
             -PreviousExamHistoryPath "$env:RUNNER_TEMP/previous-exam-history" `
             -RefreshMaterialized
 
       - name: Validate academics artifacts
-        run: npm run academics:validate -- --exam "$RUNNER_TEMP/exam-snapshot" --history "$RUNNER_TEMP/exam-history" --room "$RUNNER_TEMP/room-occupancy"
+        run: npm run academics:validate -- --exam "$RUNNER_TEMP/exam-snapshot" --history "$RUNNER_TEMP/exam-history" --room "$RUNNER_TEMP/room-occupancy" --timetable "$RUNNER_TEMP/timetable" --classrooms "$RUNNER_TEMP/classrooms"
 
       - name: Publish academics and update the artifact pointer
         env:
@@ -107,23 +139,37 @@ jobs:
           exam_id="$(jq -r .snapshot_id "$RUNNER_TEMP/exam-snapshot/manifest.json")"
           history_id="$(jq -r .history_id "$RUNNER_TEMP/exam-history/manifest.json")"
           occupancy_id="$(jq -r .occupancy_id "$RUNNER_TEMP/room-occupancy/manifest.json")"
+          timetable_id="$(jq -r .snapshot_id "$RUNNER_TEMP/timetable/manifest.json")"
+          classrooms_id="$(jq -r .occupancy_id "$RUNNER_TEMP/classrooms/manifest.json")"
           test "${#exam_id}" -eq 64
           test "${#history_id}" -eq 64
           test "${#occupancy_id}" -eq 64
+          test "${#timetable_id}" -eq 64
+          test "${#classrooms_id}" -eq 64
           test "$(jq -r .current_snapshot_id "$RUNNER_TEMP/exam-history/manifest.json")" = "$exam_id"
-          academics_id="$(printf '%s\0%s\0%s' "$exam_id" "$history_id" "$occupancy_id" | sha256sum | cut -d' ' -f1)"
+          test "$(jq -r .teaching_snapshot_id "$RUNNER_TEMP/classrooms/manifest.json")" = "$timetable_id"
+          test "$(jq -r .exam_snapshot_id "$RUNNER_TEMP/classrooms/manifest.json")" = "$exam_id"
+          academics_id="$(printf '%s\0%s\0%s\0%s\0%s' "$exam_id" "$history_id" "$occupancy_id" "$timetable_id" "$classrooms_id" | sha256sum | cut -d' ' -f1)"
           exam_archive="njupt-exam-${exam_id}.tar.zst"
           history_archive="njupt-exam-history-${history_id}.tar.zst"
           room_archive="njupt-room-occupancy-${occupancy_id}.tar.zst"
+          timetable_archive="njupt-teaching-schedule-${timetable_id}.tar.zst"
+          classrooms_archive="njupt-teaching-room-occupancy-${classrooms_id}.tar.zst"
           tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner \
             --zstd -cf "$exam_archive" -C "$RUNNER_TEMP/exam-snapshot" .
           tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner \
             --zstd -cf "$history_archive" -C "$RUNNER_TEMP/exam-history" .
           tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner \
             --zstd -cf "$room_archive" -C "$RUNNER_TEMP/room-occupancy" .
+          tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner \
+            --zstd -cf "$timetable_archive" -C "$RUNNER_TEMP/timetable" .
+          tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner \
+            --zstd -cf "$classrooms_archive" -C "$RUNNER_TEMP/classrooms" .
           exam_sha256="$(sha256sum "$exam_archive" | cut -d' ' -f1)"
           history_sha256="$(sha256sum "$history_archive" | cut -d' ' -f1)"
           room_sha256="$(sha256sum "$room_archive" | cut -d' ' -f1)"
+          timetable_sha256="$(sha256sum "$timetable_archive" | cut -d' ' -f1)"
+          classrooms_sha256="$(sha256sum "$classrooms_archive" | cut -d' ' -f1)"
           registry="ghcr.io/${GITHUB_REPOSITORY_OWNER}/njupt-academics"
           if digest="$(oras resolve "$registry:$academics_id" 2>/dev/null)"; then
             mkdir published
@@ -134,6 +180,10 @@ jobs:
               | sha256sum --check -
             printf '%s  %s\n' "$room_sha256" "published/$room_archive" \
               | sha256sum --check -
+            printf '%s  %s\n' "$timetable_sha256" "published/$timetable_archive" \
+              | sha256sum --check -
+            printf '%s  %s\n' "$classrooms_sha256" "published/$classrooms_archive" \
+              | sha256sum --check -
           else
             oras push \
               --artifact-type application/vnd.njupt.academics \
@@ -141,7 +191,9 @@ jobs:
               "$registry:$academics_id" \
               "$exam_archive:application/vnd.njupt.exam-snapshot+zstd" \
               "$history_archive:application/vnd.njupt.exam-history+zstd" \
-              "$room_archive:application/vnd.njupt.room-occupancy+zstd"
+              "$room_archive:application/vnd.njupt.room-occupancy+zstd" \
+              "$timetable_archive:application/vnd.njupt.teaching-schedule+zstd" \
+              "$classrooms_archive:application/vnd.njupt.teaching-room-occupancy+zstd"
             digest="$(oras resolve "$registry:$academics_id")"
           fi
           academics_artifact="$(
@@ -157,12 +209,20 @@ jobs:
               --arg room_id "$occupancy_id" \
               --arg room_archive "$room_archive" \
               --arg room_sha256 "$room_sha256" \
+              --arg timetable_id "$timetable_id" \
+              --arg timetable_archive "$timetable_archive" \
+              --arg timetable_sha256 "$timetable_sha256" \
+              --arg classrooms_id "$classrooms_id" \
+              --arg classrooms_archive "$classrooms_archive" \
+              --arg classrooms_sha256 "$classrooms_sha256" \
               '{
                 ref:$ref,
                 id:$id,
                 exam:{id:$exam_id,archive:$exam_archive,sha256:$exam_sha256},
                 history:{id:$history_id,archive:$history_archive,sha256:$history_sha256},
-                room:{id:$room_id,archive:$room_archive,sha256:$room_sha256}
+                room:{id:$room_id,archive:$room_archive,sha256:$room_sha256},
+                timetable:{id:$timetable_id,archive:$timetable_archive,sha256:$timetable_sha256},
+                classrooms:{id:$classrooms_id,archive:$classrooms_archive,sha256:$classrooms_sha256}
               }'
           )"
           gh variable set ACADEMICS_ARTIFACT --body "$academics_artifact"
@@ -185,6 +245,20 @@ jobs:
         with:
           name: current-room-occupancy
           path: ${{ runner.temp }}/room-occupancy
+          if-no-files-found: error
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: current-timetable
+          path: ${{ runner.temp }}/timetable
+          if-no-files-found: error
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: current-classrooms
+          path: ${{ runner.temp }}/classrooms
           if-no-files-found: error
           retention-days: 7
 
@@ -211,6 +285,16 @@ jobs:
         with:
           name: current-room-occupancy
           path: ${{ runner.temp }}/room-occupancy
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: current-timetable
+          path: ${{ runner.temp }}/timetable
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: current-classrooms
+          path: ${{ runner.temp }}/classrooms
 
       - uses: oras-project/setup-oras@v1
         with:
@@ -254,7 +338,9 @@ jobs:
           npm run academics:validate -- \
             --exam "$RUNNER_TEMP/exam-snapshot" \
             --history "$RUNNER_TEMP/exam-history" \
-            --room "$RUNNER_TEMP/room-occupancy"
+            --room "$RUNNER_TEMP/room-occupancy" \
+            --timetable "$RUNNER_TEMP/timetable" \
+            --classrooms "$RUNNER_TEMP/classrooms"
 
       - name: Assemble the complete Web product
         shell: pwsh
@@ -265,6 +351,8 @@ jobs:
             -ExamSnapshotPath "$env:RUNNER_TEMP/exam-snapshot" `
             -ExamHistoryPath "$env:RUNNER_TEMP/exam-history" `
             -RoomOccupancyPath "$env:RUNNER_TEMP/room-occupancy" `
+            -TeachingSchedulePath "$env:RUNNER_TEMP/timetable" `
+            -TeachingRoomOccupancyPath "$env:RUNNER_TEMP/classrooms" `
             -StagePath "$env:RUNNER_TEMP/web-stage" `
             -DistPath "$env:RUNNER_TEMP/dist"
 

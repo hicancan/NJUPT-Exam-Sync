@@ -19,22 +19,26 @@
 
 ---
 
-南邮的通知散落在学校主站以及各个学院、部门网站里，有些关键信息甚至藏在 PDF、Word 或 Excel 附件中。`njupt-search` 将这些内容汇总成了一个支持全文检索的入口，同时提供班级考试安排和考试教室查询。
+南邮的通知散落在学校主站以及各个学院、部门网站里，有些关键信息甚至藏在 PDF、Word 或 Excel 附件中。`njupt-search` 将这些内容汇总成一个全文检索入口，也把日常课表、空教室和考试查询放在同一处。
 
 ## 功能
 
 - **校园搜索**：检索各校区网页与附件，支持按来源、类型和时间过滤。
+- **班级课表**：按班级和周次查看课程，支持课程详情和 ICS 日历导出。
+- **空教室**：联合课程与考试占用，查询当前数据中没有发现占用的教室。
 - **考试安排**：输入班级号即可查看考试时间、地点，支持导出 ICS 日历。
 - **考试教室**：按日期、校区、楼栋和楼层，查询考场占用情况。
 - **Web 与 Android**：直接在浏览器中使用，也提供 Android 安装包。
 
 直接打开：
 
-- [校园搜索](https://njupt.hicancan.top/)
+- [校园搜索](https://njupt.hicancan.top/search)
+- [班级课表](https://njupt.hicancan.top/timetable)
+- [空教室](https://njupt.hicancan.top/classrooms)
 - [考试安排](https://njupt.hicancan.top/exam)
 - [考试教室](https://njupt.hicancan.top/rooms)
 
-> 注：搜索结果会保留原始网页链接和发布日期。教室页面仅反映教务处的“考试占用”数据，不代表日常上课或临时借用的情况。
+> 注：搜索结果保留原始网页链接和发布日期。“空教室”只联合当前已发布的课程和考试占用，不包含临时借用、调课、活动、维修或尚未同步的变化；“考试教室”则只展示考试占用。
 
 ## 搜索如何工作
 
@@ -58,7 +62,7 @@ njupt-search       构建 SearchBundle 索引，提供 Web / Android 页面
 
 前两步爬虫和清洗工作分别由 [`static-site-graph`](https://github.com/hicancan/static-site-graph) 和 [`njupt-site-graph`](https://github.com/hicancan/njupt-site-graph) 负责。
 
-考试编排数据会被单独编译为 `ExamSnapshot`。可信的连续快照会形成 `ExamHistory`，用于展示全局更新和本班变化；当前快照同时派生考试教室数据 `RoomOccupancy`。本仓库源码里不包含任何真实的校园语料或生成好的数据文件，部署时脚本会把这些产物组装成一个纯静态站点。
+考试编排数据会被单独编译为 `ExamSnapshot`。可信的连续快照形成 `ExamHistory`，当前快照同时派生考试教室数据 `RoomOccupancy`。全校班级课表由登录教务系统后的 `njupt-jwxt` 扩展采集成 `TeachingScheduleSource`，再由本仓库编译为 `TeachingScheduleSnapshot` 和独立的 `TeachingRoomOccupancy`。源码里不包含真实校园语料、教务响应或生成好的数据文件；部署时只组装经过隐私清理和完整性验证的内容寻址产物。
 
 ## 目录
 
@@ -74,7 +78,8 @@ njupt-search/
 │   └── browser/      浏览器端的 Worker、网络切片拉取与缓存
 ├── academics/
 │   ├── exam/         考试快照、更新历史、班级查询与 ICS 导出
-│   └── room/         教室目录和考试占用
+│   ├── room/         统一教室目录和考试占用
+│   └── timetable/    班级课表和课程教室占用
 ├── benchmarks/       搜索质量与性能基准测试
 ├── ops/              各种构建、验证和 Web 组装脚本
 └── docs/             架构与数据格式设计文档
@@ -102,6 +107,9 @@ $bundlePath = "$dataPath\search-bundle"
 $examPath = "$dataPath\exam-snapshot"
 $historyPath = "$dataPath\exam-history"
 $roomPath = "$dataPath\room-occupancy"
+$teachingSourcePath = 'D:\path\to\teaching-schedule-source'
+$timetablePath = "$dataPath\teaching-schedule"
+$classroomsPath = "$dataPath\teaching-room-occupancy"
 ```
 
 构建倒排索引：
@@ -125,6 +133,9 @@ uv run python -m academics.exam discover `
   -ExamOutputPath $examPath `
   -HistoryOutputPath $historyPath `
   -RoomOutputPath $roomPath `
+  -TeachingSourcePath $teachingSourcePath `
+  -TeachingOutputPath $timetablePath `
+  -TeachingRoomOutputPath $classroomsPath `
   -RoomCatalogPath .\academics\room\catalog\njupt-room-catalog.json
 ```
 
@@ -136,6 +147,8 @@ uv run python -m academics.exam discover `
   -ExamSnapshotPath $examPath `
   -ExamHistoryPath $historyPath `
   -RoomOccupancyPath $roomPath `
+  -TeachingSchedulePath $timetablePath `
+  -TeachingRoomOccupancyPath $classroomsPath `
   -StagePath "$dataPath\web-stage" `
   -DistPath "$dataPath\web-dist"
 ```

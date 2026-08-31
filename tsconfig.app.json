@@ -53,6 +53,9 @@
             ],
             "@njupt-search/academics-room": [
                 "./academics/room/index.ts"
+            ],
+            "@njupt-search/academics-timetable": [
+                "./academics/timetable/index.ts"
             ]
         }
     },
@@ -61,6 +64,7 @@
         "search/browser/src",
         "search/browser/wasm",
         "academics/exam",
-        "academics/room"
+        "academics/room",
+        "academics/timetable"
     ]
 }

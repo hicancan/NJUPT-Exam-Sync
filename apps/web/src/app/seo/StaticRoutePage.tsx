@@ -7,10 +7,16 @@ import { RoomsLanding } from '@/rooms/RoomsLanding';
 import type { RoomOccupancyClient } from '@/rooms/model/RoomOccupancyClient';
 import type { AppRoute } from '@/app/routing/useUrlState';
 import { SearchLanding } from '@/search/SearchLanding';
+import { TimetableLanding } from '@/timetable/TimetableLanding';
+import type { TeachingScheduleClient } from '@/timetable/model/TeachingScheduleClient';
+import { ClassroomsLanding } from '@/classrooms/ClassroomsLanding';
+import type { ClassroomAvailabilityClient } from '@/classrooms/model/ClassroomAvailabilityClient';
 
 const never = new Promise<never>(() => undefined);
 const examClient = { initialize: () => never } as unknown as ExamSnapshotClient;
 const roomClient = { initialize: () => never } as unknown as RoomOccupancyClient;
+const teachingClient = { initialize: () => never } as unknown as TeachingScheduleClient;
+const classroomClient = { initialize: () => never } as unknown as ClassroomAvailabilityClient;
 const noop = () => undefined;
 
 export function StaticRoutePage({ route }: { route: AppRoute }) {
@@ -51,6 +57,8 @@ export function StaticRoutePage({ route }: { route: AppRoute }) {
                 />
             ) : null}
             {route === 'search' ? <SearchLanding /> : null}
+            {route === 'timetable' ? <TimetableLanding client={teachingClient} savedClass={null} onOpenClass={noop} /> : null}
+            {route === 'classrooms' ? <ClassroomsLanding client={classroomClient} onChange={noop} /> : null}
             <AppFooter />
         </div>
     );

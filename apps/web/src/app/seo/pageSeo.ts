@@ -7,7 +7,7 @@ export const SOCIAL_IMAGE_ALT = 'njupt-search 标志';
 interface PageIdentity {
     title: string;
     description: string;
-    pathname: '/' | '/search' | '/exam' | '/rooms';
+    pathname: '/' | '/search' | '/timetable' | '/classrooms' | '/exam' | '/rooms';
 }
 
 export interface PageSeo extends PageIdentity {
@@ -36,6 +36,16 @@ const PAGE_IDENTITIES: Record<AppRoute, PageIdentity> = {
         title: '南邮考试教室查询｜njupt-search',
         description: '按日期、校区、楼栋和楼层查看南京邮电大学考试期间的教室占用情况。',
         pathname: '/rooms',
+    },
+    timetable: {
+        title: '南邮班级课表查询｜njupt-search',
+        description: '输入班级号，按周查看南京邮电大学课程时间、教师和教室，并可导出日历。',
+        pathname: '/timetable',
+    },
+    classrooms: {
+        title: '南邮空教室查询｜njupt-search',
+        description: '按周次、日期和节次查询南京邮电大学课程与考试数据中没有发现占用的教室。',
+        pathname: '/classrooms',
     },
 };
 

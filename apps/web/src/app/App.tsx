@@ -12,13 +12,21 @@ import type { ProductIntent } from '@/app/routing/intents';
 import { ExamLanding } from '@/exams/ExamLanding';
 import { RoomsLanding } from '@/rooms/RoomsLanding';
 import { applyPageSeo, resolvePageSeo } from '@/app/seo/pageSeo';
+import { TeachingScheduleClient } from '@/timetable/model/TeachingScheduleClient';
+import { ClassroomAvailabilityClient } from '@/classrooms/model/ClassroomAvailabilityClient';
+import { TimetableLanding } from '@/timetable/TimetableLanding';
+import { ClassroomsLanding } from '@/classrooms/ClassroomsLanding';
 
 const loadSearchPage = () => import('@/search/SearchPage').then(module => ({ default: module.SearchPage }));
 const loadExamPage = () => import('@/exams/ExamPage').then(module => ({ default: module.ExamPage }));
 const loadRoomsPage = () => import('@/rooms/RoomsPage').then(module => ({ default: module.RoomsPage }));
+const loadTimetablePage = () => import('@/timetable/TimetablePage').then(module => ({ default: module.TimetablePage }));
+const loadClassroomsPage = () => import('@/classrooms/ClassroomsPage').then(module => ({ default: module.ClassroomsPage }));
 const SearchPage = lazy(loadSearchPage);
 const ExamPage = lazy(loadExamPage);
 const RoomsPage = lazy(loadRoomsPage);
+const TimetablePage = lazy(loadTimetablePage);
+const ClassroomsPage = lazy(loadClassroomsPage);
 
 function RouteLoading() {
     return (
@@ -55,12 +63,16 @@ function App() {
         return historyClientPromiseRef.current;
     }, [examClient]);
     const roomClient = useMemo(() => new RoomOccupancyClient(APP_CONFIG.DATA_URLS.ROOM), []);
+    const teachingClient = useMemo(() => new TeachingScheduleClient(APP_CONFIG.DATA_URLS.TIMETABLE), []);
+    const classroomClient = useMemo(() => new ClassroomAvailabilityClient(APP_CONFIG.DATA_URLS.CLASSROOMS, roomClient), [roomClient]);
     useEffect(() => () => {
         searchClient.dispose();
         examClient.dispose();
         historyClientRef.current?.dispose();
         roomClient.dispose();
-    }, [examClient, roomClient, searchClient]);
+        teachingClient.dispose();
+        classroomClient.dispose();
+    }, [classroomClient, examClient, roomClient, searchClient, teachingClient]);
     useEffect(() => {
         if (router.route !== 'exam') return;
         void loadExamHistoryClient()
@@ -90,6 +102,16 @@ function App() {
                 .catch(() => {
                     // Exam history is supplementary and reports its own failure state.
                 });
+            return;
+        }
+        if (intent.kind === 'timetable') {
+            void loadTimetablePage();
+            void teachingClient.initialize().catch(() => undefined);
+            return;
+        }
+        if (intent.kind === 'classrooms') {
+            void loadClassroomsPage();
+            void classroomClient.initialize().catch(() => undefined);
             return;
         }
         void loadRoomsPage();
@@ -167,6 +189,40 @@ function App() {
                             end={router.rooms.end}
                             onChange={router.navigateRooms}
                             client={roomClient}
+                        />
+                    )
+                ) : null}
+
+                {router.route === 'timetable' ? (
+                    !router.timetable.className ? (
+                        <TimetableLanding
+                            client={teachingClient}
+                            savedClass={router.timetable.savedClass}
+                            onOpenClass={(className) => router.navigateTimetable({ class: className, week: null })}
+                        />
+                    ) : (
+                        <TimetablePage
+                            className={router.timetable.className}
+                            week={router.timetable.week}
+                            client={teachingClient}
+                            onChange={router.navigateTimetable}
+                        />
+                    )
+                ) : null}
+
+                {router.route === 'classrooms' ? (
+                    !router.classrooms.week || !router.classrooms.weekday || !router.classrooms.period ? (
+                        <ClassroomsLanding client={classroomClient} onChange={router.navigateClassrooms} />
+                    ) : (
+                        <ClassroomsPage
+                            week={router.classrooms.week}
+                            weekday={router.classrooms.weekday}
+                            period={router.classrooms.period}
+                            campus={router.classrooms.campus}
+                            building={router.classrooms.building}
+                            floor={router.classrooms.floor}
+                            client={classroomClient}
+                            onChange={router.navigateClassrooms}
                         />
                     )
                 ) : null}

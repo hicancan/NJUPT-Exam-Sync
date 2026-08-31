@@ -38,6 +38,20 @@ def test_sanpailou_special_buildings_are_deterministic() -> None:
     assert west.campus == "三牌楼"
 
 
+def test_current_teaching_location_variants_resolve_to_physical_rooms() -> None:
+    split_room = parse_room_location(campus="仙林", location="教2－214(1)")
+    laboratory = parse_room_location(campus="仙林", location="第一实验室教3-214")
+    language_room = parse_room_location(campus="本部", location="语音10室(教3-601)")
+    wired_room = parse_room_location(campus="本部", location="语音15室(有线楼304)")
+    library_room = parse_room_location(campus="本部", location="图409")
+
+    assert split_room is not None and split_room.room == "214(1)"
+    assert laboratory is not None and laboratory.building == "教3" and laboratory.room == "214"
+    assert language_room is not None and language_room.building == "教3" and language_room.room == "601"
+    assert wired_room is not None and wired_room.campus == "三牌楼" and wired_room.building == "有线楼"
+    assert library_room is not None and library_room.campus == "三牌楼" and library_room.room == "409"
+
+
 def test_current_catalog_is_the_single_maintained_room_set() -> None:
     catalog = load_room_catalog(CATALOG_PATH)
     assert catalog.format == ROOM_CATALOG_FORMAT
@@ -45,7 +59,7 @@ def test_current_catalog_is_the_single_maintained_room_set() -> None:
         (room.campus, room.building, room.floor, room.room)
         for room in catalog.rooms_by_key.values()
     }
-    assert len(identities) == 157
+    assert len(identities) == 269
     assert ("三牌楼", "无线楼", "1", "无1") in identities
     assert ("三牌楼", "无线楼", "1", "无2") in identities
     assert ("三牌楼", "无线楼", "2", "无3") in identities

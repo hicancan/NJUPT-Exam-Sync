@@ -8,6 +8,7 @@
     "../../search/browser/src",
     "../../search/browser/wasm",
     "../../academics/exam",
-    "../../academics/room"
+    "../../academics/room",
+    "../../academics/timetable"
   ]
 }

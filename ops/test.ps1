@@ -12,6 +12,9 @@ param(
     [string]$ExamSnapshotPath,
     [string]$ExamHistoryPath,
     [string]$RoomOccupancyPath,
+    [string]$TeachingSourcePath,
+    [string]$TeachingSchedulePath,
+    [string]$TeachingRoomOccupancyPath,
     [string]$RoomCatalogPath,
     [string]$WebStagePath,
     [string]$WebDistPath,
@@ -60,7 +63,7 @@ try {
     Invoke-Checked { npm run test:prepared } 'TypeScript tests failed'
     Invoke-Checked { uv sync --extra test } 'Python test environment sync failed'
     Invoke-Checked {
-        uv run pytest academics/exam academics/room/occupancy academics/room/catalog -q
+        uv run pytest academics/exam academics/room/occupancy academics/room/catalog academics/timetable -q
     } 'Academics tests failed'
 
     if ($Mode -eq 'full') {
@@ -73,6 +76,9 @@ try {
             ExamSnapshotPath = $ExamSnapshotPath
             ExamHistoryPath = $ExamHistoryPath
             RoomOccupancyPath = $RoomOccupancyPath
+            TeachingSourcePath = $TeachingSourcePath
+            TeachingSchedulePath = $TeachingSchedulePath
+            TeachingRoomOccupancyPath = $TeachingRoomOccupancyPath
             RoomCatalogPath = $RoomCatalogPath
             WebStagePath = $WebStagePath
             WebDistPath = $WebDistPath
@@ -102,12 +108,17 @@ try {
             -ExamOutputPath $ExamSnapshotPath `
             -HistoryOutputPath $ExamHistoryPath `
             -RoomOutputPath $RoomOccupancyPath `
+            -TeachingSourcePath $TeachingSourcePath `
+            -TeachingOutputPath $TeachingSchedulePath `
+            -TeachingRoomOutputPath $TeachingRoomOccupancyPath `
             -RoomCatalogPath $RoomCatalogPath
         Invoke-Checked {
             npm run academics:validate -- `
                 --exam $ExamSnapshotPath `
                 --history $ExamHistoryPath `
-                --room $RoomOccupancyPath
+                --room $RoomOccupancyPath `
+                --timetable $TeachingSchedulePath `
+                --classrooms $TeachingRoomOccupancyPath
         } 'Academics producer/consumer validation failed'
 
         & (Join-Path $PSScriptRoot 'assemble-web.ps1') `
@@ -115,6 +126,8 @@ try {
             -ExamSnapshotPath $ExamSnapshotPath `
             -ExamHistoryPath $ExamHistoryPath `
             -RoomOccupancyPath $RoomOccupancyPath `
+            -TeachingSchedulePath $TeachingSchedulePath `
+            -TeachingRoomOccupancyPath $TeachingRoomOccupancyPath `
             -StagePath $WebStagePath `
             -DistPath $WebDistPath
     }

@@ -27,6 +27,14 @@ export const APP_CONFIG = {
             'RoomOccupancy',
             import.meta.env.VITE_NJUPT_ROOM_ARTIFACT_URL,
         ),
+        TIMETABLE: requiredArtifactUrl(
+            'TeachingSchedule',
+            import.meta.env.VITE_NJUPT_TIMETABLE_ARTIFACT_URL,
+        ),
+        CLASSROOMS: requiredArtifactUrl(
+            'TeachingRoomOccupancy',
+            import.meta.env.VITE_NJUPT_CLASSROOMS_ARTIFACT_URL,
+        ),
     },
     MAX_CLASS_DISPLAY_COUNT: 50,
     SEARCH_RESULT_LIMIT: 10,

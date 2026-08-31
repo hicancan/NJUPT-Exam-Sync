@@ -28,6 +28,18 @@ import {
     parseExamHistoryManifest,
     selectExamClassHistory,
 } from '../academics/exam/history/index.ts';
+import {
+    assertTeachingManifestIdentity,
+    assertTeachingOccupancyIdentity,
+    parseTeachingClassChunk,
+    parseTeachingClassIndex,
+    parseTeachingManifest,
+    parseTeachingMeetingChunk,
+    parseTeachingOccupancyManifest,
+    parseTeachingPeriods,
+    parseTeachingRoomDay,
+    parseTeachingTerm,
+} from '../academics/timetable/index.ts';
 
 function argument(name: string): string {
     const index = process.argv.indexOf(name);
@@ -60,6 +72,8 @@ function artifactJson(root: string, artifact: ArtifactReference): unknown {
 const examRoot = argument('--exam');
 const historyRoot = argument('--history');
 const roomRoot = argument('--room');
+const timetableRoot = argument('--timetable');
+const classroomsRoot = argument('--classrooms');
 const manifest = parseExamSnapshotManifest(json(examRoot, 'manifest.json'));
 await assertExamSnapshotIdentity(manifest);
 const exams = parseExamData(artifactJson(examRoot, manifest.records), manifest.records.path);
@@ -154,6 +168,48 @@ for (const date of roomManifest.dates) {
     }
 }
 
+const teachingManifest = parseTeachingManifest(json(timetableRoot, 'manifest.json'));
+await assertTeachingManifestIdentity(teachingManifest);
+const teachingTerm = parseTeachingTerm(artifactJson(timetableRoot, teachingManifest.term), teachingManifest.term.path);
+const teachingPeriods = parseTeachingPeriods(artifactJson(timetableRoot, teachingManifest.periods), teachingManifest.periods.path);
+const teachingIndex = parseTeachingClassIndex(artifactJson(timetableRoot, teachingManifest.class_index), teachingManifest.class_index.path);
+if (teachingTerm.source_id !== teachingManifest.source_id || teachingPeriods.source_id !== teachingManifest.source_id || teachingIndex.source_id !== teachingManifest.source_id) {
+    throw new Error('TeachingSchedule component source identity mismatch');
+}
+const teachingClasses = new Map();
+for (const artifact of teachingManifest.class_chunks) {
+    const classes = parseTeachingClassChunk(artifactJson(timetableRoot, artifact), artifact.path);
+    for (const [classId, value] of Object.entries(classes)) teachingClasses.set(classId, value);
+}
+const teachingMeetings = new Map();
+for (const artifact of teachingManifest.meeting_chunks) {
+    const meetings = parseTeachingMeetingChunk(artifactJson(timetableRoot, artifact), artifact.path);
+    for (const [meetingId, value] of Object.entries(meetings)) teachingMeetings.set(meetingId, value);
+}
+if (teachingClasses.size !== teachingManifest.class_count || teachingMeetings.size !== teachingManifest.meeting_count) {
+    throw new Error('TeachingSchedule counts do not match its chunks');
+}
+for (const entry of teachingIndex.classes) {
+    const teachingClass = teachingClasses.get(entry.class_id);
+    if (!teachingClass || teachingClass.meeting_ids.some((meetingId: string) => !teachingMeetings.has(meetingId))) {
+        throw new Error(`TeachingSchedule class index is incomplete: ${entry.class_id}`);
+    }
+}
+
+const teachingOccupancy = parseTeachingOccupancyManifest(json(classroomsRoot, 'manifest.json'));
+await assertTeachingOccupancyIdentity(teachingOccupancy);
+if (teachingOccupancy.teaching_snapshot_id !== teachingManifest.snapshot_id || teachingOccupancy.exam_snapshot_id !== manifest.snapshot_id) {
+    throw new Error('TeachingRoomOccupancy component identity mismatch');
+}
+let teachingDays = 0;
+for (const entry of teachingOccupancy.days) {
+    const day = parseTeachingRoomDay(artifactJson(classroomsRoot, entry.artifact), entry.artifact.path);
+    if (day.teaching_snapshot_id !== teachingManifest.snapshot_id || day.week !== entry.week || day.weekday !== entry.weekday) {
+        throw new Error(`TeachingRoomOccupancy day identity mismatch: ${entry.artifact.path}`);
+    }
+    teachingDays += 1;
+}
+
 process.stdout.write(`${JSON.stringify({
     exam_snapshot_id: manifest.snapshot_id,
     exams: exams.length,
@@ -167,4 +223,10 @@ process.stdout.write(`${JSON.stringify({
     room_occupancy_id: roomManifest.occupancy_id,
     rooms: roomManifest.rooms.length,
     room_slices: roomSlices,
+    teaching_snapshot_id: teachingManifest.snapshot_id,
+    teaching_classes: teachingClasses.size,
+    teaching_meetings: teachingMeetings.size,
+    teaching_room_occupancy_id: teachingOccupancy.occupancy_id,
+    teaching_rooms: teachingOccupancy.rooms.length,
+    teaching_days: teachingDays,
 }, null, 2)}\n`);

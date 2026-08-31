@@ -26,7 +26,11 @@ param(
     [string]$ExamMaterializedPath,
     [string]$ExamCachePath,
     [string]$ExamSnapshotPath,
+    [string]$ExamHistoryPath,
     [string]$RoomOccupancyPath,
+    [string]$TeachingSourcePath,
+    [string]$TeachingSchedulePath,
+    [string]$TeachingRoomOccupancyPath,
     [string]$RoomCatalogPath,
     [string]$WebStagePath,
     [string]$WebDistPath,
@@ -113,7 +117,11 @@ if ($Mode -in @('full', 'crawl')) {
         -ExamMaterializedPath $ExamMaterializedPath `
         -ExamCachePath $ExamCachePath `
         -ExamSnapshotPath $ExamSnapshotPath `
+        -ExamHistoryPath $ExamHistoryPath `
         -RoomOccupancyPath $RoomOccupancyPath `
+        -TeachingSourcePath $TeachingSourcePath `
+        -TeachingSchedulePath $TeachingSchedulePath `
+        -TeachingRoomOccupancyPath $TeachingRoomOccupancyPath `
         -RoomCatalogPath $RoomCatalogPath `
         -WebStagePath $WebStagePath `
         -WebDistPath $WebDistPath
@@ -131,11 +139,15 @@ if ($StartWeb) {
     $previousSearchUrl = $env:VITE_NJUPT_SEARCH_ARTIFACT_URL
     $previousExamUrl = $env:VITE_NJUPT_EXAM_ARTIFACT_URL
     $previousRoomUrl = $env:VITE_NJUPT_ROOM_ARTIFACT_URL
+    $previousTimetableUrl = $env:VITE_NJUPT_TIMETABLE_ARTIFACT_URL
+    $previousClassroomsUrl = $env:VITE_NJUPT_CLASSROOMS_ARTIFACT_URL
     try {
         $env:NJUPT_SEARCH_WEB_PUBLIC_DIR = $public
         $env:VITE_NJUPT_SEARCH_ARTIFACT_URL = '/generated/search'
         $env:VITE_NJUPT_EXAM_ARTIFACT_URL = '/generated/exam'
         $env:VITE_NJUPT_ROOM_ARTIFACT_URL = '/generated/rooms'
+        $env:VITE_NJUPT_TIMETABLE_ARTIFACT_URL = '/generated/timetable'
+        $env:VITE_NJUPT_CLASSROOMS_ARTIFACT_URL = '/generated/classrooms'
         Invoke-Checked $searchRepository 'npm' @(
             'run', 'dev', '--', '--host', '127.0.0.1'
         )
@@ -145,5 +157,7 @@ if ($StartWeb) {
         $env:VITE_NJUPT_SEARCH_ARTIFACT_URL = $previousSearchUrl
         $env:VITE_NJUPT_EXAM_ARTIFACT_URL = $previousExamUrl
         $env:VITE_NJUPT_ROOM_ARTIFACT_URL = $previousRoomUrl
+        $env:VITE_NJUPT_TIMETABLE_ARTIFACT_URL = $previousTimetableUrl
+        $env:VITE_NJUPT_CLASSROOMS_ARTIFACT_URL = $previousClassroomsUrl
     }
 }

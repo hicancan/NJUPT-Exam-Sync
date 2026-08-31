@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-export type AppRoute = 'home' | 'search' | 'exam' | 'rooms';
+export type AppRoute = 'home' | 'search' | 'timetable' | 'classrooms' | 'exam' | 'rooms';
 
 export interface UrlState {
     route: AppRoute;
@@ -14,6 +14,9 @@ export interface UrlState {
     floorParam: string | null;
     startParam: string | null;
     endParam: string | null;
+    weekParam: string | null;
+    weekdayParam: string | null;
+    periodParam: string | null;
 }
 
 export interface NavigateOptions {
@@ -26,6 +29,8 @@ export const routeFromPathname = (pathname: string): AppRoute => {
     if (pathname === '/search') return 'search';
     if (pathname === '/exam') return 'exam';
     if (pathname === '/rooms') return 'rooms';
+    if (pathname === '/timetable') return 'timetable';
+    if (pathname === '/classrooms') return 'classrooms';
     throw new Error(`Unsupported application route: ${pathname}`);
 };
 
@@ -43,6 +48,9 @@ export const parseUrlState = (pathname: string, search: string): UrlState => {
         floorParam: params.get('floor') || null,
         startParam: params.get('start') || null,
         endParam: params.get('end') || null,
+        weekParam: params.get('week') || null,
+        weekdayParam: params.get('weekday') || null,
+        periodParam: params.get('period') || null,
     };
 };
 

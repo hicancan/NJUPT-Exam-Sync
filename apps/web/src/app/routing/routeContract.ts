@@ -35,6 +35,8 @@ export const resolveSubmission = (value: string): RouteDestination => {
 };
 
 export const resolveQuickIntent = (intent: ProductIntent): RouteDestination => {
+    if (intent.kind === 'timetable') return { route: 'timetable' };
+    if (intent.kind === 'classrooms') return { route: 'classrooms' };
     if (intent.kind === 'exam') return { route: 'exam' };
     if (intent.kind === 'rooms') return { route: 'rooms' };
     return { route: 'search', params: { q: intent.query } };

@@ -36,6 +36,20 @@ const pages = [
         canonical: 'https://njupt.hicancan.top/rooms',
         h1: '考试教室查询',
     },
+    {
+        file: 'timetable/index.html',
+        title: '南邮班级课表查询｜njupt-search',
+        description: '输入班级号，按周查看南京邮电大学课程时间、教师和教室，并可导出日历。',
+        canonical: 'https://njupt.hicancan.top/timetable',
+        h1: '查询班级课表',
+    },
+    {
+        file: 'classrooms/index.html',
+        title: '南邮空教室查询｜njupt-search',
+        description: '按周次、日期和节次查询南京邮电大学课程与考试数据中没有发现占用的教室。',
+        canonical: 'https://njupt.hicancan.top/classrooms',
+        h1: '查询空教室',
+    },
 ];
 
 for (const page of pages) {
@@ -65,7 +79,7 @@ for (const page of pages) {
 }
 
 const home = read('index.html');
-for (const href of ['/exam', '/rooms']) {
+for (const href of ['/exam', '/rooms', '/timetable', '/classrooms']) {
     assert(home.includes(`href="${href}"`), `index.html: missing crawlable ${href} link`);
 }
 
@@ -88,6 +102,8 @@ assert(JSON.stringify(locations) === JSON.stringify([
     'https://njupt.hicancan.top/',
     'https://njupt.hicancan.top/exam',
     'https://njupt.hicancan.top/rooms',
+    'https://njupt.hicancan.top/timetable',
+    'https://njupt.hicancan.top/classrooms',
 ]), 'sitemap.xml: canonical URL set mismatch');
 assert(locations.every(location => !location.includes('#') && !location.includes('?')), 'sitemap.xml: hash or query URL found');
 assert(sitemap.startsWith('<?xml version="1.0" encoding="UTF-8"?>'), 'sitemap.xml: invalid XML declaration');
@@ -98,16 +114,18 @@ assert(JSON.stringify(rewrites) === JSON.stringify([
     { source: '/exam', destination: '/exam/index.html' },
     { source: '/rooms', destination: '/rooms/index.html' },
     { source: '/search', destination: '/search/index.html' },
+    { source: '/timetable', destination: '/timetable/index.html' },
+    { source: '/classrooms', destination: '/classrooms/index.html' },
 ]), 'edgeone.json: clean route rewrites mismatch');
 assert(!rewrites.some(rewrite => rewrite.source.includes('*')), 'edgeone.json: catch-all page fallback found');
 const searchHeaders = (edgeone.headers ?? []).find(rule => rule.source === '/search')?.headers ?? [];
 assert(searchHeaders.some(header => header.key === 'X-Robots-Tag' && header.value === 'noindex, follow'), 'edgeone.json: search response noindex is missing');
-for (const source of ['/generated/search/*', '/generated/exam/*', '/generated/rooms/*']) {
+for (const source of ['/generated/search/*', '/generated/exam/*', '/generated/rooms/*', '/generated/timetable/*', '/generated/classrooms/*']) {
     const headers = (edgeone.headers ?? []).find(rule => rule.source === source)?.headers ?? [];
     assert(headers.some(header => header.key === 'X-Robots-Tag' && header.value === 'noindex, nofollow'), `edgeone.json: ${source} robots header is missing`);
 }
 
-for (const file of ['index.html', 'exam/index.html', 'rooms/index.html', 'search/index.html']) {
+for (const file of ['index.html', 'exam/index.html', 'rooms/index.html', 'search/index.html', 'timetable/index.html', 'classrooms/index.html']) {
     const html = read(file);
     assert(!html.includes('#/'), `${file}: hash route found in production HTML`);
     assert(!/class="[^"]*(?:sr-only|hidden)[^"]*"[^>]*>[^<]*(?:南邮校园信息|考试安排|考试教室)/.test(html), `${file}: hidden SEO copy found`);

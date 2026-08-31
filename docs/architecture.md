@@ -13,6 +13,7 @@ apps/web
   -> search/browser -> search/wasm -> search/core
   -> academics/exam
   -> academics/room -> academics/exam public model
+  -> academics/timetable -> academics/room catalog
 
 benchmarks -> production entry points
 ops        -> production entry points + apps assembly
@@ -130,6 +131,11 @@ ExamSourceDescriptor
        |      + previous trusted ExamSnapshot
        |      `-> ExamHistory
        `-> ICS
+
+TeachingScheduleSource
+  -> TeachingScheduleCompiler
+       |-> TeachingScheduleSnapshot
+       `-> RoomCatalog + ExamSnapshot -> TeachingRoomOccupancy
 ```
 
 descriptor、原始 Excel、可复用缓存和输出 artifact 使用不同显式路径。
@@ -214,6 +220,35 @@ manifest 重新验证当前 `occupancy_id`；floor artifact 只按当前日期�
 不预取完整分片。组装器验证输入的精确文件集合，并且只写出稳定 manifest 与
 identity 子目录。
 
+`njupt-jwxt` 在用户已经登录的当前教务系统中读取 JSON 接口，并输出唯一的
+`njupt-teaching-schedule-source`。源包显式包含目录、学期、节次和每个目录项的
+终态；Cookie、Token、账号模型、电话和私有在线链接不会进入导出。源包以
+`source_id` 内容寻址，目录顺序、分页状态和构建时间不影响 identity。
+
+Python 是课表语义的唯一所有者。它严格读取 TeachingScheduleSource，规范化班级、
+课程、周次、节次和地点，以教学班、课程、时间、地点和教师组成稳定业务身份；合班
+课程只保留一个 `TeachingMeeting`，通过 `class_ids` 关联全部班级。输出的唯一当前
+格式 `njupt-teaching-schedule` 包含 `term.json`、`periods.json`、班级索引、班级
+分块和 meeting 分块。浏览器只加载目标班级对应的分块，不下载全校课表。
+
+`TeachingRoomOccupancy` 的唯一当前格式是 `njupt-teaching-room-occupancy`。它从同一
+TeachingScheduleSnapshot 派生，并引用当前 ExamSnapshot；每个周次/星期分片只保存
+课程占用。空教室产品在客户端针对目标节次联合课程占用和考试占用，再从同一
+RoomCatalog 中求候选差集。无法识别的线上、无地点和非实体场地只进入构建审计，
+真实标准教室缺失则构建失败。
+
+```text
+/generated/timetable/manifest.json
+/generated/timetable/<snapshot_id>/term.json
+/generated/timetable/<snapshot_id>/periods.json
+/generated/timetable/<snapshot_id>/class-index.json
+/generated/timetable/<snapshot_id>/classes-*.json
+/generated/timetable/<snapshot_id>/meetings-*.json
+
+/generated/classrooms/manifest.json
+/generated/classrooms/<occupancy_id>/*.json
+```
+
 日历能力位于 `academics/exam/calendar.ts`，只把公开 ExamRecord 转换为 ICS。
 Python 拥有 ExamSnapshot 和 RoomOccupancy 写出；每种 artifact 在 TypeScript
 中只有一个严格 decoder，并由真实 Python 产物做跨语言读取测试。
@@ -221,51 +256,56 @@ Python 拥有 ExamSnapshot 和 RoomOccupancy 写出；每种 artifact 在 TypeSc
 ## Product and composition
 
 `apps/web/src` 按产品能力组织：`app` 只做启动、路由和 shell；`home`、
-`search`、`exams`、`rooms` 各自拥有完整交互；`shared` 只容纳至少两个能力
+`search`、`timetable`、`classrooms`、`exams`、`rooms` 各自拥有完整交互；
+`shared` 只容纳至少两个能力
 共同使用的 UI/HTTP 原语。
 
-首页快捷入口使用判别联合表达 `exam`、`rooms` 或 `search` 意图，而不是依靠
+首页快捷入口使用判别联合表达 `timetable`、`classrooms`、`exam`、`rooms` 或
+`search` 意图，而不是依靠
 按钮文字触发隐藏分支。七个全文入口只提供查询意图，随后仍由 SearchClient →
 Worker → WASM → Rust core 完成统一搜索；不存在热词结果、独立排名或 UI
 fallback。
 
-产品路由只读取 `pathname` 与标准 query string。`/exam`、`/rooms` 永远表示
+产品路由只读取 `pathname` 与标准 query string。`/timetable`、`/classrooms`、
+`/exam`、`/rooms` 永远表示
 可分享、可刷新且不含本地历史的 landing；`class`、`q`、`room`、
-`campus/building/floor` 参数才表示详情。首页主按钮始终进入 landing，保存的班级
+`week/weekday/period` 与 `campus/building/floor` 参数才表示详情。首页主按钮始终进入 landing，保存的班级
 或教室只通过 landing 中的“继续查看”次级按钮暴露。`考试安排` 输入直接进入
 `/exam`，不使用查询参数充当内部哨兵。站内导航使用 History API，返回、前进和
 刷新都由同一套 URL 状态驱动。
 
-Web 构建只生成当前四个产品路径：`/`、`/search`、`/exam`、`/rooms`。构建结束
-后复用现有 React landing 组件写出 `index.html`、`exam/index.html`、
-`rooms/index.html` 与 `search/index.html`；浏览器启动后接管相同 DOM。原始响应
-已经含有 H1、真实链接和页面专属 metadata，不等待 SearchBundle、ExamSnapshot
-或 RoomOccupancy。根目录 `404.html` 由 EdgeOne 作为真实 404 返回，部署配置不
+Web 构建只生成当前六个产品路径：`/`、`/search`、`/timetable`、`/classrooms`、
+`/exam`、`/rooms`。构建结束后复用现有 React landing 组件写出对应的静态
+`index.html`；浏览器启动后接管相同 DOM。原始响应已经含有 H1、真实链接和页面
+专属 metadata，不等待任何业务 artifact。根目录 `404.html` 由 EdgeOne 作为真实 404 返回，部署配置不
 设置全站页面回退。
 
 `app/seo/pageSeo.ts` 是 title、description、robots、canonical、Open Graph 与
-WebSite JSON-LD 的唯一来源。只有 `/`、`/exam`、`/rooms` 允许索引；`/search`
-以及带查询参数的考试、教室状态使用 `noindex, follow`，不进入 sitemap，也不
+WebSite JSON-LD 的唯一来源。只有 `/`、`/timetable`、`/classrooms`、`/exam`、
+`/rooms` 允许索引；`/search` 以及带查询参数的课表、空教室、考试和教室状态使用
+`noindex, follow`，不进入 sitemap，也不
 复制学校文章生成本站内容页。`robots.txt` 只声明抓取与 sitemap 入口；sitemap
-只列出三个稳定 canonical URL。
+只列出五个稳定 canonical URL。
 
-Exam 与 Rooms landing 是初始 App bundle 中的小型静态产品壳，不等待页面详情
+Timetable、Classrooms、Exam 与 Rooms landing 是初始 App bundle 中的小型静态产品壳，不等待页面详情
 模块或业务 artifact；Rooms 在壳出现后才补充校区、楼栋、教室数和日期数。
 详情页面继续 lazy load，首页按钮的 pointerenter、focus 和 pointerdown 会并行
 预载详情模块与对应 manifest/index。
 
-四个浏览器客户端都由 App 显式创建并在卸载时 dispose：
+六个浏览器客户端都由 App 显式创建并在卸载时 dispose：
 
 ```text
 App
 ├── SearchClient
 ├── ExamSnapshotClient
 ├── ExamHistoryClient
-└── RoomOccupancyClient
+├── RoomOccupancyClient
+├── TeachingScheduleClient
+└── ClassroomAvailabilityClient
 ```
 
-Exam/History/Room 客户端在同一 SPA 会话中复用 manifest、class index、已访问班级 chunk
-和已访问 floor；显式 refresh 发现 identity 改变时清除旧 identity 缓存。调用者
+所有 Academics 客户端在同一 SPA 会话中复用 manifest、index 与已访问分片；
+显式 refresh 发现 identity 改变时清除旧 identity 缓存。调用者
 的 AbortSignal 只取消该次等待，最新详情/楼层请求会取消旧请求，初始化预热则由
 App 生命周期拥有，避免页面切换破坏可复用状态。
 
@@ -277,8 +317,10 @@ App 生命周期拥有，避免页面切换破坏可复用状态。
 ```text
 CorpusSnapshot -> SearchBundle
 ExamSourceDescriptor -> ExamSnapshot -> ExamHistory + RoomOccupancy
+TeachingScheduleSource -> TeachingScheduleSnapshot -> TeachingRoomOccupancy
 
-SearchBundle + ExamSnapshot + ExamHistory + RoomOccupancy + static Web source
+SearchBundle + ExamSnapshot + ExamHistory + RoomOccupancy
+  + TeachingScheduleSnapshot + TeachingRoomOccupancy + static Web source
   -> external staging -> Web dist
 ```
 
@@ -296,19 +338,20 @@ must-revalidate`，对 identity 路径使用 `public, max-age=31536000, immutabl
 
 云端同样保持这两个生产事务独立。`Build Corpus Artifact` 把 SearchBundle
 作为按内容寻址的 OCI artifact 发布；`Build Academics Artifact` 把
-ExamSnapshot、ExamHistory 与 RoomOccupancy 作为三个明确组件放进一个内容寻址的
-Academics OCI artifact。组合 identity 由三个组件 identity 共同确定。当前 corpus、
+ExamSnapshot、ExamHistory、RoomOccupancy、TeachingScheduleSnapshot 与
+TeachingRoomOccupancy 作为五个明确组件放进一个内容寻址的 Academics OCI
+artifact。组合 identity 由五个组件 identity 共同确定。当前 corpus、
 search 和 academics 分别使用一个完整 JSON 指针，引用 OCI manifest digest、
 领域 identity、归档文件名与 SHA-256，不再把 URL/hash 拆成可能错配的多个
 变量。
 
-更新 Academics 时，workflow 先严格下载当前三组件 artifact，验证历史头与上一
-快照一致，再构建新快照和增量历史。三个不可变归档都发布成功后才更新唯一的
+更新 Academics 时，workflow 先严格下载当前五组件 artifact，验证考试历史头与
+上一快照一致，再构建新快照、增量历史、课表和课程占用。五个不可变归档都发布成功后才更新唯一的
 `ACADEMICS_ARTIFACT` 指针；失败不会移动历史头。Actions 短期 artifact 只负责把
 同一次构建交给 Web 组装，不承担历史保存。
 
-两个 workflow 的 Web 组装 job 只读取 SearchBundle 和 Academics 三组件这四个
-明确 artifact，不重新生产另一个领域的输出。只有四者全部通过身份校验，才会
+两个 workflow 的 Web 组装 job 只读取 SearchBundle 和 Academics 五组件这六个
+明确 artifact，不重新生产另一个领域的输出。只有六者全部通过身份校验，才会
 生成 `njupt-search-dist` 并通过 `workflow_run` 交给 EdgeOne 部署。Git Tags 与
 GitHub Releases 只表达软件版本及其 Android 安装包；滚动数据和编译产物不会
 污染源码版本历史。

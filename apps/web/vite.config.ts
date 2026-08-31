@@ -34,6 +34,7 @@ export default defineConfig(({ command }) => {
       '@njupt-search/academics-exam': path.resolve(__dirname, '../../academics/exam'),
       '@njupt-search/academics-exam/calendar': path.resolve(__dirname, '../../academics/exam/calendar.ts'),
       '@njupt-search/academics-room': path.resolve(__dirname, '../../academics/room/index.ts'),
+      '@njupt-search/academics-timetable': path.resolve(__dirname, '../../academics/timetable/index.ts'),
       '@njupt-search/search-browser': path.resolve(__dirname, '../../search/browser/src/index.ts'),
     },
   },
