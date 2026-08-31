@@ -317,13 +317,49 @@
     .timetable-view-switch button { flex: 1; }
     .timetable-export { order: 3; }
     .timetable-scroll { border-inline: 0; border-radius: 0; }
-    .timetable-grid { grid-template-columns: 62px repeat(var(--day-count), minmax(82px, 1fr)); min-width: calc(62px + var(--day-count) * 88px); }
-    .timetable-period-label { grid-template-columns: 22px 1fr; padding-inline: 6px; }
-    .timetable-period-label strong { font-size: 16px; }
-    .timetable-course { padding: 6px 4px; border-radius: 9px; }
-    .timetable-course strong { font-size: 12px; -webkit-line-clamp: 4; }
-    .timetable-course span, .timetable-course small { font-size: 10px; }
-    .timetable-day .timetable-grid { min-width: 100%; grid-template-columns: 62px minmax(0, 1fr); }
+    .timetable-grid {
+        width: 100%;
+        min-width: 100%;
+        grid-template-columns: 50px repeat(var(--day-count), minmax(0, 1fr));
+        padding-right: 1px;
+    }
+    .timetable-day-head strong { font-size: 12px; }
+    .timetable-day-head span { font-size: 10px; }
+    .timetable-day-head.is-today::after { width: 18px; }
+    .timetable-period-label { grid-template-columns: 18px 1fr; padding-inline: 2px; }
+    .timetable-period-label strong { font-size: 15px; }
+    .timetable-period-label span { font-size: 9px; }
+    .timetable-course {
+        gap: 3px;
+        margin-inline: 1px;
+        padding: 5px 2px;
+        border-radius: 8px;
+    }
+    .timetable-course strong {
+        overflow-wrap: anywhere;
+        font-size: 11px;
+        line-height: 1.28;
+        -webkit-line-clamp: 5;
+    }
+    .timetable-course span,
+    .timetable-course small {
+        display: -webkit-box;
+        overflow-wrap: anywhere;
+        font-size: 9px;
+        line-height: 1.2;
+        text-overflow: clip;
+        white-space: normal;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+    .timetable-course em { font-size: 8px; line-height: 1.2; }
+    .timetable-conflict-group { gap: 1px; margin-inline: 1px; }
+    .timetable-conflict-group .timetable-course { padding-inline: 1px; }
+    .timetable-conflict-group .timetable-course strong { font-size: 9px; }
+    .timetable-conflict-group .timetable-course span,
+    .timetable-conflict-group .timetable-course small,
+    .timetable-conflict-group .timetable-course em { font-size: 8px; }
+    .timetable-day .timetable-grid { grid-template-columns: 50px minmax(0, 1fr); }
     .course-detail-overlay { align-items: flex-end; }
     .course-detail-panel { width: 100%; height: min(78dvh, 720px); border-top: 1px solid var(--course-border); border-left: 0; border-radius: 22px 22px 0 0; box-shadow: 0 -12px 28px rgb(32 33 36 / 18%); animation: course-sheet-in 180ms ease-out; }
     @keyframes course-sheet-in { from { transform: translateY(100%); } }
