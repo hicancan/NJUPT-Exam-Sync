@@ -84,7 +84,6 @@ jobs:
           set -euo pipefail
           : "${GH_TOKEN:?NJUPT_SEARCH_GITHUB_TOKEN is required}"
           archive="njupt-teaching-schedule-source-${SOURCE_ID}.tar.zst"
-          archive_path="$RUNNER_TEMP/source-release/$archive"
           registry="ghcr.io/${GITHUB_REPOSITORY_OWNER}/njupt-teaching-schedule-source"
           printf '%s' "$REGISTRY_TOKEN" \
             | oras login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
@@ -94,11 +93,14 @@ jobs:
             printf '%s  %s\n' "$ARCHIVE_SHA256" "$RUNNER_TEMP/published-source/$archive" \
               | sha256sum --check -
           else
-            oras push \
-              --artifact-type application/vnd.njupt.teaching-schedule-source \
-              --annotation "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${SOURCE_REPOSITORY}" \
-              "$registry:$SOURCE_ID" \
-              "$archive_path:application/vnd.njupt.teaching-schedule-source+zstd"
+            (
+              cd "$RUNNER_TEMP/source-release"
+              oras push \
+                --artifact-type application/vnd.njupt.teaching-schedule-source \
+                --annotation "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${SOURCE_REPOSITORY}" \
+                "$registry:$SOURCE_ID" \
+                "$archive:application/vnd.njupt.teaching-schedule-source+zstd"
+            )
             digest="$(oras resolve "$registry:$SOURCE_ID")"
           fi
           source_artifact="$(
