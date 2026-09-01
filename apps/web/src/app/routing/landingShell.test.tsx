@@ -38,7 +38,8 @@ describe('product landing shells', () => {
     it('renders the classroom hierarchy shell without waiting for occupancy data', () => {
         const html = renderToStaticMarkup(<ClassroomsLanding client={{ initialize: () => new Promise<never>(() => undefined) } as unknown as ClassroomAvailabilityClient} onChange={() => undefined} />);
         expect(html).toContain('>教室<');
-        expect(html).toContain('按校区、楼栋和楼层逐级浏览');
+        expect(html).not.toContain('不提前加载');
+        expect(html).not.toContain('逐级浏览');
         expect(html).not.toContain('一定空闲');
     });
 });

@@ -190,7 +190,7 @@ export function SpatialViewport({
                     <div className="space-detail-handle" aria-hidden="true" />
                     <header><div><p>{visibleSelected.campus.name} · {visibleSelected.building.name} · {visibleSelected.floor.level}楼</p><h2 id="space-detail-title">{visibleSelected.family.room_number}</h2></div><button autoFocus type="button" onClick={close} aria-label="关闭空间详情"><X /></button></header>
                     <div className="space-detail-body">
-                        <dl><div><dt>当前状态</dt><dd>{STATE_LABEL[stateFor(visibleSelected)]}</dd></div><div><dt>空间依据</dt><dd>{EVIDENCE_LABEL[visibleSelected.family.evidence_status] ?? '空间依据尚未确认'}</dd></div><div><dt>教学空间状态</dt><dd>{visibleSelected.family.availability_eligible === 'eligible' ? '可作为教学空间查询' : visibleSelected.family.availability_eligible === 'ineligible' ? '非教学空间' : '尚未确认'}</dd></div>{visibleSelected.family.aliases.length ? <div><dt>其他名称</dt><dd>{visibleSelected.family.aliases.join('、')}</dd></div> : null}</dl>
+                        <dl><div><dt>当前状态</dt><dd>{STATE_LABEL[stateFor(visibleSelected)]}</dd></div><div><dt>收录依据</dt><dd>{EVIDENCE_LABEL[visibleSelected.family.evidence_status] ?? '尚未确认'}</dd></div><div><dt>类型</dt><dd>{visibleSelected.family.availability_eligible === 'eligible' ? '教学空间' : visibleSelected.family.availability_eligible === 'ineligible' ? '非教学空间' : '尚未确认'}</dd></div>{visibleSelected.family.aliases.length ? <div><dt>其他名称</dt><dd>{visibleSelected.family.aliases.join('、')}</dd></div> : null}</dl>
                         {detail?.(visibleSelected)}
                         <p className="space-detail-caveat">空间图用于理解楼层和已发布占用关系，不代表消防疏散图或工程测绘成果。</p>
                     </div>

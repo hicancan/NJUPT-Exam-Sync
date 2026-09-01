@@ -64,7 +64,6 @@ export function ClassroomsLanding({ client, onChange, query = '' }: ClassroomsLa
             <header className="max-w-3xl">
                 <p className="text-sm font-medium text-[#1967d2] dark:text-[#8ab4f8]">校园空间</p>
                 <h1 className="mt-2 text-4xl font-semibold tracking-tight">教室</h1>
-                <p className="mt-3 text-[15px] leading-7 text-[#5f6368] dark:text-[#bdc1c6]">按校区、楼栋和楼层逐级浏览；进入楼层后查看平面分布，以及所选时段的课程和考试占用。</p>
             </header>
 
             {error ? <div className="mt-6 rounded-xl border border-[#f2b8b5] bg-[#fce8e6] p-4 text-sm text-[#8c1d18] dark:border-[#8c1d18] dark:bg-[#3c2020] dark:text-[#f2b8b5]">{error}</div> : null}
@@ -73,7 +72,7 @@ export function ClassroomsLanding({ client, onChange, query = '' }: ClassroomsLa
             {index && !query.trim() ? (
                 <section className="mt-9" aria-labelledby="campus-heading">
                     <div className="flex items-end justify-between gap-4">
-                        <div><h2 id="campus-heading" className="text-2xl font-semibold">选择校区</h2><p className="mt-1 text-sm text-[#5f6368] dark:text-[#bdc1c6]">第一层只展示校区，不提前加载楼层占用。</p></div>
+                        <h2 id="campus-heading" className="text-2xl font-semibold">选择校区</h2>
                         <span className="text-sm text-[#5f6368] dark:text-[#bdc1c6]">{campuses.length} 个校区</span>
                     </div>
                     <div className="mt-5 grid gap-4 sm:grid-cols-3">{campuses.map(campus => {
@@ -81,7 +80,7 @@ export function ClassroomsLanding({ client, onChange, query = '' }: ClassroomsLa
                         return <button key={campus.campus_id} type="button" onClick={() => enter({ campus: campus.name, building: null, floor: null })} className="group min-h-40 rounded-2xl border border-[#dadce0] bg-white p-5 text-left transition hover:-translate-y-0.5 hover:border-[#8ab4f8] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a73e8] dark:border-[#3c4043] dark:bg-[#292a2d]">
                             <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e8f0fe] text-[#1967d2] dark:bg-[#23334d] dark:text-[#8ab4f8]"><MapPin className="h-5 w-5" aria-hidden="true" /></span>
                             <span className="mt-5 flex items-center justify-between gap-3"><strong className="text-xl">{campus.name}</strong><ArrowRight className="h-5 w-5 text-[#9aa0a6] transition-transform group-hover:translate-x-1" aria-hidden="true" /></span>
-                            <span className="mt-2 block text-sm text-[#5f6368] dark:text-[#bdc1c6]">{buildingCount} 栋已收录楼栋</span>
+                            <span className="mt-2 block text-sm text-[#5f6368] dark:text-[#bdc1c6]">{buildingCount} 栋楼</span>
                         </button>;
                     })}</div>
                 </section>
@@ -89,7 +88,7 @@ export function ClassroomsLanding({ client, onChange, query = '' }: ClassroomsLa
 
             {index && query.trim() ? (
                 <section className="mt-9" aria-labelledby="classroom-search-heading">
-                    <div className="flex items-end justify-between gap-4"><div><h2 id="classroom-search-heading" className="flex items-center gap-2 text-2xl font-semibold"><Search className="h-5 w-5" aria-hidden="true" />“{query.trim()}”</h2><p className="mt-1 text-sm text-[#5f6368] dark:text-[#bdc1c6]">搜索结果仍按空间层级进入，不把不同校区的房间混成一张空闲榜单。</p></div><span className="text-sm text-[#5f6368] dark:text-[#bdc1c6]">{matches.length} 个房间匹配</span></div>
+                    <div className="flex items-end justify-between gap-4"><h2 id="classroom-search-heading" className="flex items-center gap-2 text-2xl font-semibold"><Search className="h-5 w-5" aria-hidden="true" />“{query.trim()}”</h2><span className="text-sm text-[#5f6368] dark:text-[#bdc1c6]">{matches.length} 个房间匹配</span></div>
                     {matchingCampuses.length ? <div className="mt-5"><h3 className="text-sm font-medium text-[#5f6368] dark:text-[#bdc1c6]">校区</h3><div className="mt-2 grid gap-3 sm:grid-cols-3">{matchingCampuses.map(campus => <button key={campus.campus_id} type="button" onClick={() => enter({ campus: campus.name, building: null, floor: null })} className="flex items-center justify-between rounded-xl border border-[#dadce0] p-4 text-left dark:border-[#3c4043]"><span className="flex items-center gap-3"><MapPin className="h-5 w-5 text-[#1967d2]" />{campus.name}</span><ArrowRight className="h-4 w-4" /></button>)}</div></div> : null}
                     {matchingBuildings.length ? <div className="mt-6"><h3 className="text-sm font-medium text-[#5f6368] dark:text-[#bdc1c6]">楼栋</h3><div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{matchingBuildings.map(({ campus, building }) => <button key={building.building_id} type="button" onClick={() => enter({ campus: campus?.name ?? null, building: building.name, floor: null })} className="flex items-center justify-between rounded-xl border border-[#dadce0] p-4 text-left dark:border-[#3c4043]"><span><span className="flex items-center gap-2 font-medium"><Building2 className="h-4 w-4 text-[#1967d2]" />{building.name}</span><small className="mt-1 block text-[#5f6368] dark:text-[#bdc1c6]">{campus?.name}</small></span><ArrowRight className="h-4 w-4" /></button>)}</div></div> : null}
                     {matches.length ? <div className="mt-6"><h3 className="text-sm font-medium text-[#5f6368] dark:text-[#bdc1c6]">房间</h3><div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">{matches.slice(0, 100).map(room => <button key={room.family.space_family_id} type="button" onClick={() => enter({ campus: room.campus.name, building: room.building.name, floor: room.floor.level, room: room.family.space_family_id })} className="rounded-xl border border-[#dadce0] bg-white p-4 text-left dark:border-[#3c4043] dark:bg-[#292a2d]"><Layers3 className="h-4 w-4 text-[#5f6368]" /><strong className="mt-3 block">{room.family.room_number}</strong><small className="mt-1 block leading-5 text-[#5f6368] dark:text-[#bdc1c6]">{room.campus.name} · {room.building.name} · {room.floor.level}楼</small></button>)}</div>{matches.length > 100 ? <p className="mt-3 text-xs text-[#5f6368]">仅显示前 100 个房间，请输入更完整的楼栋或房间号。</p> : null}</div> : null}
