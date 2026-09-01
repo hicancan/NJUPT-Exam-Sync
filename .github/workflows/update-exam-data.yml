@@ -213,22 +213,7 @@ jobs:
           classrooms_sha256="$(sha256sum "$classrooms_archive" | cut -d' ' -f1)"
           space_sha256="$(sha256sum "$space_archive" | cut -d' ' -f1)"
           registry="ghcr.io/${GITHUB_REPOSITORY_OWNER}/njupt-academics"
-          if digest="$(oras resolve "$registry:$academics_id" 2>/dev/null)"; then
-            mkdir published
-            oras pull "$registry@$digest" --output published
-            printf '%s  %s\n' "$exam_sha256" "published/$exam_archive" \
-              | sha256sum --check -
-            printf '%s  %s\n' "$history_sha256" "published/$history_archive" \
-              | sha256sum --check -
-            printf '%s  %s\n' "$room_sha256" "published/$room_archive" \
-              | sha256sum --check -
-            printf '%s  %s\n' "$timetable_sha256" "published/$timetable_archive" \
-              | sha256sum --check -
-            printf '%s  %s\n' "$classrooms_sha256" "published/$classrooms_archive" \
-              | sha256sum --check -
-            printf '%s  %s\n' "$space_sha256" "published/$space_archive" \
-              | sha256sum --check -
-          else
+          push_academics() {
             oras push \
               --artifact-type application/vnd.njupt.academics \
               --annotation "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
@@ -239,6 +224,39 @@ jobs:
               "$timetable_archive:application/vnd.njupt.teaching-schedule+zstd" \
               "$classrooms_archive:application/vnd.njupt.teaching-room-occupancy+zstd" \
               "$space_archive:application/vnd.njupt.space-snapshot+zstd"
+          }
+          if digest="$(oras resolve "$registry:$academics_id" 2>/dev/null)"; then
+            current_ref="$(jq -er .ref <<< "$ACADEMICS_ARTIFACT")"
+            current_id="$(jq -er .id <<< "$ACADEMICS_ARTIFACT")"
+            if [ "$current_id" != "$academics_id" ] || [ "${current_ref##*@}" != "$digest" ]; then
+              echo "::error::Academics content tag collision for $academics_id"
+              exit 1
+            fi
+            mkdir published
+            oras pull "$registry@$digest" --output published
+            repack=false
+            check_archive() {
+              local archive="$1"
+              local expected="$2"
+              local actual
+              actual="$(sha256sum "published/$archive" | cut -d' ' -f1)"
+              if [ "$actual" != "$expected" ]; then
+                echo "Archive representation changed for $archive; repacking the verified component set."
+                repack=true
+              fi
+            }
+            check_archive "$exam_archive" "$exam_sha256"
+            check_archive "$history_archive" "$history_sha256"
+            check_archive "$room_archive" "$room_sha256"
+            check_archive "$timetable_archive" "$timetable_sha256"
+            check_archive "$classrooms_archive" "$classrooms_sha256"
+            check_archive "$space_archive" "$space_sha256"
+            if [ "$repack" = true ]; then
+              push_academics
+              digest="$(oras resolve "$registry:$academics_id")"
+            fi
+          else
+            push_academics
             digest="$(oras resolve "$registry:$academics_id")"
           fi
           academics_artifact="$(
