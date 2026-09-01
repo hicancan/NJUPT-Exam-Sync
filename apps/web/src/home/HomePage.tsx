@@ -58,7 +58,11 @@ export function HomePage({
                 <div className="mt-6 w-full space-y-4">
                     {(['日常教学', '考试', '校园信息'] as const).map(group => (
                         <section key={group} aria-labelledby={`home-group-${group}`}>
-                            <h2 id={`home-group-${group}`} className="mb-2 text-center text-xs font-medium tracking-[0.12em] text-[#80868b] dark:text-[#9aa0a6]">{group}</h2>
+                            <h2 id={`home-group-${group}`} className="mb-2 text-center text-xs font-medium tracking-[0.12em] text-[#80868b] dark:text-[#9aa0a6]">
+                                {group === '校园信息' ? (
+                                    <a className="transition-colors hover:text-[#1a73e8] focus-visible:text-[#1a73e8]" href="/search">{group}</a>
+                                ) : group}
+                            </h2>
                             <div className="flex flex-wrap items-center justify-center gap-2">
                                 {QUICK_SEARCHES.filter(item => item.group === group).map(item => {
                                     const Icon = QUICK_SEARCH_ICONS[item.icon];

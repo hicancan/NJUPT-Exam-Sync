@@ -129,9 +129,10 @@ describe('product copy contract', () => {
         expect(resolvePageSeo('home')).toMatchObject({ indexable: true, canonical: 'https://njupt.hicancan.top/' });
         expect(resolvePageSeo('exam')).toMatchObject({ indexable: true, canonical: 'https://njupt.hicancan.top/exam' });
         expect(resolvePageSeo('rooms')).toMatchObject({ indexable: true, canonical: 'https://njupt.hicancan.top/rooms' });
-        expect(resolvePageSeo('search')).toMatchObject({ indexable: false, canonical: null });
+        expect(resolvePageSeo('search')).toMatchObject({ indexable: true, canonical: 'https://njupt.hicancan.top/search' });
         expect(resolvePageSeo('exam', true)).toMatchObject({ indexable: false, canonical: null });
         expect(resolvePageSeo('rooms', true)).toMatchObject({ indexable: false, canonical: null });
+        expect(resolvePageSeo('search', true)).toMatchObject({ indexable: false, canonical: null });
 
         const homeHead = renderPageHead(resolvePageSeo('home'));
         const examDetailHead = renderPageHead(resolvePageSeo('exam', true));

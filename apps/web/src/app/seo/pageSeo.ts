@@ -57,7 +57,7 @@ const escapeHtmlAttribute = (value: string): string => value
 
 export const resolvePageSeo = (route: AppRoute, hasQueryParams = false): PageSeo => {
     const identity = PAGE_IDENTITIES[route];
-    const indexable = route !== 'search' && !hasQueryParams;
+    const indexable = !hasQueryParams;
     return {
         ...identity,
         indexable,

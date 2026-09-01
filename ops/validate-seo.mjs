@@ -23,6 +23,13 @@ const pages = [
         structured: true,
     },
     {
+        file: 'search/index.html',
+        title: '南邮校园信息搜索｜njupt-search',
+        description: '搜索南京邮电大学各网站的通知、附件和办事信息。',
+        canonical: 'https://njupt.hicancan.top/search',
+        h1: '南邮校园信息搜索',
+    },
+    {
         file: 'exam/index.html',
         title: '南邮考试安排查询｜njupt-search',
         description: '输入班级号，查询南京邮电大学考试时间、地点和考场，并可导出日历。',
@@ -79,14 +86,9 @@ for (const page of pages) {
 }
 
 const home = read('index.html');
-for (const href of ['/exam', '/rooms', '/timetable', '/classrooms']) {
+for (const href of ['/search', '/exam', '/rooms', '/timetable', '/classrooms']) {
     assert(home.includes(`href="${href}"`), `index.html: missing crawlable ${href} link`);
 }
-
-const search = read('search/index.html');
-assert(search.includes('name="robots" content="noindex, follow"'), 'search/index.html: missing noindex');
-assert(!search.includes('rel="canonical"'), 'search/index.html: noindex page has a canonical');
-assert(occurrences(search, /<h1\b/g) === 1, 'search/index.html: expected exactly one H1');
 
 const notFound = read('404.html');
 assert(notFound.includes('name="robots" content="noindex, follow"'), '404.html: missing noindex');
@@ -118,8 +120,7 @@ assert(JSON.stringify(rewrites) === JSON.stringify([
     { source: '/classrooms', destination: '/classrooms/index.html' },
 ]), 'edgeone.json: clean route rewrites mismatch');
 assert(!rewrites.some(rewrite => rewrite.source.includes('*')), 'edgeone.json: catch-all page fallback found');
-const searchHeaders = (edgeone.headers ?? []).find(rule => rule.source === '/search')?.headers ?? [];
-assert(searchHeaders.some(header => header.key === 'X-Robots-Tag' && header.value === 'noindex, follow'), 'edgeone.json: search response noindex is missing');
+assert(!(edgeone.headers ?? []).some(rule => rule.source === '/search'), 'edgeone.json: stable search landing must not be noindex');
 for (const source of ['/generated/search/*', '/generated/exam/*', '/generated/rooms/*', '/generated/timetable/*', '/generated/classrooms/*', '/generated/space/*']) {
     const headers = (edgeone.headers ?? []).find(rule => rule.source === source)?.headers ?? [];
     assert(headers.some(header => header.key === 'X-Robots-Tag' && header.value === 'noindex, nofollow'), `edgeone.json: ${source} robots header is missing`);
