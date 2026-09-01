@@ -142,12 +142,12 @@ for (const source of ['/generated/search/*', '/generated/exam/*', '/generated/ro
 const headerRuleIndex = source => (edgeone.headers ?? []).findIndex(rule => rule.source === source);
 for (const domain of ['search', 'rooms', 'timetable', 'classrooms', 'space']) {
     assert(
-        headerRuleIndex(`/generated/${domain}/manifest.json`) < headerRuleIndex(`/generated/${domain}/*`),
-        `edgeone.json: stable ${domain} manifest rule must precede its immutable wildcard`,
+        headerRuleIndex(`/generated/${domain}/manifest.json`) > headerRuleIndex(`/generated/${domain}/*`),
+        `edgeone.json: stable ${domain} manifest rule must follow its immutable wildcard`,
     );
 }
-assert(headerRuleIndex('/generated/exam/manifest.json') < headerRuleIndex('/generated/exam/*'), 'edgeone.json: exam manifest rule order is unsafe');
-assert(headerRuleIndex('/generated/exam/history/manifest.json') < headerRuleIndex('/generated/exam/*'), 'edgeone.json: exam history manifest rule order is unsafe');
+assert(headerRuleIndex('/generated/exam/manifest.json') > headerRuleIndex('/generated/exam/*'), 'edgeone.json: exam manifest rule order is unsafe');
+assert(headerRuleIndex('/generated/exam/history/manifest.json') > headerRuleIndex('/generated/exam/*'), 'edgeone.json: exam history manifest rule order is unsafe');
 
 for (const file of ['index.html', 'exam/index.html', 'search/index.html', 'timetable/index.html', 'classrooms/index.html']) {
     const html = read(file);
