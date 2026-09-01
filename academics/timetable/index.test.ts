@@ -25,7 +25,8 @@ describe('TeachingScheduleSnapshot decoder', () => {
         };
 
         expect(parseTeachingManifest(current).space_snapshot_id).toBe(hash('d'));
-        const { space_snapshot_id: _deleted, ...obsolete } = current;
+        const obsolete: Record<string, unknown> = { ...current };
+        delete obsolete.space_snapshot_id;
         expect(() => parseTeachingManifest(obsolete)).toThrow(TeachingContractError);
     });
 });
