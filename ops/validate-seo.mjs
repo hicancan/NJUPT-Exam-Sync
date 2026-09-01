@@ -111,7 +111,16 @@ assert(locations.every(location => !location.includes('#') && !location.includes
 assert(sitemap.startsWith('<?xml version="1.0" encoding="UTF-8"?>'), 'sitemap.xml: invalid XML declaration');
 
 const edgeone = JSON.parse(read('edgeone.json'));
+const redirects = edgeone.redirects ?? [];
 const rewrites = edgeone.rewrites ?? [];
+assert(JSON.stringify(redirects) === JSON.stringify([
+    { source: '/index.html', destination: '/', statusCode: 301 },
+    { source: '/exam/', destination: '/exam', statusCode: 301 },
+    { source: '/rooms/', destination: '/rooms', statusCode: 301 },
+    { source: '/search/', destination: '/search', statusCode: 301 },
+    { source: '/timetable/', destination: '/timetable', statusCode: 301 },
+    { source: '/classrooms/', destination: '/classrooms', statusCode: 301 },
+]), 'edgeone.json: canonical redirects mismatch');
 assert(JSON.stringify(rewrites) === JSON.stringify([
     { source: '/exam', destination: '/exam/index.html' },
     { source: '/rooms', destination: '/rooms/index.html' },
@@ -119,6 +128,16 @@ assert(JSON.stringify(rewrites) === JSON.stringify([
     { source: '/timetable', destination: '/timetable/index.html' },
     { source: '/classrooms', destination: '/classrooms/index.html' },
 ]), 'edgeone.json: clean route rewrites mismatch');
+const redirectSources = new Set(redirects.map(redirect => redirect.source));
+for (const rewrite of rewrites) {
+    assert(!redirectSources.has(rewrite.destination), `edgeone.json: rewrite destination ${rewrite.destination} is redirected and cannot be served`);
+    const artifactPath = rewrite.destination.replace(/^\//, '');
+    try {
+        read(artifactPath);
+    } catch {
+        assert(false, `edgeone.json: rewrite destination ${rewrite.destination} is missing from dist`);
+    }
+}
 assert(!rewrites.some(rewrite => rewrite.source.includes('*')), 'edgeone.json: catch-all page fallback found');
 assert(!(edgeone.headers ?? []).some(rule => rule.source === '/search'), 'edgeone.json: stable search landing must not be noindex');
 for (const source of ['/generated/search/*', '/generated/exam/*', '/generated/rooms/*', '/generated/timetable/*', '/generated/classrooms/*', '/generated/space/*']) {

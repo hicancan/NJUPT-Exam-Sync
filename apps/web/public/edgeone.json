@@ -11,17 +11,7 @@
       "statusCode": 301
     },
     {
-      "source": "/exam/index.html",
-      "destination": "/exam",
-      "statusCode": 301
-    },
-    {
       "source": "/rooms/",
-      "destination": "/rooms",
-      "statusCode": 301
-    },
-    {
-      "source": "/rooms/index.html",
       "destination": "/rooms",
       "statusCode": 301
     },
@@ -31,27 +21,12 @@
       "statusCode": 301
     },
     {
-      "source": "/search/index.html",
-      "destination": "/search",
-      "statusCode": 301
-    },
-    {
       "source": "/timetable/",
       "destination": "/timetable",
       "statusCode": 301
     },
     {
-      "source": "/timetable/index.html",
-      "destination": "/timetable",
-      "statusCode": 301
-    },
-    {
       "source": "/classrooms/",
-      "destination": "/classrooms",
-      "statusCode": 301
-    },
-    {
-      "source": "/classrooms/index.html",
       "destination": "/classrooms",
       "statusCode": 301
     }
