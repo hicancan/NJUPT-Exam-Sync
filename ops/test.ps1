@@ -118,7 +118,7 @@ try {
                 --history $ExamHistoryPath `
                 --room $RoomOccupancyPath `
                 --timetable $TeachingSchedulePath `
-                --classrooms $TeachingRoomOccupancyPath
+                --classrooms $TeachingRoomOccupancyPath `
                 --space $SpaceSnapshotPath
         } 'Academics producer/consumer validation failed'
 
