@@ -30,7 +30,7 @@ export function useAppRouter() {
     const routeInput = useMemo(() => {
         if (route === 'exam') return classParam || qParam || '';
         if (route === 'timetable') return classParam || qParam || '';
-        if (route === 'search') return qParam || '';
+        if (route === 'search' || route === 'community' || route === 'materials') return qParam || '';
         if (route === 'classrooms') return qParam || buildingParam || floorParam || '';
         return '';
     }, [buildingParam, classParam, floorParam, qParam, route]);

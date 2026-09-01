@@ -267,8 +267,38 @@ fn rejects_ui_sentinels_and_invalid_dates() {
     query.filters.source_id = Some("all".to_string());
     assert!(engine.search(&query).unwrap_err().contains("real source"));
     query.filters.source_id = None;
+    query.filters.excluded_source_ids = vec!["source-a".to_string(), "source-a".to_string()];
+    assert!(engine.search(&query).unwrap_err().contains("duplicates"));
+    query.filters.excluded_source_ids = vec!["source-a".to_string()];
+    query.filters.source_id = Some("source-a".to_string());
+    assert!(engine
+        .search(&query)
+        .unwrap_err()
+        .contains("also be excluded"));
+    query.filters.source_id = None;
+    query.filters.excluded_source_ids.clear();
     query.filters.published_from = Some("2026-02-30".to_string());
     assert!(engine.search(&query).unwrap_err().contains("invalid date"));
+}
+
+#[test]
+fn excluded_sources_keep_product_scopes_disjoint() {
+    let bundle =
+        compile_search_bundle(candidate_contract_documents(), &"a".repeat(64)).expect("compile");
+    let engine = engine(&bundle);
+    let all = engine.search(&request("肖甫")).expect("all sources");
+
+    let mut scoped_request = request("肖甫");
+    scoped_request.filters.excluded_source_ids = vec!["source-b".to_string()];
+    let scoped = engine
+        .search(&scoped_request)
+        .expect("scope without source B");
+    assert!(urls(&scoped).is_subset(&urls(&all)));
+    assert!(scoped
+        .results
+        .iter()
+        .all(|result| result.source != "source-b"));
+    assert!(scoped.total_candidates < all.total_candidates);
 }
 
 #[test]

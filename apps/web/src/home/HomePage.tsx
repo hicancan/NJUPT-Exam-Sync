@@ -1,6 +1,6 @@
-import { Building2, CalendarDays, Download, FileText, GraduationCap, Shuffle, Trophy } from 'lucide-react';
+import { BookOpen, Building2, CalendarDays, Download, FileText, GraduationCap, Library, Shuffle, Trophy } from 'lucide-react';
 import type { ProductIntent } from '@/app/routing/intents';
-import { QUICK_SEARCHES, QuickSearchIcon } from './searchPresets';
+import { QUICK_SEARCHES, QuickSearchIcon, type QuickSearchGroup } from './searchPresets';
 import { ThemeToggle } from '@/shared/ui/ThemeToggle';
 import { SearchInput } from '@/shared/ui/SearchInput';
 import { resolveQuickIntent } from '@/app/routing/routeContract';
@@ -14,6 +14,14 @@ const QUICK_SEARCH_ICONS: Record<QuickSearchIcon, typeof CalendarDays> = {
     download: Download,
     trophy: Trophy,
     'file-text': FileText,
+    'book-open': BookOpen,
+    library: Library,
+};
+
+const GROUP_ROUTES: Partial<Record<QuickSearchGroup, '/search' | '/community' | '/materials'>> = {
+    校园信息: '/search',
+    社区搜索: '/community',
+    资料搜索: '/materials',
 };
 
 interface HomePageProps {
@@ -55,11 +63,11 @@ export function HomePage({
                 </div>
 
                 <div className="mt-6 w-full space-y-4">
-                    {(['日常教学', '考试', '校园信息'] as const).map(group => (
+                    {(['教务搜索', '校园信息', '社区搜索', '资料搜索'] as const).map(group => (
                         <section key={group} aria-labelledby={`home-group-${group}`}>
                             <h2 id={`home-group-${group}`} className="mb-2 text-center text-xs font-medium tracking-[0.12em] text-[#80868b] dark:text-[#9aa0a6]">
-                                {group === '校园信息' ? (
-                                    <a className="transition-colors hover:text-[#1a73e8] focus-visible:text-[#1a73e8]" href="/search">{group}</a>
+                                {GROUP_ROUTES[group] ? (
+                                    <a className="transition-colors hover:text-[#1a73e8] focus-visible:text-[#1a73e8]" href={GROUP_ROUTES[group]}>{group}</a>
                                 ) : group}
                             </h2>
                             <div className="flex flex-wrap items-center justify-center gap-2">

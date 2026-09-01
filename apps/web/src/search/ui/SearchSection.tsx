@@ -25,6 +25,8 @@ interface SearchSectionProps {
     filters: SearchFilters;
     datePreset: SearchDatePreset;
     filterOptions: FilterOptions | null;
+    fixedSourceId?: string;
+    supportsDates?: boolean;
     canLoadMore: boolean;
     onSortModeChange: (sortMode: SortMode) => void;
     onFiltersChange: (patch: SearchFilters) => void;
@@ -53,6 +55,8 @@ export function SearchSection({
     filters,
     datePreset,
     filterOptions,
+    fixedSourceId,
+    supportsDates = true,
     canLoadMore,
     onSortModeChange,
     onFiltersChange,
@@ -62,13 +66,14 @@ export function SearchSection({
     const trimmedQuery = query.trim();
     const facetOptions = useFacetOptions(filterOptions);
     const results = response?.results ?? [];
-    const summary = resultSummary(filters, results.length, response?.totalCandidates ?? 0);
+    const visibleFilters = fixedSourceId ? { ...filters, sourceId: undefined } : filters;
+    const summary = resultSummary(visibleFilters, results.length, response?.totalCandidates ?? 0);
     const statusText = trimmedQuery.length < 2
         ? '输入至少两个字再搜索。'
         : searching
             ? '正在搜索…'
             : summary;
-    const activeFilters = hasActiveFilters(filters);
+    const activeFilters = hasActiveFilters(visibleFilters);
     const showSearchingEmptyState = searching && trimmedQuery.length >= 2;
 
     return (
@@ -79,6 +84,8 @@ export function SearchSection({
                     facetOptions={facetOptions}
                     filterOptions={filterOptions}
                     filters={filters}
+                    fixedSourceId={fixedSourceId}
+                    supportsDates={supportsDates}
                     datePreset={datePreset}
                     sortMode={sortMode}
                     onFiltersChange={onFiltersChange}

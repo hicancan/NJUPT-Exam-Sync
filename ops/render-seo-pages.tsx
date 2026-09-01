@@ -37,6 +37,8 @@ const renderRoute = (route: AppRoute): string => template
 writeHtml('index.html', renderRoute('home'));
 writeHtml('exam/index.html', renderRoute('exam'));
 writeHtml('search/index.html', renderRoute('search'));
+writeHtml('community/index.html', renderRoute('community'));
+writeHtml('materials/index.html', renderRoute('materials'));
 writeHtml('timetable/index.html', renderRoute('timetable'));
 writeHtml('classrooms/index.html', renderRoute('classrooms'));
 

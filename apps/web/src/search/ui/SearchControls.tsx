@@ -18,6 +18,8 @@ interface SearchControlsProps {
     facetOptions: Array<FilterOption & { id: SearchFacet }>;
     filterOptions: FilterOptions | null;
     filters: SearchFilters;
+    fixedSourceId?: string;
+    supportsDates?: boolean;
     datePreset: SearchDatePreset;
     sortMode: SortMode;
     onFiltersChange: (patch: SearchFilters) => void;
@@ -30,6 +32,8 @@ export function SearchControls({
     facetOptions,
     filterOptions,
     filters,
+    fixedSourceId,
+    supportsDates = true,
     datePreset,
     sortMode,
     onFiltersChange,
@@ -50,7 +54,7 @@ export function SearchControls({
                     <ArrowDownWideNarrow size={14} aria-hidden="true" />
                     相关性
                 </button>
-                <button
+                {supportsDates ? <button
                     type="button"
                     aria-pressed={sortMode === 'date_desc'}
                     onClick={() => onSortModeChange('date_desc')}
@@ -58,9 +62,9 @@ export function SearchControls({
                 >
                     <CalendarDays size={14} aria-hidden="true" />
                     时间
-                </button>
+                </button> : null}
             </div>
-            <label className="inline-flex h-9 items-center gap-1.5 rounded-md border border-[#dadce0] dark:border-[#3c4043] bg-white dark:bg-[#202124] px-2 text-sm text-[#4d5156] dark:text-[#bdc1c6]">
+            {!fixedSourceId ? <label className="inline-flex h-9 items-center gap-1.5 rounded-md border border-[#dadce0] dark:border-[#3c4043] bg-white dark:bg-[#202124] px-2 text-sm text-[#4d5156] dark:text-[#bdc1c6]">
                 <Filter size={14} aria-hidden="true" />
                 <span className="sr-only">来源筛选</span>
                 <select
@@ -76,7 +80,7 @@ export function SearchControls({
                         <option key={source.id} value={source.id}>{source.label} ({source.count})</option>
                     ))}
                 </select>
-            </label>
+            </label> : null}
             <label className="inline-flex h-9 items-center gap-1.5 rounded-md border border-[#dadce0] dark:border-[#3c4043] bg-white dark:bg-[#202124] px-2 text-sm text-[#4d5156] dark:text-[#bdc1c6]">
                 <ListFilter size={14} aria-hidden="true" />
                 <span className="sr-only">类型筛选</span>
@@ -96,7 +100,7 @@ export function SearchControls({
                     ))}
                 </select>
             </label>
-            <label className="inline-flex h-9 items-center gap-1.5 rounded-md border border-[#dadce0] dark:border-[#3c4043] bg-white dark:bg-[#202124] px-2 text-sm text-[#4d5156] dark:text-[#bdc1c6]">
+            {supportsDates ? <label className="inline-flex h-9 items-center gap-1.5 rounded-md border border-[#dadce0] dark:border-[#3c4043] bg-white dark:bg-[#202124] px-2 text-sm text-[#4d5156] dark:text-[#bdc1c6]">
                 <CalendarDays size={14} aria-hidden="true" />
                 <span className="sr-only">时间筛选</span>
                 <select
@@ -111,13 +115,13 @@ export function SearchControls({
                         <option key={value} value={value}>{label}</option>
                     ))}
                 </select>
-            </label>
+            </label> : null}
             {activeFilters ? (
                 <button
                     type="button"
                     onClick={() => {
                         onFiltersChange({
-                            sourceId: undefined,
+                            sourceId: fixedSourceId,
                             facet: undefined,
                             ...dateFilters('all'),
                         });

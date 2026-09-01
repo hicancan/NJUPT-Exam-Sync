@@ -7,7 +7,7 @@ export const SOCIAL_IMAGE_ALT = 'njupt-search 标志';
 interface PageIdentity {
     title: string;
     description: string;
-    pathname: '/' | '/search' | '/timetable' | '/classrooms' | '/exam';
+    pathname: '/' | '/search' | '/community' | '/materials' | '/timetable' | '/classrooms' | '/exam';
 }
 
 export interface PageSeo extends PageIdentity {
@@ -19,13 +19,23 @@ export interface PageSeo extends PageIdentity {
 const PAGE_IDENTITIES: Record<AppRoute, PageIdentity> = {
     home: {
         title: 'njupt-search｜南邮校园信息搜索',
-        description: '搜索南京邮电大学各网站的通知、附件和办事信息，查询班级课表、考试安排与教室空间。',
+        description: '搜索南邮校方信息、校园经验和课程资料，查询班级课表、考试安排与教室空间。',
         pathname: '/',
     },
     search: {
         title: '南邮校园信息搜索｜njupt-search',
         description: '搜索南京邮电大学各网站的通知、附件和办事信息。',
         pathname: '/search',
+    },
+    community: {
+        title: '南邮社区搜索｜njupt-search',
+        description: '搜索南邮生存手册中的校园生活、学习经验和办事指南。',
+        pathname: '/community',
+    },
+    materials: {
+        title: '南邮资料搜索｜njupt-search',
+        description: '搜索南京邮电大学课程资料、历年试卷、课件和复习笔记。',
+        pathname: '/materials',
     },
     exam: {
         title: '南邮考试安排查询｜njupt-search',

@@ -7,6 +7,8 @@ import { TimetableLanding } from '@/timetable/TimetableLanding';
 import type { TeachingScheduleClient } from '@/timetable/model/TeachingScheduleClient';
 import { ClassroomsLanding } from '@/classrooms/ClassroomsLanding';
 import type { ClassroomAvailabilityClient } from '@/classrooms/model/ClassroomAvailabilityClient';
+import { SearchLanding } from '@/search/SearchLanding';
+import { SEARCH_SCOPES } from '@/search/searchScopes';
 
 describe('product landing shells', () => {
     it('renders the exam guide and explicit resume action without artifact data', () => {
@@ -41,5 +43,16 @@ describe('product landing shells', () => {
         expect(html).not.toContain('不提前加载');
         expect(html).not.toContain('逐级浏览');
         expect(html).not.toContain('一定空闲');
+    });
+
+    it('renders distinct community and materials search landings', () => {
+        const community = renderToStaticMarkup(<SearchLanding scope={SEARCH_SCOPES.community} />);
+        const materials = renderToStaticMarkup(<SearchLanding scope={SEARCH_SCOPES.materials} />);
+        expect(community).toContain('南邮社区搜索');
+        expect(community).toContain('南邮生存手册');
+        expect(community).toContain('NJUPT-NAVI/NJUPT-Survival-Guide');
+        expect(materials).toContain('南邮资料搜索');
+        expect(materials).toContain('历年试卷');
+        expect(materials).toContain('NJUPTFreeExams/NJUPT-General-Free-Exams');
     });
 });

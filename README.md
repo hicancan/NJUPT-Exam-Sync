@@ -19,11 +19,13 @@
 
 ---
 
-南邮的通知散落在学校主站以及各个学院、部门网站里，有些关键信息甚至藏在 PDF、Word 或 Excel 附件中。`njupt-search` 将这些内容汇总成一个全文检索入口，也把日常课表、考试安排和统一教室空间查询放在同一处。
+南邮的通知散落在学校主站以及各个学院、部门网站里，有些关键信息甚至藏在 PDF、Word 或 Excel 附件中。`njupt-search` 将校方信息、社区经验和课程资料分别放进边界清楚的搜索入口，也把课表、考试安排和统一教室空间查询放在同一处。
 
 ## 功能
 
-- **校园搜索**：检索各校区网页与附件，支持按来源、类型和时间过滤。
+- **校园搜索**：检索校方网站的网页与附件，支持按来源、类型和时间过滤。
+- **社区搜索**：检索“南邮生存手册”的校园生活、学习经验和办事指南。
+- **资料搜索**：检索“南邮历年资料”的课程目录、试卷、课件和笔记，并跳转到原 GitHub 文件。
 - **班级课表**：按班级和周次查看课程，支持课程详情和 ICS 日历导出。
 - **教室**：按校区、楼栋、楼层和房间逐级浏览，并在同一平面图中查看课程与考试占用。
 - **考试安排**：输入班级号即可查看考试时间、地点，支持导出 ICS 日历。
@@ -32,6 +34,8 @@
 直接打开：
 
 - [校园搜索](https://njupt.hicancan.top/search)
+- [社区搜索](https://njupt.hicancan.top/community)
+- [资料搜索](https://njupt.hicancan.top/materials)
 - [班级课表](https://njupt.hicancan.top/timetable)
 - [教室](https://njupt.hicancan.top/classrooms)
 - [考试安排](https://njupt.hicancan.top/exam)
@@ -58,7 +62,7 @@ njupt-site-graph   南邮专属配置，清洗并导出统一语料
 njupt-search       构建 SearchBundle 索引，提供 Web / Android 页面
 ```
 
-前两步爬虫和清洗工作分别由 [`static-site-graph`](https://github.com/hicancan/static-site-graph) 和 [`njupt-site-graph`](https://github.com/hicancan/njupt-site-graph) 负责。
+前两步爬虫和清洗工作分别由 [`static-site-graph`](https://github.com/hicancan/static-site-graph) 和 [`njupt-site-graph`](https://github.com/hicancan/njupt-site-graph) 负责。社区搜索读取 [`NJUPT-Survival-Guide`](https://github.com/NJUPT-NAVI/NJUPT-Survival-Guide) 的 Markdown/MDX 正文；资料搜索读取 [`NJUPT-General-Free-Exams`](https://github.com/NJUPTFreeExams/NJUPT-General-Free-Exams) 的说明正文与文件元数据，不复制或重新托管其二进制资料。
 
 考试编排数据会被单独编译为 `ExamSnapshot`。可信的连续快照形成 `ExamHistory`，当前快照同时派生考试教室数据 `RoomOccupancy`。全校班级课表由登录教务系统后的 `njupt-jwxt` 扩展采集成 `TeachingScheduleSource`，再由本仓库编译为 `TeachingScheduleSnapshot` 和独立的 `TeachingRoomOccupancy`。校区、楼栋、楼层、房间身份与经过清理的示意几何由独立 `SpaceSnapshot` 统一提供；考试和教学占用只引用该空间身份。源码里不包含真实校园语料、教务响应、原始消防图或生成好的数据文件；部署时只组装经过隐私清理和完整性验证的内容寻址产物。
 

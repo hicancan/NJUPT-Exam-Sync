@@ -77,6 +77,13 @@ describe('product copy contract', () => {
             />,
         );
         expect(html).toContain('njupt-search');
+        expect(html).toContain('教务搜索');
+        expect(html).toContain('社区搜索');
+        expect(html).toContain('资料搜索');
+        expect(html).toContain('南邮生存手册');
+        expect(html).toContain('历年课程资料');
+        expect(html).not.toContain('日常教学');
+        expect(html).not.toMatch(/>考试<\/h2>/);
         expect(html).not.toContain('南邮通知、考试安排和考试教室，都可以直接查。');
     });
 
@@ -117,10 +124,10 @@ describe('product copy contract', () => {
         const homeHead = renderPageHead(resolvePageSeo('home'));
 
         expect(manifest.lang).toBe('zh-CN');
-        expect(manifest.description).toBe('搜索南邮通知，查询班级课表、考试安排和教室空间。');
+        expect(manifest.description).toBe('搜索南邮校方信息、校园经验和课程资料，查询课表、考试与教室。');
         expect(indexTemplate).toContain('<!-- njupt-seo:head -->');
         expect(homeHead).toContain('njupt-search｜南邮校园信息搜索');
-        expect(homeHead).toContain('搜索南京邮电大学各网站的通知、附件和办事信息，查询班级课表、考试安排与教室空间。');
+        expect(homeHead).toContain('搜索南邮校方信息、校园经验和课程资料，查询班级课表、考试安排与教室空间。');
         expect(homeHead).not.toContain('meta name="keywords"');
         expect(homeHead).not.toContain('南邮通知、考试安排和考试教室，都可以直接查。');
     });
@@ -130,9 +137,13 @@ describe('product copy contract', () => {
         expect(resolvePageSeo('exam')).toMatchObject({ indexable: true, canonical: 'https://njupt.hicancan.top/exam' });
         expect(resolvePageSeo('classrooms')).toMatchObject({ indexable: true, canonical: 'https://njupt.hicancan.top/classrooms' });
         expect(resolvePageSeo('search')).toMatchObject({ indexable: true, canonical: 'https://njupt.hicancan.top/search' });
+        expect(resolvePageSeo('community')).toMatchObject({ indexable: true, canonical: 'https://njupt.hicancan.top/community' });
+        expect(resolvePageSeo('materials')).toMatchObject({ indexable: true, canonical: 'https://njupt.hicancan.top/materials' });
         expect(resolvePageSeo('exam', true)).toMatchObject({ indexable: false, canonical: null });
         expect(resolvePageSeo('classrooms', true)).toMatchObject({ indexable: false, canonical: null });
         expect(resolvePageSeo('search', true)).toMatchObject({ indexable: false, canonical: null });
+        expect(resolvePageSeo('community', true)).toMatchObject({ indexable: false, canonical: null });
+        expect(resolvePageSeo('materials', true)).toMatchObject({ indexable: false, canonical: null });
 
         const homeHead = renderPageHead(resolvePageSeo('home'));
         const examDetailHead = renderPageHead(resolvePageSeo('exam', true));

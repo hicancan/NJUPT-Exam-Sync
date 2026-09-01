@@ -17,6 +17,8 @@ pub enum SearchFacet {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct SearchFilters {
     pub source_id: Option<String>,
+    #[serde(default)]
+    pub excluded_source_ids: Vec<String>,
     pub facet: Option<SearchFacet>,
     pub published_from: Option<String>,
     pub published_to: Option<String>,

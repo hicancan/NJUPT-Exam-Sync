@@ -17,7 +17,7 @@ const pages = [
     {
         file: 'index.html',
         title: 'njupt-search｜南邮校园信息搜索',
-        description: '搜索南京邮电大学各网站的通知、附件和办事信息，查询班级课表、考试安排与教室空间。',
+        description: '搜索南邮校方信息、校园经验和课程资料，查询班级课表、考试安排与教室空间。',
         canonical: 'https://njupt.hicancan.top/',
         h1: 'njupt-search',
         structured: true,
@@ -35,6 +35,20 @@ const pages = [
         description: '输入班级号，查询南京邮电大学考试时间、地点和考场，并可导出日历。',
         canonical: 'https://njupt.hicancan.top/exam',
         h1: '查询考试安排',
+    },
+    {
+        file: 'community/index.html',
+        title: '南邮社区搜索｜njupt-search',
+        description: '搜索南邮生存手册中的校园生活、学习经验和办事指南。',
+        canonical: 'https://njupt.hicancan.top/community',
+        h1: '南邮社区搜索',
+    },
+    {
+        file: 'materials/index.html',
+        title: '南邮资料搜索｜njupt-search',
+        description: '搜索南京邮电大学课程资料、历年试卷、课件和复习笔记。',
+        canonical: 'https://njupt.hicancan.top/materials',
+        h1: '南邮资料搜索',
     },
     {
         file: 'timetable/index.html',
@@ -79,7 +93,7 @@ for (const page of pages) {
 }
 
 const home = read('index.html');
-for (const href of ['/search', '/exam', '/timetable', '/classrooms']) {
+for (const href of ['/search', '/community', '/materials', '/exam', '/timetable', '/classrooms']) {
     assert(home.includes(`href="${href}"`), `index.html: missing crawlable ${href} link`);
 }
 
@@ -95,9 +109,12 @@ const sitemap = read('sitemap.xml');
 const locations = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]);
 assert(JSON.stringify(locations) === JSON.stringify([
     'https://njupt.hicancan.top/',
+    'https://njupt.hicancan.top/search',
     'https://njupt.hicancan.top/exam',
     'https://njupt.hicancan.top/timetable',
     'https://njupt.hicancan.top/classrooms',
+    'https://njupt.hicancan.top/community',
+    'https://njupt.hicancan.top/materials',
 ]), 'sitemap.xml: canonical URL set mismatch');
 assert(locations.every(location => !location.includes('#') && !location.includes('?')), 'sitemap.xml: hash or query URL found');
 assert(sitemap.startsWith('<?xml version="1.0" encoding="UTF-8"?>'), 'sitemap.xml: invalid XML declaration');
@@ -111,12 +128,16 @@ assert(JSON.stringify(redirects) === JSON.stringify([
     { source: '/search/', destination: '/search', statusCode: 301 },
     { source: '/timetable/', destination: '/timetable', statusCode: 301 },
     { source: '/classrooms/', destination: '/classrooms', statusCode: 301 },
+    { source: '/community/', destination: '/community', statusCode: 301 },
+    { source: '/materials/', destination: '/materials', statusCode: 301 },
 ]), 'edgeone.json: canonical redirects mismatch');
 assert(JSON.stringify(rewrites) === JSON.stringify([
     { source: '/exam', destination: '/exam/index.html' },
     { source: '/search', destination: '/search/index.html' },
     { source: '/timetable', destination: '/timetable/index.html' },
     { source: '/classrooms', destination: '/classrooms/index.html' },
+    { source: '/community', destination: '/community/index.html' },
+    { source: '/materials', destination: '/materials/index.html' },
 ]), 'edgeone.json: clean route rewrites mismatch');
 const redirectSources = new Set(redirects.map(redirect => redirect.source));
 for (const rewrite of rewrites) {
@@ -149,7 +170,7 @@ for (const domain of ['search', 'rooms', 'timetable', 'classrooms', 'space']) {
 assert(headerRuleIndex('/generated/exam/manifest.json') > headerRuleIndex('/generated/exam/*'), 'edgeone.json: exam manifest rule order is unsafe');
 assert(headerRuleIndex('/generated/exam/history/manifest.json') > headerRuleIndex('/generated/exam/*'), 'edgeone.json: exam history manifest rule order is unsafe');
 
-for (const file of ['index.html', 'exam/index.html', 'search/index.html', 'timetable/index.html', 'classrooms/index.html']) {
+for (const file of ['index.html', 'exam/index.html', 'search/index.html', 'community/index.html', 'materials/index.html', 'timetable/index.html', 'classrooms/index.html']) {
     const html = read(file);
     assert(!html.includes('#/'), `${file}: hash route found in production HTML`);
     assert(!/<(?:div|section|p|h[1-6])[^>]*class="[^"]*(?:sr-only|hidden)[^"]*"[^>]*>[^<]*(?:南邮校园信息|考试安排|考试教室)/.test(html), `${file}: hidden SEO copy found`);

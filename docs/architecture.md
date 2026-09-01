@@ -39,6 +39,13 @@ links.jsonl.zst
 计算上游 ID、不重新规范化或去重事实。links 的文件身份受 manifest 保护；
 搜索不消费 links，因此不解压、不解释该表。
 
+Corpus 的来源可以是校方网站 SitePackage，也可以是显式注册的 GitHub
+repository tree。`njupt-survival-guide` 只把 Markdown/MDX 正文编入社区搜索；
+`njupt-general-free-exams` 把说明正文与资料文件的路径、扩展名、字节数、Git blob
+身份和原始链接编入资料搜索，不下载、复制或公开二进制文件内容。两个产品都在
+Query 中固定 `sourceId`；校方信息搜索明确排除这两个 repository source。包含、
+排除和用户筛选仍由同一 Rust core 执行，不在 React 中二次裁剪或建立另一套排名。
+
 ## Search
 
 ```text
@@ -274,9 +281,10 @@ Python 拥有 ExamSnapshot 和 RoomOccupancy 写出；每种 artifact 在 TypeSc
 `shared` 只容纳至少两个能力
 共同使用的 UI/HTTP 原语。
 
-首页快捷入口使用判别联合表达 `timetable`、`classrooms`、`exam` 或
-`search` 意图，而不是依靠
-按钮文字触发隐藏分支。七个全文入口只提供查询意图，随后仍由 SearchClient →
+首页快捷入口使用判别联合表达 `timetable`、`classrooms`、`exam`、
+`search`、`community` 或 `materials` 意图，而不是依靠按钮文字触发隐藏分支。
+教务产品统一归入“教务搜索”，考试安排仍保持自己的 `/exam` 路由；社区与资料
+各自拥有独立路由和固定来源。校园信息快捷入口只提供查询意图，随后仍由 SearchClient →
 Worker → WASM → Rust core 完成统一搜索；不存在热词结果、独立排名或 UI
 fallback。
 
@@ -288,24 +296,24 @@ fallback。
 `/exam`，不使用查询参数充当内部哨兵。站内导航使用 History API，返回、前进和
 刷新都由同一套 URL 状态驱动。
 
-顶栏只共享外观和提交协议，不共享查询语义。`/search` 检索 SearchDomain，
+顶栏只共享外观和提交协议，不共享查询语义。`/search` 检索校方 SearchDomain，
+`/community` 与 `/materials` 分别在同一个 SearchDomain 引擎中固定社区与资料来源，
 `/exam` 查询 ExamDomain 的班级与时间投影，`/timetable` 查询 TeachingDomain 的班级与时间投影；
 `/classrooms` 是 SpaceDomain 与 TeachingOccupancy、ExamOccupancy 的统一空间投影。
 因此用户先选择产品路由，再在当前领域内搜索；提交不会隐式跳回全文搜索，也没有
 跨越全部领域的万能查询接口。
 
-Web 构建只生成当前五个产品路径：`/`、`/search`、`/timetable`、`/classrooms`、
-`/exam`。构建结束后复用现有 React landing 组件写出对应的静态
+Web 构建只生成当前七个产品路径：`/`、`/search`、`/community`、`/materials`、
+`/timetable`、`/classrooms`、`/exam`。构建结束后复用现有 React landing 组件写出对应的静态
 `index.html`；浏览器启动后接管相同 DOM。原始响应已经含有 H1、真实链接和页面
 专属 metadata，不等待任何业务 artifact。根目录 `404.html` 由 EdgeOne 作为真实 404 返回，部署配置不
 设置全站页面回退。
 
 `app/seo/pageSeo.ts` 是 title、description、robots、canonical、Open Graph 与
-WebSite JSON-LD 的唯一来源。只有 `/`、`/timetable`、`/classrooms`、`/exam`、
-允许索引；`/search` 以及带查询参数的课表、考试和教室状态使用
-`noindex, follow`，不进入 sitemap，也不
+WebSite JSON-LD 的唯一来源。七个无查询参数的稳定 landing 均允许索引；带查询
+参数的搜索、课表、考试和教室状态使用 `noindex, follow`，不进入 sitemap，也不
 复制学校文章生成本站内容页。`robots.txt` 只声明抓取与 sitemap 入口；sitemap
-只列出五个稳定 canonical URL。
+只列出七个稳定 canonical URL。
 
 Timetable、Classrooms 与 Exam landing 是初始 App bundle 中的小型静态产品壳，不等待页面详情
 模块或业务 artifact；Classrooms 在壳出现后才补充校区、楼栋、楼层和节次范围。

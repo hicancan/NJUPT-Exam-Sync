@@ -9,6 +9,7 @@ import { TimetableLanding } from '@/timetable/TimetableLanding';
 import type { TeachingScheduleClient } from '@/timetable/model/TeachingScheduleClient';
 import { ClassroomsLanding } from '@/classrooms/ClassroomsLanding';
 import type { ClassroomAvailabilityClient } from '@/classrooms/model/ClassroomAvailabilityClient';
+import { searchScopeForRoute } from '@/search/searchScopes';
 
 const never = new Promise<never>(() => undefined);
 const examClient = { initialize: () => never } as unknown as ExamSnapshotClient;
@@ -45,7 +46,9 @@ export function StaticRoutePage({ route }: { route: AppRoute }) {
             historyClient={null}
                 />
             ) : null}
-            {route === 'search' ? <SearchLanding /> : null}
+            {route === 'search' || route === 'community' || route === 'materials' ? (
+                <SearchLanding scope={searchScopeForRoute(route)} />
+            ) : null}
             {route === 'timetable' ? <TimetableLanding client={teachingClient} savedClass={null} onOpenClass={noop} /> : null}
             {route === 'classrooms' ? <ClassroomsLanding client={classroomClient} onChange={noop} /> : null}
             <AppFooter />

@@ -1,6 +1,7 @@
 import { SearchInput } from '@/shared/ui/SearchInput';
 import { ThemeToggle } from '@/shared/ui/ThemeToggle';
 import type { AppRoute } from '@/app/routing/useUrlState';
+import { searchScopeForRoute } from '@/search/searchScopes';
 
 interface HeaderProps {
     inputValue: string;
@@ -14,7 +15,8 @@ const routeSearch = (route: AppRoute | undefined): { placeholder: string; label:
     if (route === 'exam') return { placeholder: '搜索班级、课程或考试安排', label: '在考试安排中搜索' };
     if (route === 'timetable') return { placeholder: '搜索班级、课程、教师或教学安排', label: '在班级课表中搜索' };
     if (route === 'classrooms') return { placeholder: '搜索校区、楼栋、楼层或教室', label: '在教室中搜索' };
-    return { placeholder: '搜索通知、附件和办事信息', label: '搜索学校通知、附件和办事信息' };
+    const scope = searchScopeForRoute(route);
+    return { placeholder: scope.placeholder, label: scope.ariaLabel };
 };
 
 export function Header({ inputValue, onInputChange, onSubmit, onGoHome, route }: HeaderProps) {

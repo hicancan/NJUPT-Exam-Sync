@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-export type AppRoute = 'home' | 'search' | 'timetable' | 'classrooms' | 'exam';
+export type AppRoute = 'home' | 'search' | 'community' | 'materials' | 'timetable' | 'classrooms' | 'exam';
 
 export interface UrlState {
     route: AppRoute;
@@ -25,6 +25,8 @@ export interface NavigateOptions {
 export const routeFromPathname = (pathname: string): AppRoute => {
     if (pathname === '/') return 'home';
     if (pathname === '/search') return 'search';
+    if (pathname === '/community') return 'community';
+    if (pathname === '/materials') return 'materials';
     if (pathname === '/exam') return 'exam';
     if (pathname === '/timetable') return 'timetable';
     if (pathname === '/classrooms') return 'classrooms';

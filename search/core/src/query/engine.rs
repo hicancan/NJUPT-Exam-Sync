@@ -264,6 +264,24 @@ impl SearchEngine {
         {
             return Err("sourceId must be a real source identity".to_string());
         }
+        let excluded_sources = &request.filters.excluded_source_ids;
+        if excluded_sources
+            .iter()
+            .any(|source| source.trim().is_empty() || source == "all")
+        {
+            return Err("excludedSourceIds must contain real source identities".to_string());
+        }
+        if excluded_sources.iter().collect::<HashSet<_>>().len() != excluded_sources.len() {
+            return Err("excludedSourceIds must not contain duplicates".to_string());
+        }
+        if request
+            .filters
+            .source_id
+            .as_ref()
+            .is_some_and(|source| excluded_sources.contains(source))
+        {
+            return Err("sourceId must not also be excluded".to_string());
+        }
         for value in [
             request.filters.published_from.as_deref(),
             request.filters.published_to.as_deref(),
@@ -294,6 +312,9 @@ impl SearchEngine {
             .as_deref()
             .is_some_and(|source| document.source != source)
         {
+            return false;
+        }
+        if filters.excluded_source_ids.contains(&document.source) {
             return false;
         }
         if filters.facet.is_some_and(|facet| document.facet != facet) {

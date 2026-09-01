@@ -16,6 +16,7 @@ import { ClassroomAvailabilityClient } from '@/classrooms/model/ClassroomAvailab
 import { TimetableLanding } from '@/timetable/TimetableLanding';
 import { ClassroomsLanding } from '@/classrooms/ClassroomsLanding';
 import { SpaceClient } from '@/space/model/SpaceClient';
+import { searchScopeForRoute } from '@/search/searchScopes';
 
 const loadSearchPage = () => import('@/search/SearchPage').then(module => ({ default: module.SearchPage }));
 const loadExamPage = () => import('@/exams/ExamPage').then(module => ({ default: module.ExamPage }));
@@ -88,7 +89,7 @@ function App() {
         });
     };
     const warmIntent = (intent: ProductIntent) => {
-        if (intent.kind === 'search') {
+        if (intent.kind === 'search' || intent.kind === 'community' || intent.kind === 'materials') {
             warmSearch();
             return;
         }
@@ -143,8 +144,13 @@ function App() {
             ) : null}
 
             <Suspense fallback={<RouteLoading />}>
-                {router.route === 'search' ? (
-                    <SearchPage query={router.search.query} client={searchClient} />
+                {router.route === 'search' || router.route === 'community' || router.route === 'materials' ? (
+                    <SearchPage
+                        key={router.route}
+                        query={router.search.query}
+                        client={searchClient}
+                        scope={searchScopeForRoute(router.route)}
+                    />
                 ) : null}
 
                 {router.route === 'exam' ? (

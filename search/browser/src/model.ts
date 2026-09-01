@@ -11,6 +11,7 @@ export type SearchFacet =
 
 export interface SearchFilters {
     sourceId?: string;
+    excludedSourceIds?: string[];
     facet?: SearchFacet;
     publishedFrom?: string;
     publishedTo?: string;

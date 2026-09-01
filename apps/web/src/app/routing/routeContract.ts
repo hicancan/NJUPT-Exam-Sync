@@ -33,7 +33,9 @@ export const resolveRouteSubmission = (route: AppRoute, value: string): RouteDes
     const trimmed = value.trim();
     if (!trimmed) return { route };
     if (route === 'home') return resolveSubmission(trimmed);
-    if (route === 'search') return { route, params: { q: trimmed } };
+    if (route === 'search' || route === 'community' || route === 'materials') {
+        return { route, params: { q: trimmed } };
+    }
     if (route === 'exam') return isCompleteClassQuery(trimmed)
         ? { route, params: { class: normalizeClassQuery(trimmed) } }
         : { route, params: { q: trimmed } };
@@ -47,6 +49,8 @@ export const resolveQuickIntent = (intent: ProductIntent): RouteDestination => {
     if (intent.kind === 'timetable') return { route: 'timetable' };
     if (intent.kind === 'classrooms') return { route: 'classrooms' };
     if (intent.kind === 'exam') return { route: 'exam' };
+    if (intent.kind === 'community') return { route: 'community' };
+    if (intent.kind === 'materials') return { route: 'materials' };
     return { route: 'search', params: { q: intent.query } };
 };
 

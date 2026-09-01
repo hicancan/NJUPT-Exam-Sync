@@ -24,6 +24,16 @@
       "source": "/classrooms/",
       "destination": "/classrooms",
       "statusCode": 301
+    },
+    {
+      "source": "/community/",
+      "destination": "/community",
+      "statusCode": 301
+    },
+    {
+      "source": "/materials/",
+      "destination": "/materials",
+      "statusCode": 301
     }
   ],
   "rewrites": [
@@ -42,6 +52,14 @@
     {
       "source": "/classrooms",
       "destination": "/classrooms/index.html"
+    },
+    {
+      "source": "/community",
+      "destination": "/community/index.html"
+    },
+    {
+      "source": "/materials",
+      "destination": "/materials/index.html"
     }
   ],
   "headers": [
