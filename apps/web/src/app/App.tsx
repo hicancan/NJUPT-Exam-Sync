@@ -197,6 +197,7 @@ function App() {
                             campus={router.classrooms.campus}
                             building={router.classrooms.building}
                             floor={router.classrooms.floor}
+                            room={router.classrooms.room}
                             query={router.classrooms.query}
                             client={classroomClient}
                             onChange={router.navigateClassrooms}

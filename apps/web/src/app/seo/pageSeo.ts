@@ -38,8 +38,8 @@ const PAGE_IDENTITIES: Record<AppRoute, PageIdentity> = {
         pathname: '/timetable',
     },
     classrooms: {
-        title: '南邮教室空间查询｜njupt-search',
-        description: '按周次、日期和节次统一查看南京邮电大学空教室、课程占用与考试占用。',
+        title: '南邮教室空间浏览｜njupt-search',
+        description: '按校区、楼栋和楼层浏览南京邮电大学教室，并查看所选时段的课程与考试占用。',
         pathname: '/classrooms',
     },
 };

@@ -199,7 +199,7 @@ export class ClassroomAvailabilityClient {
         const cached = this.#dayCache.get(key);
         if (cached) return cached;
         const day = parseTeachingRoomDay(await fetchArtifactJson(artifactUrl(this.#baseUrl, manifest.occupancy_id, artifact), artifact, { signal, cache: 'force-cache' }), artifact.path);
-        if (day.teaching_snapshot_id !== manifest.teaching_snapshot_id) throw new Error('空教室分片与当前课表身份不一致');
+        if (day.teaching_snapshot_id !== manifest.teaching_snapshot_id) throw new Error('教室占用分片与当前课表数据不一致');
         this.#dayCache.set(key, day);
         return day;
     }

@@ -18,6 +18,8 @@ interface SpatialViewportProps {
     families: SpaceFamilyView[];
     roomState: (familyId: string) => SpatialRoomState;
     detail?: (family: SpaceFamilyView) => React.ReactNode;
+    selectedFamilyId?: string | null;
+    onSelectedFamilyChange?: (familyId: string | null) => void;
 }
 
 interface LoadedFloor {
@@ -43,6 +45,7 @@ const points = (polygon: number[][], width: number, height: number): string => p
 
 export function SpatialViewport({
     client, campusName, buildingName, buildingId, floorId, floorLevel, northConfidence, families, roomState, detail,
+    selectedFamilyId, onSelectedFamilyChange,
 }: SpatialViewportProps) {
     const [loaded, setLoaded] = useState<LoadedFloor | null>(null);
     const [error, setError] = useState<{ key: string; message: string } | null>(null);
@@ -51,8 +54,14 @@ export function SpatialViewport({
     const [pan, setPan] = useState({ x: 0, y: 0 });
     const [drag, setDrag] = useState<{ x: number; y: number; panX: number; panY: number } | null>(null);
     const selectedTrigger = useRef<SVGElement | null>(null);
+    const restoreFocus = useRef<HTMLElement | SVGElement | null>(null);
     const detailPanel = useRef<HTMLElement | null>(null);
     const loadKey = `${buildingId}:${floorId}`;
+    const controlledSelected = selectedFamilyId === undefined
+        ? selected
+        : selectedFamilyId
+            ? families.find(item => item.family.space_family_id === selectedFamilyId) ?? null
+            : null;
 
     useEffect(() => {
         const controller = new AbortController();
@@ -70,13 +79,16 @@ export function SpatialViewport({
     }, [buildingId, client, floorId, loadKey]);
 
     useEffect(() => {
-        if (!selected) return;
+        if (!controlledSelected) return;
         const panel = detailPanel.current;
+        const activeElement = document.activeElement;
+        if (activeElement instanceof HTMLElement || activeElement instanceof SVGElement) restoreFocus.current = activeElement;
         panel?.focus();
         const onKey = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
                 setSelected(null);
-                window.setTimeout(() => selectedTrigger.current?.focus(), 0);
+                onSelectedFamilyChange?.(null);
+                window.setTimeout(() => (restoreFocus.current ?? selectedTrigger.current)?.focus(), 0);
                 return;
             }
             if (event.key !== 'Tab' || !panel) return;
@@ -92,11 +104,11 @@ export function SpatialViewport({
         const previous = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
         return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = previous; };
-    }, [selected]);
+    }, [controlledSelected, onSelectedFamilyChange]);
 
     const current = loaded?.key === loadKey ? loaded : null;
     const currentError = error?.key === loadKey ? error.message : null;
-    const visibleSelected = selected && families.some(item => item.family.space_family_id === selected.family.space_family_id) ? selected : null;
+    const visibleSelected = controlledSelected && families.some(item => item.family.space_family_id === controlledSelected.family.space_family_id) ? controlledSelected : null;
     const familyByUnit = useMemo(() => new Map(families.flatMap(family => family.family.space_unit_ids.map(unitId => [unitId, family] as const))), [families]);
     const unitById = useMemo(() => new Map((current?.units ?? []).map(unit => [unit.space_unit_id, unit])), [current]);
     const geometryUnits = current?.geometry?.space_units ?? [];
@@ -104,7 +116,8 @@ export function SpatialViewport({
     const viewHeight = current?.geometry?.view_box[1] ?? 1000;
     const close = () => {
         setSelected(null);
-        window.setTimeout(() => selectedTrigger.current?.focus(), 0);
+        onSelectedFamilyChange?.(null);
+        window.setTimeout(() => (restoreFocus.current ?? selectedTrigger.current)?.focus(), 0);
     };
     const stateFor = (family: SpaceFamilyView): SpatialRoomState => family.family.availability_eligible === 'ineligible'
         ? 'non-teaching'
@@ -114,6 +127,7 @@ export function SpatialViewport({
     const choose = (family: SpaceFamilyView, element: SVGElement) => {
         selectedTrigger.current = element;
         setSelected(family);
+        onSelectedFamilyChange?.(family.family.space_family_id);
     };
 
     return (
@@ -176,7 +190,7 @@ export function SpatialViewport({
                     <div className="space-detail-handle" aria-hidden="true" />
                     <header><div><p>{visibleSelected.campus.name} · {visibleSelected.building.name} · {visibleSelected.floor.level}楼</p><h2 id="space-detail-title">{visibleSelected.family.room_number}</h2></div><button autoFocus type="button" onClick={close} aria-label="关闭空间详情"><X /></button></header>
                     <div className="space-detail-body">
-                        <dl><div><dt>当前状态</dt><dd>{STATE_LABEL[stateFor(visibleSelected)]}</dd></div><div><dt>空间依据</dt><dd>{EVIDENCE_LABEL[visibleSelected.family.evidence_status] ?? '空间依据尚未确认'}</dd></div><div><dt>空教室资格</dt><dd>{visibleSelected.family.availability_eligible === 'eligible' ? '教学空间候选' : visibleSelected.family.availability_eligible === 'ineligible' ? '非教学空间' : '尚未确认'}</dd></div>{visibleSelected.family.aliases.length ? <div><dt>其他名称</dt><dd>{visibleSelected.family.aliases.join('、')}</dd></div> : null}</dl>
+                        <dl><div><dt>当前状态</dt><dd>{STATE_LABEL[stateFor(visibleSelected)]}</dd></div><div><dt>空间依据</dt><dd>{EVIDENCE_LABEL[visibleSelected.family.evidence_status] ?? '空间依据尚未确认'}</dd></div><div><dt>教学空间状态</dt><dd>{visibleSelected.family.availability_eligible === 'eligible' ? '可作为教学空间查询' : visibleSelected.family.availability_eligible === 'ineligible' ? '非教学空间' : '尚未确认'}</dd></div>{visibleSelected.family.aliases.length ? <div><dt>其他名称</dt><dd>{visibleSelected.family.aliases.join('、')}</dd></div> : null}</dl>
                         {detail?.(visibleSelected)}
                         <p className="space-detail-caveat">空间图用于理解楼层和已发布占用关系，不代表消防疏散图或工程测绘成果。</p>
                     </div>

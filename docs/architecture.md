@@ -238,7 +238,7 @@ Python 是课表语义的唯一所有者。它严格读取 TeachingScheduleSourc
 
 `TeachingRoomOccupancy` 的唯一当前格式是 `njupt-teaching-room-occupancy`。它从同一
 TeachingScheduleSnapshot 派生，并引用当前 ExamSnapshot；每个周次/星期分片只保存
-课程占用。空教室产品在客户端针对目标节次联合课程占用和考试占用，再从同一
+课程占用。教室产品在客户端针对目标节次联合课程占用和考试占用，再从同一
 SpaceSnapshot 中求候选差集。无法识别的线上、无地点和非实体场地只进入构建审计，
 真实标准教室缺失则构建失败。
 

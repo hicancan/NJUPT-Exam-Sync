@@ -44,14 +44,16 @@ describe('product route contract', () => {
             ['/timetable', '?class=B240402&week=13'],
             ['/classrooms', '?week=1&weekday=2&period=3&campus=%E4%BB%99%E6%9E%97'],
             ['/classrooms', '?date=2026-09-01&period=3&building=%E6%95%994'],
+            ['/classrooms', '?week=1&weekday=2&period=3&campus=%E4%BB%99%E6%9E%97&building=%E6%95%991&floor=1&room=space-family-101'],
         ] as const;
         const states = urls.map(([pathname, search]) => parseUrlState(pathname, search));
-        expect(states.map(state => state.route)).toEqual(['exam', 'exam', 'exam', 'search', 'timetable', 'classrooms', 'classrooms']);
+        expect(states.map(state => state.route)).toEqual(['exam', 'exam', 'exam', 'search', 'timetable', 'classrooms', 'classrooms', 'classrooms']);
         expect(states[0]?.qParam).toBeNull();
         expect(states[1]?.classParam).toBe('B240402');
         expect(states[4]).toMatchObject({ classParam: 'B240402', weekParam: '13' });
         expect(states[5]).toMatchObject({ weekParam: '1', weekdayParam: '2', periodParam: '3', campusParam: '仙林' });
         expect(states[6]).toMatchObject({ dateParam: '2026-09-01', periodParam: '3', buildingParam: '教4' });
+        expect(states[7]).toMatchObject({ campusParam: '仙林', buildingParam: '教1', floorParam: '1', roomParam: 'space-family-101' });
         expect(buildPath({ route: 'exam' })).toBe('/exam');
     });
 

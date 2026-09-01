@@ -35,10 +35,10 @@ describe('product landing shells', () => {
         expect(html).toContain('继续查看 B240402');
     });
 
-    it('renders the classroom availability shell without waiting for occupancy data', () => {
+    it('renders the classroom hierarchy shell without waiting for occupancy data', () => {
         const html = renderToStaticMarkup(<ClassroomsLanding client={{ initialize: () => new Promise<never>(() => undefined) } as unknown as ClassroomAvailabilityClient} onChange={() => undefined} />);
-        expect(html).toContain('教室空间');
-        expect(html).toContain('空教室、课程占用和考试占用');
+        expect(html).toContain('>教室<');
+        expect(html).toContain('按校区、楼栋和楼层逐级浏览');
         expect(html).not.toContain('一定空闲');
     });
 });
