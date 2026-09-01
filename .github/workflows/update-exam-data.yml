@@ -172,12 +172,21 @@ jobs:
           test "${#timetable_id}" -eq 64
           test "${#classrooms_id}" -eq 64
           test "${#space_id}" -eq 64
-          test "$(jq -r .current_snapshot_id "$RUNNER_TEMP/exam-history/manifest.json")" = "$exam_id"
-          test "$(jq -r .teaching_snapshot_id "$RUNNER_TEMP/classrooms/manifest.json")" = "$timetable_id"
-          test "$(jq -r .exam_snapshot_id "$RUNNER_TEMP/classrooms/manifest.json")" = "$exam_id"
-          test "$(jq -r .space_snapshot_id "$RUNNER_TEMP/room-occupancy/manifest.json")" = "$space_id"
-          test "$(jq -r .space_snapshot_id "$RUNNER_TEMP/timetable/manifest.json")" = "$space_id"
-          test "$(jq -r .space_snapshot_id "$RUNNER_TEMP/classrooms/manifest.json")" = "$space_id"
+          assert_identity() {
+            local label="$1"
+            local actual="$2"
+            local expected="$3"
+            if [ "$actual" != "$expected" ]; then
+              echo "::error::$label identity mismatch: expected $expected, got $actual"
+              exit 1
+            fi
+          }
+          assert_identity "ExamHistory current snapshot" "$(jq -r .current_snapshot_id "$RUNNER_TEMP/exam-history/manifest.json")" "$exam_id"
+          assert_identity "TeachingRoomOccupancy teaching snapshot" "$(jq -r .teaching_snapshot_id "$RUNNER_TEMP/classrooms/manifest.json")" "$timetable_id"
+          assert_identity "TeachingRoomOccupancy exam snapshot" "$(jq -r .exam_snapshot_id "$RUNNER_TEMP/classrooms/manifest.json")" "$exam_id"
+          assert_identity "ExamRoomOccupancy space snapshot" "$(jq -r .space_snapshot_id "$RUNNER_TEMP/room-occupancy/manifest.json")" "$space_id"
+          assert_identity "TeachingSchedule space snapshot" "$(jq -r .space_snapshot_id "$RUNNER_TEMP/timetable/manifest.json")" "$space_id"
+          assert_identity "TeachingRoomOccupancy space snapshot" "$(jq -r .space_snapshot_id "$RUNNER_TEMP/classrooms/manifest.json")" "$space_id"
           academics_id="$(printf '%s\0%s\0%s\0%s\0%s\0%s' "$exam_id" "$history_id" "$occupancy_id" "$timetable_id" "$classrooms_id" "$space_id" | sha256sum | cut -d' ' -f1)"
           exam_archive="njupt-exam-${exam_id}.tar.zst"
           history_archive="njupt-exam-history-${history_id}.tar.zst"

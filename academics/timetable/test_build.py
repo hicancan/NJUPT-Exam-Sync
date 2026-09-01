@@ -161,6 +161,9 @@ def test_compiles_deterministically_and_deduplicates_shared_meeting(tmp_path: Pa
     assert first_occupancy == second_occupancy
     assert first_snapshot["class_count"] == 2
     assert first_snapshot["meeting_count"] == 1
+    assert first_snapshot["space_snapshot_id"] == (
+        json.loads((space / "manifest.json").read_text(encoding="utf-8"))["snapshot_id"]
+    )
     assert first_occupancy["teaching_snapshot_id"] == first_snapshot["snapshot_id"]
     assert len(first_occupancy["days"]) == 2
 

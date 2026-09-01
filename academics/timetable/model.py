@@ -123,6 +123,7 @@ class TeachingScheduleSnapshot:
     root: Path
     snapshot_id: str
     source_id: str
+    space_snapshot_id: str
     academic_year: str
     term_number: int
     observed_at: str

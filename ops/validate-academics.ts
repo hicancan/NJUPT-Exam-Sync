@@ -196,6 +196,9 @@ await assertTeachingManifestIdentity(teachingManifest);
 const teachingTerm = parseTeachingTerm(artifactJson(timetableRoot, teachingManifest.term), teachingManifest.term.path);
 const teachingPeriods = parseTeachingPeriods(artifactJson(timetableRoot, teachingManifest.periods), teachingManifest.periods.path);
 const teachingIndex = parseTeachingClassIndex(artifactJson(timetableRoot, teachingManifest.class_index), teachingManifest.class_index.path);
+if (teachingManifest.space_snapshot_id !== spaceManifest.snapshot_id) {
+    throw new Error('TeachingSchedule and SpaceSnapshot identity mismatch');
+}
 if (teachingTerm.source_id !== teachingManifest.source_id || teachingPeriods.source_id !== teachingManifest.source_id || teachingIndex.source_id !== teachingManifest.source_id) {
     throw new Error('TeachingSchedule component source identity mismatch');
 }

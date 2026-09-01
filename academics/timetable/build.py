@@ -259,6 +259,7 @@ def _compile(source_dir: Path, output_dir: Path, space_snapshot_path: Path) -> t
     identity = {
         "format": SNAPSHOT_FORMAT,
         "source_id": source.source_id,
+        "space_snapshot_id": space.snapshot_id,
         "observed_at": source.observed_at,
         "academic_year": source.academic_year,
         "term_number": source.term_number,
@@ -274,6 +275,7 @@ def _compile(source_dir: Path, output_dir: Path, space_snapshot_path: Path) -> t
         root=output_dir,
         snapshot_id=snapshot_id,
         source_id=source.source_id,
+        space_snapshot_id=space.snapshot_id,
         academic_year=source.academic_year,
         term_number=source.term_number,
         observed_at=source.observed_at,
@@ -473,6 +475,7 @@ def load_teaching_schedule_snapshot(root: Path) -> TeachingScheduleSnapshot:
         root=root,
         snapshot_id=snapshot_id,
         source_id=require_sha256(manifest.get("source_id"), "source_id"),
+        space_snapshot_id=require_sha256(manifest.get("space_snapshot_id"), "space_snapshot_id"),
         academic_year=manifest["academic_year"],
         term_number=manifest["term_number"],
         observed_at=manifest["observed_at"],

@@ -21,6 +21,7 @@ export interface TeachingSnapshotManifest {
     format: 'njupt-teaching-schedule';
     snapshot_id: string;
     source_id: string;
+    space_snapshot_id: string;
     observed_at: string;
     academic_year: string;
     term_number: number;
@@ -217,12 +218,12 @@ const parsePeriod = (value: unknown, source: string): TeachingPeriod => {
 
 export const parseTeachingManifest = (value: unknown, source = 'TeachingSchedule manifest'): TeachingSnapshotManifest => {
     const result = object(value, source);
-    exact(result, ['format','snapshot_id','source_id','observed_at','academic_year','term_number','week_count','class_count','meeting_count','term','periods','class_index','class_chunks','meeting_chunks'], source);
+    exact(result, ['format','snapshot_id','source_id','space_snapshot_id','observed_at','academic_year','term_number','week_count','class_count','meeting_count','term','periods','class_index','class_chunks','meeting_chunks'], source);
     if (result.format !== 'njupt-teaching-schedule' || !Array.isArray(result.class_chunks) || !Array.isArray(result.meeting_chunks)) {
         throw new TeachingContractError(`${source}: incompatible format`);
     }
     return {
-        format: 'njupt-teaching-schedule', snapshot_id: hash(result.snapshot_id, `${source}.snapshot_id`), source_id: hash(result.source_id, `${source}.source_id`),
+        format: 'njupt-teaching-schedule', snapshot_id: hash(result.snapshot_id, `${source}.snapshot_id`), source_id: hash(result.source_id, `${source}.source_id`), space_snapshot_id: hash(result.space_snapshot_id, `${source}.space_snapshot_id`),
         observed_at: text(result.observed_at, `${source}.observed_at`), academic_year: text(result.academic_year, `${source}.academic_year`), term_number: integer(result.term_number, `${source}.term_number`, 1),
         week_count: integer(result.week_count, `${source}.week_count`, 1), class_count: integer(result.class_count, `${source}.class_count`, 1), meeting_count: integer(result.meeting_count, `${source}.meeting_count`),
         term: artifact(result.term, `${source}.term`), periods: artifact(result.periods, `${source}.periods`), class_index: artifact(result.class_index, `${source}.class_index`),
