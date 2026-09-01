@@ -1,6 +1,7 @@
 import { BookOpen, Building2, CalendarDays, GraduationCap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { ClassroomAvailability, ClassroomAvailabilityClient } from './model/ClassroomAvailabilityClient';
+import { resolveFloorOptions } from './model/floorOptions';
 import { SpatialViewport } from '@/space/SpatialViewport';
 
 interface ClassroomsPageProps {
@@ -37,9 +38,7 @@ export function ClassroomsPage({ date, week, weekday, period, campus, building, 
     const buildings = useMemo(() => result ? result.space.buildings
         .filter(item => !campus || result.space.campuses.find(campusItem => campusItem.campus_id === item.campus_id)?.name === campus)
         .map(item => item.name).sort((a, b) => a.localeCompare(b, 'zh-CN')) : [], [campus, result]);
-    const floors = useMemo(() => result ? result.space.floors
-        .filter(item => !building || result.space.buildings.find(buildingItem => buildingItem.building_id === item.building_id)?.name === building)
-        .map(item => item.level).sort((a, b) => a.localeCompare(b, 'zh-CN', { numeric: true })) : [], [building, result]);
+    const floors = useMemo(() => result ? resolveFloorOptions(result.space, campus, building) : [], [building, campus, result]);
     const effectiveWeek = result?.week ?? week ?? 1;
     const effectiveWeekday = result?.weekday ?? weekday ?? 1;
     const update = (next: Record<string, string | null>) => onChange({
@@ -65,12 +64,12 @@ export function ClassroomsPage({ date, week, weekday, period, campus, building, 
                 <p className="mt-2 text-sm text-[#5f6368] dark:text-[#bdc1c6]">第 {effectiveWeek} 周 · 星期{'一二三四五六日'[effectiveWeekday - 1]} · 第 {period} 节{result ? ` · ${result.date}` : date ? ` · ${date}` : ''}</p>
             </header>
             <section className="grid grid-cols-2 gap-3 rounded-2xl border border-[#dadce0] bg-[#f8f9fa] p-4 dark:border-[#3c4043] dark:bg-[#292a2d] sm:grid-cols-3 lg:grid-cols-6">
-                <label className="grid gap-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">周次<select value={effectiveWeek} onChange={event => update({ date: null, week: event.target.value, weekday: String(effectiveWeekday) })} className="h-10 rounded-lg border border-[#bdc1c6] bg-white px-2 text-sm text-[#202124] dark:border-[#5f6368] dark:bg-[#202124] dark:text-[#e8eaed]">{result?.manifest.weeks.map(item => <option key={item.week} value={item.week}>第 {item.week} 周</option>)}</select></label>
-                <label className="grid gap-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">星期<select value={effectiveWeekday} onChange={event => update({ date: null, week: String(effectiveWeek), weekday: event.target.value })} className="h-10 rounded-lg border border-[#bdc1c6] bg-white px-2 text-sm text-[#202124] dark:border-[#5f6368] dark:bg-[#202124] dark:text-[#e8eaed]">{'一二三四五六日'.split('').map((item,index) => <option key={item} value={index+1}>星期{item}</option>)}</select></label>
+                <label className="grid gap-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">周次<select name="week" value={effectiveWeek} onChange={event => update({ date: null, week: event.target.value, weekday: String(effectiveWeekday) })} className="h-10 rounded-lg border border-[#bdc1c6] bg-white px-2 text-sm text-[#202124] dark:border-[#5f6368] dark:bg-[#202124] dark:text-[#e8eaed]">{result?.manifest.weeks.map(item => <option key={item.week} value={item.week}>第 {item.week} 周</option>)}</select></label>
+                <label className="grid gap-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">星期<select name="weekday" value={effectiveWeekday} onChange={event => update({ date: null, week: String(effectiveWeek), weekday: event.target.value })} className="h-10 rounded-lg border border-[#bdc1c6] bg-white px-2 text-sm text-[#202124] dark:border-[#5f6368] dark:bg-[#202124] dark:text-[#e8eaed]">{'一二三四五六日'.split('').map((item,index) => <option key={item} value={index+1}>星期{item}</option>)}</select></label>
                 <div className="grid gap-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]"><span>当前节次</span><strong className="flex h-10 items-center text-sm text-[#202124] dark:text-[#e8eaed]">第 {period} 节</strong></div>
-                <label className="grid gap-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">校区<select value={campus ?? ''} onChange={event => update({ campus:event.target.value || null, building:null, floor:null })} className="h-10 rounded-lg border border-[#bdc1c6] bg-white px-2 text-sm text-[#202124] dark:border-[#5f6368] dark:bg-[#202124] dark:text-[#e8eaed]"><option value="">全部</option>{campuses.map(item => <option key={item}>{item}</option>)}</select></label>
-                <label className="grid gap-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">楼栋<select value={building ?? ''} onChange={event => update({ building:event.target.value || null, floor:null })} className="h-10 rounded-lg border border-[#bdc1c6] bg-white px-2 text-sm text-[#202124] dark:border-[#5f6368] dark:bg-[#202124] dark:text-[#e8eaed]"><option value="">全部</option>{buildings.map(item => <option key={item}>{item}</option>)}</select></label>
-                <label className="grid gap-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">楼层<select value={floor ?? ''} onChange={event => update({ floor:event.target.value || null })} className="h-10 rounded-lg border border-[#bdc1c6] bg-white px-2 text-sm text-[#202124] dark:border-[#5f6368] dark:bg-[#202124] dark:text-[#e8eaed]"><option value="">全部</option>{floors.map(item => <option key={item}>{item}</option>)}</select></label>
+                <label className="grid gap-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">校区<select name="campus" value={campus ?? ''} onChange={event => update({ campus:event.target.value || null, building:null, floor:null })} className="h-10 rounded-lg border border-[#bdc1c6] bg-white px-2 text-sm text-[#202124] dark:border-[#5f6368] dark:bg-[#202124] dark:text-[#e8eaed]"><option value="">全部</option>{campuses.map(item => <option key={item}>{item}</option>)}</select></label>
+                <label className="grid gap-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">楼栋<select name="building" value={building ?? ''} onChange={event => update({ building:event.target.value || null, floor:null })} className="h-10 rounded-lg border border-[#bdc1c6] bg-white px-2 text-sm text-[#202124] dark:border-[#5f6368] dark:bg-[#202124] dark:text-[#e8eaed]"><option value="">全部</option>{buildings.map(item => <option key={item}>{item}</option>)}</select></label>
+                <label className="grid gap-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">楼层<select name="floor" value={floor ?? ''} onChange={event => update({ floor:event.target.value || null })} className="h-10 rounded-lg border border-[#bdc1c6] bg-white px-2 text-sm text-[#202124] dark:border-[#5f6368] dark:bg-[#202124] dark:text-[#e8eaed]"><option value="">全部</option>{floors.map(item => <option key={item}>{item}</option>)}</select></label>
             </section>
             {error ? <div className="mt-5 rounded-xl border border-[#f2b8b5] bg-[#fce8e6] p-4 text-sm text-[#8c1d18] dark:border-[#8c1d18] dark:bg-[#3c2020] dark:text-[#f2b8b5]">{error}</div> : null}
             {!result && !error ? <div className="mt-6 h-60 animate-pulse rounded-2xl bg-[#f1f3f4] dark:bg-[#292a2d]" /> : null}
@@ -78,7 +77,7 @@ export function ClassroomsPage({ date, week, weekday, period, campus, building, 
                 <>
                     <section className="mt-5 rounded-2xl border border-[#dadce0] bg-white px-4 py-3 dark:border-[#3c4043] dark:bg-[#202124]" aria-label="节次时间轴">
                         <div className="flex items-center justify-between text-xs text-[#5f6368] dark:text-[#bdc1c6]"><span>上午</span><span>下午</span><span>晚间</span></div>
-                        <input className="mt-2 w-full accent-[#1a73e8]" type="range" min="1" max="12" step="1" value={period} onChange={event => update({ period: event.target.value })} aria-label="选择节次" />
+                        <input className="mt-2 w-full accent-[#1a73e8]" name="period" type="range" min="1" max="12" step="1" value={period} onChange={event => update({ period: event.target.value })} aria-label="选择节次" />
                         <div className="mt-1 grid grid-cols-12 text-center text-[10px] text-[#5f6368] dark:text-[#bdc1c6]">{Array.from({ length: 12 }, (_, index) => <span key={index}>{index + 1}</span>)}</div>
                     </section>
                     {activeCampus && activeBuilding && activeFloor ? <div className="mt-6"><SpatialViewport

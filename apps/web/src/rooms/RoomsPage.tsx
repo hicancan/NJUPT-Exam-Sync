@@ -28,10 +28,10 @@ const formatClock = (timestamp: string): string => new Date(timestamp).toLocaleT
     hour: '2-digit', minute: '2-digit', hour12: false,
 });
 
-function Select({ label, value, values, onChange }: {
-    label: string; value: string | null; values: string[]; onChange: (value: string) => void;
+function Select({ label, name, value, values, onChange }: {
+    label: string; name: string; value: string | null; values: string[]; onChange: (value: string) => void;
 }) {
-    return <label className="grid gap-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">{label}<select value={value ?? ''} onChange={event => onChange(event.target.value)} className="h-10 rounded-lg border border-[#bdc1c6] bg-white px-2 text-sm text-[#202124] dark:border-[#5f6368] dark:bg-[#202124] dark:text-[#e8eaed]"><option value="">全部</option>{values.map(item => <option key={item} value={item}>{item}</option>)}</select></label>;
+    return <label className="grid gap-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">{label}<select name={name} value={value ?? ''} onChange={event => onChange(event.target.value)} className="h-10 rounded-lg border border-[#bdc1c6] bg-white px-2 text-sm text-[#202124] dark:border-[#5f6368] dark:bg-[#202124] dark:text-[#e8eaed]"><option value="">全部</option>{values.map(item => <option key={item} value={item}>{item}</option>)}</select></label>;
 }
 
 function RoomResult({ room, bookings, start, end }: {
@@ -70,9 +70,9 @@ export function RoomsPage({ query, date, campus, building, floor, start, end, on
                 <>
                     <section className="grid gap-3 rounded-2xl border border-[#dadce0] bg-[#f8f9fa] p-4 dark:border-[#3c4043] dark:bg-[#292a2d] sm:grid-cols-3 lg:grid-cols-6">
                         <RoomDateFilter value={state.date} dates={dates} onChange={value => update({ date: value })} />
-                        <Select label="校区" value={state.campus} values={campuses} onChange={value => update({ campus: value || null, building: null, floor: null })} />
-                        <Select label="楼栋" value={state.building} values={buildings} onChange={value => update({ building: value || null, floor: null })} />
-                        <Select label="楼层" value={state.floor} values={floors} onChange={value => update({ floor: value || null })} />
+                        <Select label="校区" name="campus" value={state.campus} values={campuses} onChange={value => update({ campus: value || null, building: null, floor: null })} />
+                        <Select label="楼栋" name="building" value={state.building} values={buildings} onChange={value => update({ building: value || null, floor: null })} />
+                        <Select label="楼层" name="floor" value={state.floor} values={floors} onChange={value => update({ floor: value || null })} />
                     </section>
                     <section className="mt-5 rounded-2xl border border-[#dadce0] bg-white p-4 dark:border-[#3c4043] dark:bg-[#202124]">
                         <div className="mb-4 flex flex-wrap items-center gap-3 text-sm"><span className="inline-flex items-center gap-1 font-medium"><Building2 className="h-4 w-4" />{state.campus} · {state.building} · {state.floor}楼</span><span className="inline-flex items-center gap-1 text-[#5f6368] dark:text-[#bdc1c6]"><Clock className="h-4 w-4" />{state.date}</span><span className="inline-flex items-center gap-1 text-[#5f6368] dark:text-[#bdc1c6]"><MapPin className="h-4 w-4" />{state.rooms.length} 个空间</span></div>
