@@ -6,10 +6,11 @@ interface TimetableLandingProps {
     client: TeachingScheduleClient;
     savedClass: string | null;
     onOpenClass: (className: string) => void;
+    initialQuery?: string;
 }
 
-export function TimetableLanding({ client, savedClass, onOpenClass }: TimetableLandingProps) {
-    const [query, setQuery] = useState('');
+export function TimetableLanding({ client, savedClass, onOpenClass, initialQuery = '' }: TimetableLandingProps) {
+    const [query, setQuery] = useState(initialQuery);
     const [suggestions, setSuggestions] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
     const visibleSuggestions = query.trim().length >= 2 ? suggestions : [];

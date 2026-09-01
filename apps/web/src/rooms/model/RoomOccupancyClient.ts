@@ -99,7 +99,7 @@ export class RoomOccupancyClient {
             const floor = parseRoomFloorOccupancy(payload, artifact.path);
             if (
                 floor.exam_snapshot_id !== manifest.exam_snapshot_id
-                || floor.room_catalog_id !== manifest.room_catalog_id
+                || floor.space_snapshot_id !== manifest.space_snapshot_id
             ) {
                 throw new Error(`教室占用分片与索引身份不一致: ${artifact.path}`);
             }

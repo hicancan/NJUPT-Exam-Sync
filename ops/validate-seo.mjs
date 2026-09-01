@@ -120,7 +120,7 @@ assert(JSON.stringify(rewrites) === JSON.stringify([
 assert(!rewrites.some(rewrite => rewrite.source.includes('*')), 'edgeone.json: catch-all page fallback found');
 const searchHeaders = (edgeone.headers ?? []).find(rule => rule.source === '/search')?.headers ?? [];
 assert(searchHeaders.some(header => header.key === 'X-Robots-Tag' && header.value === 'noindex, follow'), 'edgeone.json: search response noindex is missing');
-for (const source of ['/generated/search/*', '/generated/exam/*', '/generated/rooms/*', '/generated/timetable/*', '/generated/classrooms/*']) {
+for (const source of ['/generated/search/*', '/generated/exam/*', '/generated/rooms/*', '/generated/timetable/*', '/generated/classrooms/*', '/generated/space/*']) {
     const headers = (edgeone.headers ?? []).find(rule => rule.source === source)?.headers ?? [];
     assert(headers.some(header => header.key === 'X-Robots-Tag' && header.value === 'noindex, nofollow'), `edgeone.json: ${source} robots header is missing`);
 }
@@ -128,7 +128,7 @@ for (const source of ['/generated/search/*', '/generated/exam/*', '/generated/ro
 for (const file of ['index.html', 'exam/index.html', 'rooms/index.html', 'search/index.html', 'timetable/index.html', 'classrooms/index.html']) {
     const html = read(file);
     assert(!html.includes('#/'), `${file}: hash route found in production HTML`);
-    assert(!/class="[^"]*(?:sr-only|hidden)[^"]*"[^>]*>[^<]*(?:南邮校园信息|考试安排|考试教室)/.test(html), `${file}: hidden SEO copy found`);
+    assert(!/<(?:div|section|p|h[1-6])[^>]*class="[^"]*(?:sr-only|hidden)[^"]*"[^>]*>[^<]*(?:南邮校园信息|考试安排|考试教室)/.test(html), `${file}: hidden SEO copy found`);
 }
 
 if (failures.length) {

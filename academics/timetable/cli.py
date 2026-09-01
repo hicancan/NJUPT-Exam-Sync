@@ -12,7 +12,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--source", required=True, type=Path)
     parser.add_argument("--snapshot", required=True, type=Path)
     parser.add_argument("--occupancy", required=True, type=Path)
-    parser.add_argument("--catalog", required=True, type=Path)
+    parser.add_argument("--space", required=True, type=Path)
     parser.add_argument("--exam", required=True, type=Path)
     return parser.parse_args()
 
@@ -27,7 +27,7 @@ def main() -> None:
         source_dir=arguments.source,
         snapshot_dir=arguments.snapshot,
         occupancy_dir=arguments.occupancy,
-        catalog_path=arguments.catalog,
+        space_snapshot_path=arguments.space,
         exam_snapshot_id=exam_snapshot_id,
     )
     print(
@@ -36,7 +36,7 @@ def main() -> None:
     )
     print(
         f"TeachingRoomOccupancy {occupancy['occupancy_id']} "
-        f"({len(occupancy['rooms'])} rooms, {len(occupancy['days'])} days)"
+        f"({len(occupancy['days'])} day partitions)"
     )
 
 

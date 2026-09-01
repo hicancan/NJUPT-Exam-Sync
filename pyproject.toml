@@ -16,8 +16,22 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+space-reconstruction = [
+  "geopandas==1.1.4",
+  "numpy==1.26.4",
+  "opencv-python-headless==4.11.0.86",
+  "pillow==12.3.0",
+  "pyogrio==0.13.0",
+  "shapely==2.1.2",
+]
 test = [
+  "geopandas==1.1.4",
+  "numpy==1.26.4",
+  "opencv-python-headless==4.11.0.86",
+  "pillow==12.3.0",
+  "pyogrio==0.13.0",
   "pytest==9.0.3",
+  "shapely==2.1.2",
 ]
 
 [tool.setuptools.packages.find]

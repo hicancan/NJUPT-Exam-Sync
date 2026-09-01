@@ -11,10 +11,12 @@ import { TimetableLanding } from '@/timetable/TimetableLanding';
 import type { TeachingScheduleClient } from '@/timetable/model/TeachingScheduleClient';
 import { ClassroomsLanding } from '@/classrooms/ClassroomsLanding';
 import type { ClassroomAvailabilityClient } from '@/classrooms/model/ClassroomAvailabilityClient';
+import type { SpaceClient } from '@/space/model/SpaceClient';
 
 const never = new Promise<never>(() => undefined);
 const examClient = { initialize: () => never } as unknown as ExamSnapshotClient;
 const roomClient = { initialize: () => never } as unknown as RoomOccupancyClient;
+const spaceClient = { initialize: () => never } as unknown as SpaceClient;
 const teachingClient = { initialize: () => never } as unknown as TeachingScheduleClient;
 const classroomClient = { initialize: () => never } as unknown as ClassroomAvailabilityClient;
 const noop = () => undefined;
@@ -38,7 +40,7 @@ export function StaticRoutePage({ route }: { route: AppRoute }) {
 
     return (
         <div className="min-h-screen flex flex-col bg-white dark:bg-[#202124] text-[#202124] dark:text-[#e8eaed] font-sans">
-            <Header inputValue="" onInputChange={noop} onSubmit={noop} onGoHome={noop} />
+            <Header inputValue="" onInputChange={noop} onSubmit={noop} onGoHome={noop} route={route} />
             {route === 'exam' ? (
                 <ExamLanding
                     savedClass={null}
@@ -51,6 +53,7 @@ export function StaticRoutePage({ route }: { route: AppRoute }) {
             {route === 'rooms' ? (
                 <RoomsLanding
                     client={roomClient}
+                    spaceClient={spaceClient}
                     savedRoom={null}
                     onChange={noop}
                     onSubmit={noop}

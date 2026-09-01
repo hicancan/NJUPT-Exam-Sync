@@ -12,6 +12,7 @@ export default defineConfig({
     'import.meta.env.VITE_NJUPT_ROOM_ARTIFACT_URL': JSON.stringify('/generated/rooms'),
     'import.meta.env.VITE_NJUPT_TIMETABLE_ARTIFACT_URL': JSON.stringify('/generated/timetable'),
     'import.meta.env.VITE_NJUPT_CLASSROOMS_ARTIFACT_URL': JSON.stringify('/generated/classrooms'),
+    'import.meta.env.VITE_NJUPT_SPACE_ARTIFACT_URL': JSON.stringify('/generated/space'),
   },
   resolve: {
     alias: {

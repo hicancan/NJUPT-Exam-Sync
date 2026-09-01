@@ -6,9 +6,9 @@ import re
 import shutil
 import uuid
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
-from academics.room.catalog import load_room_catalog, normalize_location, parse_room_location
+from academics.space import load_space_snapshot, normalize_location
 
 from .model import (
     OCCUPANCY_FORMAT,
@@ -84,7 +84,8 @@ def _meeting_payload(record: dict[str, Any], *, period_count: int) -> dict[str, 
         "teacher_title": record.get("teacher_title"),
         "instructor_role": record.get("instructor_role"),
         "campus": record.get("campus"),
-        "room_key": None,
+        "space_family_id": None,
+        "space_unit_id": None,
         "location": record.get("location"),
         "location_type": record.get("location_type"),
         "weekday": weekday,
@@ -109,11 +110,15 @@ def _meeting_payload(record: dict[str, Any], *, period_count: int) -> dict[str, 
     }
 
 
-def _chunk_mapping(values: dict[str, dict[str, Any]]) -> list[dict[str, dict[str, Any]]]:
+def _chunk_mapping(
+    values: dict[str, dict[str, Any]],
+    *,
+    sort_key: Callable[[str], Any] | None = None,
+) -> list[dict[str, dict[str, Any]]]:
     chunks: list[dict[str, dict[str, Any]]] = []
     current: dict[str, dict[str, Any]] = {}
     current_bytes = 0
-    for key in sorted(values):
+    for key in sorted(values, key=sort_key):
         size = len(canonical_bytes({key: values[key]}))
         if current and current_bytes + size > CHUNK_TARGET_BYTES:
             chunks.append(current)
@@ -126,9 +131,10 @@ def _chunk_mapping(values: dict[str, dict[str, Any]]) -> list[dict[str, dict[str
     return chunks
 
 
-def _compile(source_dir: Path, output_dir: Path, catalog_path: Path) -> tuple[dict[str, Any], TeachingScheduleSnapshot]:
+def _compile(source_dir: Path, output_dir: Path, space_snapshot_path: Path) -> tuple[dict[str, Any], TeachingScheduleSnapshot]:
     source = load_teaching_schedule_source(source_dir)
-    catalog = load_room_catalog(catalog_path)
+    space = load_space_snapshot(space_snapshot_path)
+    aliases = {alias["normalized_alias"]: alias for alias in space.aliases}
     class_descriptors = {
         entry["descriptor"]["class_id"]: entry["descriptor"]
         for entry in source.catalog
@@ -146,15 +152,19 @@ def _compile(source_dir: Path, output_dir: Path, catalog_path: Path) -> tuple[di
             continue
         for record in schedule["meetings"]:
             payload = _meeting_payload(record, period_count=len(source.periods))
-            parsed = parse_room_location(campus=payload["campus"], location=payload["location"])
-            if parsed is not None:
-                room = catalog.rooms_by_key.get(parsed.room_key)
-                if room is None:
-                    raise TeachingScheduleError(
-                        f"Teaching location is missing from RoomCatalog: {parsed.normalized_location}"
-                    )
-                payload["room_key"] = room.room_key
-                payload["campus"] = room.campus
+            normalized_location = normalize_location(payload["location"])
+            alias = aliases.get(normalized_location)
+            if alias is not None and alias["status"] not in {"non_physical", "unresolved"}:
+                payload["space_family_id"] = alias["space_family_id"]
+                payload["space_unit_id"] = alias["space_unit_id"]
+                family = space.families_by_id[alias["space_family_id"]]
+                building = next(item for item in space.buildings if item["building_id"] == family["building_id"])
+                campus = next(item for item in space.campuses if item["campus_id"] == building["campus_id"])
+                payload["campus"] = campus["name"]
+            elif normalized_location and (alias is None or alias["status"] != "non_physical"):
+                raise TeachingScheduleError(
+                    f"Teaching location has no terminal SpaceSnapshot alias: {normalized_location}"
+                )
             identity = {key: value for key, value in payload.items() if key != "online_information"}
             meeting_id = _hash_id("meeting-", identity)
             related = _stable_strings([class_id, *record.get("teaching_class_composition", [])])
@@ -215,7 +225,10 @@ def _compile(source_dir: Path, output_dir: Path, catalog_path: Path) -> tuple[di
 
     meeting_chunks: list[dict[str, Any]] = []
     meeting_chunk_path: dict[str, str] = {}
-    for index, meetings in enumerate(_chunk_mapping(meetings_by_id)):
+    for index, meetings in enumerate(_chunk_mapping(
+        meetings_by_id,
+        sort_key=lambda meeting_id: (tuple(meetings_by_id[meeting_id]["class_ids"]), meeting_id),
+    )):
         relative = f"meetings-{index:03d}.json"
         chunk_id = sha256(canonical_bytes(meetings))
         _write_json(output_dir / relative, {"format": MEETING_CHUNK_FORMAT, "source_id": source.source_id, "chunk_id": chunk_id, "meetings": meetings})
@@ -276,54 +289,44 @@ def _build_occupancy(
     *,
     output_dir: Path,
     snapshot: TeachingScheduleSnapshot,
-    catalog_path: Path,
+    space_snapshot_path: Path,
     exam_snapshot_id: str,
 ) -> dict[str, Any]:
     require_sha256(exam_snapshot_id, "exam_snapshot_id")
-    catalog = load_room_catalog(catalog_path)
-    room_entries = [
-        {
-            "campus": room.campus,
-            "building": room.building,
-            "floor": room.floor,
-            "floor_key": room.floor_key,
-            "room": room.room,
-            "room_key": room.room_key,
-        }
-        for room in sorted(catalog.rooms_by_key.values(), key=lambda room: (room.campus, room.building, room.floor, room.room))
-    ]
-    floors: dict[str, dict[str, Any]] = {}
-    for room in room_entries:
-        floor = floors.setdefault(room["floor_key"], {
-            "campus": room["campus"], "building": room["building"], "floor": room["floor"],
-            "floor_key": room["floor_key"], "room_keys": [],
-        })
-        floor["room_keys"].append(room["room_key"])
+    space = load_space_snapshot(space_snapshot_path)
+    families = space.families_by_id
+    buildings = {item["building_id"]: item for item in space.buildings}
+    campuses = {item["campus_id"]: item for item in space.campuses}
+    floors = {item["floor_id"]: item for item in space.floors}
 
     by_day: dict[tuple[int, int], dict[str, list[dict[str, Any]]]] = {}
     unresolved: dict[str, int] = {}
     for meeting in snapshot.meetings:
-        room_key = meeting.get("room_key")
-        if not room_key:
+        family_id = meeting.get("space_family_id")
+        if not family_id:
             location = normalize_location(meeting.get("location"))
             if location:
                 unresolved[location] = unresolved.get(location, 0) + 1
             continue
-        room = catalog.rooms_by_key.get(str(room_key))
-        if room is None:
-            raise TeachingScheduleError(f"Meeting room is absent from RoomCatalog: {room_key}")
+        family = families.get(str(family_id))
+        if family is None:
+            raise TeachingScheduleError(f"Meeting space is absent from SpaceSnapshot: {family_id}")
+        floor = floors[family["floor_id"]]
+        building = buildings[family["building_id"]]
+        campus = campuses[building["campus_id"]]
         booking = {
             "meeting_id": meeting["meeting_id"],
             "course_name": meeting["course_name"],
             "course_code": meeting["course_code"],
             "class_ids": meeting["class_ids"],
             "teacher": meeting["teacher"],
-            "campus": room.campus,
-            "building": room.building,
-            "floor": room.floor,
-            "floor_key": room.floor_key,
-            "room": room.room,
-            "room_key": room.room_key,
+            "campus": campus["name"],
+            "building": building["name"],
+            "floor": floor["level"],
+            "floor_id": floor["floor_id"],
+            "room": family["room_number"],
+            "space_family_id": family["space_family_id"],
+            "space_unit_id": meeting.get("space_unit_id"),
             "location": meeting["location"],
             "start_period": meeting["start_period"],
             "end_period": meeting["end_period"],
@@ -336,7 +339,7 @@ def _build_occupancy(
     day_refs: list[dict[str, Any]] = []
     for (week, weekday), periods in sorted(by_day.items()):
         for bookings in periods.values():
-            bookings.sort(key=lambda value: (value["room_key"], value["meeting_id"]))
+            bookings.sort(key=lambda value: (value["space_family_id"], value["meeting_id"]))
         relative = f"days/week-{week:02d}-day-{weekday}.json"
         payload = {
             "format": OCCUPANCY_DAY_FORMAT,
@@ -352,11 +355,9 @@ def _build_occupancy(
         "format": OCCUPANCY_FORMAT,
         "teaching_snapshot_id": snapshot.snapshot_id,
         "exam_snapshot_id": exam_snapshot_id,
-        "room_catalog_id": catalog.catalog_id,
+        "space_snapshot_id": space.snapshot_id,
         "academic_year": snapshot.academic_year,
         "term_number": snapshot.term_number,
-        "rooms": room_entries,
-        "floors": sorted(floors.values(), key=lambda value: (value["campus"], value["building"], value["floor"])),
         "weeks": snapshot.weeks,
         "periods": snapshot.periods,
         "unresolved_locations": [{"location": location, "count": count} for location, count in sorted(unresolved.items())],
@@ -403,7 +404,7 @@ def publish_teaching_artifacts(
     source_dir: Path,
     snapshot_dir: Path,
     occupancy_dir: Path,
-    catalog_path: Path,
+    space_snapshot_path: Path,
     exam_snapshot_id: str,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     snapshot_dir = snapshot_dir.resolve()
@@ -419,11 +420,11 @@ def publish_teaching_artifacts(
     staging_occupancy.mkdir(parents=True)
     backups: list[tuple[Path, Path]] = []
     try:
-        snapshot_manifest, snapshot = _compile(source_dir.resolve(), staging_snapshot, catalog_path.resolve())
+        snapshot_manifest, snapshot = _compile(source_dir.resolve(), staging_snapshot, space_snapshot_path.resolve())
         occupancy_manifest = _build_occupancy(
             output_dir=staging_occupancy,
             snapshot=snapshot,
-            catalog_path=catalog_path.resolve(),
+            space_snapshot_path=space_snapshot_path.resolve(),
             exam_snapshot_id=exam_snapshot_id,
         )
         _validate_file_set(staging_snapshot, snapshot_manifest, kind="snapshot")

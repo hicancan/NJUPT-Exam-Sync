@@ -1,9 +1,7 @@
 import type {
-    Room,
     RoomArtifactRef,
     RoomBooking,
     RoomDateEntry,
-    RoomFloor,
     RoomFloorOccupancy,
     RoomOccupancy,
 } from './model';
@@ -62,44 +60,6 @@ const artifact = (value: unknown, source: string): RoomArtifactRef => {
     };
 };
 
-const parseRoom = (value: unknown, source: string): Room => {
-    if (!isObject(value) || !hasExactKeys(value, [
-        'campus',
-        'building',
-        'floor',
-        'floor_key',
-        'room',
-        'room_key',
-    ])) throw new RoomOccupancyContractError(`${source}: room must be an object`);
-    return {
-        campus: text(value.campus, 'campus', source),
-        building: text(value.building, 'building', source),
-        floor: text(value.floor, 'floor', source),
-        floor_key: text(value.floor_key, 'floor_key', source),
-        room: text(value.room, 'room', source),
-        room_key: text(value.room_key, 'room_key', source),
-    };
-};
-
-const parseFloor = (value: unknown, source: string): RoomFloor => {
-    if (!isObject(value) || !hasExactKeys(value, [
-        'campus',
-        'building',
-        'floor',
-        'floor_key',
-        'room_keys',
-    ]) || !Array.isArray(value.room_keys)) {
-        throw new RoomOccupancyContractError(`${source}: floor must be an object`);
-    }
-    return {
-        campus: text(value.campus, 'campus', source),
-        building: text(value.building, 'building', source),
-        floor: text(value.floor, 'floor', source),
-        floor_key: text(value.floor_key, 'floor_key', source),
-        room_keys: value.room_keys.map((item, index) => text(item, `room_keys[${index}]`, source)),
-    };
-};
-
 export const parseRoomOccupancy = (
     value: unknown,
     source = 'RoomOccupancy manifest'
@@ -108,33 +68,24 @@ export const parseRoomOccupancy = (
         'format',
         'occupancy_id',
         'exam_snapshot_id',
-        'room_catalog_id',
+        'space_snapshot_id',
         'exam_period_id',
         'source_updated_at',
-        'rooms',
-        'floors',
+        'unresolved_locations',
         'dates',
     ]) || value.format !== 'njupt-room-occupancy') {
         throw new RoomOccupancyContractError(`${source}: incompatible RoomOccupancy format`);
     }
-    if (!Array.isArray(value.rooms) || !Array.isArray(value.floors) || !Array.isArray(value.dates)) {
-        throw new RoomOccupancyContractError(`${source}: rooms, floors and dates must be arrays`);
+    if (!Array.isArray(value.unresolved_locations) || !Array.isArray(value.dates)) {
+        throw new RoomOccupancyContractError(`${source}: unresolved_locations and dates must be arrays`);
     }
-    const rooms = value.rooms.map((item, index) => parseRoom(item, `${source}.rooms[${index}]`));
-    const floors = value.floors.map((item, index) => parseFloor(item, `${source}.floors[${index}]`));
-    const roomKeys = new Set(rooms.map(room => room.room_key));
-    const floorKeys = new Set(floors.map(floor => floor.floor_key));
-    if (roomKeys.size !== rooms.length || floorKeys.size !== floors.length) {
-        throw new RoomOccupancyContractError(`${source}: duplicate room or floor identity`);
-    }
-    const assignedRoomKeys = floors.flatMap(floor => floor.room_keys);
-    if (
-        assignedRoomKeys.some(roomKey => !roomKeys.has(roomKey))
-        || new Set(assignedRoomKeys).size !== assignedRoomKeys.length
-        || assignedRoomKeys.length !== rooms.length
-    ) {
-        throw new RoomOccupancyContractError(`${source}: floor references an unknown room`);
-    }
+    const unresolvedLocations = value.unresolved_locations.map((item, index) => {
+        const itemSource = `${source}.unresolved_locations[${index}]`;
+        if (!isObject(item) || !hasExactKeys(item, ['location', 'count'])) {
+            throw new RoomOccupancyContractError(`${itemSource}: invalid unresolved location`);
+        }
+        return { location: text(item.location, 'location', itemSource), count: integer(item.count, 'count', itemSource) };
+    });
     const seenDates = new Set<string>();
     const dates: RoomDateEntry[] = value.dates.map((item, dateIndex) => {
         const dateSource = `${source}.dates[${dateIndex}]`;
@@ -152,24 +103,23 @@ export const parseRoomOccupancy = (
             floors: item.floors.map((floor, floorIndex) => {
                 const floorSource = `${dateSource}.floors[${floorIndex}]`;
                 if (!isObject(floor) || !hasExactKeys(floor, [
-                    'floor_key',
+                    'floor_id',
                     'booking_count',
                     'artifact',
                 ])) {
                     throw new RoomOccupancyContractError(`${floorSource}: invalid floor entry`);
                 }
-                const floorKey = text(floor.floor_key, 'floor_key', floorSource);
+                const floorId = text(floor.floor_id, 'floor_id', floorSource);
                 const ref = artifact(floor.artifact, `${floorSource}.artifact`);
                 if (
-                    !floorKeys.has(floorKey)
-                    || seenDateFloors.has(floorKey)
-                    || ref.path !== `floors/${date}-${floorKey}.json`
+                    seenDateFloors.has(floorId)
+                    || ref.path !== `floors/${date}-${floorId}.json`
                 ) {
                     throw new RoomOccupancyContractError(`${floorSource}: invalid floor reference`);
                 }
-                seenDateFloors.add(floorKey);
+                seenDateFloors.add(floorId);
                 return {
-                    floor_key: floorKey,
+                    floor_id: floorId,
                     booking_count: integer(floor.booking_count, 'booking_count', floorSource),
                     artifact: ref,
                 };
@@ -184,11 +134,10 @@ export const parseRoomOccupancy = (
         format: 'njupt-room-occupancy',
         occupancy_id: hash(value.occupancy_id, 'occupancy_id', source),
         exam_snapshot_id: hash(value.exam_snapshot_id, 'exam_snapshot_id', source),
-        room_catalog_id: hash(value.room_catalog_id, 'room_catalog_id', source),
+        space_snapshot_id: hash(value.space_snapshot_id, 'space_snapshot_id', source),
         exam_period_id: examPeriodId,
         source_updated_at: text(value.source_updated_at, 'source_updated_at', source),
-        rooms,
-        floors,
+        unresolved_locations: unresolvedLocations,
         dates,
     };
 };
@@ -229,9 +178,10 @@ const parseBooking = (value: unknown, source: string): RoomBooking => {
         'campus',
         'building',
         'floor',
-        'floor_key',
+        'floor_id',
         'room',
-        'room_key',
+        'space_family_id',
+        'space_unit_id',
     ])) throw new RoomOccupancyContractError(`${source}: booking must be an object`);
     return {
         exam_id: text(value.exam_id, 'exam_id', source),
@@ -249,9 +199,10 @@ const parseBooking = (value: unknown, source: string): RoomBooking => {
         campus: text(value.campus, 'campus', source),
         building: text(value.building, 'building', source),
         floor: text(value.floor, 'floor', source),
-        floor_key: text(value.floor_key, 'floor_key', source),
+        floor_id: text(value.floor_id, 'floor_id', source),
         room: text(value.room, 'room', source),
-        room_key: text(value.room_key, 'room_key', source),
+        space_family_id: text(value.space_family_id, 'space_family_id', source),
+        space_unit_id: value.space_unit_id === null ? null : text(value.space_unit_id, 'space_unit_id', source),
     };
 };
 
@@ -262,12 +213,12 @@ export const parseRoomFloorOccupancy = (
     if (!isObject(value) || !hasExactKeys(value, [
         'format',
         'exam_snapshot_id',
-        'room_catalog_id',
+        'space_snapshot_id',
         'date',
         'campus',
         'building',
         'floor',
-        'floor_key',
+        'floor_id',
         'booking_count',
         'bookings',
     ]) || value.format !== 'njupt-room-floor-occupancy' || !Array.isArray(value.bookings)) {
@@ -277,18 +228,18 @@ export const parseRoomFloorOccupancy = (
     const result: RoomFloorOccupancy = {
         format: 'njupt-room-floor-occupancy',
         exam_snapshot_id: hash(value.exam_snapshot_id, 'exam_snapshot_id', source),
-        room_catalog_id: hash(value.room_catalog_id, 'room_catalog_id', source),
+        space_snapshot_id: hash(value.space_snapshot_id, 'space_snapshot_id', source),
         date: text(value.date, 'date', source),
         campus: text(value.campus, 'campus', source),
         building: text(value.building, 'building', source),
         floor: text(value.floor, 'floor', source),
-        floor_key: text(value.floor_key, 'floor_key', source),
+        floor_id: text(value.floor_id, 'floor_id', source),
         booking_count: integer(value.booking_count, 'booking_count', source),
         bookings,
     };
     if (
         result.booking_count !== bookings.length
-        || bookings.some(booking => booking.date !== result.date || booking.floor_key !== result.floor_key)
+        || bookings.some(booking => booking.date !== result.date || booking.floor_id !== result.floor_id)
     ) {
         throw new RoomOccupancyContractError(`${source}: booking identity mismatch`);
     }

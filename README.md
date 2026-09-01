@@ -62,7 +62,7 @@ njupt-search       构建 SearchBundle 索引，提供 Web / Android 页面
 
 前两步爬虫和清洗工作分别由 [`static-site-graph`](https://github.com/hicancan/static-site-graph) 和 [`njupt-site-graph`](https://github.com/hicancan/njupt-site-graph) 负责。
 
-考试编排数据会被单独编译为 `ExamSnapshot`。可信的连续快照形成 `ExamHistory`，当前快照同时派生考试教室数据 `RoomOccupancy`。全校班级课表由登录教务系统后的 `njupt-jwxt` 扩展采集成 `TeachingScheduleSource`，再由本仓库编译为 `TeachingScheduleSnapshot` 和独立的 `TeachingRoomOccupancy`。源码里不包含真实校园语料、教务响应或生成好的数据文件；部署时只组装经过隐私清理和完整性验证的内容寻址产物。
+考试编排数据会被单独编译为 `ExamSnapshot`。可信的连续快照形成 `ExamHistory`，当前快照同时派生考试教室数据 `RoomOccupancy`。全校班级课表由登录教务系统后的 `njupt-jwxt` 扩展采集成 `TeachingScheduleSource`，再由本仓库编译为 `TeachingScheduleSnapshot` 和独立的 `TeachingRoomOccupancy`。校区、楼栋、楼层、房间身份与经过清理的示意几何由独立 `SpaceSnapshot` 统一提供；考试和教学占用只引用该空间身份。源码里不包含真实校园语料、教务响应、原始消防图或生成好的数据文件；部署时只组装经过隐私清理和完整性验证的内容寻址产物。
 
 ## 目录
 
@@ -78,8 +78,9 @@ njupt-search/
 │   └── browser/      浏览器端的 Worker、网络切片拉取与缓存
 ├── academics/
 │   ├── exam/         考试快照、更新历史、班级查询与 ICS 导出
-│   ├── room/         统一教室目录和考试占用
-│   └── timetable/    班级课表和课程教室占用
+│   ├── room/         考试占用
+│   ├── timetable/    班级课表和课程教室占用
+│   └── space/        校园空间主数据和语义几何
 ├── benchmarks/       搜索质量与性能基准测试
 ├── ops/              各种构建、验证和 Web 组装脚本
 └── docs/             架构与数据格式设计文档
@@ -110,6 +111,7 @@ $roomPath = "$dataPath\room-occupancy"
 $teachingSourcePath = 'D:\path\to\teaching-schedule-source'
 $timetablePath = "$dataPath\teaching-schedule"
 $classroomsPath = "$dataPath\teaching-room-occupancy"
+$spacePath = 'D:\path\to\space-snapshot'
 ```
 
 构建倒排索引：
@@ -136,8 +138,40 @@ uv run python -m academics.exam discover `
   -TeachingSourcePath $teachingSourcePath `
   -TeachingOutputPath $timetablePath `
   -TeachingRoomOutputPath $classroomsPath `
-  -RoomCatalogPath .\academics\room\catalog\njupt-room-catalog.json
+  -SpaceSnapshotPath $spacePath
 ```
+
+消防平面图只作为私有证据保存在外部数据目录。重建过程使用统一组件库生成可在
+Inkscape 中复核的 SVG、对比叠图以及可在 QGIS 中检查的无 CRS GeoPackage；它们
+采用楼层局部示意坐标，不伪造测绘比例或地理坐标。先安装重建专用依赖，再运行严格
+的人工验收终结器和 SpaceSnapshot 编译器：
+
+```powershell
+uv sync --extra space-reconstruction
+
+uv run python academics\space\reconstruct.py `
+  --reviewed-geometry 'D:\private\reviewed-floor-plan-geometry.json' `
+  --review-config 'D:\private\reconstruction-review.json' `
+  --inkscape 'D:\Dev\Inkscape-1.4.4\inkscape\bin\inkscape.exe' `
+  --output 'D:\private\reconstruction'
+
+uv run python academics\space\finalize_floor_plan_review.py `
+  --reviewed-geometry 'D:\private\reviewed-floor-plan-geometry.json' `
+  --review-config 'D:\private\reconstruction-review.json' `
+  --reconstruction 'D:\private\reconstruction' `
+  --acceptance 'D:\private\reconstruction-acceptance.json' `
+  --output 'D:\private\reviewed-floor-plan-geometry-v2.json'
+
+uv run python -m academics.space `
+  --reviewed-geometry 'D:\private\reviewed-floor-plan-geometry-v2.json' `
+  --teaching-source $teachingSourcePath `
+  --exam-snapshot $examPath `
+  --output $spacePath
+```
+
+终结器会拒绝自相交、标签点落在空间之外、同层大面积重叠、来源哈希变化和未被
+显式验收的候选。原图、对比图和 GeoPackage 都不进入 Git 或公开 Web；公开
+SpaceSnapshot 只保留经过清理的房间语义几何。
 
 常规的 `vite build` 是不包含上面这些产物的。如果需要预览完整的 Web 页面，必须使用组装脚本：
 
@@ -149,6 +183,7 @@ uv run python -m academics.exam discover `
   -RoomOccupancyPath $roomPath `
   -TeachingSchedulePath $timetablePath `
   -TeachingRoomOccupancyPath $classroomsPath `
+  -SpaceSnapshotPath $spacePath `
   -StagePath "$dataPath\web-stage" `
   -DistPath "$dataPath\web-dist"
 ```

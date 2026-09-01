@@ -6,9 +6,10 @@ import { todayInShanghai, weekdayInShanghai } from '../timetable/model/calendar'
 interface ClassroomsLandingProps {
     client: ClassroomAvailabilityClient;
     onChange: (params: Record<string, string | null>) => void;
+    query?: string;
 }
 
-export function ClassroomsLanding({ client, onChange }: ClassroomsLandingProps) {
+export function ClassroomsLanding({ client, onChange, query = '' }: ClassroomsLandingProps) {
     const [week, setWeek] = useState(1);
     const [weekday, setWeekday] = useState(weekdayInShanghai);
     const [period, setPeriod] = useState(1);
@@ -19,8 +20,8 @@ export function ClassroomsLanding({ client, onChange }: ClassroomsLandingProps) 
 
     useEffect(() => {
         const controller = new AbortController();
-        client.initialize(controller.signal).then(manifest => {
-            setCampuses([...new Set(manifest.rooms.map(room => room.campus))].sort());
+        client.initialize(controller.signal).then(({ manifest, space }) => {
+            setCampuses(space.campuses.map(item => item.name).sort((a, b) => a.localeCompare(b, 'zh-CN')));
             setWeekCount(manifest.weeks.length);
             setPeriodCount(manifest.periods.length);
             const today = todayInShanghai();
@@ -43,7 +44,7 @@ export function ClassroomsLanding({ client, onChange }: ClassroomsLandingProps) 
                 </div>
                 <form className="mt-7 grid gap-4 sm:grid-cols-2" onSubmit={event => {
                     event.preventDefault();
-                    onChange({ week: String(week), weekday: String(weekday), period: String(period), campus: campus || null });
+                    onChange({ week: String(week), weekday: String(weekday), period: String(period), campus: campus || null, q: query || null });
                 }}>
                     <label className="grid gap-1.5 text-sm"><span>周次</span><select value={week} onChange={event => setWeek(Number(event.target.value))} className="h-12 rounded-xl border border-[#bdc1c6] bg-white px-3 dark:border-[#5f6368] dark:bg-[#202124]">{weeks.map(item => <option key={item} value={item}>第 {item} 周</option>)}</select></label>
                     <label className="grid gap-1.5 text-sm"><span>星期</span><select value={weekday} onChange={event => setWeekday(Number(event.target.value))} className="h-12 rounded-xl border border-[#bdc1c6] bg-white px-3 dark:border-[#5f6368] dark:bg-[#202124]">{'一二三四五六日'.split('').map((item, index) => <option key={item} value={index + 1}>星期{item}</option>)}</select></label>

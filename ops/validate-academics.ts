@@ -40,6 +40,16 @@ import {
     parseTeachingRoomDay,
     parseTeachingTerm,
 } from '../academics/timetable/index.ts';
+import {
+    assertSpaceManifestIdentity,
+    parseAliases,
+    parseBuildings,
+    parseCampuses,
+    parseFloors,
+    parseSpaceFamilies,
+    parseSpaceManifest,
+    parseSpaceUnits,
+} from '../academics/space/index.ts';
 
 function argument(name: string): string {
     const index = process.argv.indexOf(name);
@@ -74,6 +84,18 @@ const historyRoot = argument('--history');
 const roomRoot = argument('--room');
 const timetableRoot = argument('--timetable');
 const classroomsRoot = argument('--classrooms');
+const spaceRoot = argument('--space');
+const spaceManifest = parseSpaceManifest(json(spaceRoot, 'manifest.json'));
+await assertSpaceManifestIdentity(spaceManifest);
+const campuses = parseCampuses(artifactJson(spaceRoot, spaceManifest.artifacts.campuses), spaceManifest.artifacts.campuses.path);
+const buildings = parseBuildings(artifactJson(spaceRoot, spaceManifest.artifacts.buildings), spaceManifest.artifacts.buildings.path);
+const floors = parseFloors(artifactJson(spaceRoot, spaceManifest.artifacts.floors), spaceManifest.artifacts.floors.path);
+const spaceFamilies = parseSpaceFamilies(artifactJson(spaceRoot, spaceManifest.artifacts.space_families), spaceManifest.artifacts.space_families.path);
+const aliases = parseAliases(artifactJson(spaceRoot, spaceManifest.artifacts.aliases), spaceManifest.artifacts.aliases.path);
+const spaceUnits = spaceManifest.artifacts.space_units.flatMap(artifact => parseSpaceUnits(artifactJson(spaceRoot, artifact), artifact.path));
+if (campuses.length !== spaceManifest.campus_count || buildings.length !== spaceManifest.building_count || floors.length !== spaceManifest.floor_count || spaceFamilies.length !== spaceManifest.space_family_count || spaceUnits.length !== spaceManifest.space_unit_count) {
+    throw new Error('SpaceSnapshot counts do not match its manifest');
+}
 const manifest = parseExamSnapshotManifest(json(examRoot, 'manifest.json'));
 await assertExamSnapshotIdentity(manifest);
 const exams = parseExamData(artifactJson(examRoot, manifest.records), manifest.records.path);
@@ -146,6 +168,7 @@ await assertRoomOccupancyIdentity(roomManifest);
 if (
     roomManifest.exam_snapshot_id !== manifest.snapshot_id
     || roomManifest.exam_period_id !== manifest.exam_period.id
+    || roomManifest.space_snapshot_id !== spaceManifest.snapshot_id
 ) {
     throw new Error('RoomOccupancy does not identify its ExamSnapshot');
 }
@@ -158,9 +181,9 @@ for (const date of roomManifest.dates) {
         );
         if (
             slice.exam_snapshot_id !== roomManifest.exam_snapshot_id
-            || slice.room_catalog_id !== roomManifest.room_catalog_id
+            || slice.space_snapshot_id !== roomManifest.space_snapshot_id
             || slice.date !== date.date
-            || slice.floor_key !== floor.floor_key
+            || slice.floor_id !== floor.floor_id
         ) {
             throw new Error(`RoomOccupancy floor identity mismatch: ${floor.artifact.path}`);
         }
@@ -198,7 +221,7 @@ for (const entry of teachingIndex.classes) {
 
 const teachingOccupancy = parseTeachingOccupancyManifest(json(classroomsRoot, 'manifest.json'));
 await assertTeachingOccupancyIdentity(teachingOccupancy);
-if (teachingOccupancy.teaching_snapshot_id !== teachingManifest.snapshot_id || teachingOccupancy.exam_snapshot_id !== manifest.snapshot_id) {
+if (teachingOccupancy.teaching_snapshot_id !== teachingManifest.snapshot_id || teachingOccupancy.exam_snapshot_id !== manifest.snapshot_id || teachingOccupancy.space_snapshot_id !== spaceManifest.snapshot_id) {
     throw new Error('TeachingRoomOccupancy component identity mismatch');
 }
 let teachingDays = 0;
@@ -221,12 +244,19 @@ process.stdout.write(`${JSON.stringify({
     ics_class: calendarClass.class_name,
     ics_events: calendarExams.length,
     room_occupancy_id: roomManifest.occupancy_id,
-    rooms: roomManifest.rooms.length,
+    unresolved_exam_locations: roomManifest.unresolved_locations.length,
     room_slices: roomSlices,
     teaching_snapshot_id: teachingManifest.snapshot_id,
     teaching_classes: teachingClasses.size,
     teaching_meetings: teachingMeetings.size,
     teaching_room_occupancy_id: teachingOccupancy.occupancy_id,
-    teaching_rooms: teachingOccupancy.rooms.length,
+    unresolved_teaching_locations: teachingOccupancy.unresolved_locations.length,
     teaching_days: teachingDays,
+    space_snapshot_id: spaceManifest.snapshot_id,
+    campuses: campuses.length,
+    buildings: buildings.length,
+    floors: floors.length,
+    space_families: spaceFamilies.length,
+    space_units: spaceUnits.length,
+    aliases: aliases.length,
 }, null, 2)}\n`);

@@ -1,14 +1,25 @@
 import { SearchInput } from '@/shared/ui/SearchInput';
 import { ThemeToggle } from '@/shared/ui/ThemeToggle';
+import type { AppRoute } from '@/app/routing/useUrlState';
 
 interface HeaderProps {
     inputValue: string;
     onInputChange: (value: string) => void;
     onSubmit: (value: string) => void;
     onGoHome: () => void;
+    route?: AppRoute;
 }
 
-export function Header({ inputValue, onInputChange, onSubmit, onGoHome }: HeaderProps) {
+const routeSearch = (route: AppRoute | undefined): { placeholder: string; label: string } => {
+    if (route === 'exam') return { placeholder: '搜索班级、课程或考试安排', label: '在考试安排中搜索' };
+    if (route === 'rooms') return { placeholder: '搜索考试教室、楼栋或占用', label: '在考试教室中搜索' };
+    if (route === 'timetable') return { placeholder: '搜索班级、课程、教师或教学安排', label: '在班级课表中搜索' };
+    if (route === 'classrooms') return { placeholder: '搜索校区、楼栋、楼层或教室', label: '在校园空间中搜索' };
+    return { placeholder: '搜索通知、附件和办事信息', label: '搜索学校通知、附件和办事信息' };
+};
+
+export function Header({ inputValue, onInputChange, onSubmit, onGoHome, route }: HeaderProps) {
+    const search = routeSearch(route);
     return (
         <header className="sticky top-0 z-40 border-b border-[#dadce0] dark:border-[#3c4043] bg-white/95 dark:bg-[#202124]/95 backdrop-blur">
             <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-4">
@@ -27,7 +38,7 @@ export function Header({ inputValue, onInputChange, onSubmit, onGoHome }: Header
                     </div>
                 </a>
                 <div className="flex-1 min-w-0 max-w-[692px]">
-                    <SearchInput value={inputValue} onChange={onInputChange} onSubmit={onSubmit} autoFocus={false} />
+                    <SearchInput value={inputValue} onChange={onInputChange} onSubmit={onSubmit} autoFocus={false} placeholder={search.placeholder} ariaLabel={search.label} />
                 </div>
                 <ThemeToggle />
             </div>

@@ -221,12 +221,15 @@ jobs:
           timetable_sha256="$(jq -er '.timetable.sha256' <<< "$ACADEMICS_ARTIFACT")"
           classrooms_archive="$(jq -er '.classrooms.archive' <<< "$ACADEMICS_ARTIFACT")"
           classrooms_sha256="$(jq -er '.classrooms.sha256' <<< "$ACADEMICS_ARTIFACT")"
+          space_archive="$(jq -er '.space.archive' <<< "$ACADEMICS_ARTIFACT")"
+          space_sha256="$(jq -er '.space.sha256' <<< "$ACADEMICS_ARTIFACT")"
           [[ "$ref" == ghcr.io/*@sha256:* ]]
           [[ "$exam_archive" != */* ]]
           [[ "$history_archive" != */* ]]
           [[ "$room_archive" != */* ]]
           [[ "$timetable_archive" != */* ]]
           [[ "$classrooms_archive" != */* ]]
+          [[ "$space_archive" != */* ]]
 
           mkdir registry-download
           oras pull "$ref" --output registry-download
@@ -240,13 +243,16 @@ jobs:
             | sha256sum --check -
           printf '%s  %s\n' "$classrooms_sha256" "registry-download/$classrooms_archive" \
             | sha256sum --check -
-          mkdir exam-snapshot exam-history room-occupancy timetable classrooms
+          printf '%s  %s\n' "$space_sha256" "registry-download/$space_archive" \
+            | sha256sum --check -
+          mkdir exam-snapshot exam-history room-occupancy timetable classrooms space
           tar --zstd -xf "registry-download/$exam_archive" -C exam-snapshot
           tar --zstd -xf "registry-download/$history_archive" -C exam-history
           tar --zstd -xf "registry-download/$room_archive" -C room-occupancy
           tar --zstd -xf "registry-download/$timetable_archive" -C timetable
           tar --zstd -xf "registry-download/$classrooms_archive" -C classrooms
-          npm run academics:validate -- --exam exam-snapshot --history exam-history --room room-occupancy --timetable timetable --classrooms classrooms
+          tar --zstd -xf "registry-download/$space_archive" -C space
+          npm run academics:validate -- --exam exam-snapshot --history exam-history --room room-occupancy --timetable timetable --classrooms classrooms --space space
 
       - name: Assemble the complete Web product
         shell: pwsh
@@ -261,6 +267,7 @@ jobs:
             -RoomOccupancyPath room-occupancy `
             -TeachingSchedulePath timetable `
             -TeachingRoomOccupancyPath classrooms `
+            -SpaceSnapshotPath space `
             -StagePath "$env:RUNNER_TEMP/web-stage" `
             -DistPath "$env:RUNNER_TEMP/dist"
 

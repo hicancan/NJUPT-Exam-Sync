@@ -75,7 +75,8 @@ export interface TeachingMeeting {
     teacher_title: string | null;
     instructor_role: string | null;
     campus: string | null;
-    room_key: string | null;
+    space_family_id: string | null;
+    space_unit_id: string | null;
     location: string | null;
     location_type: string | null;
     weekday: number;
@@ -114,25 +115,14 @@ export interface TeachingPeriods {
     periods: TeachingPeriod[];
 }
 
-export interface TeachingRoom {
-    campus: string;
-    building: string;
-    floor: string;
-    floor_key: string;
-    room: string;
-    room_key: string;
-}
-
 export interface TeachingRoomOccupancyManifest {
     format: 'njupt-teaching-room-occupancy';
     occupancy_id: string;
     teaching_snapshot_id: string;
     exam_snapshot_id: string;
-    room_catalog_id: string;
+    space_snapshot_id: string;
     academic_year: string;
     term_number: number;
-    rooms: TeachingRoom[];
-    floors: Array<{ campus: string; building: string; floor: string; floor_key: string; room_keys: string[] }>;
     weeks: TeachingWeek[];
     periods: TeachingPeriod[];
     unresolved_locations: Array<{ location: string; count: number }>;
@@ -148,9 +138,10 @@ export interface TeachingRoomBooking {
     campus: string;
     building: string;
     floor: string;
-    floor_key: string;
+    floor_id: string;
     room: string;
-    room_key: string;
+    space_family_id: string;
+    space_unit_id: string | null;
     location: string | null;
     start_period: number;
     end_period: number;
@@ -273,7 +264,7 @@ export const parseTeachingClassChunk = (value: unknown, source = 'TeachingSchedu
     }));
 };
 
-const MEETING_KEYS = ['meeting_id','teaching_class_id','teaching_class_name','course_code','course_name','course_category','course_nature','teacher','teacher_title','instructor_role','campus','room_key','location','location_type','weekday','start_period','end_period','week_numbers','teaching_method','assessment_method','exam_method','credits','class_hours','course_total_hours','class_hours_composition','weekly_hours','teaching_class_size','enrollment_count','capacity','enrollment_note','direction','online_information','scheduling_flag','class_ids'];
+const MEETING_KEYS = ['meeting_id','teaching_class_id','teaching_class_name','course_code','course_name','course_category','course_nature','teacher','teacher_title','instructor_role','campus','space_family_id','space_unit_id','location','location_type','weekday','start_period','end_period','week_numbers','teaching_method','assessment_method','exam_method','credits','class_hours','course_total_hours','class_hours_composition','weekly_hours','teaching_class_size','enrollment_count','capacity','enrollment_note','direction','online_information','scheduling_flag','class_ids'];
 export const parseTeachingMeetingChunk = (value: unknown, source = 'TeachingSchedule meeting chunk'): Record<string, TeachingMeeting> => {
     const result = object(value, source); exact(result, ['format','source_id','chunk_id','meetings'], source);
     if (result.format !== 'njupt-teaching-meeting-chunk') throw new TeachingContractError(`${source}: incompatible format`);
@@ -286,7 +277,7 @@ export const parseTeachingMeetingChunk = (value: unknown, source = 'TeachingSche
             ...Object.fromEntries(MEETING_KEYS.map(key => [key, entry[key]])),
             meeting_id: text(entry.meeting_id, `${source}.${meetingId}.meeting_id`), course_name:text(entry.course_name, `${source}.${meetingId}.course_name`),
             teaching_class_id:nullableText(entry.teaching_class_id, `${source}.${meetingId}.teaching_class_id`), teaching_class_name:nullableText(entry.teaching_class_name, `${source}.${meetingId}.teaching_class_name`), course_code:nullableText(entry.course_code, `${source}.${meetingId}.course_code`),
-            course_category:nullableText(entry.course_category, `${source}.${meetingId}.course_category`), course_nature:nullableText(entry.course_nature, `${source}.${meetingId}.course_nature`), teacher:nullableText(entry.teacher, `${source}.${meetingId}.teacher`), teacher_title:nullableText(entry.teacher_title, `${source}.${meetingId}.teacher_title`), instructor_role:nullableText(entry.instructor_role, `${source}.${meetingId}.instructor_role`), campus:nullableText(entry.campus, `${source}.${meetingId}.campus`), room_key:nullableText(entry.room_key, `${source}.${meetingId}.room_key`), location:nullableText(entry.location, `${source}.${meetingId}.location`), location_type:nullableText(entry.location_type, `${source}.${meetingId}.location_type`),
+            course_category:nullableText(entry.course_category, `${source}.${meetingId}.course_category`), course_nature:nullableText(entry.course_nature, `${source}.${meetingId}.course_nature`), teacher:nullableText(entry.teacher, `${source}.${meetingId}.teacher`), teacher_title:nullableText(entry.teacher_title, `${source}.${meetingId}.teacher_title`), instructor_role:nullableText(entry.instructor_role, `${source}.${meetingId}.instructor_role`), campus:nullableText(entry.campus, `${source}.${meetingId}.campus`), space_family_id:nullableText(entry.space_family_id, `${source}.${meetingId}.space_family_id`), space_unit_id:nullableText(entry.space_unit_id, `${source}.${meetingId}.space_unit_id`), location:nullableText(entry.location, `${source}.${meetingId}.location`), location_type:nullableText(entry.location_type, `${source}.${meetingId}.location_type`),
             weekday:integer(entry.weekday, `${source}.${meetingId}.weekday`,1), start_period:integer(entry.start_period, `${source}.${meetingId}.start_period`,1), end_period:integer(entry.end_period, `${source}.${meetingId}.end_period`,1), week_numbers:entry.week_numbers.map((week,index)=>integer(week,`${source}.${meetingId}.week_numbers[${index}]`,1)),
             teaching_method:nullableText(entry.teaching_method, `${source}.${meetingId}.teaching_method`), assessment_method:nullableText(entry.assessment_method, `${source}.${meetingId}.assessment_method`), exam_method:nullableText(entry.exam_method, `${source}.${meetingId}.exam_method`), credits:nullableNumber(entry.credits, `${source}.${meetingId}.credits`), class_hours:nullableNumber(entry.class_hours, `${source}.${meetingId}.class_hours`), course_total_hours:nullableNumber(entry.course_total_hours, `${source}.${meetingId}.course_total_hours`), class_hours_composition:nullableText(entry.class_hours_composition, `${source}.${meetingId}.class_hours_composition`), weekly_hours:nullableNumber(entry.weekly_hours, `${source}.${meetingId}.weekly_hours`), teaching_class_size:nullableNumber(entry.teaching_class_size, `${source}.${meetingId}.teaching_class_size`), enrollment_count:nullableNumber(entry.enrollment_count, `${source}.${meetingId}.enrollment_count`), capacity:nullableNumber(entry.capacity, `${source}.${meetingId}.capacity`), enrollment_note:nullableText(entry.enrollment_note, `${source}.${meetingId}.enrollment_note`), direction:nullableText(entry.direction, `${source}.${meetingId}.direction`), online_information:nullableText(entry.online_information, `${source}.${meetingId}.online_information`), scheduling_flag:nullableText(entry.scheduling_flag, `${source}.${meetingId}.scheduling_flag`), class_ids:stringArray(entry.class_ids, `${source}.${meetingId}.class_ids`),
         } as TeachingMeeting;
@@ -307,22 +298,19 @@ export const parseTeachingPeriods = (value: unknown, source = 'TeachingSchedule 
     return {format:'njupt-teaching-periods',source_id:hash(result.source_id,`${source}.source_id`),periods:result.periods.map((item,index)=>parsePeriod(item,`${source}.periods[${index}]`))};
 };
 
-const parseRoom=(value:unknown,source:string):TeachingRoom=>{const result=object(value,source);exact(result,['campus','building','floor','floor_key','room','room_key'],source);return {campus:text(result.campus,`${source}.campus`),building:text(result.building,`${source}.building`),floor:text(result.floor,`${source}.floor`),floor_key:text(result.floor_key,`${source}.floor_key`),room:text(result.room,`${source}.room`),room_key:text(result.room_key,`${source}.room_key`)}};
 export const parseTeachingOccupancyManifest=(value:unknown,source='TeachingRoomOccupancy manifest'):TeachingRoomOccupancyManifest=>{
-    const result=object(value,source);exact(result,['format','occupancy_id','teaching_snapshot_id','exam_snapshot_id','room_catalog_id','academic_year','term_number','rooms','floors','weeks','periods','unresolved_locations','days'],source);
-    if(result.format!=='njupt-teaching-room-occupancy'||!Array.isArray(result.rooms)||!Array.isArray(result.floors)||!Array.isArray(result.weeks)||!Array.isArray(result.periods)||!Array.isArray(result.unresolved_locations)||!Array.isArray(result.days)) throw new TeachingContractError(`${source}: incompatible format`);
-    const rooms=result.rooms.map((item,index)=>parseRoom(item,`${source}.rooms[${index}]`));
-    const floors=result.floors.map((item,index)=>{const s=`${source}.floors[${index}]`;const entry=object(item,s);exact(entry,['campus','building','floor','floor_key','room_keys'],s);return {campus:text(entry.campus,`${s}.campus`),building:text(entry.building,`${s}.building`),floor:text(entry.floor,`${s}.floor`),floor_key:text(entry.floor_key,`${s}.floor_key`),room_keys:stringArray(entry.room_keys,`${s}.room_keys`)}});
+    const result=object(value,source);exact(result,['format','occupancy_id','teaching_snapshot_id','exam_snapshot_id','space_snapshot_id','academic_year','term_number','weeks','periods','unresolved_locations','days'],source);
+    if(result.format!=='njupt-teaching-room-occupancy'||!Array.isArray(result.weeks)||!Array.isArray(result.periods)||!Array.isArray(result.unresolved_locations)||!Array.isArray(result.days)) throw new TeachingContractError(`${source}: incompatible format`);
     const unresolved_locations=result.unresolved_locations.map((item,index)=>{const s=`${source}.unresolved_locations[${index}]`;const entry=object(item,s);exact(entry,['location','count'],s);return {location:text(entry.location,`${s}.location`),count:integer(entry.count,`${s}.count`,1)}});
     const days=result.days.map((item,index)=>{const s=`${source}.days[${index}]`;const entry=object(item,s);exact(entry,['week','weekday','artifact'],s);return {week:integer(entry.week,`${s}.week`,1),weekday:integer(entry.weekday,`${s}.weekday`,1),artifact:artifact(entry.artifact,`${s}.artifact`)}});
-    return {format:'njupt-teaching-room-occupancy',occupancy_id:hash(result.occupancy_id,`${source}.occupancy_id`),teaching_snapshot_id:hash(result.teaching_snapshot_id,`${source}.teaching_snapshot_id`),exam_snapshot_id:hash(result.exam_snapshot_id,`${source}.exam_snapshot_id`),room_catalog_id:hash(result.room_catalog_id,`${source}.room_catalog_id`),academic_year:text(result.academic_year,`${source}.academic_year`),term_number:integer(result.term_number,`${source}.term_number`,1),rooms,floors,weeks:result.weeks.map((item,index)=>parseWeek(item,`${source}.weeks[${index}]`)),periods:result.periods.map((item,index)=>parsePeriod(item,`${source}.periods[${index}]`)),unresolved_locations,days};
+    return {format:'njupt-teaching-room-occupancy',occupancy_id:hash(result.occupancy_id,`${source}.occupancy_id`),teaching_snapshot_id:hash(result.teaching_snapshot_id,`${source}.teaching_snapshot_id`),exam_snapshot_id:hash(result.exam_snapshot_id,`${source}.exam_snapshot_id`),space_snapshot_id:hash(result.space_snapshot_id,`${source}.space_snapshot_id`),academic_year:text(result.academic_year,`${source}.academic_year`),term_number:integer(result.term_number,`${source}.term_number`,1),weeks:result.weeks.map((item,index)=>parseWeek(item,`${source}.weeks[${index}]`)),periods:result.periods.map((item,index)=>parsePeriod(item,`${source}.periods[${index}]`)),unresolved_locations,days};
 };
 
 export const parseTeachingRoomDay=(value:unknown,source='TeachingRoomOccupancy day'):TeachingRoomDay=>{
     const result=object(value,source);exact(result,['format','teaching_snapshot_id','week','weekday','periods'],source);
     if(result.format!=='njupt-teaching-room-day') throw new TeachingContractError(`${source}: incompatible format`);
     const periodsObject=object(result.periods,`${source}.periods`); const periods:Record<string,TeachingRoomBooking[]>={};
-    for(const [period,items] of Object.entries(periodsObject)){if(!Array.isArray(items)) throw new TeachingContractError(`${source}.periods.${period}: must be an array`);periods[period]=items.map((item,index)=>{const s=`${source}.periods.${period}[${index}]`;const entry=object(item,s);exact(entry,['meeting_id','course_name','course_code','class_ids','teacher','campus','building','floor','floor_key','room','room_key','location','start_period','end_period'],s);return {meeting_id:text(entry.meeting_id,`${s}.meeting_id`),course_name:text(entry.course_name,`${s}.course_name`),course_code:nullableText(entry.course_code,`${s}.course_code`),class_ids:stringArray(entry.class_ids,`${s}.class_ids`),teacher:nullableText(entry.teacher,`${s}.teacher`),campus:text(entry.campus,`${s}.campus`),building:text(entry.building,`${s}.building`),floor:text(entry.floor,`${s}.floor`),floor_key:text(entry.floor_key,`${s}.floor_key`),room:text(entry.room,`${s}.room`),room_key:text(entry.room_key,`${s}.room_key`),location:nullableText(entry.location,`${s}.location`),start_period:integer(entry.start_period,`${s}.start_period`,1),end_period:integer(entry.end_period,`${s}.end_period`,1)}})}
+    for(const [period,items] of Object.entries(periodsObject)){if(!Array.isArray(items)) throw new TeachingContractError(`${source}.periods.${period}: must be an array`);periods[period]=items.map((item,index)=>{const s=`${source}.periods.${period}[${index}]`;const entry=object(item,s);exact(entry,['meeting_id','course_name','course_code','class_ids','teacher','campus','building','floor','floor_id','room','space_family_id','space_unit_id','location','start_period','end_period'],s);return {meeting_id:text(entry.meeting_id,`${s}.meeting_id`),course_name:text(entry.course_name,`${s}.course_name`),course_code:nullableText(entry.course_code,`${s}.course_code`),class_ids:stringArray(entry.class_ids,`${s}.class_ids`),teacher:nullableText(entry.teacher,`${s}.teacher`),campus:text(entry.campus,`${s}.campus`),building:text(entry.building,`${s}.building`),floor:text(entry.floor,`${s}.floor`),floor_id:text(entry.floor_id,`${s}.floor_id`),room:text(entry.room,`${s}.room`),space_family_id:text(entry.space_family_id,`${s}.space_family_id`),space_unit_id:nullableText(entry.space_unit_id,`${s}.space_unit_id`),location:nullableText(entry.location,`${s}.location`),start_period:integer(entry.start_period,`${s}.start_period`,1),end_period:integer(entry.end_period,`${s}.end_period`,1)}})}
     return {format:'njupt-teaching-room-day',teaching_snapshot_id:hash(result.teaching_snapshot_id,`${source}.teaching_snapshot_id`),week:integer(result.week,`${source}.week`,1),weekday:integer(result.weekday,`${source}.weekday`,1),periods};
 };
 

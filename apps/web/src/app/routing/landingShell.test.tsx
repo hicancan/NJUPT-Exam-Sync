@@ -10,6 +10,7 @@ import { TimetableLanding } from '@/timetable/TimetableLanding';
 import type { TeachingScheduleClient } from '@/timetable/model/TeachingScheduleClient';
 import { ClassroomsLanding } from '@/classrooms/ClassroomsLanding';
 import type { ClassroomAvailabilityClient } from '@/classrooms/model/ClassroomAvailabilityClient';
+import type { SpaceClient, SpaceIndex } from '@/space/model/SpaceClient';
 
 describe('product landing shells', () => {
     it('renders the exam guide and explicit resume action without artifact data', () => {
@@ -34,8 +35,9 @@ describe('product landing shells', () => {
     it('renders the rooms shell before the manifest promise can resolve', () => {
         const never = new Promise<never>(() => undefined);
         const client = { initialize: () => never } as unknown as RoomOccupancyClient;
+        const spaceClient = { initialize: () => never } as unknown as SpaceClient;
         const html = renderToStaticMarkup(
-            <RoomsLanding client={client} savedRoom={null} onChange={() => undefined} onSubmit={() => undefined} />,
+            <RoomsLanding client={client} spaceClient={spaceClient} savedRoom={null} onChange={() => undefined} onSubmit={() => undefined} />,
         );
         expect(html).toContain('考试教室查询');
         expect(html).toContain('输入楼栋或教室号，查看考试期间的教室占用情况。');
@@ -50,11 +52,11 @@ describe('product landing shells', () => {
         const html = renderToStaticMarkup(
             <RoomBuildingPicker
                 heading="按楼栋查看"
-                floors={[
-                    { campus: '三牌楼', building: '教东', floor: '1', floor_key: 'a', room_keys: [] },
-                    { campus: '三牌楼', building: '教东', floor: '2', floor_key: 'b', room_keys: [] },
-                    { campus: '仙林', building: '教2', floor: '1', floor_key: 'c', room_keys: [] },
-                ]}
+                space={{
+                    campuses: [{ campus_id: 'c1', name: '三牌楼' }, { campus_id: 'c2', name: '仙林' }],
+                    buildings: [{ building_id: 'b1', campus_id: 'c1', name: '教东' }, { building_id: 'b2', campus_id: 'c2', name: '教2' }],
+                    floors: [], families: [], manifest: {},
+                } as unknown as SpaceIndex}
                 onSelect={() => undefined}
             />,
         );

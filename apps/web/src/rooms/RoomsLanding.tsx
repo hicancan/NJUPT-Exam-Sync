@@ -5,24 +5,31 @@ import { RoomsProductHeader } from './ui/RoomsProductHeader';
 import type { RoomOccupancy } from '@njupt-search/academics-room';
 import type { SavedRoomRoute } from '@/app/routing/routeContract';
 import type { RoomOccupancyClient } from './model/RoomOccupancyClient';
+import type { SpaceClient, SpaceIndex } from '@/space/model/SpaceClient';
 
 interface RoomsLandingProps {
     client: RoomOccupancyClient;
+    spaceClient: SpaceClient;
     savedRoom: SavedRoomRoute | null;
     onChange: (params: Record<string, string | null>, replace?: boolean) => void;
     onSubmit: (value: string) => void;
 }
 
-export function RoomsLanding({ client, savedRoom, onChange, onSubmit }: RoomsLandingProps) {
+export function RoomsLanding({ client, spaceClient, savedRoom, onChange, onSubmit }: RoomsLandingProps) {
     const [query, setQuery] = useState('');
     const [manifest, setManifest] = useState<RoomOccupancy | null>(null);
+    const [space, setSpace] = useState<SpaceIndex | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const controller = new AbortController();
-        client.initialize(controller.signal)
-            .then(value => {
-                if (!controller.signal.aborted) setManifest(value);
+        Promise.all([client.initialize(controller.signal), spaceClient.initialize(controller.signal)])
+            .then(([value, spaceIndex]) => {
+                if (value.space_snapshot_id !== spaceIndex.manifest.snapshot_id) throw new Error('考试占用与空间数据身份不一致');
+                if (!controller.signal.aborted) {
+                    setManifest(value);
+                    setSpace(spaceIndex);
+                }
             })
             .catch(reason => {
                 if (controller.signal.aborted) return;
@@ -30,13 +37,13 @@ export function RoomsLanding({ client, savedRoom, onChange, onSubmit }: RoomsLan
                 setError('暂时无法加载教室信息，请刷新页面后重试。');
             });
         return () => controller.abort();
-    }, [client]);
+    }, [client, spaceClient]);
 
     return (
         <main className="mx-auto w-full max-w-4xl flex-1 px-4 pb-8 pt-3 sm:pt-6">
             <RoomsProductHeader
                 description="输入楼栋或教室号，查看考试期间的教室占用情况。"
-                roomCount={manifest?.rooms.length}
+                roomCount={space?.families.filter(item => item.availability_eligible === 'eligible').length}
                 dateCount={manifest?.dates.length}
                 pendingLabel={error ? undefined : '正在加载校区和楼栋…'}
             />
@@ -75,10 +82,10 @@ export function RoomsLanding({ client, savedRoom, onChange, onSubmit }: RoomsLan
                 </div>
             </section>
 
-            {manifest ? (
+            {space ? (
                 <div className="mt-5">
                     <RoomBuildingPicker
-                        floors={manifest.floors}
+                        space={space}
                         heading="按楼栋查看"
                         onSelect={(campus, building) => onChange({ campus, building, room: null, floor: null, date: null, start: null, end: null })}
                     />

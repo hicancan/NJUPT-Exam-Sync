@@ -12,8 +12,8 @@ NjuptCorpusSnapshot
 apps/web
   -> search/browser -> search/wasm -> search/core
   -> academics/exam
-  -> academics/room -> academics/exam public model
-  -> academics/timetable -> academics/room catalog
+  -> academics/room -> academics/exam public model + academics/space
+  -> academics/timetable -> academics/space
 
 benchmarks -> production entry points
 ops        -> production entry points + apps assembly
@@ -125,7 +125,7 @@ ExamSourceDescriptor
   -> materialized Excel
   -> ExamRecord[]
   -> ExamSnapshot
-       |-> RoomCatalog -> RoomOccupancy
+       |-> SpaceSnapshot -> RoomOccupancy
        |-> ExamHistoryCompiler
        |      + previous ExamHistory
        |      + previous trusted ExamSnapshot
@@ -135,7 +135,10 @@ ExamSourceDescriptor
 TeachingScheduleSource
   -> TeachingScheduleCompiler
        |-> TeachingScheduleSnapshot
-       `-> RoomCatalog + ExamSnapshot -> TeachingRoomOccupancy
+       `-> SpaceSnapshot + ExamSnapshot -> TeachingRoomOccupancy
+
+reviewed floor evidence + teaching locations + exam locations
+  -> SpaceCompiler -> SpaceSnapshot
 ```
 
 descriptor、原始 Excel、可复用缓存和输出 artifact 使用不同显式路径。
@@ -200,13 +203,15 @@ ExamHistory 使用独立的稳定发现入口和内容身份：
 `current_snapshot_id` 与同一站点中的 ExamSnapshot 完全一致，拒绝混合新考试与
 旧历史。
 
-`RoomCatalog` 是校区、楼宇、楼层、教室和必要 alias 的唯一事实源；源 JSON
-不保存派生 key。Python 编译器稳定派生 room/floor key。TypeScript 只先识别
-房间查询意图，最终目标必须用 RoomOccupancy 携带的 catalog 投影解析。
+`SpaceSnapshot` 是校区、楼栋、楼层、SpaceFamily、SpaceUnit、别名、连接关系和
+经过清理的语义几何的唯一事实源。它融合逐图人工确认的平面证据、教学地点和考试
+地点，但不读取旧教室目录补齐事实。SpaceFamily 表示教务系统使用的主房间身份，
+SpaceUnit 表示重复标签、带后缀或可分隔的物理区域。无法确定的信息保持明确的
+`ambiguous`、`unresolved` 或缺失几何状态，不猜测坐标、房间号或北向。
 
 `RoomOccupancy` 的唯一当前格式是 `njupt-room-occupancy`。manifest 记录
-`occupancy_id`、输入 `exam_snapshot_id`、`room_catalog_id`、rooms、floors、
-dates，以及每个 date/floor 文件的路径、大小和哈希。普通无法解析地点只作为
+`occupancy_id`、输入 `exam_snapshot_id`、`space_snapshot_id`、dates，以及每个
+date/floor 文件的路径、大小和哈希。普通无法解析地点只作为
 CLI 诊断；已经解析为教室却不在 catalog 时构建失败。诊断不是生产 artifact。
 
 RoomOccupancy 使用相同的稳定指针/不可变内容契约：
@@ -234,7 +239,7 @@ Python 是课表语义的唯一所有者。它严格读取 TeachingScheduleSourc
 `TeachingRoomOccupancy` 的唯一当前格式是 `njupt-teaching-room-occupancy`。它从同一
 TeachingScheduleSnapshot 派生，并引用当前 ExamSnapshot；每个周次/星期分片只保存
 课程占用。空教室产品在客户端针对目标节次联合课程占用和考试占用，再从同一
-RoomCatalog 中求候选差集。无法识别的线上、无地点和非实体场地只进入构建审计，
+SpaceSnapshot 中求候选差集。无法识别的线上、无地点和非实体场地只进入构建审计，
 真实标准教室缺失则构建失败。
 
 ```text
@@ -247,6 +252,14 @@ RoomCatalog 中求候选差集。无法识别的线上、无地点和非实体�
 
 /generated/classrooms/manifest.json
 /generated/classrooms/<occupancy_id>/*.json
+
+/generated/space/manifest.json
+/generated/space/<space_snapshot_id>/campuses.json
+/generated/space/<space_snapshot_id>/buildings.json
+/generated/space/<space_snapshot_id>/floors.json
+/generated/space/<space_snapshot_id>/space-families.json
+/generated/space/<space_snapshot_id>/space-units-*.json
+/generated/space/<space_snapshot_id>/geometry-*.json
 ```
 
 日历能力位于 `academics/exam/calendar.ts`，只把公开 ExamRecord 转换为 ICS。
@@ -274,6 +287,12 @@ fallback。
 `/exam`，不使用查询参数充当内部哨兵。站内导航使用 History API，返回、前进和
 刷新都由同一套 URL 状态驱动。
 
+顶栏只共享外观和提交协议，不共享查询语义。`/search` 检索 SearchDomain，
+`/exam` 与 `/rooms` 分别查询 ExamDomain 的班级/考试与空间投影，`/timetable`
+与 `/classrooms` 分别查询 TeachingDomain 的时间投影和 SpaceDomain 的可用性投影。
+因此用户先选择产品路由，再在当前领域内搜索；提交不会隐式跳回全文搜索，也没有
+跨越全部领域的万能查询接口。
+
 Web 构建只生成当前六个产品路径：`/`、`/search`、`/timetable`、`/classrooms`、
 `/exam`、`/rooms`。构建结束后复用现有 React landing 组件写出对应的静态
 `index.html`；浏览器启动后接管相同 DOM。原始响应已经含有 H1、真实链接和页面
@@ -292,7 +311,7 @@ Timetable、Classrooms、Exam 与 Rooms landing 是初始 App bundle 中的小�
 详情页面继续 lazy load，首页按钮的 pointerenter、focus 和 pointerdown 会并行
 预载详情模块与对应 manifest/index。
 
-六个浏览器客户端都由 App 显式创建并在卸载时 dispose：
+七个浏览器客户端都由 App 显式创建并在卸载时 dispose：
 
 ```text
 App
@@ -301,6 +320,7 @@ App
 ├── ExamHistoryClient
 ├── RoomOccupancyClient
 ├── TeachingScheduleClient
+├── SpaceClient
 └── ClassroomAvailabilityClient
 ```
 
@@ -318,9 +338,10 @@ App 生命周期拥有，避免页面切换破坏可复用状态。
 CorpusSnapshot -> SearchBundle
 ExamSourceDescriptor -> ExamSnapshot -> ExamHistory + RoomOccupancy
 TeachingScheduleSource -> TeachingScheduleSnapshot -> TeachingRoomOccupancy
+reviewed spatial evidence -> SpaceSnapshot -> both occupancy domains
 
 SearchBundle + ExamSnapshot + ExamHistory + RoomOccupancy
-  + TeachingScheduleSnapshot + TeachingRoomOccupancy + static Web source
+  + TeachingScheduleSnapshot + TeachingRoomOccupancy + SpaceSnapshot + static Web source
   -> external staging -> Web dist
 ```
 
@@ -338,20 +359,20 @@ must-revalidate`，对 identity 路径使用 `public, max-age=31536000, immutabl
 
 云端同样保持这两个生产事务独立。`Build Corpus Artifact` 把 SearchBundle
 作为按内容寻址的 OCI artifact 发布；`Build Academics Artifact` 把
-ExamSnapshot、ExamHistory、RoomOccupancy、TeachingScheduleSnapshot 与
-TeachingRoomOccupancy 作为五个明确组件放进一个内容寻址的 Academics OCI
-artifact。组合 identity 由五个组件 identity 共同确定。当前 corpus、
+ExamSnapshot、ExamHistory、RoomOccupancy、TeachingScheduleSnapshot、
+TeachingRoomOccupancy 与 SpaceSnapshot 作为六个明确组件放进一个内容寻址的
+Academics OCI artifact。组合 identity 由六个组件 identity 共同确定。当前 corpus、
 search 和 academics 分别使用一个完整 JSON 指针，引用 OCI manifest digest、
 领域 identity、归档文件名与 SHA-256，不再把 URL/hash 拆成可能错配的多个
 变量。
 
-更新 Academics 时，workflow 先严格下载当前五组件 artifact，验证考试历史头与
-上一快照一致，再构建新快照、增量历史、课表和课程占用。五个不可变归档都发布成功后才更新唯一的
+更新 Academics 时，workflow 先严格下载当前六组件 artifact，验证考试历史头与
+上一快照一致，再构建新快照、增量历史、课表和课程占用。六个不可变归档都发布成功后才更新唯一的
 `ACADEMICS_ARTIFACT` 指针；失败不会移动历史头。Actions 短期 artifact 只负责把
 同一次构建交给 Web 组装，不承担历史保存。
 
-两个 workflow 的 Web 组装 job 只读取 SearchBundle 和 Academics 五组件这六个
-明确 artifact，不重新生产另一个领域的输出。只有六者全部通过身份校验，才会
+两个 workflow 的 Web 组装 job 只读取 SearchBundle 和 Academics 六组件这七个
+明确 artifact，不重新生产另一个领域的输出。只有七者全部通过身份校验，才会
 生成 `njupt-search-dist` 并通过 `workflow_run` 交给 EdgeOne 部署。Git Tags 与
 GitHub Releases 只表达软件版本及其 Android 安装包；滚动数据和编译产物不会
 污染源码版本历史。

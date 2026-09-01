@@ -24,14 +24,29 @@ export const resolveSubmission = (value: string): RouteDestination => {
     if (isCompleteClassQuery(trimmed)) {
         return { route: 'exam', params: { class: normalizeClassQuery(trimmed) } };
     }
+    if (isExamHelperQuery(trimmed)) return { route: 'exam' };
+    if (isClassLookupQuery(trimmed)) return { route: 'exam', params: { q: trimmed } };
     const roomIntent = parseRoomIntent(trimmed);
     if (roomIntent?.kind === 'entry') return { route: 'rooms' };
     if (roomIntent?.kind === 'candidate') {
         return { route: 'rooms', params: { room: roomIntent.input } };
     }
-    if (isExamHelperQuery(trimmed)) return { route: 'exam' };
-    if (isClassLookupQuery(trimmed)) return { route: 'exam', params: { q: trimmed } };
     return { route: 'search', params: { q: trimmed } };
+};
+
+export const resolveRouteSubmission = (route: AppRoute, value: string): RouteDestination => {
+    const trimmed = value.trim();
+    if (!trimmed) return { route };
+    if (route === 'home') return resolveSubmission(trimmed);
+    if (route === 'search') return { route, params: { q: trimmed } };
+    if (route === 'exam') return isCompleteClassQuery(trimmed)
+        ? { route, params: { class: normalizeClassQuery(trimmed) } }
+        : { route, params: { q: trimmed } };
+    if (route === 'timetable') return isCompleteClassQuery(trimmed)
+        ? { route, params: { class: normalizeClassQuery(trimmed) } }
+        : { route, params: { q: trimmed } };
+    if (route === 'rooms') return { route, params: { room: trimmed } };
+    return { route, params: { q: trimmed } };
 };
 
 export const resolveQuickIntent = (intent: ProductIntent): RouteDestination => {

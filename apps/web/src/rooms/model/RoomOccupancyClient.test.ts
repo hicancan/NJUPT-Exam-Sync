@@ -15,16 +15,16 @@ const canonicalJson = (value: unknown): string => {
 
 const createFixture = async (updatedAt: string) => {
     const examSnapshotId = 'b'.repeat(64);
-    const roomCatalogId = 'c'.repeat(64);
+    const spaceSnapshotId = 'c'.repeat(64);
     const floor = {
         format: 'njupt-room-floor-occupancy',
         exam_snapshot_id: examSnapshotId,
-        room_catalog_id: roomCatalogId,
+        space_snapshot_id: spaceSnapshotId,
         date: '2026-07-01',
         campus: '仙林',
         building: '教2',
         floor: '3',
-        floor_key: 'floor-key',
+        floor_id: 'floor-key',
         booking_count: 0,
         bookings: [],
     };
@@ -32,19 +32,14 @@ const createFixture = async (updatedAt: string) => {
     const identity = {
         format: 'njupt-room-occupancy',
         exam_snapshot_id: examSnapshotId,
-        room_catalog_id: roomCatalogId,
+        space_snapshot_id: spaceSnapshotId,
         exam_period_id: '2025-2026-2',
         source_updated_at: updatedAt,
-        rooms: [{
-            campus: '仙林', building: '教2', floor: '3', floor_key: 'floor-key', room: '313', room_key: 'room-key',
-        }],
-        floors: [{
-            campus: '仙林', building: '教2', floor: '3', floor_key: 'floor-key', room_keys: ['room-key'],
-        }],
+        unresolved_locations: [],
         dates: [{
             date: '2026-07-01',
             floors: [{
-                floor_key: 'floor-key',
+                floor_id: 'floor-key',
                 booking_count: 0,
                 artifact: {
                     path: 'floors/2026-07-01-floor-key.json',

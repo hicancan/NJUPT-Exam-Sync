@@ -35,6 +35,10 @@ export const APP_CONFIG = {
             'TeachingRoomOccupancy',
             import.meta.env.VITE_NJUPT_CLASSROOMS_ARTIFACT_URL,
         ),
+        SPACE: requiredArtifactUrl(
+            'SpaceSnapshot',
+            import.meta.env.VITE_NJUPT_SPACE_ARTIFACT_URL,
+        ),
     },
     MAX_CLASS_DISPLAY_COUNT: 50,
     SEARCH_RESULT_LIMIT: 10,

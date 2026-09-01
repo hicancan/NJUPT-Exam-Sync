@@ -28,7 +28,7 @@ param(
     [string]$TeachingRoomOutputPath,
 
     [Parameter(Mandatory = $true)]
-    [string]$RoomCatalogPath,
+    [string]$SpaceSnapshotPath,
 
     [string]$PreviousExamSnapshotPath,
 
@@ -40,7 +40,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $repository = Split-Path -Parent $PSScriptRoot
 $source = (Resolve-Path -LiteralPath $SourcePath).Path
-$catalog = (Resolve-Path -LiteralPath $RoomCatalogPath).Path
+$space = (Resolve-Path -LiteralPath $SpaceSnapshotPath).Path
 $materialized = [System.IO.Path]::GetFullPath($MaterializedPath)
 $cache = [System.IO.Path]::GetFullPath($CachePath)
 $examOutput = [System.IO.Path]::GetFullPath($ExamOutputPath)
@@ -88,7 +88,7 @@ try {
 
     & uv run python -m academics.room `
         --exam $examOutput `
-        --catalog $catalog `
+        --space $space `
         --output $roomOutput
     if ($LASTEXITCODE -ne 0) { throw 'RoomOccupancy build failed' }
 
@@ -96,7 +96,7 @@ try {
         --source $teachingSource `
         --snapshot $teachingOutput `
         --occupancy $teachingRoomOutput `
-        --catalog $catalog `
+        --space $space `
         --exam $examOutput
     if ($LASTEXITCODE -ne 0) { throw 'TeachingSchedule build failed' }
 }

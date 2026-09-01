@@ -5,6 +5,7 @@ import {
     parseSavedClass,
     parseSavedRoomRoute,
     resolveQuickIntent,
+    resolveRouteSubmission,
     resolveSubmission,
 } from './routeContract';
 
@@ -42,11 +43,12 @@ export function useAppRouter() {
     } = url;
     const routeInput = useMemo(() => {
         if (route === 'exam') return classParam || qParam || '';
-        if (route === 'timetable') return classParam || '';
+        if (route === 'timetable') return classParam || qParam || '';
         if (route === 'rooms') return roomQuery || buildingParam || '';
         if (route === 'search') return qParam || '';
+        if (route === 'classrooms') return qParam || buildingParam || floorParam || '';
         return '';
-    }, [buildingParam, classParam, qParam, roomQuery, route]);
+    }, [buildingParam, classParam, floorParam, qParam, roomQuery, route]);
     const [inputDraft, setInputDraft] = useState(() => ({ routeInput, value: routeInput }));
     const inputValue = inputDraft.routeInput === routeInput ? inputDraft.value : routeInput;
     const onInputChange = useCallback((value: string) => {
@@ -57,12 +59,19 @@ export function useAppRouter() {
     const savedRoom = parseSavedRoomRoute(localStorage.getItem(SAVED_ROOM_KEY));
 
     const submit = useCallback((value: string) => {
-        const destination = resolveSubmission(value);
-        const className = destination.route === 'exam' ? destination.params?.class : null;
-        if (className) localStorage.setItem(SAVED_CLASS_KEY, className);
+        const destination = route === 'home' ? resolveSubmission(value) : resolveRouteSubmission(route, value);
+        const className = destination.route === 'exam' || destination.route === 'timetable'
+            ? destination.params?.class
+            : null;
+        if (className) {
+            localStorage.setItem(
+                destination.route === 'timetable' ? SAVED_TIMETABLE_CLASS_KEY : SAVED_CLASS_KEY,
+                className,
+            );
+        }
         if (destination.route === 'rooms' && destination.params) saveRoomParams(destination.params);
         navigate(destination);
-    }, [navigate]);
+    }, [navigate, route]);
 
     const quickSearch = useCallback((intent: ProductIntent) => {
         navigate(resolveQuickIntent(intent));
@@ -91,11 +100,14 @@ export function useAppRouter() {
         search: { query: qParam || '' },
         exam: { query: qParam || '', className: classParam, savedClass },
         timetable: {
+            query: qParam || '',
             className: classParam,
             week: weekParam && /^\d+$/.test(weekParam) ? Number(weekParam) : null,
             savedClass: savedTimetableClass,
         },
         classrooms: {
+            query: qParam || '',
+            date: dateParam,
             week: weekParam && /^\d+$/.test(weekParam) ? Number(weekParam) : null,
             weekday: weekdayParam && /^[1-7]$/.test(weekdayParam) ? Number(weekdayParam) : null,
             period: periodParam && /^\d+$/.test(periodParam) ? Number(periodParam) : null,

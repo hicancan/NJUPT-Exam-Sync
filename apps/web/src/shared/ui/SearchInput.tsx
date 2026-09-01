@@ -20,6 +20,7 @@ interface SearchInputProps {
     autoFocus?: boolean;
     onSubmit?: (value: string) => void;
     onUserFocus?: () => void;
+    ariaLabel?: string;
 }
 
 export function SearchInput({
@@ -29,6 +30,7 @@ export function SearchInput({
     autoFocus = true,
     onSubmit,
     onUserFocus,
+    ariaLabel = '搜索南邮信息',
 }: SearchInputProps) {
     const inputRef = useRef<HTMLInputElement>(null);
     const programmaticFocusRef = useRef(false);
@@ -85,16 +87,20 @@ export function SearchInput({
                 onSubmit?.(value);
             }}
         >
-            <label htmlFor="njupt-search" className="sr-only">搜索南邮信息</label>
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#9aa0a6] transition-all duration-300 group-focus-within:text-[var(--color-google-blue)] dark:group-focus-within:text-[var(--color-google-blue-dark)] group-focus-within:scale-110">
+            <label htmlFor="njupt-search" className="sr-only">{ariaLabel}</label>
+            <button
+                type="submit"
+                aria-label="提交搜索"
+                className="absolute inset-y-0 left-0 z-10 flex items-center px-4 text-[#9aa0a6] transition-all duration-300 hover:text-[var(--color-google-blue)] focus-visible:rounded-l-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#1a73e8] group-focus-within:text-[var(--color-google-blue)] dark:group-focus-within:text-[var(--color-google-blue-dark)]"
+            >
                 <Search className="w-5 h-5" aria-hidden="true" />
-            </div>
+            </button>
             <input
                 id="njupt-search"
                 ref={inputRef}
                 type="text"
                 autoComplete="off"
-                aria-label="搜索南邮信息"
+                aria-label={ariaLabel}
                 className="w-full h-[52px] pl-12 pr-12 bg-white dark:bg-[#202124] border border-[#dfe1e5] dark:border-[#5f6368] rounded-full text-[16px] leading-normal outline-none hover:shadow-[0_1px_6px_rgba(32,33,36,0.18)] dark:hover:shadow-[0_1px_6px_rgba(23,23,23,0.8)] focus:shadow-[0_1px_6px_rgba(32,33,36,0.22)] dark:focus:shadow-[0_1px_6px_rgba(23,23,23,0.8)] hover:border-[#cfd4dc] focus:border-[#8ab4f8] transition-all text-[#202124] dark:text-[#e8eaed] placeholder:text-[#70757a] dark:placeholder:text-[#9aa0a6]"
                 placeholder={placeholder || dynamicPlaceholder}
                 value={value}

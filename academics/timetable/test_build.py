@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+from academics.space.test_helpers import write_test_space_snapshot
+from . import build as timetable_build
 from .build import publish_teaching_artifacts
 from .model import TeachingScheduleError, canonical_bytes, sha256
 
@@ -137,27 +139,22 @@ def _write_source(root: Path, *, location: str = "教2-313") -> None:
     (root / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
 
 
-def _write_catalog(path: Path) -> None:
-    _write_json(path, {"format": "njupt-room-catalog", "floors": [{"campus": "仙林", "building": "教2", "floor": "3", "rooms": [{"room": "313"}]}]})
-
-
 def test_compiles_deterministically_and_deduplicates_shared_meeting(tmp_path: Path) -> None:
     source = tmp_path / "source"
-    catalog = tmp_path / "catalog.json"
+    space = write_test_space_snapshot(tmp_path / "space", ["教2-313"])
     _write_source(source)
-    _write_catalog(catalog)
     first_snapshot, first_occupancy = publish_teaching_artifacts(
         source_dir=source,
         snapshot_dir=tmp_path / "first" / "timetable",
         occupancy_dir=tmp_path / "first" / "classrooms",
-        catalog_path=catalog,
+        space_snapshot_path=space,
         exam_snapshot_id="a" * 64,
     )
     second_snapshot, second_occupancy = publish_teaching_artifacts(
         source_dir=source,
         snapshot_dir=tmp_path / "second" / "timetable",
         occupancy_dir=tmp_path / "second" / "classrooms",
-        catalog_path=catalog,
+        space_snapshot_path=space,
         exam_snapshot_id="a" * 64,
     )
     assert first_snapshot == second_snapshot
@@ -168,16 +165,41 @@ def test_compiles_deterministically_and_deduplicates_shared_meeting(tmp_path: Pa
     assert len(first_occupancy["days"]) == 2
 
 
-def test_rejects_standard_room_missing_from_catalog(tmp_path: Path) -> None:
+def test_rejects_location_without_terminal_space_alias(tmp_path: Path) -> None:
     source = tmp_path / "source"
-    catalog = tmp_path / "catalog.json"
+    space = write_test_space_snapshot(tmp_path / "space", ["教2-313"])
     _write_source(source, location="教4-999")
-    _write_catalog(catalog)
-    with pytest.raises(TeachingScheduleError, match="missing from RoomCatalog"):
+    with pytest.raises(TeachingScheduleError, match="no terminal SpaceSnapshot alias"):
         publish_teaching_artifacts(
             source_dir=source,
             snapshot_dir=tmp_path / "out" / "timetable",
             occupancy_dir=tmp_path / "out" / "classrooms",
-            catalog_path=catalog,
+            space_snapshot_path=space,
             exam_snapshot_id="b" * 64,
         )
+
+
+def test_meeting_chunks_are_deterministically_clustered_by_class(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    meetings = {
+        "meeting-z": {"class_ids": ["B240402"], "payload": "z" * 24},
+        "meeting-b": {"class_ids": ["B240401"], "payload": "b" * 24},
+        "meeting-y": {"class_ids": ["B240402"], "payload": "y" * 24},
+        "meeting-a": {"class_ids": ["B240401"], "payload": "a" * 24},
+    }
+    single_entry_bytes = len(canonical_bytes({"meeting-a": meetings["meeting-a"]}))
+    monkeypatch.setattr(timetable_build, "CHUNK_TARGET_BYTES", single_entry_bytes * 2 + 1)
+
+    chunks = timetable_build._chunk_mapping(
+        meetings,
+        sort_key=lambda meeting_id: (
+            tuple(meetings[meeting_id]["class_ids"]),
+            meeting_id,
+        ),
+    )
+
+    assert [list(chunk) for chunk in chunks] == [
+        ["meeting-a", "meeting-b"],
+        ["meeting-y", "meeting-z"],
+    ]

@@ -9,6 +9,7 @@ import { ThemeToggle } from '@/shared/ui/ThemeToggle';
 import { resultSummary } from '@/search/ui/searchLabels';
 import { HomePage } from '@/home/HomePage';
 import { renderPageHead, resolvePageSeo } from '@/app/seo/pageSeo';
+import { SearchInput } from '@/shared/ui/SearchInput';
 
 describe('product copy contract', () => {
     it('describes search results without exposing ranking internals', () => {
@@ -77,6 +78,14 @@ describe('product copy contract', () => {
         );
         expect(html).toContain('njupt-search');
         expect(html).not.toContain('南邮通知、考试安排和考试教室，都可以直接查。');
+    });
+
+    it('offers an explicit accessible search submission action', () => {
+        const html = renderToStaticMarkup(
+            <SearchInput value="B240402" onChange={() => undefined} onSubmit={() => undefined} />,
+        );
+        expect(html).toContain('type="submit"');
+        expect(html).toContain('aria-label="提交搜索"');
     });
 
     it('keeps the README focused on the product and reusable local commands', () => {

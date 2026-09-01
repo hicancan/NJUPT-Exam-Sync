@@ -16,6 +16,7 @@ import { TeachingScheduleClient } from '@/timetable/model/TeachingScheduleClient
 import { ClassroomAvailabilityClient } from '@/classrooms/model/ClassroomAvailabilityClient';
 import { TimetableLanding } from '@/timetable/TimetableLanding';
 import { ClassroomsLanding } from '@/classrooms/ClassroomsLanding';
+import { SpaceClient } from '@/space/model/SpaceClient';
 
 const loadSearchPage = () => import('@/search/SearchPage').then(module => ({ default: module.SearchPage }));
 const loadExamPage = () => import('@/exams/ExamPage').then(module => ({ default: module.ExamPage }));
@@ -63,16 +64,18 @@ function App() {
         return historyClientPromiseRef.current;
     }, [examClient]);
     const roomClient = useMemo(() => new RoomOccupancyClient(APP_CONFIG.DATA_URLS.ROOM), []);
+    const spaceClient = useMemo(() => new SpaceClient(APP_CONFIG.DATA_URLS.SPACE), []);
     const teachingClient = useMemo(() => new TeachingScheduleClient(APP_CONFIG.DATA_URLS.TIMETABLE), []);
-    const classroomClient = useMemo(() => new ClassroomAvailabilityClient(APP_CONFIG.DATA_URLS.CLASSROOMS, roomClient), [roomClient]);
+    const classroomClient = useMemo(() => new ClassroomAvailabilityClient(APP_CONFIG.DATA_URLS.CLASSROOMS, roomClient, spaceClient), [roomClient, spaceClient]);
     useEffect(() => () => {
         searchClient.dispose();
         examClient.dispose();
         historyClientRef.current?.dispose();
         roomClient.dispose();
+        spaceClient.dispose();
         teachingClient.dispose();
         classroomClient.dispose();
-    }, [classroomClient, examClient, roomClient, searchClient, teachingClient]);
+    }, [classroomClient, examClient, roomClient, searchClient, spaceClient, teachingClient]);
     useEffect(() => {
         if (router.route !== 'exam') return;
         void loadExamHistoryClient()
@@ -128,6 +131,7 @@ function App() {
                     onInputChange={router.onInputChange}
                     onSubmit={router.onSubmit}
                     onGoHome={router.onGoHome}
+                    route={router.route}
                 />
             ) : null}
 
@@ -174,6 +178,7 @@ function App() {
                     !router.rooms.query && !router.rooms.campus && !router.rooms.building && !router.rooms.floor ? (
                         <RoomsLanding
                             client={roomClient}
+                            spaceClient={spaceClient}
                             savedRoom={router.rooms.savedRoom}
                             onChange={router.navigateRooms}
                             onSubmit={router.onSubmit}
@@ -189,6 +194,7 @@ function App() {
                             end={router.rooms.end}
                             onChange={router.navigateRooms}
                             client={roomClient}
+                            spaceClient={spaceClient}
                         />
                     )
                 ) : null}
@@ -198,6 +204,7 @@ function App() {
                         <TimetableLanding
                             client={teachingClient}
                             savedClass={router.timetable.savedClass}
+                            initialQuery={router.timetable.query}
                             onOpenClass={(className) => router.navigateTimetable({ class: className, week: null })}
                         />
                     ) : (
@@ -211,16 +218,18 @@ function App() {
                 ) : null}
 
                 {router.route === 'classrooms' ? (
-                    !router.classrooms.week || !router.classrooms.weekday || !router.classrooms.period ? (
-                        <ClassroomsLanding client={classroomClient} onChange={router.navigateClassrooms} />
+                    (!router.classrooms.date && (!router.classrooms.week || !router.classrooms.weekday)) || !router.classrooms.period ? (
+                        <ClassroomsLanding client={classroomClient} onChange={router.navigateClassrooms} query={router.classrooms.query} />
                     ) : (
                         <ClassroomsPage
+                            date={router.classrooms.date}
                             week={router.classrooms.week}
                             weekday={router.classrooms.weekday}
                             period={router.classrooms.period}
                             campus={router.classrooms.campus}
                             building={router.classrooms.building}
                             floor={router.classrooms.floor}
+                            query={router.classrooms.query}
                             client={classroomClient}
                             onChange={router.navigateClassrooms}
                         />

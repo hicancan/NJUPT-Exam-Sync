@@ -15,7 +15,7 @@ param(
     [string]$TeachingSourcePath,
     [string]$TeachingSchedulePath,
     [string]$TeachingRoomOccupancyPath,
-    [string]$RoomCatalogPath,
+    [string]$SpaceSnapshotPath,
     [string]$WebStagePath,
     [string]$WebDistPath,
     [string]$CargoTargetPath
@@ -63,7 +63,7 @@ try {
     Invoke-Checked { npm run test:prepared } 'TypeScript tests failed'
     Invoke-Checked { uv sync --extra test } 'Python test environment sync failed'
     Invoke-Checked {
-        uv run pytest academics/exam academics/room/occupancy academics/room/catalog academics/timetable -q
+        uv run pytest academics/exam academics/room/occupancy academics/timetable academics/space -q
     } 'Academics tests failed'
 
     if ($Mode -eq 'full') {
@@ -79,7 +79,7 @@ try {
             TeachingSourcePath = $TeachingSourcePath
             TeachingSchedulePath = $TeachingSchedulePath
             TeachingRoomOccupancyPath = $TeachingRoomOccupancyPath
-            RoomCatalogPath = $RoomCatalogPath
+            SpaceSnapshotPath = $SpaceSnapshotPath
             WebStagePath = $WebStagePath
             WebDistPath = $WebDistPath
         }
@@ -111,7 +111,7 @@ try {
             -TeachingSourcePath $TeachingSourcePath `
             -TeachingOutputPath $TeachingSchedulePath `
             -TeachingRoomOutputPath $TeachingRoomOccupancyPath `
-            -RoomCatalogPath $RoomCatalogPath
+            -SpaceSnapshotPath $SpaceSnapshotPath
         Invoke-Checked {
             npm run academics:validate -- `
                 --exam $ExamSnapshotPath `
@@ -119,6 +119,7 @@ try {
                 --room $RoomOccupancyPath `
                 --timetable $TeachingSchedulePath `
                 --classrooms $TeachingRoomOccupancyPath
+                --space $SpaceSnapshotPath
         } 'Academics producer/consumer validation failed'
 
         & (Join-Path $PSScriptRoot 'assemble-web.ps1') `
@@ -128,6 +129,7 @@ try {
             -RoomOccupancyPath $RoomOccupancyPath `
             -TeachingSchedulePath $TeachingSchedulePath `
             -TeachingRoomOccupancyPath $TeachingRoomOccupancyPath `
+            -SpaceSnapshotPath $SpaceSnapshotPath `
             -StagePath $WebStagePath `
             -DistPath $WebDistPath
     }

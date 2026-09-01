@@ -19,6 +19,9 @@ param(
     [string]$TeachingRoomOccupancyPath,
 
     [Parameter(Mandatory = $true)]
+    [string]$SpaceSnapshotPath,
+
+    [Parameter(Mandatory = $true)]
     [string]$StagePath,
 
     [Parameter(Mandatory = $true)]
@@ -33,6 +36,7 @@ $examHistory = (Resolve-Path -LiteralPath $ExamHistoryPath).Path
 $roomOccupancy = (Resolve-Path -LiteralPath $RoomOccupancyPath).Path
 $teachingSchedule = (Resolve-Path -LiteralPath $TeachingSchedulePath).Path
 $teachingRoomOccupancy = (Resolve-Path -LiteralPath $TeachingRoomOccupancyPath).Path
+$spaceSnapshot = (Resolve-Path -LiteralPath $SpaceSnapshotPath).Path
 $stage = [System.IO.Path]::GetFullPath($StagePath)
 $dist = [System.IO.Path]::GetFullPath($DistPath)
 
@@ -104,7 +108,7 @@ function Copy-ContentAddressedArtifact {
     }
 }
 
-foreach ($artifact in @($searchBundle, $examSnapshot, $examHistory, $roomOccupancy, $teachingSchedule, $teachingRoomOccupancy)) {
+foreach ($artifact in @($searchBundle, $examSnapshot, $examHistory, $roomOccupancy, $teachingSchedule, $teachingRoomOccupancy, $spaceSnapshot)) {
     if (-not (Test-Path -LiteralPath (Join-Path $artifact 'manifest.json') -PathType Leaf)) {
         throw "Artifact manifest is missing: $artifact"
     }
@@ -167,6 +171,26 @@ Copy-ContentAddressedArtifact `
     -ArtifactPaths $historyArtifactPaths
 
 $roomManifest = Get-Content -LiteralPath (Join-Path $roomOccupancy 'manifest.json') -Raw | ConvertFrom-Json
+$spaceManifest = Get-Content -LiteralPath (Join-Path $spaceSnapshot 'manifest.json') -Raw | ConvertFrom-Json
+$spaceArtifactPaths = @(
+    $spaceManifest.artifacts.campuses.path
+    $spaceManifest.artifacts.buildings.path
+    $spaceManifest.artifacts.floors.path
+    $spaceManifest.artifacts.space_families.path
+    $spaceManifest.artifacts.space_units | ForEach-Object { $_.path }
+    $spaceManifest.artifacts.aliases.path
+    $spaceManifest.artifacts.connectors.path
+    $spaceManifest.artifacts.geometry | ForEach-Object { $_.path }
+    $spaceManifest.artifacts.audit.path
+)
+Copy-ContentAddressedArtifact `
+    -Source $spaceSnapshot `
+    -Destination (Join-Path $generated 'space') `
+    -Identity $spaceManifest.snapshot_id `
+    -ArtifactPaths $spaceArtifactPaths
+if ($roomManifest.space_snapshot_id -ne $spaceManifest.snapshot_id) {
+    throw 'RoomOccupancy does not identify the assembled SpaceSnapshot'
+}
 $roomArtifactPaths = @($roomManifest.dates | ForEach-Object {
     $_.floors | ForEach-Object { $_.artifact.path }
 })
@@ -197,6 +221,9 @@ if ($teachingRoomManifest.teaching_snapshot_id -ne $teachingManifest.snapshot_id
 if ($teachingRoomManifest.exam_snapshot_id -ne $examManifest.snapshot_id) {
     throw 'TeachingRoomOccupancy does not identify the assembled ExamSnapshot'
 }
+if ($teachingRoomManifest.space_snapshot_id -ne $spaceManifest.snapshot_id) {
+    throw 'TeachingRoomOccupancy does not identify the assembled SpaceSnapshot'
+}
 $teachingRoomArtifactPaths = @($teachingRoomManifest.days | ForEach-Object { $_.artifact.path })
 Copy-ContentAddressedArtifact `
     -Source $teachingRoomOccupancy `
@@ -212,6 +239,7 @@ $previousHistoryUrl = $env:VITE_NJUPT_EXAM_HISTORY_ARTIFACT_URL
 $previousRoomUrl = $env:VITE_NJUPT_ROOM_ARTIFACT_URL
 $previousTimetableUrl = $env:VITE_NJUPT_TIMETABLE_ARTIFACT_URL
 $previousClassroomsUrl = $env:VITE_NJUPT_CLASSROOMS_ARTIFACT_URL
+$previousSpaceUrl = $env:VITE_NJUPT_SPACE_ARTIFACT_URL
 try {
     $env:NJUPT_SEARCH_WEB_PUBLIC_DIR = $public
     $env:NJUPT_SEARCH_WEB_OUT_DIR = $dist
@@ -221,6 +249,7 @@ try {
     $env:VITE_NJUPT_ROOM_ARTIFACT_URL = '/generated/rooms'
     $env:VITE_NJUPT_TIMETABLE_ARTIFACT_URL = '/generated/timetable'
     $env:VITE_NJUPT_CLASSROOMS_ARTIFACT_URL = '/generated/classrooms'
+    $env:VITE_NJUPT_SPACE_ARTIFACT_URL = '/generated/space'
     Push-Location $repository
     try {
         & npm run build:prepared
@@ -241,4 +270,5 @@ finally {
     $env:VITE_NJUPT_ROOM_ARTIFACT_URL = $previousRoomUrl
     $env:VITE_NJUPT_TIMETABLE_ARTIFACT_URL = $previousTimetableUrl
     $env:VITE_NJUPT_CLASSROOMS_ARTIFACT_URL = $previousClassroomsUrl
+    $env:VITE_NJUPT_SPACE_ARTIFACT_URL = $previousSpaceUrl
 }
