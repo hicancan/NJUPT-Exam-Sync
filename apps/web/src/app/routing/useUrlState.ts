@@ -1,19 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 
-export type AppRoute = 'home' | 'search' | 'timetable' | 'classrooms' | 'exam' | 'rooms';
+export type AppRoute = 'home' | 'search' | 'timetable' | 'classrooms' | 'exam';
 
 export interface UrlState {
     route: AppRoute;
     search: string;
     classParam: string | null;
     qParam: string | null;
-    roomQuery: string | null;
     dateParam: string | null;
     campusParam: string | null;
     buildingParam: string | null;
     floorParam: string | null;
-    startParam: string | null;
-    endParam: string | null;
     weekParam: string | null;
     weekdayParam: string | null;
     periodParam: string | null;
@@ -28,7 +25,6 @@ export const routeFromPathname = (pathname: string): AppRoute => {
     if (pathname === '/') return 'home';
     if (pathname === '/search') return 'search';
     if (pathname === '/exam') return 'exam';
-    if (pathname === '/rooms') return 'rooms';
     if (pathname === '/timetable') return 'timetable';
     if (pathname === '/classrooms') return 'classrooms';
     throw new Error(`Unsupported application route: ${pathname}`);
@@ -41,13 +37,10 @@ export const parseUrlState = (pathname: string, search: string): UrlState => {
         search,
         classParam: params.get('class') || null,
         qParam: params.get('q') || null,
-        roomQuery: params.get('room') || null,
         dateParam: params.get('date') || null,
         campusParam: params.get('campus') || null,
         buildingParam: params.get('building') || null,
         floorParam: params.get('floor') || null,
-        startParam: params.get('start') || null,
-        endParam: params.get('end') || null,
         weekParam: params.get('week') || null,
         weekdayParam: params.get('weekday') || null,
         periodParam: params.get('period') || null,

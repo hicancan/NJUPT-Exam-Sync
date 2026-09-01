@@ -19,26 +19,24 @@
 
 ---
 
-南邮的通知散落在学校主站以及各个学院、部门网站里，有些关键信息甚至藏在 PDF、Word 或 Excel 附件中。`njupt-search` 将这些内容汇总成一个全文检索入口，也把日常课表、空教室和考试查询放在同一处。
+南邮的通知散落在学校主站以及各个学院、部门网站里，有些关键信息甚至藏在 PDF、Word 或 Excel 附件中。`njupt-search` 将这些内容汇总成一个全文检索入口，也把日常课表、考试安排和统一教室空间查询放在同一处。
 
 ## 功能
 
 - **校园搜索**：检索各校区网页与附件，支持按来源、类型和时间过滤。
 - **班级课表**：按班级和周次查看课程，支持课程详情和 ICS 日历导出。
-- **空教室**：联合课程与考试占用，查询当前数据中没有发现占用的教室。
+- **教室空间**：在同一楼层平面图中联合课程与考试占用，查看空闲候选和占用来源。
 - **考试安排**：输入班级号即可查看考试时间、地点，支持导出 ICS 日历。
-- **考试教室**：按日期、校区、楼栋和楼层，查询考场占用情况。
 - **Web 与 Android**：直接在浏览器中使用，也提供 Android 安装包。
 
 直接打开：
 
 - [校园搜索](https://njupt.hicancan.top/search)
 - [班级课表](https://njupt.hicancan.top/timetable)
-- [空教室](https://njupt.hicancan.top/classrooms)
+- [教室空间](https://njupt.hicancan.top/classrooms)
 - [考试安排](https://njupt.hicancan.top/exam)
-- [考试教室](https://njupt.hicancan.top/rooms)
 
-> 注：搜索结果保留原始网页链接和发布日期。“空教室”只联合当前已发布的课程和考试占用，不包含临时借用、调课、活动、维修或尚未同步的变化；“考试教室”则只展示考试占用。
+> 注：搜索结果保留原始网页链接和发布日期。“教室空间”联合当前已发布的课程和考试占用，不包含临时借用、调课、活动、维修或尚未同步的变化，因此不宣称现实中一定空闲。
 
 ## 搜索如何工作
 
@@ -164,6 +162,7 @@ uv run python academics\space\finalize_floor_plan_review.py `
 
 uv run python -m academics.space `
   --reviewed-geometry 'D:\private\reviewed-floor-plan-geometry-v2.json' `
+  --reconstruction 'D:\private\reconstruction' `
   --teaching-source $teachingSourcePath `
   --exam-snapshot $examPath `
   --output $spacePath

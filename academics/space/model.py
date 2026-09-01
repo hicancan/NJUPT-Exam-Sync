@@ -79,6 +79,14 @@ def exact_object(value: Any, fields: set[str], label: str) -> dict[str, Any]:
 
 
 def validate_artifact(root: Path, value: Any) -> tuple[str, Any]:
+    relative, content = validate_binary_artifact(root, value)
+    try:
+        return relative, json.loads(content)
+    except Exception as exc:
+        raise SpaceSnapshotError(f"SpaceSnapshot artifact is not valid JSON: {relative}") from exc
+
+
+def validate_binary_artifact(root: Path, value: Any) -> tuple[str, bytes]:
     reference = exact_object(value, ARTIFACT_FIELDS, "SpaceSnapshot artifact")
     relative = reference.get("path")
     if not isinstance(relative, str) or not relative or Path(relative).is_absolute() or ".." in Path(relative).parts:
@@ -90,7 +98,7 @@ def validate_artifact(root: Path, value: Any) -> tuple[str, Any]:
         raise SpaceSnapshotError(f"SpaceSnapshot artifact is missing: {relative}") from exc
     if reference.get("bytes") != len(content) or require_hash(reference.get("sha256"), "artifact.sha256") != sha256(content):
         raise SpaceSnapshotError(f"SpaceSnapshot artifact integrity mismatch: {relative}")
-    return relative, json.loads(content)
+    return relative, content
 
 
 def _validate_unique(items: list[dict[str, Any]], key: str, label: str) -> None:
@@ -169,10 +177,6 @@ def load_space_snapshot(root: Path) -> SpaceSnapshot:
         relative, payload = validate_artifact(root, reference)
         expected.add(relative)
         geometry_docs.append(payload)
-    actual = {path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file()}
-    if actual != expected:
-        raise SpaceSnapshotError(f"SpaceSnapshot file set mismatch: expected {sorted(expected)}, got {sorted(actual)}")
-
     doc_formats = {
         "campuses": "njupt-space-campuses",
         "buildings": "njupt-space-buildings",
@@ -233,9 +237,22 @@ def load_space_snapshot(root: Path) -> SpaceSnapshot:
     geometry_count = 0
     seen_geometry_units: set[str] = set()
     for document in geometry_docs:
-        exact_object(document, {"format", "source_id", "floor_id", "coordinate_system", "geometry_accuracy", "space_units"}, "geometry chunk")
+        exact_object(document, {"format", "source_id", "floor_id", "coordinate_system", "geometry_accuracy", "view_box", "plan", "space_units"}, "geometry chunk")
         if document["format"] != "njupt-space-geometry" or document["source_id"] != source_id or not isinstance(document["space_units"], list):
             raise SpaceSnapshotError("Space geometry identity mismatch")
+        view_box = document["view_box"]
+        if not isinstance(view_box, list) or len(view_box) != 2 or any(not isinstance(value, int) or value <= 0 for value in view_box):
+            raise SpaceSnapshotError("Space geometry view box is invalid")
+        plan_relative, plan_content = validate_binary_artifact(root, document["plan"])
+        if not plan_relative.startswith("plans/plan-") or not plan_relative.endswith(".svg"):
+            raise SpaceSnapshotError("Space floor plan path is invalid")
+        try:
+            plan_text = plan_content.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise SpaceSnapshotError("Space floor plan is not UTF-8 SVG") from exc
+        if "<!" in plan_text or "javascript:" in plan_text.lower() or "href=" in plan_text.lower():
+            raise SpaceSnapshotError("Space floor plan contains unsafe content")
+        expected.add(plan_relative)
         for entry in document["space_units"]:
             exact_object(entry, {"space_unit_id", "geometry_status", "label_point", "polygon"}, "space geometry")
             unit_id = entry["space_unit_id"]
@@ -248,6 +265,9 @@ def load_space_snapshot(root: Path) -> SpaceSnapshot:
                 geometry_count += 1
     if geometry_count != manifest["geometry_unit_count"]:
         raise SpaceSnapshotError("SpaceSnapshot geometry count does not match")
+    actual = {path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file()}
+    if actual != expected:
+        raise SpaceSnapshotError(f"SpaceSnapshot file set mismatch: expected {sorted(expected)}, got {sorted(actual)}")
     return SpaceSnapshot(
         root=root,
         snapshot_id=snapshot_id,

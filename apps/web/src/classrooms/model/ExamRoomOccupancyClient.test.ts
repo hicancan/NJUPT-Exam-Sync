@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { RoomOccupancyClient } from './RoomOccupancyClient';
+import { ExamRoomOccupancyClient } from './ExamRoomOccupancyClient';
 
 const encode = (value: unknown) => JSON.stringify(value);
 const sha256 = async (value: string): Promise<string> => {
@@ -58,7 +58,7 @@ const createFixture = async (updatedAt: string) => {
 
 afterEach(() => vi.restoreAllMocks());
 
-describe('RoomOccupancyClient', () => {
+describe('ExamRoomOccupancyClient', () => {
     it('reuses one manifest and floor in an SPA session and addresses data by occupancy identity', async () => {
         const fixture = await createFixture('2026-06-10T08:14:13+00:00');
         const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
@@ -69,7 +69,7 @@ describe('RoomOccupancyClient', () => {
         });
         vi.stubGlobal('fetch', fetchMock);
 
-        const client = new RoomOccupancyClient('https://artifact.test/rooms');
+        const client = new ExamRoomOccupancyClient('https://artifact.test/rooms');
         const manifest = await client.initialize();
         await client.initialize();
         const artifact = manifest.dates[0]?.floors[0]?.artifact;
@@ -97,7 +97,7 @@ describe('RoomOccupancyClient', () => {
             return new Response(first.floorText);
         }));
 
-        const client = new RoomOccupancyClient('https://artifact.test/rooms');
+        const client = new ExamRoomOccupancyClient('https://artifact.test/rooms');
         expect((await client.initialize()).occupancy_id).toBe(first.manifest.occupancy_id);
         expect((await client.refresh()).occupancy_id).toBe(second.manifest.occupancy_id);
         expect(client.occupancyId).toBe(second.manifest.occupancy_id);
@@ -119,7 +119,7 @@ describe('RoomOccupancyClient', () => {
             return Promise.resolve(new Response(fixture.floorText));
         }));
 
-        const client = new RoomOccupancyClient('https://artifact.test/rooms');
+        const client = new ExamRoomOccupancyClient('https://artifact.test/rooms');
         const manifest = await client.initialize();
         const artifact = manifest.dates[0]?.floors[0]?.artifact;
         if (!artifact) throw new Error('fixture artifact is missing');

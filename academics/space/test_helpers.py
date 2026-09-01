@@ -49,6 +49,7 @@ def write_test_space_snapshot(root: Path, labels: list[str]) -> Path:
     floor_values = sorted(floors.values(), key=lambda item: item["level"])
     for floor in floor_values:
         floor["space_unit_ids"].sort()
+        floor["geometry_path"] = f"geometry-{floor['floor_id']}.json"
     documents: dict[str, Any] = {
         "campuses.json": {"format": "njupt-space-campuses", "source_id": source_id, "campuses": [{
             "campus_id": campus_id, "name": "仙林", "aliases": [], "coordinate_system": "schematic",
@@ -74,6 +75,24 @@ def write_test_space_snapshot(root: Path, labels: list[str]) -> Path:
         "sha256": sha256((root / relative).read_bytes()),
     }
     unit_path = f"space-units-{building_id}.json"
+    geometry_refs = []
+    for floor in floor_values:
+        plan_path = f"plans/plan-{floor['floor_id']}.svg"
+        (root / "plans").mkdir(exist_ok=True)
+        (root / plan_path).write_text(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 400" width="1000" height="400">\n'
+            '<rect width="100%" height="100%" fill="white"/>\n'
+            '<path d="M10 10H990V390H10Z" fill="#151515" fill-rule="evenodd"/>\n</svg>\n',
+            encoding="utf-8",
+            newline="\n",
+        )
+        geometry_path = floor["geometry_path"]
+        (root / geometry_path).write_bytes(canonical_bytes({
+            "format": "njupt-space-geometry", "source_id": source_id, "floor_id": floor["floor_id"],
+            "coordinate_system": "schematic-normalized-image", "geometry_accuracy": "schematic",
+            "view_box": [1000, 400], "plan": artifact(plan_path), "space_units": [],
+        }))
+        geometry_refs.append(artifact(geometry_path))
     identity = {
         "format": SPACE_FORMAT, "source_id": source_id, "campus_count": 1, "building_count": 1,
         "floor_count": len(floor_values), "space_family_count": len(families), "space_unit_count": len(units),
@@ -82,7 +101,7 @@ def write_test_space_snapshot(root: Path, labels: list[str]) -> Path:
             "campuses": artifact("campuses.json"), "buildings": artifact("buildings.json"),
             "floors": artifact("floors.json"), "space_families": artifact("space-families.json"),
             "space_units": [artifact(unit_path)], "aliases": artifact("aliases.json"),
-            "connectors": artifact("connectors.json"), "geometry": [], "audit": artifact("audit.json"),
+            "connectors": artifact("connectors.json"), "geometry": geometry_refs, "audit": artifact("audit.json"),
         },
     }
     manifest = {**identity, "snapshot_id": sha256(canonical_bytes(identity))}

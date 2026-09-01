@@ -19,7 +19,7 @@ import type {
     SpaceUnit,
 } from '@njupt-search/academics-space';
 import { waitForAbort } from '@/shared/lib/abort';
-import { fetchArtifactJson, fetchJson } from '@/shared/lib/fetch';
+import { fetchArtifactBytes, fetchArtifactJson, fetchJson } from '@/shared/lib/fetch';
 
 export interface SpaceIndex {
     manifest: SpaceManifest;
@@ -47,6 +47,7 @@ export class SpaceClient {
     #initializeController: AbortController | null = null;
     #unitCache = new Map<string, SpaceUnit[]>();
     #geometryCache = new Map<string, SpaceGeometry>();
+    #planCache = new Map<string, string>();
     #disposed = false;
 
     constructor(baseUrl: string) {
@@ -131,6 +132,22 @@ export class SpaceClient {
         return geometry;
     }
 
+    async loadFloorPlan(geometry: SpaceGeometry, signal?: AbortSignal): Promise<string> {
+        const index = await this.initialize(signal);
+        if (geometry.source_id !== index.manifest.source_id) throw new Error('楼层线稿与当前空间数据不一致');
+        const key = `${index.manifest.snapshot_id}:${geometry.plan.sha256}`;
+        const cached = this.#planCache.get(key);
+        if (cached) return waitForAbort(Promise.resolve(cached), signal);
+        const buffer = await fetchArtifactBytes(
+            artifactUrl(this.#baseUrl, index.manifest.snapshot_id, geometry.plan),
+            geometry.plan,
+            { signal, cache: 'force-cache' },
+        );
+        const url = URL.createObjectURL(new Blob([buffer], { type: 'image/svg+xml' }));
+        this.#planCache.set(key, url);
+        return url;
+    }
+
     dispose(): void {
         if (this.#disposed) return;
         this.#disposed = true;
@@ -139,6 +156,8 @@ export class SpaceClient {
         this.#indexPromise = null;
         this.#unitCache.clear();
         this.#geometryCache.clear();
+        for (const url of this.#planCache.values()) URL.revokeObjectURL(url);
+        this.#planCache.clear();
     }
 
     async #loadIndex(signal?: AbortSignal): Promise<SpaceIndex> {

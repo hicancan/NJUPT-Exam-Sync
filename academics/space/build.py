@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import shutil
 import uuid
+import xml.etree.ElementTree as ET
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Iterable
@@ -18,10 +19,19 @@ from .identity import (
     parse_space_location,
     stable_id,
 )
-from .model import SPACE_FORMAT, SpaceSnapshotError, canonical_bytes, load_space_snapshot, sha256
+from .model import (
+    SPACE_FORMAT,
+    SpaceSnapshotError,
+    canonical_bytes,
+    load_space_snapshot,
+    read_json,
+    require_hash,
+    sha256,
+)
 
 
 REVIEW_FORMAT = "njupt-reviewed-floor-plan-geometry"
+RECONSTRUCTION_FORMAT = "njupt-floor-plan-reconstruction"
 SCHEMATIC_CAMPUS_POINTS = {
     "三牌楼": [0.2, 0.5],
     "锁金": [0.5, 0.5],
@@ -56,6 +66,96 @@ def _read_review(path: Path) -> dict[str, Any]:
     return payload
 
 
+def _read_reconstruction(root: Path, review: dict[str, Any]) -> tuple[dict[str, Any], dict[tuple[str, int], dict[str, Any]]]:
+    root = root.resolve()
+    manifest = read_json(root / "manifest.json")
+    required = {
+        "reconstruction_id", "format", "source_review_id", "source_review_sha256",
+        "component_taxonomy", "component_type_count", "floor_count", "space_feature_count",
+        "label_feature_count", "floors", "artifacts",
+    }
+    if not isinstance(manifest, dict) or set(manifest) != required or manifest.get("format") != RECONSTRUCTION_FORMAT:
+        raise SpaceSnapshotError("Floor-plan reconstruction manifest has an incompatible format")
+    identity = {key: value for key, value in manifest.items() if key != "reconstruction_id"}
+    expected_id = sha256(canonical_bytes(identity) + b"\n")
+    if require_hash(manifest.get("reconstruction_id"), "reconstruction_id") != expected_id:
+        raise SpaceSnapshotError("Floor-plan reconstruction identity mismatch")
+    if review.get("reconstruction_id") != manifest["reconstruction_id"]:
+        raise SpaceSnapshotError("Reviewed geometry does not accept the supplied floor-plan reconstruction")
+    if manifest.get("floor_count") != 22 or not isinstance(manifest.get("floors"), list) or len(manifest["floors"]) != 22:
+        raise SpaceSnapshotError("Floor-plan reconstruction must contain exactly the reviewed 22 floors")
+
+    records: dict[tuple[str, int], dict[str, Any]] = {}
+    for entry in manifest["floors"]:
+        if not isinstance(entry, dict) or set(entry) != {"building", "level", "slug", "metadata_sha256", "linework_iou"}:
+            raise SpaceSnapshotError("Floor-plan reconstruction floor entry is incompatible")
+        building = normalize_space_text(entry["building"])
+        level = int(entry["level"])
+        key = (building, level)
+        if key in records:
+            raise SpaceSnapshotError(f"Duplicate floor-plan reconstruction: {building} {level}")
+        metadata_matches = list(root.rglob(f"{entry['slug']}-metadata.json"))
+        if len(metadata_matches) != 1:
+            raise SpaceSnapshotError(f"Floor-plan reconstruction metadata is missing or duplicated: {entry['slug']}")
+        metadata_path = metadata_matches[0]
+        metadata_bytes = metadata_path.read_bytes()
+        if sha256(metadata_bytes) != require_hash(entry["metadata_sha256"], "metadata_sha256"):
+            raise SpaceSnapshotError(f"Floor-plan reconstruction metadata integrity mismatch: {entry['slug']}")
+        try:
+            metadata = json.loads(metadata_bytes)
+        except Exception as exc:
+            raise SpaceSnapshotError(f"Floor-plan reconstruction metadata is invalid: {entry['slug']}") from exc
+        if metadata.get("format") != RECONSTRUCTION_FORMAT or metadata.get("building") != building or int(metadata.get("level", 0)) != level:
+            raise SpaceSnapshotError(f"Floor-plan reconstruction metadata identity mismatch: {entry['slug']}")
+        linework_name = f"{entry['slug']}-linework.svg"
+        linework_ref = metadata.get("artifacts", {}).get(linework_name)
+        if not isinstance(linework_ref, dict) or set(linework_ref) != {"bytes", "sha256"}:
+            raise SpaceSnapshotError(f"Floor-plan linework reference is missing: {entry['slug']}")
+        linework_path = metadata_path.parent / linework_name
+        content = linework_path.read_bytes()
+        if len(content) != linework_ref["bytes"] or sha256(content) != require_hash(linework_ref["sha256"], "linework.sha256"):
+            raise SpaceSnapshotError(f"Floor-plan linework integrity mismatch: {entry['slug']}")
+        _validate_public_linework_svg(content, metadata)
+        records[key] = {"metadata": metadata, "linework_path": linework_path, "content": content}
+    return manifest, records
+
+
+def _validate_public_linework_svg(content: bytes, metadata: dict[str, Any]) -> None:
+    try:
+        text = content.decode("utf-8")
+        if "<!" in text or "javascript:" in text.lower() or "href=" in text.lower() or "onload=" in text.lower():
+            raise ValueError("active or external SVG content")
+        root = ET.fromstring(text)
+    except Exception as exc:
+        raise SpaceSnapshotError("Floor-plan linework SVG is unsafe or invalid") from exc
+    local = lambda tag: tag.rsplit("}", 1)[-1]
+    if local(root.tag) != "svg" or set(root.attrib) != {"viewBox", "width", "height"}:
+        raise SpaceSnapshotError("Floor-plan linework SVG root is incompatible")
+    crop = metadata.get("crop")
+    if not isinstance(crop, dict) or crop.get("width") != int(root.attrib["width"]) or crop.get("height") != int(root.attrib["height"]):
+        raise SpaceSnapshotError("Floor-plan linework view box does not match its reviewed crop")
+    if root.attrib["viewBox"] != f"0 0 {crop['width']} {crop['height']}":
+        raise SpaceSnapshotError("Floor-plan linework view box is incompatible")
+    children = list(root)
+    if [local(child.tag) for child in children] != ["rect", "path"]:
+        raise SpaceSnapshotError("Floor-plan linework must contain only a background and structural path")
+    if set(children[0].attrib) != {"width", "height", "fill"} or set(children[1].attrib) != {"d", "fill", "fill-rule"}:
+        raise SpaceSnapshotError("Floor-plan linework contains unsupported SVG attributes")
+    if children[0].attrib.get("fill") != "white" or children[1].attrib.get("fill") != "#151515" or children[1].attrib.get("fill-rule") != "evenodd":
+        raise SpaceSnapshotError("Floor-plan linework palette is not the sanitized public contract")
+
+
+def _crop_point(point: list[float] | None, *, review: dict[str, Any], metadata: dict[str, Any]) -> list[float] | None:
+    if point is None:
+        return None
+    crop = metadata["crop"]
+    x = (float(point[0]) * int(review["image_width"]) - int(crop["left"])) / int(crop["width"])
+    y = (float(point[1]) * int(review["image_height"]) - int(crop["top"])) / int(crop["height"])
+    if not (-0.03 <= x <= 1.03 and -0.03 <= y <= 1.03):
+        raise SpaceSnapshotError(f"Reviewed geometry falls outside the accepted floor crop: {review['building']} {review['floor']}")
+    return [round(min(1.0, max(0.0, x)), 9), round(min(1.0, max(0.0, y)), 9)]
+
+
 def _room_from_printed_label(building: str, raw_label: str) -> str | None:
     normalized = normalize_location(raw_label)
     if "-" not in normalized:
@@ -75,10 +175,12 @@ def _compile(
     *,
     output_dir: Path,
     reviewed_geometry_path: Path,
+    reconstruction_path: Path,
     teaching_source_path: Path,
     exam_snapshot_path: Path,
 ) -> dict[str, Any]:
     review = _read_review(reviewed_geometry_path)
+    reconstruction, reconstructed_floors = _read_reconstruction(reconstruction_path, review)
     teaching = load_teaching_schedule_source(teaching_source_path)
     exam = load_exam_snapshot(exam_snapshot_path)
 
@@ -115,6 +217,7 @@ def _compile(
     source_identity = {
         "format": "njupt-space-source-identity",
         "review": normalized_review,
+        "floor_plan_reconstruction_id": reconstruction["reconstruction_id"],
         "teaching_source_id": teaching.source_id,
         "exam_snapshot_id": exam.snapshot_id,
         "schematic_campus_layout": SCHEMATIC_CAMPUS_POINTS,
@@ -132,6 +235,7 @@ def _compile(
     geometry_by_floor: dict[str, list[dict[str, Any]]] = defaultdict(list)
     aliases_by_text: dict[str, dict[str, Any]] = {}
     image_reviews: list[dict[str, Any]] = []
+    plan_by_floor: dict[str, dict[str, Any]] = {}
 
     def ensure_campus(name: str) -> dict[str, Any]:
         canonical = normalize_space_text(name)
@@ -238,11 +342,17 @@ def _compile(
         building_name = normalize_space_text(floor_review["building"])
         level = str(floor_review["floor"])
         floor = ensure_floor(campus_name, building_name, level)
+        reconstructed = reconstructed_floors.get((building_name, int(level)))
+        if reconstructed is None:
+            raise SpaceSnapshotError(f"Reviewed floor is missing from the reconstruction: {building_name} {level}")
+        metadata = reconstructed["metadata"]
+        if metadata.get("source_image_sha256") != floor_review["source_image_sha256"]:
+            raise SpaceSnapshotError(f"Floor-plan reconstruction source mismatch: {building_name} {level}")
         building = next(value for value in buildings.values() if value["building_id"] == floor["building_id"])
         building["evidence_refs"] = _stable_sources([*building["evidence_refs"], floor_review["source_image_sha256"]])
         building["geometry_accuracy"] = "schematic"
         floor.update({
-            "local_coordinate_system": "source_image_normalized_top_left",
+            "local_coordinate_system": "reconstructed_crop_normalized_top_left",
             "north_rotation_degrees": floor_review.get("north_rotation_degrees"),
             "north_confidence": floor_review.get("north_confidence", "unknown"),
             "source_image_refs": [{
@@ -260,8 +370,11 @@ def _compile(
                 geometry_by_floor[floor["floor_id"]].append({
                     "space_unit_id": stable_id("unresolved-region-", reviewed_unit["region_id"]),
                     "geometry_status": "identity_unresolved",
-                    "label_point": reviewed_unit.get("label_point"),
-                    "polygon": reviewed_unit.get("polygon"),
+                    "label_point": _crop_point(reviewed_unit.get("label_point"), review=floor_review, metadata=metadata),
+                    "polygon": [
+                        _crop_point(point, review=floor_review, metadata=metadata)
+                        for point in reviewed_unit.get("polygon") or []
+                    ] or None,
                 })
                 geometry_counts["identity_unresolved"] += 1
                 continue
@@ -287,8 +400,11 @@ def _compile(
             geometry_by_floor[floor["floor_id"]].append({
                 "space_unit_id": unit["space_unit_id"],
                 "geometry_status": status,
-                "label_point": reviewed_unit.get("label_point"),
-                "polygon": reviewed_unit.get("polygon"),
+                "label_point": _crop_point(reviewed_unit.get("label_point"), review=floor_review, metadata=metadata),
+                "polygon": [
+                    _crop_point(point, review=floor_review, metadata=metadata)
+                    for point in reviewed_unit.get("polygon") or []
+                ] or None,
             })
             geometry_counts[status] += 1
         image_reviews.append({
@@ -305,7 +421,16 @@ def _compile(
             "labeled_region_count": len(floor_review["units"]),
             "geometry_status_counts": dict(sorted(geometry_counts.items())),
             "review_status": "manually_reviewed",
+            "linework_iou": metadata["linework_fidelity"]["iou"],
         })
+        plan_relative = f"plans/plan-{floor['floor_id']}.svg"
+        plan_path = output_dir / plan_relative
+        plan_path.parent.mkdir(parents=True, exist_ok=True)
+        plan_path.write_bytes(reconstructed["content"])
+        plan_by_floor[floor["floor_id"]] = {
+            "artifact": _artifact(output_dir, plan_relative),
+            "view_box": [int(metadata["crop"]["width"]), int(metadata["crop"]["height"])],
+        }
 
     def register_location(*, domain: str, campus: Any, location: Any) -> None:
         raw = normalize_space_text(location)
@@ -423,6 +548,9 @@ def _compile(
         public_values = [value for value in values if value["space_unit_id"] in valid_unit_ids]
         unresolved_geometry_regions += len(values) - len(public_values)
         floor = floor_by_id[floor_id]
+        plan = plan_by_floor.get(floor_id)
+        if plan is None:
+            raise SpaceSnapshotError(f"Floor geometry has no reconstructed linework: {floor_id}")
         relative = f"geometry-{floor_id}.json"
         _write_json(output_dir / relative, {
             "format": "njupt-space-geometry",
@@ -430,6 +558,8 @@ def _compile(
             "floor_id": floor_id,
             "coordinate_system": floor["local_coordinate_system"],
             "geometry_accuracy": floor["geometry_accuracy"],
+            "view_box": plan["view_box"],
+            "plan": plan["artifact"],
             "space_units": public_values,
         })
         geometry_refs.append(_artifact(output_dir, relative))
@@ -466,6 +596,7 @@ def _compile(
         ],
         "teaching_source_id": teaching.source_id,
         "exam_snapshot_id": exam.snapshot_id,
+        "floor_plan_reconstruction_id": reconstruction["reconstruction_id"],
     }
     _write_json(output_dir / "audit.json", {"format": "njupt-space-audit", "source_id": source_id, "audit": audit})
 
@@ -501,6 +632,7 @@ def build_space_snapshot(
     *,
     output_dir: Path,
     reviewed_geometry_path: Path,
+    reconstruction_path: Path,
     teaching_source_path: Path,
     exam_snapshot_path: Path,
 ) -> dict[str, Any]:
@@ -514,6 +646,7 @@ def build_space_snapshot(
         manifest = _compile(
             output_dir=staging,
             reviewed_geometry_path=reviewed_geometry_path.resolve(),
+            reconstruction_path=reconstruction_path.resolve(),
             teaching_source_path=teaching_source_path.resolve(),
             exam_snapshot_path=exam_snapshot_path.resolve(),
         )

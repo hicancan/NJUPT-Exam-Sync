@@ -2,7 +2,7 @@
   "id": "/",
   "name": "njupt-search",
   "short_name": "njupt-search",
-  "description": "搜索南邮通知，查询考试安排和考试教室。",
+  "description": "搜索南邮通知，查询班级课表、考试安排和教室空间。",
   "lang": "zh-CN",
   "start_url": "/",
   "scope": "/",

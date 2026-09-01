@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SpaceGeometry, SpaceUnit } from '@njupt-search/academics-space';
 import type { SpaceClient, SpaceFamilyView } from './model/SpaceClient';
 import './space.css';
+import './spacePlan.css';
 
 export type SpatialRoomState = 'free' | 'teaching' | 'exam' | 'both' | 'non-teaching' | 'unknown';
 
@@ -22,6 +23,7 @@ interface SpatialViewportProps {
 interface LoadedFloor {
     key: string;
     geometry: SpaceGeometry | null;
+    planUrl: string | null;
     units: SpaceUnit[];
 }
 
@@ -37,7 +39,7 @@ const EVIDENCE_LABEL: Record<string, string> = {
     unresolved: '空间身份尚未确认',
 };
 
-const points = (polygon: number[][]): string => polygon.map(point => `${Number(point[0]) * 1000},${Number(point[1]) * 1000}`).join(' ');
+const points = (polygon: number[][], width: number, height: number): string => polygon.map(point => `${Number(point[0]) * width},${Number(point[1]) * height}`).join(' ');
 
 export function SpatialViewport({
     client, campusName, buildingName, buildingId, floorId, floorLevel, northConfidence, families, roomState, detail,
@@ -55,9 +57,12 @@ export function SpatialViewport({
     useEffect(() => {
         const controller = new AbortController();
         Promise.all([
-            client.loadFloorGeometry(floorId, controller.signal),
+            client.loadFloorGeometry(floorId, controller.signal).then(async geometry => ({
+                geometry,
+                planUrl: geometry ? await client.loadFloorPlan(geometry, controller.signal) : null,
+            })),
             client.loadBuildingUnits(buildingId, controller.signal),
-        ]).then(([geometry, units]) => setLoaded({ key: loadKey, geometry, units })).catch(reason => {
+        ]).then(([floorView, units]) => setLoaded({ key: loadKey, ...floorView, units })).catch(reason => {
             if (controller.signal.aborted) return;
             setError({ key: loadKey, message: reason instanceof Error ? reason.message : '楼层空间加载失败' });
         });
@@ -95,6 +100,8 @@ export function SpatialViewport({
     const familyByUnit = useMemo(() => new Map(families.flatMap(family => family.family.space_unit_ids.map(unitId => [unitId, family] as const))), [families]);
     const unitById = useMemo(() => new Map((current?.units ?? []).map(unit => [unit.space_unit_id, unit])), [current]);
     const geometryUnits = current?.geometry?.space_units ?? [];
+    const viewWidth = current?.geometry?.view_box[0] ?? 1000;
+    const viewHeight = current?.geometry?.view_box[1] ?? 1000;
     const close = () => {
         setSelected(null);
         window.setTimeout(() => selectedTrigger.current?.focus(), 0);
@@ -124,24 +131,25 @@ export function SpatialViewport({
             {!current && !currentError ? <div className="spatial-loading skeleton-block" /> : null}
             {current ? (
                 <div className="spatial-stage">
-                    {current.geometry && geometryUnits.some(unit => unit.polygon) ? (
+                    {current.geometry && current.planUrl ? (
                         <svg
-                            viewBox="0 0 1000 1000"
+                            viewBox={`0 0 ${viewWidth} ${viewHeight}`}
+                            preserveAspectRatio="xMidYMid meet"
                             role="img"
                             aria-label={`${buildingName}${floorLevel}楼房间分布`}
                             onWheel={event => { event.preventDefault(); setZoom(value => Math.max(.8, Math.min(3, value + (event.deltaY < 0 ? .15 : -.15)))); }}
-                            onPointerDown={event => { if (event.target !== event.currentTarget) return; event.currentTarget.setPointerCapture(event.pointerId); setDrag({ x: event.clientX, y: event.clientY, panX: pan.x, panY: pan.y }); }}
+                            onPointerDown={event => { if ((event.target as Element).closest('.spatial-room')) return; event.currentTarget.setPointerCapture(event.pointerId); setDrag({ x: event.clientX, y: event.clientY, panX: pan.x, panY: pan.y }); }}
                             onPointerMove={event => { if (!drag) return; setPan({ x: drag.panX + (event.clientX - drag.x) / zoom, y: drag.panY + (event.clientY - drag.y) / zoom }); }}
                             onPointerUp={() => setDrag(null)}
                         >
                             <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
+                                <image className="spatial-plan" href={current.planUrl} x="0" y="0" width={viewWidth} height={viewHeight} preserveAspectRatio="none" />
                                 {geometryUnits.map(geometryUnit => {
                                     const family = familyByUnit.get(geometryUnit.space_unit_id);
                                     const unit = unitById.get(geometryUnit.space_unit_id);
                                     if (!geometryUnit.polygon || !family || !unit) return null;
                                     const state = stateFor(family);
                                     const label = family.family.room_number;
-                                    const labelPoint = geometryUnit.label_point;
                                     return <g
                                         key={geometryUnit.space_unit_id}
                                         className={`spatial-room spatial-room-${state}`}
@@ -151,8 +159,8 @@ export function SpatialViewport({
                                         onClick={event => choose(family, event.currentTarget)}
                                         onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); choose(family, event.currentTarget); } }}
                                     >
-                                        <polygon points={points(geometryUnit.polygon)} />
-                                        {labelPoint ? <text x={labelPoint[0] * 1000} y={labelPoint[1] * 1000}>{label}</text> : null}
+                                        <title>{`${label}，${STATE_LABEL[state]}`}</title>
+                                        <polygon points={points(geometryUnit.polygon, viewWidth, viewHeight)} />
                                     </g>;
                                 })}
                             </g>

@@ -260,6 +260,7 @@ SpaceSnapshot 中求候选差集。无法识别的线上、无地点和非实体
 /generated/space/<space_snapshot_id>/space-families.json
 /generated/space/<space_snapshot_id>/space-units-*.json
 /generated/space/<space_snapshot_id>/geometry-*.json
+/generated/space/<space_snapshot_id>/plans/plan-*.svg
 ```
 
 日历能力位于 `academics/exam/calendar.ts`，只把公开 ExamRecord 转换为 ICS。
@@ -269,45 +270,45 @@ Python 拥有 ExamSnapshot 和 RoomOccupancy 写出；每种 artifact 在 TypeSc
 ## Product and composition
 
 `apps/web/src` 按产品能力组织：`app` 只做启动、路由和 shell；`home`、
-`search`、`timetable`、`classrooms`、`exams`、`rooms` 各自拥有完整交互；
+`search`、`timetable`、`classrooms`、`exams` 各自拥有完整交互；
 `shared` 只容纳至少两个能力
 共同使用的 UI/HTTP 原语。
 
-首页快捷入口使用判别联合表达 `timetable`、`classrooms`、`exam`、`rooms` 或
+首页快捷入口使用判别联合表达 `timetable`、`classrooms`、`exam` 或
 `search` 意图，而不是依靠
 按钮文字触发隐藏分支。七个全文入口只提供查询意图，随后仍由 SearchClient →
 Worker → WASM → Rust core 完成统一搜索；不存在热词结果、独立排名或 UI
 fallback。
 
 产品路由只读取 `pathname` 与标准 query string。`/timetable`、`/classrooms`、
-`/exam`、`/rooms` 永远表示
-可分享、可刷新且不含本地历史的 landing；`class`、`q`、`room`、
+`/exam` 永远表示
+可分享、可刷新且不含本地历史的 landing；`class`、`q`、
 `week/weekday/period` 与 `campus/building/floor` 参数才表示详情。首页主按钮始终进入 landing，保存的班级
-或教室只通过 landing 中的“继续查看”次级按钮暴露。`考试安排` 输入直接进入
+只通过 landing 中的“继续查看”次级按钮暴露。`考试安排` 输入直接进入
 `/exam`，不使用查询参数充当内部哨兵。站内导航使用 History API，返回、前进和
 刷新都由同一套 URL 状态驱动。
 
 顶栏只共享外观和提交协议，不共享查询语义。`/search` 检索 SearchDomain，
-`/exam` 与 `/rooms` 分别查询 ExamDomain 的班级/考试与空间投影，`/timetable`
-与 `/classrooms` 分别查询 TeachingDomain 的时间投影和 SpaceDomain 的可用性投影。
+`/exam` 查询 ExamDomain 的班级与时间投影，`/timetable` 查询 TeachingDomain 的班级与时间投影；
+`/classrooms` 是 SpaceDomain 与 TeachingOccupancy、ExamOccupancy 的统一空间投影。
 因此用户先选择产品路由，再在当前领域内搜索；提交不会隐式跳回全文搜索，也没有
 跨越全部领域的万能查询接口。
 
-Web 构建只生成当前六个产品路径：`/`、`/search`、`/timetable`、`/classrooms`、
-`/exam`、`/rooms`。构建结束后复用现有 React landing 组件写出对应的静态
+Web 构建只生成当前五个产品路径：`/`、`/search`、`/timetable`、`/classrooms`、
+`/exam`。构建结束后复用现有 React landing 组件写出对应的静态
 `index.html`；浏览器启动后接管相同 DOM。原始响应已经含有 H1、真实链接和页面
 专属 metadata，不等待任何业务 artifact。根目录 `404.html` 由 EdgeOne 作为真实 404 返回，部署配置不
 设置全站页面回退。
 
 `app/seo/pageSeo.ts` 是 title、description、robots、canonical、Open Graph 与
 WebSite JSON-LD 的唯一来源。只有 `/`、`/timetable`、`/classrooms`、`/exam`、
-`/rooms` 允许索引；`/search` 以及带查询参数的课表、空教室、考试和教室状态使用
+允许索引；`/search` 以及带查询参数的课表、考试和教室状态使用
 `noindex, follow`，不进入 sitemap，也不
 复制学校文章生成本站内容页。`robots.txt` 只声明抓取与 sitemap 入口；sitemap
 只列出五个稳定 canonical URL。
 
-Timetable、Classrooms、Exam 与 Rooms landing 是初始 App bundle 中的小型静态产品壳，不等待页面详情
-模块或业务 artifact；Rooms 在壳出现后才补充校区、楼栋、教室数和日期数。
+Timetable、Classrooms 与 Exam landing 是初始 App bundle 中的小型静态产品壳，不等待页面详情
+模块或业务 artifact；Classrooms 在壳出现后才补充校区、楼栋、楼层和节次范围。
 详情页面继续 lazy load，首页按钮的 pointerenter、focus 和 pointerdown 会并行
 预载详情模块与对应 manifest/index。
 
@@ -318,7 +319,7 @@ App
 ├── SearchClient
 ├── ExamSnapshotClient
 ├── ExamHistoryClient
-├── RoomOccupancyClient
+├── ExamRoomOccupancyClient
 ├── TeachingScheduleClient
 ├── SpaceClient
 └── ClassroomAvailabilityClient

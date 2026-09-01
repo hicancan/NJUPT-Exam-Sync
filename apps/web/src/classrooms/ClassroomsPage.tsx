@@ -60,7 +60,7 @@ export function ClassroomsPage({ date, week, weekday, period, campus, building, 
     return (
         <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-7">
             <header className="mb-6">
-                <h1 className="text-3xl font-semibold tracking-tight">空教室</h1>
+                <h1 className="text-3xl font-semibold tracking-tight">教室空间</h1>
                 <p className="mt-2 text-sm text-[#5f6368] dark:text-[#bdc1c6]">第 {effectiveWeek} 周 · 星期{'一二三四五六日'[effectiveWeekday - 1]} · 第 {period} 节{result ? ` · ${result.date}` : date ? ` · ${date}` : ''}</p>
             </header>
             <section className="grid grid-cols-2 gap-3 rounded-2xl border border-[#dadce0] bg-[#f8f9fa] p-4 dark:border-[#3c4043] dark:bg-[#292a2d] sm:grid-cols-3 lg:grid-cols-6">

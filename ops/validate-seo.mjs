@@ -17,7 +17,7 @@ const pages = [
     {
         file: 'index.html',
         title: 'njupt-search｜南邮校园信息搜索',
-        description: '搜索南京邮电大学各网站的通知、附件和办事信息，查询班级考试安排与考试教室。',
+        description: '搜索南京邮电大学各网站的通知、附件和办事信息，查询班级课表、考试安排与教室空间。',
         canonical: 'https://njupt.hicancan.top/',
         h1: 'njupt-search',
         structured: true,
@@ -37,13 +37,6 @@ const pages = [
         h1: '查询考试安排',
     },
     {
-        file: 'rooms/index.html',
-        title: '南邮考试教室查询｜njupt-search',
-        description: '按日期、校区、楼栋和楼层查看南京邮电大学考试期间的教室占用情况。',
-        canonical: 'https://njupt.hicancan.top/rooms',
-        h1: '考试教室查询',
-    },
-    {
         file: 'timetable/index.html',
         title: '南邮班级课表查询｜njupt-search',
         description: '输入班级号，按周查看南京邮电大学课程时间、教师和教室，并可导出日历。',
@@ -52,10 +45,10 @@ const pages = [
     },
     {
         file: 'classrooms/index.html',
-        title: '南邮空教室查询｜njupt-search',
-        description: '按周次、日期和节次查询南京邮电大学课程与考试数据中没有发现占用的教室。',
+        title: '南邮教室空间查询｜njupt-search',
+        description: '按周次、日期和节次统一查看南京邮电大学空教室、课程占用与考试占用。',
         canonical: 'https://njupt.hicancan.top/classrooms',
-        h1: '查询空教室',
+        h1: '教室空间',
     },
 ];
 
@@ -86,7 +79,7 @@ for (const page of pages) {
 }
 
 const home = read('index.html');
-for (const href of ['/search', '/exam', '/rooms', '/timetable', '/classrooms']) {
+for (const href of ['/search', '/exam', '/timetable', '/classrooms']) {
     assert(home.includes(`href="${href}"`), `index.html: missing crawlable ${href} link`);
 }
 
@@ -103,7 +96,6 @@ const locations = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => mat
 assert(JSON.stringify(locations) === JSON.stringify([
     'https://njupt.hicancan.top/',
     'https://njupt.hicancan.top/exam',
-    'https://njupt.hicancan.top/rooms',
     'https://njupt.hicancan.top/timetable',
     'https://njupt.hicancan.top/classrooms',
 ]), 'sitemap.xml: canonical URL set mismatch');
@@ -116,14 +108,12 @@ const rewrites = edgeone.rewrites ?? [];
 assert(JSON.stringify(redirects) === JSON.stringify([
     { source: '/index.html', destination: '/', statusCode: 301 },
     { source: '/exam/', destination: '/exam', statusCode: 301 },
-    { source: '/rooms/', destination: '/rooms', statusCode: 301 },
     { source: '/search/', destination: '/search', statusCode: 301 },
     { source: '/timetable/', destination: '/timetable', statusCode: 301 },
     { source: '/classrooms/', destination: '/classrooms', statusCode: 301 },
 ]), 'edgeone.json: canonical redirects mismatch');
 assert(JSON.stringify(rewrites) === JSON.stringify([
     { source: '/exam', destination: '/exam/index.html' },
-    { source: '/rooms', destination: '/rooms/index.html' },
     { source: '/search', destination: '/search/index.html' },
     { source: '/timetable', destination: '/timetable/index.html' },
     { source: '/classrooms', destination: '/classrooms/index.html' },
@@ -149,8 +139,17 @@ for (const source of ['/generated/search/*', '/generated/exam/*', '/generated/ro
     const headers = (edgeone.headers ?? []).find(rule => rule.source === source)?.headers ?? [];
     assert(headers.some(header => header.key === 'X-Robots-Tag' && header.value === 'noindex, nofollow'), `edgeone.json: ${source} robots header is missing`);
 }
+const headerRuleIndex = source => (edgeone.headers ?? []).findIndex(rule => rule.source === source);
+for (const domain of ['search', 'rooms', 'timetable', 'classrooms', 'space']) {
+    assert(
+        headerRuleIndex(`/generated/${domain}/manifest.json`) < headerRuleIndex(`/generated/${domain}/*`),
+        `edgeone.json: stable ${domain} manifest rule must precede its immutable wildcard`,
+    );
+}
+assert(headerRuleIndex('/generated/exam/manifest.json') < headerRuleIndex('/generated/exam/*'), 'edgeone.json: exam manifest rule order is unsafe');
+assert(headerRuleIndex('/generated/exam/history/manifest.json') < headerRuleIndex('/generated/exam/*'), 'edgeone.json: exam history manifest rule order is unsafe');
 
-for (const file of ['index.html', 'exam/index.html', 'rooms/index.html', 'search/index.html', 'timetable/index.html', 'classrooms/index.html']) {
+for (const file of ['index.html', 'exam/index.html', 'search/index.html', 'timetable/index.html', 'classrooms/index.html']) {
     const html = read(file);
     assert(!html.includes('#/'), `${file}: hash route found in production HTML`);
     assert(!/<(?:div|section|p|h[1-6])[^>]*class="[^"]*(?:sr-only|hidden)[^"]*"[^>]*>[^<]*(?:南邮校园信息|考试安排|考试教室)/.test(html), `${file}: hidden SEO copy found`);

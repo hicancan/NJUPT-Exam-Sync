@@ -7,10 +7,9 @@ import { SearchClient } from '@njupt-search/search-browser';
 import { APP_CONFIG } from '@/app/config/constants';
 import { ExamSnapshotClient } from '@/exams/model/ExamSnapshotClient';
 import type { ExamHistoryClient } from '@/exams/model/ExamHistoryClient';
-import { RoomOccupancyClient } from '@/rooms/model/RoomOccupancyClient';
+import { ExamRoomOccupancyClient } from '@/classrooms/model/ExamRoomOccupancyClient';
 import type { ProductIntent } from '@/app/routing/intents';
 import { ExamLanding } from '@/exams/ExamLanding';
-import { RoomsLanding } from '@/rooms/RoomsLanding';
 import { applyPageSeo, resolvePageSeo } from '@/app/seo/pageSeo';
 import { TeachingScheduleClient } from '@/timetable/model/TeachingScheduleClient';
 import { ClassroomAvailabilityClient } from '@/classrooms/model/ClassroomAvailabilityClient';
@@ -20,12 +19,10 @@ import { SpaceClient } from '@/space/model/SpaceClient';
 
 const loadSearchPage = () => import('@/search/SearchPage').then(module => ({ default: module.SearchPage }));
 const loadExamPage = () => import('@/exams/ExamPage').then(module => ({ default: module.ExamPage }));
-const loadRoomsPage = () => import('@/rooms/RoomsPage').then(module => ({ default: module.RoomsPage }));
 const loadTimetablePage = () => import('@/timetable/TimetablePage').then(module => ({ default: module.TimetablePage }));
 const loadClassroomsPage = () => import('@/classrooms/ClassroomsPage').then(module => ({ default: module.ClassroomsPage }));
 const SearchPage = lazy(loadSearchPage);
 const ExamPage = lazy(loadExamPage);
-const RoomsPage = lazy(loadRoomsPage);
 const TimetablePage = lazy(loadTimetablePage);
 const ClassroomsPage = lazy(loadClassroomsPage);
 
@@ -63,19 +60,19 @@ function App() {
         }
         return historyClientPromiseRef.current;
     }, [examClient]);
-    const roomClient = useMemo(() => new RoomOccupancyClient(APP_CONFIG.DATA_URLS.ROOM), []);
+    const examOccupancyClient = useMemo(() => new ExamRoomOccupancyClient(APP_CONFIG.DATA_URLS.ROOM), []);
     const spaceClient = useMemo(() => new SpaceClient(APP_CONFIG.DATA_URLS.SPACE), []);
     const teachingClient = useMemo(() => new TeachingScheduleClient(APP_CONFIG.DATA_URLS.TIMETABLE), []);
-    const classroomClient = useMemo(() => new ClassroomAvailabilityClient(APP_CONFIG.DATA_URLS.CLASSROOMS, roomClient, spaceClient), [roomClient, spaceClient]);
+    const classroomClient = useMemo(() => new ClassroomAvailabilityClient(APP_CONFIG.DATA_URLS.CLASSROOMS, examOccupancyClient, spaceClient), [examOccupancyClient, spaceClient]);
     useEffect(() => () => {
         searchClient.dispose();
         examClient.dispose();
         historyClientRef.current?.dispose();
-        roomClient.dispose();
+        examOccupancyClient.dispose();
         spaceClient.dispose();
         teachingClient.dispose();
         classroomClient.dispose();
-    }, [classroomClient, examClient, roomClient, searchClient, spaceClient, teachingClient]);
+    }, [classroomClient, examClient, examOccupancyClient, searchClient, spaceClient, teachingClient]);
     useEffect(() => {
         if (router.route !== 'exam') return;
         void loadExamHistoryClient()
@@ -117,10 +114,6 @@ function App() {
             void classroomClient.initialize().catch(() => undefined);
             return;
         }
-        void loadRoomsPage();
-        void roomClient.initialize().catch(() => {
-            // RoomsPage presents artifact errors and can retry through navigation.
-        });
     };
 
     return (
@@ -170,31 +163,6 @@ function App() {
                             onOpenClass={(className) => router.onSubmit(className)}
                             client={examClient}
                             historyClient={examHistoryClient}
-                        />
-                    )
-                ) : null}
-
-                {router.route === 'rooms' ? (
-                    !router.rooms.query && !router.rooms.campus && !router.rooms.building && !router.rooms.floor ? (
-                        <RoomsLanding
-                            client={roomClient}
-                            spaceClient={spaceClient}
-                            savedRoom={router.rooms.savedRoom}
-                            onChange={router.navigateRooms}
-                            onSubmit={router.onSubmit}
-                        />
-                    ) : (
-                        <RoomsPage
-                            query={router.rooms.query}
-                            date={router.rooms.date}
-                            campus={router.rooms.campus}
-                            building={router.rooms.building}
-                            floor={router.rooms.floor}
-                            start={router.rooms.start}
-                            end={router.rooms.end}
-                            onChange={router.navigateRooms}
-                            client={roomClient}
-                            spaceClient={spaceClient}
                         />
                     )
                 ) : null}

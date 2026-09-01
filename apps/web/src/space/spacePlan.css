@@ -1,0 +1,12 @@
+.spatial-plan {
+    pointer-events: none;
+}
+
+.dark .spatial-plan {
+    filter: invert(.88) hue-rotate(180deg);
+    opacity: .82;
+}
+
+.spatial-room polygon {
+    fill-opacity: .82;
+}

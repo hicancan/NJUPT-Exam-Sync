@@ -65,3 +65,19 @@ export const fetchArtifactJson = async <T = unknown>(
         throw new Error(`数据文件不是有效 JSON: ${artifact.path}`);
     }
 };
+
+export const fetchArtifactBytes = async (
+    url: string,
+    artifact: ArtifactReference,
+    options: FetchOptions = {},
+): Promise<ArrayBuffer> => {
+    const response = await fetch(url, {
+        cache: options.cache ?? 'default',
+        signal: options.signal,
+    });
+    if (!response.ok) throw new Error(`数据请求失败: ${url} HTTP ${response.status}`);
+    const buffer = await response.arrayBuffer();
+    if (buffer.byteLength !== artifact.bytes) throw new Error(`数据文件大小不匹配: ${artifact.path}`);
+    if (await sha256Hex(buffer) !== artifact.sha256) throw new Error(`数据文件哈希不匹配: ${artifact.path}`);
+    return buffer;
+};

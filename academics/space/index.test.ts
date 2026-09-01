@@ -21,8 +21,10 @@ describe('SpaceSnapshot decoder', () => {
     });
 
     it('rejects open or out-of-range public geometry', () => {
-        const base = { format: 'njupt-space-geometry', source_id: hash('d'), floor_id: 'floor-1', coordinate_system: 'schematic-normalized-image', geometry_accuracy: 'schematic' };
+        const base = { format: 'njupt-space-geometry', source_id: hash('d'), floor_id: 'floor-1', coordinate_system: 'schematic-normalized-image', geometry_accuracy: 'schematic', view_box: [1000, 400], plan: artifact('plans/plan-floor-1.svg') };
         expect(() => parseSpaceGeometry({ ...base, space_units: [{ space_unit_id: 'unit-1', geometry_status: 'reviewed', label_point: [.5, .5], polygon: [[0,0],[1,0],[1,1],[0,1]] }] })).toThrow(SpaceContractError);
         expect(() => parseSpaceGeometry({ ...base, space_units: [{ space_unit_id: 'unit-1', geometry_status: 'reviewed', label_point: [2, .5], polygon: null }] })).toThrow(SpaceContractError);
+        const oldGeometry = { format: base.format, source_id: base.source_id, floor_id: base.floor_id, coordinate_system: base.coordinate_system, geometry_accuracy: base.geometry_accuracy };
+        expect(() => parseSpaceGeometry({ ...oldGeometry, space_units: [] })).toThrow(SpaceContractError);
     });
 });

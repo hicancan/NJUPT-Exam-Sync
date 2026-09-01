@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
 import {
@@ -47,6 +47,7 @@ import {
     parseCampuses,
     parseFloors,
     parseSpaceFamilies,
+    parseSpaceGeometry,
     parseSpaceManifest,
     parseSpaceUnits,
 } from '../academics/space/index.ts';
@@ -69,14 +70,39 @@ function json(root: string, relativePath: string): unknown {
 }
 
 function artifactJson(root: string, artifact: ArtifactReference): unknown {
-    const bytes = readFileSync(path.join(root, artifact.path));
+    const bytes = artifactBytes(root, artifact);
+    return JSON.parse(bytes.toString('utf8')) as unknown;
+}
+
+function artifactBytes(root: string, artifact: ArtifactReference): Buffer {
+    const resolvedRoot = path.resolve(root);
+    const resolved = path.resolve(root, artifact.path);
+    if (!resolved.startsWith(`${resolvedRoot}${path.sep}`)) {
+        throw new Error(`Artifact path escapes its root: ${artifact.path}`);
+    }
+    const bytes = readFileSync(resolved);
     if (
         bytes.byteLength !== artifact.bytes
         || createHash('sha256').update(bytes).digest('hex') !== artifact.sha256
     ) {
         throw new Error(`Artifact identity mismatch: ${artifact.path}`);
     }
-    return JSON.parse(bytes.toString('utf8')) as unknown;
+    return bytes;
+}
+
+function filesUnder(root: string, relative = ''): string[] {
+    return readdirSync(path.join(root, relative), { withFileTypes: true }).flatMap(entry => {
+        const child = relative ? `${relative}/${entry.name}` : entry.name;
+        return entry.isDirectory() ? filesUnder(root, child) : [child];
+    });
+}
+
+function assertExactFiles(root: string, expected: Iterable<string>): void {
+    const expectedPaths = [...new Set(['manifest.json', ...expected])].sort();
+    const actualPaths = filesUnder(root).sort();
+    if (expectedPaths.length !== actualPaths.length || expectedPaths.some((value, index) => value !== actualPaths[index])) {
+        throw new Error(`Artifact file set mismatch in ${root}`);
+    }
 }
 
 const examRoot = argument('--exam');
@@ -93,7 +119,45 @@ const floors = parseFloors(artifactJson(spaceRoot, spaceManifest.artifacts.floor
 const spaceFamilies = parseSpaceFamilies(artifactJson(spaceRoot, spaceManifest.artifacts.space_families), spaceManifest.artifacts.space_families.path);
 const aliases = parseAliases(artifactJson(spaceRoot, spaceManifest.artifacts.aliases), spaceManifest.artifacts.aliases.path);
 const spaceUnits = spaceManifest.artifacts.space_units.flatMap(artifact => parseSpaceUnits(artifactJson(spaceRoot, artifact), artifact.path));
-if (campuses.length !== spaceManifest.campus_count || buildings.length !== spaceManifest.building_count || floors.length !== spaceManifest.floor_count || spaceFamilies.length !== spaceManifest.space_family_count || spaceUnits.length !== spaceManifest.space_unit_count) {
+const geometry = spaceManifest.artifacts.geometry.map(artifact => ({
+    artifact,
+    document: parseSpaceGeometry(artifactJson(spaceRoot, artifact), artifact.path),
+}));
+const floorById = new Map(floors.map(floor => [floor.floor_id, floor]));
+const geometryPaths = new Set<string>();
+const planPaths = new Set<string>();
+let geometryUnitCount = 0;
+for (const { artifact, document: item } of geometry) {
+    const floor = floorById.get(item.floor_id);
+    if (!floor || floor.geometry_path !== artifact.path || item.source_id !== spaceManifest.source_id) {
+        throw new Error(`Space geometry identity mismatch: ${item.floor_id}`);
+    }
+    if (geometryPaths.has(artifact.path) || planPaths.has(item.plan.path)) {
+        throw new Error(`Duplicate Space geometry or plan path: ${item.floor_id}`);
+    }
+    geometryPaths.add(artifact.path);
+    planPaths.add(item.plan.path);
+    geometryUnitCount += item.space_units.filter(unit => unit.polygon !== null).length;
+    artifactBytes(spaceRoot, item.plan);
+}
+for (const floor of floors) {
+    if (floor.geometry_path !== null && !geometryPaths.has(floor.geometry_path)) {
+        throw new Error(`Space floor references missing geometry: ${floor.floor_id}`);
+    }
+}
+assertExactFiles(spaceRoot, [
+    spaceManifest.artifacts.campuses.path,
+    spaceManifest.artifacts.buildings.path,
+    spaceManifest.artifacts.floors.path,
+    spaceManifest.artifacts.space_families.path,
+    ...spaceManifest.artifacts.space_units.map(artifact => artifact.path),
+    spaceManifest.artifacts.aliases.path,
+    spaceManifest.artifacts.connectors.path,
+    ...spaceManifest.artifacts.geometry.map(artifact => artifact.path),
+    ...geometry.map(item => item.document.plan.path),
+    spaceManifest.artifacts.audit.path,
+]);
+if (campuses.length !== spaceManifest.campus_count || buildings.length !== spaceManifest.building_count || floors.length !== spaceManifest.floor_count || spaceFamilies.length !== spaceManifest.space_family_count || spaceUnits.length !== spaceManifest.space_unit_count || geometryUnitCount !== spaceManifest.geometry_unit_count) {
     throw new Error('SpaceSnapshot counts do not match its manifest');
 }
 const manifest = parseExamSnapshotManifest(json(examRoot, 'manifest.json'));

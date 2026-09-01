@@ -1,8 +1,8 @@
-import { Building2, CalendarDays, Download, FileText, GraduationCap, Shuffle, Trophy, Waypoints } from 'lucide-react';
+import { Building2, CalendarDays, Download, FileText, GraduationCap, Shuffle, Trophy } from 'lucide-react';
+import type { ProductIntent } from '@/app/routing/intents';
 import { QUICK_SEARCHES, QuickSearchIcon } from './searchPresets';
 import { ThemeToggle } from '@/shared/ui/ThemeToggle';
 import { SearchInput } from '@/shared/ui/SearchInput';
-import type { ProductIntent } from '@/app/routing/intents';
 import { resolveQuickIntent } from '@/app/routing/routeContract';
 import { buildPath } from '@/app/routing/useUrlState';
 
@@ -12,7 +12,6 @@ const QUICK_SEARCH_ICONS: Record<QuickSearchIcon, typeof CalendarDays> = {
     calendar: CalendarDays,
     shuffle: Shuffle,
     download: Download,
-    waypoints: Waypoints,
     trophy: Trophy,
     'file-text': FileText,
 };

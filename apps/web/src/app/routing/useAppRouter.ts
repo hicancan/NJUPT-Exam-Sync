@@ -3,7 +3,6 @@ import { useUrlState } from './useUrlState';
 import type { ProductIntent } from './intents';
 import {
     parseSavedClass,
-    parseSavedRoomRoute,
     resolveQuickIntent,
     resolveRouteSubmission,
     resolveSubmission,
@@ -11,17 +10,6 @@ import {
 
 const SAVED_CLASS_KEY = 'SAVED_CLASS';
 const SAVED_TIMETABLE_CLASS_KEY = 'SAVED_TIMETABLE_CLASS';
-const SAVED_ROOM_KEY = 'SAVED_ROOM_TARGET';
-
-const saveRoomParams = (params: Record<string, string | null>): void => {
-    if (params.room) {
-        localStorage.setItem(SAVED_ROOM_KEY, JSON.stringify({ room: params.room }));
-        return;
-    }
-    if (params.building) {
-        localStorage.setItem(SAVED_ROOM_KEY, JSON.stringify({ campus: params.campus || null, building: params.building }));
-    }
-};
 
 export function useAppRouter() {
     const url = useUrlState();
@@ -29,13 +17,10 @@ export function useAppRouter() {
         route,
         qParam,
         classParam,
-        roomQuery,
         dateParam,
         campusParam,
         buildingParam,
         floorParam,
-        startParam,
-        endParam,
         weekParam,
         weekdayParam,
         periodParam,
@@ -44,11 +29,10 @@ export function useAppRouter() {
     const routeInput = useMemo(() => {
         if (route === 'exam') return classParam || qParam || '';
         if (route === 'timetable') return classParam || qParam || '';
-        if (route === 'rooms') return roomQuery || buildingParam || '';
         if (route === 'search') return qParam || '';
         if (route === 'classrooms') return qParam || buildingParam || floorParam || '';
         return '';
-    }, [buildingParam, classParam, floorParam, qParam, roomQuery, route]);
+    }, [buildingParam, classParam, floorParam, qParam, route]);
     const [inputDraft, setInputDraft] = useState(() => ({ routeInput, value: routeInput }));
     const inputValue = inputDraft.routeInput === routeInput ? inputDraft.value : routeInput;
     const onInputChange = useCallback((value: string) => {
@@ -56,7 +40,6 @@ export function useAppRouter() {
     }, [routeInput]);
     const savedClass = parseSavedClass(localStorage.getItem(SAVED_CLASS_KEY));
     const savedTimetableClass = parseSavedClass(localStorage.getItem(SAVED_TIMETABLE_CLASS_KEY));
-    const savedRoom = parseSavedRoomRoute(localStorage.getItem(SAVED_ROOM_KEY));
 
     const submit = useCallback((value: string) => {
         const destination = route === 'home' ? resolveSubmission(value) : resolveRouteSubmission(route, value);
@@ -69,7 +52,6 @@ export function useAppRouter() {
                 className,
             );
         }
-        if (destination.route === 'rooms' && destination.params) saveRoomParams(destination.params);
         navigate(destination);
     }, [navigate, route]);
 
@@ -77,10 +59,6 @@ export function useAppRouter() {
         navigate(resolveQuickIntent(intent));
     }, [navigate]);
 
-    const navigateRooms = useCallback((params: Record<string, string | null>, replace = false) => {
-        saveRoomParams(params);
-        navigate({ route: 'rooms', params }, replace);
-    }, [navigate]);
     const navigateTimetable = useCallback((params: Record<string, string | null>, replace = false) => {
         if (params.class) localStorage.setItem(SAVED_TIMETABLE_CLASS_KEY, params.class);
         navigate({ route: 'timetable', params }, replace);
@@ -115,17 +93,6 @@ export function useAppRouter() {
             building: buildingParam,
             floor: floorParam,
         },
-        rooms: {
-            query: roomQuery || '',
-            date: dateParam,
-            campus: campusParam,
-            building: buildingParam,
-            floor: floorParam,
-            start: startParam,
-            end: endParam,
-            savedRoom,
-        },
-        navigateRooms,
         navigateTimetable,
         navigateClassrooms,
     };

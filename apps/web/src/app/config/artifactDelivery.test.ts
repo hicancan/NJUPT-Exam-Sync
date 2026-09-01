@@ -20,6 +20,13 @@ describe('academic artifact delivery rules', () => {
         expect(cacheControl('/generated/exam/manifest.json')).toBe('no-cache, max-age=0, must-revalidate');
         expect(cacheControl('/generated/exam/history/manifest.json')).toBe('no-cache, max-age=0, must-revalidate');
         expect(cacheControl('/generated/rooms/manifest.json')).toBe('no-cache, max-age=0, must-revalidate');
+
+        const ruleIndex = (source: string) => config.headers.findIndex(rule => rule.source === source);
+        for (const domain of ['search', 'rooms', 'timetable', 'classrooms', 'space']) {
+            expect(ruleIndex(`/generated/${domain}/manifest.json`)).toBeLessThan(ruleIndex(`/generated/${domain}/*`));
+        }
+        expect(ruleIndex('/generated/exam/manifest.json')).toBeLessThan(ruleIndex('/generated/exam/*'));
+        expect(ruleIndex('/generated/exam/history/manifest.json')).toBeLessThan(ruleIndex('/generated/exam/*'));
     });
 
     it('does not make transient asset failures immutable', () => {

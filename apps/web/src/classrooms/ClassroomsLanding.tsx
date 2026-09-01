@@ -39,8 +39,8 @@ export function ClassroomsLanding({ client, onChange, query = '' }: ClassroomsLa
             <section className="mx-auto max-w-2xl rounded-2xl border border-[#dadce0] bg-white px-5 py-8 dark:border-[#3c4043] dark:bg-[#292a2d] sm:px-9 sm:py-10">
                 <div className="text-center">
                     <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#e8f0fe] text-[#1967d2] dark:bg-[#23334d] dark:text-[#8ab4f8]"><Building2 className="h-7 w-7" aria-hidden="true" /></span>
-                    <h1 className="mt-5 text-3xl font-semibold tracking-tight">查询空教室</h1>
-                    <p className="mt-3 text-[15px] leading-7 text-[#5f6368] dark:text-[#bdc1c6]">选择周次和节次，查看课程与考试数据中没有发现占用的教室。</p>
+                    <h1 className="mt-5 text-3xl font-semibold tracking-tight">教室空间</h1>
+                    <p className="mt-3 text-[15px] leading-7 text-[#5f6368] dark:text-[#bdc1c6]">在同一个空间视图中查看空教室、课程占用和考试占用。</p>
                 </div>
                 <form className="mt-7 grid gap-4 sm:grid-cols-2" onSubmit={event => {
                     event.preventDefault();

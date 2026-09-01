@@ -17,7 +17,7 @@ const artifactUrl = (baseUrl: string, occupancyId: string, artifact: RoomArtifac
     return `${path}${separator}sha256=${artifact.sha256}`;
 };
 
-export class RoomOccupancyClient {
+export class ExamRoomOccupancyClient {
     readonly #baseUrl: string;
     #manifest: RoomOccupancy | null = null;
     #manifestPromise: Promise<RoomOccupancy> | null = null;
@@ -134,6 +134,6 @@ export class RoomOccupancyClient {
     }
 
     #assertUsable(): void {
-        if (this.#disposed) throw new Error('RoomOccupancyClient has been disposed');
+        if (this.#disposed) throw new Error('ExamRoomOccupancyClient has been disposed');
     }
 }

@@ -9,6 +9,7 @@ from .build import build_space_snapshot
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build the current authoritative SpaceSnapshot")
     parser.add_argument("--reviewed-geometry", required=True, type=Path)
+    parser.add_argument("--reconstruction", required=True, type=Path)
     parser.add_argument("--teaching-source", required=True, type=Path)
     parser.add_argument("--exam-snapshot", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
@@ -16,6 +17,7 @@ def main() -> None:
     manifest = build_space_snapshot(
         output_dir=arguments.output,
         reviewed_geometry_path=arguments.reviewed_geometry,
+        reconstruction_path=arguments.reconstruction,
         teaching_source_path=arguments.teaching_source,
         exam_snapshot_path=arguments.exam_snapshot,
     )

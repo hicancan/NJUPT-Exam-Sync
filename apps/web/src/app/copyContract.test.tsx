@@ -117,10 +117,10 @@ describe('product copy contract', () => {
         const homeHead = renderPageHead(resolvePageSeo('home'));
 
         expect(manifest.lang).toBe('zh-CN');
-        expect(manifest.description).toBe('搜索南邮通知，查询考试安排和考试教室。');
+        expect(manifest.description).toBe('搜索南邮通知，查询班级课表、考试安排和教室空间。');
         expect(indexTemplate).toContain('<!-- njupt-seo:head -->');
         expect(homeHead).toContain('njupt-search｜南邮校园信息搜索');
-        expect(homeHead).toContain('搜索南京邮电大学各网站的通知、附件和办事信息，查询班级考试安排与考试教室。');
+        expect(homeHead).toContain('搜索南京邮电大学各网站的通知、附件和办事信息，查询班级课表、考试安排与教室空间。');
         expect(homeHead).not.toContain('meta name="keywords"');
         expect(homeHead).not.toContain('南邮通知、考试安排和考试教室，都可以直接查。');
     });
@@ -128,10 +128,10 @@ describe('product copy contract', () => {
     it('keeps stable products indexable and query states out of the index', () => {
         expect(resolvePageSeo('home')).toMatchObject({ indexable: true, canonical: 'https://njupt.hicancan.top/' });
         expect(resolvePageSeo('exam')).toMatchObject({ indexable: true, canonical: 'https://njupt.hicancan.top/exam' });
-        expect(resolvePageSeo('rooms')).toMatchObject({ indexable: true, canonical: 'https://njupt.hicancan.top/rooms' });
+        expect(resolvePageSeo('classrooms')).toMatchObject({ indexable: true, canonical: 'https://njupt.hicancan.top/classrooms' });
         expect(resolvePageSeo('search')).toMatchObject({ indexable: true, canonical: 'https://njupt.hicancan.top/search' });
         expect(resolvePageSeo('exam', true)).toMatchObject({ indexable: false, canonical: null });
-        expect(resolvePageSeo('rooms', true)).toMatchObject({ indexable: false, canonical: null });
+        expect(resolvePageSeo('classrooms', true)).toMatchObject({ indexable: false, canonical: null });
         expect(resolvePageSeo('search', true)).toMatchObject({ indexable: false, canonical: null });
 
         const homeHead = renderPageHead(resolvePageSeo('home'));

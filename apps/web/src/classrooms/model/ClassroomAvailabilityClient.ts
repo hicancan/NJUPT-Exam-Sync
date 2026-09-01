@@ -12,7 +12,7 @@ import type {
 import type { RoomBooking } from '@njupt-search/academics-room';
 import { fetchArtifactJson, fetchJson } from '@/shared/lib/fetch';
 import { forwardAbort, waitForAbort } from '@/shared/lib/abort';
-import type { RoomOccupancyClient } from '@/rooms/model/RoomOccupancyClient';
+import type { ExamRoomOccupancyClient } from './ExamRoomOccupancyClient';
 import type { SpaceClient, SpaceFamilyView, SpaceIndex } from '@/space/model/SpaceClient';
 
 export interface ClassroomQuery {
@@ -72,7 +72,7 @@ export const resolveClassroomMoment = (
 
 export class ClassroomAvailabilityClient {
     readonly #baseUrl: string;
-    readonly #examRooms: RoomOccupancyClient;
+    readonly #examRooms: ExamRoomOccupancyClient;
     readonly #space: SpaceClient;
     #index: ClassroomIndex | null = null;
     #indexPromise: Promise<ClassroomIndex> | null = null;
@@ -81,7 +81,7 @@ export class ClassroomAvailabilityClient {
     #dayCache = new Map<string, TeachingRoomDay>();
     #disposed = false;
 
-    constructor(baseUrl: string, examRooms: RoomOccupancyClient, space: SpaceClient) {
+    constructor(baseUrl: string, examRooms: ExamRoomOccupancyClient, space: SpaceClient) {
         this.#baseUrl = baseUrl.replace(/\/+$/, '');
         this.#examRooms = examRooms;
         this.#space = space;
@@ -126,7 +126,7 @@ export class ClassroomAvailabilityClient {
                 this.#examRooms.initialize(controller.signal),
             ]);
             const { manifest, space } = index;
-            if (manifest.exam_snapshot_id !== examManifest.exam_snapshot_id) throw new Error('课程与考试教室数据没有使用同一考试版本');
+            if (manifest.exam_snapshot_id !== examManifest.exam_snapshot_id) throw new Error('课程占用与考试占用没有使用同一考试版本');
             if (manifest.space_snapshot_id !== examManifest.space_snapshot_id) throw new Error('课程与考试占用没有使用同一空间版本');
             const moment = resolveClassroomMoment(manifest.weeks, query);
             const { date, weekday } = moment;

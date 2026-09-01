@@ -3,20 +3,15 @@ import { Header } from '@/app/shell/Header';
 import { ExamLanding } from '@/exams/ExamLanding';
 import type { ExamSnapshotClient } from '@/exams/model/ExamSnapshotClient';
 import { HomePage } from '@/home/HomePage';
-import { RoomsLanding } from '@/rooms/RoomsLanding';
-import type { RoomOccupancyClient } from '@/rooms/model/RoomOccupancyClient';
 import type { AppRoute } from '@/app/routing/useUrlState';
 import { SearchLanding } from '@/search/SearchLanding';
 import { TimetableLanding } from '@/timetable/TimetableLanding';
 import type { TeachingScheduleClient } from '@/timetable/model/TeachingScheduleClient';
 import { ClassroomsLanding } from '@/classrooms/ClassroomsLanding';
 import type { ClassroomAvailabilityClient } from '@/classrooms/model/ClassroomAvailabilityClient';
-import type { SpaceClient } from '@/space/model/SpaceClient';
 
 const never = new Promise<never>(() => undefined);
 const examClient = { initialize: () => never } as unknown as ExamSnapshotClient;
-const roomClient = { initialize: () => never } as unknown as RoomOccupancyClient;
-const spaceClient = { initialize: () => never } as unknown as SpaceClient;
 const teachingClient = { initialize: () => never } as unknown as TeachingScheduleClient;
 const classroomClient = { initialize: () => never } as unknown as ClassroomAvailabilityClient;
 const noop = () => undefined;
@@ -48,15 +43,6 @@ export function StaticRoutePage({ route }: { route: AppRoute }) {
                     onOpenClass={noop}
                     client={examClient}
             historyClient={null}
-                />
-            ) : null}
-            {route === 'rooms' ? (
-                <RoomsLanding
-                    client={roomClient}
-                    spaceClient={spaceClient}
-                    savedRoom={null}
-                    onChange={noop}
-                    onSubmit={noop}
                 />
             ) : null}
             {route === 'search' ? <SearchLanding /> : null}

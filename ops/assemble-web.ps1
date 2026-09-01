@@ -172,6 +172,14 @@ Copy-ContentAddressedArtifact `
 
 $roomManifest = Get-Content -LiteralPath (Join-Path $roomOccupancy 'manifest.json') -Raw | ConvertFrom-Json
 $spaceManifest = Get-Content -LiteralPath (Join-Path $spaceSnapshot 'manifest.json') -Raw | ConvertFrom-Json
+$spacePlanPaths = @($spaceManifest.artifacts.geometry | ForEach-Object {
+    $geometryPath = Resolve-SafeArtifactPath -Root $spaceSnapshot -RelativePath $_.path
+    $geometry = Get-Content -LiteralPath $geometryPath -Raw | ConvertFrom-Json
+    if ($geometry.plan.path -notmatch '^plans/plan-[a-z0-9-]+\.svg$') {
+        throw "Space geometry declares an invalid plan path: $($geometry.plan.path)"
+    }
+    $geometry.plan.path
+})
 $spaceArtifactPaths = @(
     $spaceManifest.artifacts.campuses.path
     $spaceManifest.artifacts.buildings.path
@@ -181,6 +189,7 @@ $spaceArtifactPaths = @(
     $spaceManifest.artifacts.aliases.path
     $spaceManifest.artifacts.connectors.path
     $spaceManifest.artifacts.geometry | ForEach-Object { $_.path }
+    $spacePlanPaths
     $spaceManifest.artifacts.audit.path
 )
 Copy-ContentAddressedArtifact `
