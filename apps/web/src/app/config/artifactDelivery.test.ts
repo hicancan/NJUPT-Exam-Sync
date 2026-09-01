@@ -21,4 +21,15 @@ describe('academic artifact delivery rules', () => {
         expect(cacheControl('/generated/exam/history/manifest.json')).toBe('no-cache, max-age=0, must-revalidate');
         expect(cacheControl('/generated/rooms/manifest.json')).toBe('no-cache, max-age=0, must-revalidate');
     });
+
+    it('does not make transient asset failures immutable', () => {
+        const configPath = fileURLToPath(new URL('../../../public/edgeone.json', import.meta.url));
+        const config = JSON.parse(readFileSync(configPath, 'utf8')) as { headers: HeaderRule[] };
+        const cacheControl = (source: string) => config.headers
+            .find(rule => rule.source === source)
+            ?.headers.find(header => header.key.toLowerCase() === 'cache-control')?.value;
+
+        expect(cacheControl('/*')).toBeUndefined();
+        expect(cacheControl('/assets/*')).toBeUndefined();
+    });
 });

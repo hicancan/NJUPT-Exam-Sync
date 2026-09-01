@@ -140,6 +140,11 @@ for (const rewrite of rewrites) {
 }
 assert(!rewrites.some(rewrite => rewrite.source.includes('*')), 'edgeone.json: catch-all page fallback found');
 assert(!(edgeone.headers ?? []).some(rule => rule.source === '/search'), 'edgeone.json: stable search landing must not be noindex');
+const cacheControl = source => (edgeone.headers ?? [])
+    .find(rule => rule.source === source)?.headers
+    .find(header => header.key.toLowerCase() === 'cache-control')?.value;
+assert(cacheControl('/*') === undefined, 'edgeone.json: global cache override can make error responses sticky');
+assert(cacheControl('/assets/*') === undefined, 'edgeone.json: asset wildcard cache can make transient 404 responses immutable');
 for (const source of ['/generated/search/*', '/generated/exam/*', '/generated/rooms/*', '/generated/timetable/*', '/generated/classrooms/*', '/generated/space/*']) {
     const headers = (edgeone.headers ?? []).find(rule => rule.source === source)?.headers ?? [];
     assert(headers.some(header => header.key === 'X-Robots-Tag' && header.value === 'noindex, nofollow'), `edgeone.json: ${source} robots header is missing`);

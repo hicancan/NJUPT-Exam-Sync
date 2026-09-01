@@ -21,6 +21,9 @@
     html {
         overflow-y: scroll;
     }
+    body {
+        text-rendering: optimizeLegibility;
+    }
     * {
         scrollbar-width: thin;
         scrollbar-color: #cbd5e1 transparent;

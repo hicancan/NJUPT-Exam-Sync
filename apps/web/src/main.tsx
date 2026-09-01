@@ -8,6 +8,8 @@ if (!rootElement) {
   throw new Error("Failed to find the root element")
 }
 
+rootElement.dataset.clientRuntime = 'ready'
+
 createRoot(rootElement).render(
   <StrictMode>
     <App />
