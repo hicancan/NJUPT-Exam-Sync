@@ -275,6 +275,6 @@ describe("product copy contract", () => {
     expect(classrooms).toContain("详情时间轴");
     expect(classrooms).toContain("课程安排");
     expect(classrooms).toContain("全部时间");
-    expect(classrooms).toContain("当天空闲。");
+    expect(classrooms).toContain("所选时间点空闲。");
   });
 });
