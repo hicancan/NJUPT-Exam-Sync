@@ -125,7 +125,7 @@ export function SpatialViewport({
     };
 
     return (
-        <section className="spatial-shell" aria-label={`${locationLabel}${floorLevel}楼空间图`}>
+        <section className="spatial-shell" aria-label={`${locationLabel} · ${floorLevel}楼空间图`}>
             <header className="spatial-header">
                 <div><p>{locationLabel}</p><h2>{floorLevel}楼空间图</h2></div>
                 <div className="spatial-zoom" aria-label="空间图缩放">
@@ -143,7 +143,7 @@ export function SpatialViewport({
                             viewBox={`0 0 ${viewWidth} ${viewHeight}`}
                             preserveAspectRatio="xMidYMid meet"
                             role="img"
-                            aria-label={`${buildingName}${floorLevel}楼教室分布`}
+                            aria-label={`${buildingName} ${floorLevel}楼教室分布`}
                             onPointerDown={event => { if ((event.target as Element).closest('.spatial-room')) return; event.currentTarget.setPointerCapture(event.pointerId); setDrag({ x: event.clientX, y: event.clientY, panX: pan.x, panY: pan.y }); }}
                             onPointerMove={event => { if (!drag) return; setPan({ x: drag.panX + (event.clientX - drag.x) / zoom, y: drag.panY + (event.clientY - drag.y) / zoom }); }}
                             onPointerUp={() => setDrag(null)}
