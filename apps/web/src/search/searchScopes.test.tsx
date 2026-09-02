@@ -3,10 +3,61 @@ import { describe, expect, it } from 'vitest';
 import { Header } from '@/app/shell/Header';
 import { SearchSection } from './ui/SearchSection';
 import { SEARCH_SCOPES } from './searchScopes';
+import { buildScopedFilterOptions } from './scopedFilterOptions';
 
 const noop = () => undefined;
+const communitySourceId = SEARCH_SCOPES.community.sourceId;
+const materialsSourceId = SEARCH_SCOPES.materials.sourceId;
+if (!communitySourceId || !materialsSourceId) {
+    throw new Error('repository search scopes must pin a source');
+}
 
 describe('route-owned search scopes', () => {
+    it('uses source-local facet counts for repository routes', () => {
+        const options = buildScopedFilterOptions({
+            sources: [
+                { id: 'site', label: '网站', count: 1000 },
+                { id: communitySourceId, label: '南邮生存手册', count: 67 },
+            ],
+            facets: [
+                { id: 'notice_article', label: 'notice_article', count: 900 },
+                { id: 'workflow', label: 'workflow', count: 682 },
+            ],
+            facetsBySource: {
+                site: [{ id: 'notice_article', label: 'notice_article', count: 900 }],
+                [communitySourceId]: [
+                    { id: 'notice_article', label: 'notice_article', count: 12 },
+                    { id: 'workflow', label: 'workflow', count: 55 },
+                ],
+            },
+        }, SEARCH_SCOPES.community, { sourceId: SEARCH_SCOPES.community.sourceId });
+
+        expect(options?.facets).toEqual([
+            { id: 'notice_article', label: 'notice_article', count: 12 },
+            { id: 'workflow', label: 'workflow', count: 55 },
+        ]);
+    });
+
+    it('aggregates only visible website sources', () => {
+        const options = buildScopedFilterOptions({
+            sources: [
+                { id: 'site-a', label: '网站A', count: 10 },
+                { id: communitySourceId, label: '社区', count: 20 },
+                { id: materialsSourceId, label: '资料', count: 30 },
+            ],
+            facets: [],
+            facetsBySource: {
+                'site-a': [{ id: 'news', label: 'news', count: 10 }],
+                [communitySourceId]: [{ id: 'notice_article', label: 'notice_article', count: 20 }],
+                [materialsSourceId]: [{ id: 'download', label: 'download', count: 30 }],
+            },
+        }, SEARCH_SCOPES.search, {});
+
+        expect(options?.facets).toEqual([
+            { id: 'news', label: 'news', count: 10 },
+        ]);
+    });
+
     it('gives every search route its own accessible header meaning', () => {
         const community = renderToStaticMarkup(
             <Header inputValue="" onInputChange={noop} onSubmit={noop} onGoHome={noop} route="community" />,

@@ -187,6 +187,29 @@ fn compiles_and_queries_the_current_bundle_contract() {
 }
 
 #[test]
+fn filter_options_keep_facet_counts_scoped_to_each_source() {
+    let bundle = compile_search_bundle(documents(), &"a".repeat(64)).expect("compile");
+    let options = engine(&bundle).filter_options();
+
+    let jwc = options.facets_by_source.get("jwc").expect("jwc facets");
+    let www = options.facets_by_source.get("www").expect("www facets");
+    assert_eq!(jwc.iter().map(|facet| facet.count).sum::<usize>(), 2);
+    assert_eq!(www.iter().map(|facet| facet.count).sum::<usize>(), 1);
+    assert_eq!(
+        options
+            .facets
+            .iter()
+            .map(|facet| facet.count)
+            .sum::<usize>(),
+        3
+    );
+
+    let json = serde_json::to_value(&options).expect("filter options JSON");
+    assert!(json.get("facetsBySource").is_some());
+    assert!(json.get("facets_by_source").is_none());
+}
+
+#[test]
 fn one_query_plan_keeps_exact_order_while_snippets_are_hydrated() {
     let bundle = compile_search_bundle(documents(), &"a".repeat(64)).expect("compile");
     let mut engine = engine(&bundle);

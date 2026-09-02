@@ -13,7 +13,7 @@ vi.mock('../wasm/njupt_search_wasm.js', () => ({
     default: vi.fn().mockResolvedValue(undefined),
     SearchEngine: class {
         document_count() { return 2; }
-        filter_options() { return JSON.stringify({ sources: [], facets: [] }); }
+        filter_options() { return JSON.stringify({ sources: [], facets: [], facetsBySource: {} }); }
         begin_search() { return JSON.stringify([0]); }
         load_postings_chunk(...args: unknown[]) { engine.loadedPostings(...args); }
         prepare_search() {

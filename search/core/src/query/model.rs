@@ -92,7 +92,12 @@ pub struct FilterOption {
 }
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FilterOptions {
     pub sources: Vec<FilterOption>,
     pub facets: Vec<FilterOption>,
+    /// Facet counts scoped to each source. The UI uses these counts when a
+    /// route pins or selects a source so it never presents whole-corpus
+    /// counts beside a source-local result set.
+    pub facets_by_source: std::collections::BTreeMap<String, Vec<FilterOption>>,
 }

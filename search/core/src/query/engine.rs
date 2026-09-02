@@ -218,11 +218,17 @@ impl SearchEngine {
     pub fn filter_options(&self) -> FilterOptions {
         let mut sources: BTreeMap<(String, String), usize> = BTreeMap::new();
         let mut facets: BTreeMap<_, usize> = BTreeMap::new();
+        let mut facets_by_source: BTreeMap<String, BTreeMap<_, usize>> = BTreeMap::new();
         for document in &self.documents {
             *sources
                 .entry((document.source.clone(), document.source_name.clone()))
                 .or_default() += 1;
             *facets.entry(document.facet).or_default() += 1;
+            *facets_by_source
+                .entry(document.source.clone())
+                .or_default()
+                .entry(document.facet)
+                .or_default() += 1;
         }
         FilterOptions {
             sources: sources
@@ -242,6 +248,27 @@ impl SearchEngine {
                         id,
                         count,
                     }
+                })
+                .collect(),
+            facets_by_source: facets_by_source
+                .into_iter()
+                .map(|(source, source_facets)| {
+                    let options = source_facets
+                        .into_iter()
+                        .map(|(facet, count)| {
+                            let id = serde_json::to_value(facet)
+                                .expect("facet serialization")
+                                .as_str()
+                                .expect("facet string")
+                                .to_string();
+                            FilterOption {
+                                label: id.clone(),
+                                id,
+                                count,
+                            }
+                        })
+                        .collect();
+                    (source, options)
                 })
                 .collect(),
         }

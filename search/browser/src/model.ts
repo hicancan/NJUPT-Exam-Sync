@@ -62,4 +62,5 @@ export interface FilterOption {
 export interface FilterOptions {
     sources: FilterOption[];
     facets: FilterOption[];
+    facetsBySource: Record<string, FilterOption[]>;
 }

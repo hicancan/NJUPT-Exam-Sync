@@ -44,7 +44,7 @@ describe('SearchClient', () => {
             type: 'ready',
             bundleId: 'a'.repeat(64),
             documentCount: 12,
-            filterOptions: { sources: [], facets: [] },
+            filterOptions: { sources: [], facets: [], facetsBySource: {} },
         });
         await ready;
         const onUpdate = vi.fn();
@@ -95,7 +95,7 @@ describe('SearchClient', () => {
             type: 'ready',
             bundleId: 'a'.repeat(64),
             documentCount: 12,
-            filterOptions: { sources: [], facets: [] },
+            filterOptions: { sources: [], facets: [], facetsBySource: {} },
         });
         await expect(ready).resolves.toMatchObject({ documentCount: 12 });
 
@@ -170,7 +170,7 @@ describe('SearchClient', () => {
             type: 'ready',
             bundleId: 'a'.repeat(64),
             documentCount: 12,
-            filterOptions: { sources: [], facets: [] },
+            filterOptions: { sources: [], facets: [], facetsBySource: {} },
         });
         await firstReady;
 
@@ -197,7 +197,7 @@ describe('SearchClient', () => {
             type: 'ready',
             bundleId: 'b'.repeat(64),
             documentCount: 13,
-            filterOptions: { sources: [], facets: [] },
+            filterOptions: { sources: [], facets: [], facetsBySource: {} },
         });
         await expect(secondReady).resolves.toMatchObject({
             bundleId: 'b'.repeat(64),

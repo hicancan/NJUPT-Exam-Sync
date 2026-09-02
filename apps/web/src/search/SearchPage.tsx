@@ -11,6 +11,7 @@ import {
 } from './ui/searchLabels';
 import { SearchLanding } from './SearchLanding';
 import type { SearchScope } from './searchScopes';
+import { buildScopedFilterOptions } from './scopedFilterOptions';
 
 interface SearchPageProps {
     query: string;
@@ -74,14 +75,11 @@ export function SearchPage({ query, client, scope, onScopeChange }: SearchPagePr
         );
     }
 
-    const scopedSource = scope.sourceId
-        ? filterOptions?.sources.find(source => source.id === scope.sourceId)
+    const scopedSourceId = scope.sourceId ?? filters.sourceId;
+    const scopedSource = scopedSourceId
+        ? filterOptions?.sources.find(source => source.id === scopedSourceId)
         : null;
-    const excludedSources = new Set(scope.excludedSourceIds ?? []);
-    const scopedFilterOptions = filterOptions ? {
-        ...filterOptions,
-        sources: filterOptions.sources.filter(source => !excludedSources.has(source.id)),
-    } : null;
+    const scopedFilterOptions = buildScopedFilterOptions(filterOptions, scope, filters);
     const scopedDocumentCount = scopedSource?.count
         ?? scopedFilterOptions?.sources.reduce((sum, source) => sum + source.count, 0)
         ?? documentCount;
