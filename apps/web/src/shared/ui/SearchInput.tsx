@@ -104,6 +104,11 @@ export function SearchInput({
                 placeholder={placeholder || dynamicPlaceholder}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+                    e.preventDefault();
+                    onSubmit?.(value);
+                }}
                 onFocus={() => {
                     if (!programmaticFocusRef.current) onUserFocus?.();
                 }}
