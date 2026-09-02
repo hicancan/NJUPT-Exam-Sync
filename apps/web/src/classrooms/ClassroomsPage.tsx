@@ -74,6 +74,10 @@ export function ClassroomsPage({
     result: ClassroomRoomDaySchedule | null;
     error: string | null;
   }>({ key: "", result: null, error: null });
+  const [detailSelection, setDetailSelection] = useState<{
+    key: string;
+    period: number | null;
+  }>({ key: "", period: null });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -174,13 +178,17 @@ export function ClassroomsPage({
         setRoomDayState({
           key: roomDayKey,
           result: null,
-          error: reason instanceof Error ? reason.message : "教室全天安排加载失败",
+          error: reason instanceof Error ? reason.message : "教室安排加载失败",
         });
       });
     return () => controller.abort();
   }, [activeFloor, client, resolvedDate, room, roomDayKey]);
   const roomDay = roomDayState.key === roomDayKey ? roomDayState.result : null;
   const roomDayError = roomDayState.key === roomDayKey ? roomDayState.error : null;
+  const detailPeriod =
+    detailSelection.key === roomDayKey ? detailSelection.period : null;
+  const setDetailPeriod = (nextPeriod: number | null) =>
+    setDetailSelection({ key: roomDayKey, period: nextPeriod });
   const update = (next: Record<string, string | null>) =>
     onChange({
       date,
@@ -517,13 +525,34 @@ export function ClassroomsPage({
                   onSelectedFamilyChange={(nextRoom) =>
                     update({ room: nextRoom })
                   }
-                  detail={(roomView) => (
+                  detail={(roomView) => {
+                    const focusPeriod = detailPeriod ?? period;
+                    const visibleTeaching = roomDay
+                      ? roomDay.teaching.filter(
+                          (item) =>
+                            detailPeriod === null ||
+                            (item.start_period <= detailPeriod &&
+                              item.end_period >= detailPeriod),
+                        )
+                      : [];
+                    const visibleExams = roomDay
+                      ? roomDay.exams.filter(
+                          (item) =>
+                            detailPeriod === null ||
+                            examOccupiesPeriod(
+                              item.start_timestamp,
+                              item.end_timestamp,
+                              detailPeriod,
+                            ),
+                        )
+                      : [];
+                    return (
                     <section className="mt-6">
                       <div className="flex items-end justify-between gap-3">
                         <div>
-                          <h3 className="font-semibold">当天完整安排</h3>
+                          <h3 className="font-semibold">课程安排</h3>
                           <p className="mt-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">
-                            {result.date} · 当前查看第 {period} 节
+                            {result.date} · {detailPeriod === null ? "全部时间" : `第 ${detailPeriod} 节`}
                           </p>
                         </div>
                         <span className={`rounded-full px-2.5 py-1 text-xs ${STATE_BADGE_CLASS[roomState(roomView.family.space_family_id)]}`}>
@@ -537,11 +566,42 @@ export function ClassroomsPage({
                         <p className="mt-4 rounded-xl bg-[#fce8e6] p-3 text-sm text-[#8c1d18] dark:bg-[#3c2020] dark:text-[#f2b8b5]">{roomDayError}</p>
                       ) : null}
                       {roomDay ? (
+                        <>
+                        <div className="mt-4 rounded-xl border border-[#dadce0] p-3 dark:border-[#3c4043]" aria-label="详情时间轴">
+                          <div className="flex items-center justify-between text-xs text-[#5f6368] dark:text-[#bdc1c6]">
+                            <span>选择时间点</span>
+                            <span>{detailPeriod === null ? "全部时间" : `第 ${detailPeriod} 节`}</span>
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setDetailPeriod(null)}
+                              className={`rounded-full px-2.5 py-1 text-xs transition ${detailPeriod === null ? "bg-[#1a73e8] text-white" : "bg-[#f1f3f4] text-[#3c4043] dark:bg-[#3c4043] dark:text-[#e8eaed]"}`}
+                            >
+                              全部
+                            </button>
+                            {Array.from({ length: 12 }, (_, indexValue) => {
+                              const point = indexValue + 1;
+                              const state = roomDayPeriodState(point);
+                              return (
+                                <button
+                                  key={point}
+                                  type="button"
+                                  onClick={() => setDetailPeriod(point)}
+                                  className={`flex h-7 w-7 items-center justify-center rounded-full text-xs transition ${STATE_BADGE_CLASS[state]} ${detailPeriod === point ? "ring-2 ring-[#1a73e8] ring-offset-1 dark:ring-offset-[#292a2d]" : ""}`}
+                                  aria-label={`第 ${point} 节，${STATE_LABEL[state]}`}
+                                >
+                                  {point}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
                         <div className="mt-4 grid gap-3">
-                          {roomDay.teaching.map((item) => {
+                          {visibleTeaching.map((item) => {
                             const startTime = index?.manifest.periods.find((entry) => entry.period === item.start_period)?.start_time;
                             const endTime = index?.manifest.periods.find((entry) => entry.period === item.end_period)?.end_time;
-                            const active = item.start_period <= period && item.end_period >= period;
+                            const active = item.start_period <= focusPeriod && item.end_period >= focusPeriod;
                             return (
                               <article key={item.meeting_id} className={`rounded-xl border p-3 ${active ? "border-[#34a853] bg-[#e6f4ea] dark:border-[#5bb974] dark:bg-[#173b27]" : "border-[#dadce0] dark:border-[#3c4043]"}`}>
                                 <p className="flex items-start gap-2 text-sm font-medium">
@@ -556,8 +616,8 @@ export function ClassroomsPage({
                               </article>
                             );
                           })}
-                          {roomDay.exams.map((item) => {
-                            const active = examOccupiesPeriod(item.start_timestamp, item.end_timestamp, period);
+                          {visibleExams.map((item) => {
+                            const active = examOccupiesPeriod(item.start_timestamp, item.end_timestamp, focusPeriod);
                             return (
                               <article key={item.exam_id} className={`rounded-xl border p-3 ${active ? "border-[#f9ab00] bg-[#fef7e0] dark:border-[#f6c453] dark:bg-[#493a14]" : "border-[#dadce0] dark:border-[#3c4043]"}`}>
                                 <p className="flex items-start gap-2 text-sm font-medium">
@@ -570,13 +630,15 @@ export function ClassroomsPage({
                               </article>
                             );
                           })}
-                          {!roomDay.teaching.length && !roomDay.exams.length ? (
-                            <p className="rounded-xl bg-[#f1f3f4] p-4 text-sm dark:bg-[#292a2d]">当天空闲。</p>
+                          {!visibleTeaching.length && !visibleExams.length ? (
+                            <p className="rounded-xl bg-[#f1f3f4] p-4 text-sm dark:bg-[#292a2d]">{detailPeriod === null ? "当天空闲。" : "该时间点空闲。"}</p>
                           ) : null}
                         </div>
+                        </>
                       ) : null}
                     </section>
-                  )}
+                    );
+                  }}
                 />
               </div>
               <section className="mt-8" aria-labelledby="floor-rooms-heading">

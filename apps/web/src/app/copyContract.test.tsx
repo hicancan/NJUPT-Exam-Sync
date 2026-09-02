@@ -271,6 +271,10 @@ describe("product copy contract", () => {
     expect(classrooms).not.toContain("按校区、楼栋和楼层逐级浏览");
     expect(classrooms).not.toContain("未发现占用");
     expect(classrooms).not.toContain("非教室");
+    expect(classrooms).not.toContain("全天");
+    expect(classrooms).toContain("详情时间轴");
+    expect(classrooms).toContain("课程安排");
+    expect(classrooms).toContain("全部时间");
     expect(classrooms).toContain("当天空闲。");
   });
 });
