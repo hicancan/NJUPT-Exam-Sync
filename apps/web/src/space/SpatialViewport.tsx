@@ -82,7 +82,9 @@ export function SpatialViewport({
         if (!controlledSelected) return;
         const panel = detailPanel.current;
         const activeElement = document.activeElement;
-        if (activeElement instanceof HTMLElement || activeElement instanceof SVGElement) restoreFocus.current = activeElement;
+        if (!panel?.contains(activeElement) && (activeElement instanceof HTMLElement || activeElement instanceof SVGElement)) {
+            restoreFocus.current = activeElement;
+        }
         panel?.focus();
         const onKey = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
@@ -126,6 +128,7 @@ export function SpatialViewport({
             : roomState(family.family.space_family_id);
     const choose = (family: SpaceFamilyView, element: SVGElement) => {
         selectedTrigger.current = element;
+        restoreFocus.current = element;
         setSelected(family);
         onSelectedFamilyChange?.(family.family.space_family_id);
     };
