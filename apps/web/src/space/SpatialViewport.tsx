@@ -2,6 +2,7 @@ import { Minus, Plus, RotateCcw, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SpaceGeometry, SpaceUnit } from '@njupt-search/academics-space';
 import type { SpaceClient, SpaceFamilyView } from './model/SpaceClient';
+import { formatCampusBuildingLabel } from './model/spaceLabels';
 import './space.css';
 import './spacePlan.css';
 
@@ -46,8 +47,7 @@ export function SpatialViewport({
     client, campusName, buildingName, buildingId, floorId, floorLevel, families, roomState, detail,
     selectedFamilyId, onSelectedFamilyChange,
 }: SpatialViewportProps) {
-    const collapsedLocation = campusName.trim().localeCompare(buildingName.trim(), 'zh-CN', { sensitivity: 'base' }) === 0;
-    const locationLabel = collapsedLocation ? `${campusName}校区` : `${campusName}校区 · ${buildingName}`;
+    const locationLabel = formatCampusBuildingLabel(campusName, buildingName);
     const [loaded, setLoaded] = useState<LoadedFloor | null>(null);
     const [error, setError] = useState<{ key: string; message: string } | null>(null);
     const [selected, setSelected] = useState<SpaceFamilyView | null>(null);
@@ -193,7 +193,7 @@ export function SpatialViewport({
             {visibleSelected ? <div className="space-detail-overlay" onMouseDown={event => { if (event.target === event.currentTarget) close(); }}>
                 <aside ref={detailPanel} tabIndex={-1} className="space-detail-panel" role="dialog" aria-modal="true" aria-labelledby="space-detail-title">
                     <div className="space-detail-handle" aria-hidden="true" />
-                    <header><div><p>{visibleSelected.campus.name} · {visibleSelected.building.name} · {visibleSelected.floor.level}楼</p><h2 id="space-detail-title">{visibleSelected.family.room_number}</h2></div><button type="button" onClick={close} aria-label="关闭空间详情"><X /></button></header>
+                    <header><div><p>{formatCampusBuildingLabel(visibleSelected.campus.name, visibleSelected.building.name)} · {visibleSelected.floor.level}楼</p><h2 id="space-detail-title">{visibleSelected.family.room_number}</h2></div><button type="button" onClick={close} aria-label="关闭空间详情"><X /></button></header>
                     <div className="space-detail-body">
                         <dl><div><dt>当前状态</dt><dd>{STATE_LABEL[stateFor(visibleSelected)]}</dd></div><div><dt>收录依据</dt><dd>{EVIDENCE_LABEL[visibleSelected.family.evidence_status] ?? '来源记录'}</dd></div><div><dt>类型</dt><dd>{visibleSelected.family.availability_eligible === 'eligible' ? '教学空间' : '其他房间'}</dd></div>{visibleSelected.family.aliases.length ? <div><dt>其他名称</dt><dd>{visibleSelected.family.aliases.join('、')}</dd></div> : null}</dl>
                         {detail?.(visibleSelected)}
