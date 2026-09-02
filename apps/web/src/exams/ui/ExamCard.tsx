@@ -1,6 +1,7 @@
 import { Check, Clock, MapPin, User, Users } from 'lucide-react';
 import { Exam } from '@njupt-search/academics-exam/records';
 import type { ExamExportStatus } from '../model/examSelection';
+import { formatExamDisplayDate } from './examDateTime';
 
 interface ExamCardProps {
     exam: Exam;
@@ -8,14 +9,6 @@ interface ExamCardProps {
     exportStatus: ExamExportStatus;
     onToggle: () => void;
 }
-
-const formatDisplayDate = (isoString?: string | null): string => {
-    if (!isoString) return '';
-    const date = new Date(isoString);
-    return date.toLocaleString('zh-CN', {
-        month: 'short', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit'
-    });
-};
 
 const statusBadge = (status: ExamExportStatus): { text: string; description: string; className: string } | null => {
     if (status === 2) {
@@ -104,9 +97,9 @@ export function ExamCard({ exam, isSelected, exportStatus, onToggle }: ExamCardP
                             <div className="flex items-start gap-2">
                                 <Clock className="w-4 h-4 mt-0.5 shrink-0 text-[#4285f4] dark:text-[#8ab4f8]" aria-hidden="true" />
                                 <div>
-                                    <span className="font-medium text-[#202124] dark:text-[#e8eaed]">{formatDisplayDate(exam.start_timestamp)}</span> 
+                                    <span className="font-medium text-[#202124] dark:text-[#e8eaed]">{formatExamDisplayDate(exam.start_timestamp)}</span>
                                     <span className="mx-1 text-[#70757a]">至</span> 
-                                    <span>{formatDisplayDate(exam.end_timestamp)}</span>
+                                    <span>{formatExamDisplayDate(exam.end_timestamp)}</span>
                                     <span className="ml-2 text-[12px] px-1.5 py-0.5 bg-[#f1f3f4] dark:bg-[#3c4043] rounded text-[#5f6368] dark:text-[#9aa0a6]">
                                         {exam.duration_minutes} 分钟
                                     </span>
