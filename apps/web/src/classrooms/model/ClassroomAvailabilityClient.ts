@@ -43,6 +43,31 @@ export interface ClassroomAvailability {
     occupied: Map<string, { teaching: TeachingRoomBooking[]; exams: RoomBooking[] }>;
 }
 
+export interface ClassroomRoomDaySchedule {
+    date: string;
+    week: number;
+    weekday: number;
+    teaching: TeachingRoomBooking[];
+    exams: RoomBooking[];
+}
+
+export const collectRoomTeachingBookings = (
+    day: TeachingRoomDay | null,
+    spaceFamilyId: string,
+): TeachingRoomBooking[] => {
+    const unique = new Map<string, TeachingRoomBooking>();
+    for (const bookings of Object.values(day?.periods ?? {})) {
+        for (const booking of bookings) {
+            if (booking.space_family_id === spaceFamilyId) unique.set(booking.meeting_id, booking);
+        }
+    }
+    return [...unique.values()].sort((left, right) => (
+        left.start_period - right.start_period
+        || left.end_period - right.end_period
+        || left.course_name.localeCompare(right.course_name, 'zh-CN')
+    ));
+};
+
 const artifactUrl = (baseUrl: string, occupancyId: string, artifact: ArtifactRef): string => (
     `${baseUrl}/${occupancyId}/${artifact.path}?sha256=${artifact.sha256}`
 );
@@ -78,6 +103,7 @@ export class ClassroomAvailabilityClient {
     #indexPromise: Promise<ClassroomIndex> | null = null;
     #initializeController: AbortController | null = null;
     #activeQueryController: AbortController | null = null;
+    #activeRoomDayController: AbortController | null = null;
     #dayCache = new Map<string, TeachingRoomDay>();
     #disposed = false;
 
@@ -177,11 +203,50 @@ export class ClassroomAvailabilityClient {
         }
     }
 
+    async queryRoomDay(
+        query: Pick<ClassroomQuery, 'date' | 'week' | 'weekday'>,
+        spaceFamilyId: string,
+        floorId: string,
+        signal?: AbortSignal,
+    ): Promise<ClassroomRoomDaySchedule> {
+        this.#assertUsable();
+        this.#activeRoomDayController?.abort();
+        const controller = new AbortController();
+        this.#activeRoomDayController = controller;
+        const detach = forwardAbort(signal, controller);
+        try {
+            const [index, examManifest] = await Promise.all([
+                this.initialize(controller.signal),
+                this.#examRooms.initialize(controller.signal),
+            ]);
+            const { manifest } = index;
+            if (manifest.exam_snapshot_id !== examManifest.exam_snapshot_id) throw new Error('课程占用与考试占用没有使用同一考试版本');
+            if (manifest.space_snapshot_id !== examManifest.space_snapshot_id) throw new Error('课程与考试占用没有使用同一空间版本');
+            const moment = resolveClassroomMoment(manifest.weeks, query);
+            const dayEntry = manifest.days.find(item => item.week === moment.week && item.weekday === moment.weekday);
+            const day = dayEntry ? await this.#loadDay(manifest, dayEntry.artifact, controller.signal) : null;
+            const teaching = collectRoomTeachingBookings(day, spaceFamilyId);
+            const examDate = examManifest.dates.find(item => item.date === moment.date);
+            const floorEntry = examDate?.floors.find(item => item.floor_id === floorId);
+            const floor = floorEntry
+                ? await this.#examRooms.loadFloor(floorEntry.artifact, examManifest, controller.signal)
+                : null;
+            const exams = (floor?.bookings ?? [])
+                .filter(item => item.space_family_id === spaceFamilyId)
+                .sort((left, right) => left.start_timestamp.localeCompare(right.start_timestamp) || left.course_name.localeCompare(right.course_name, 'zh-CN'));
+            return { ...moment, teaching, exams };
+        } finally {
+            detach();
+            if (this.#activeRoomDayController === controller) this.#activeRoomDayController = null;
+        }
+    }
+
     dispose(): void {
         if (this.#disposed) return;
         this.#disposed = true;
         this.#initializeController?.abort();
         this.#activeQueryController?.abort();
+        this.#activeRoomDayController?.abort();
         this.#index = null;
         this.#indexPromise = null;
         this.#dayCache.clear();

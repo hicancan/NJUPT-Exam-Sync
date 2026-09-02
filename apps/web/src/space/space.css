@@ -127,24 +127,6 @@
 .spatial-room-exam text {
   fill: #8d5b00;
 }
-.spatial-room-both polygon,
-.spatial-swatch.spatial-room-both {
-  fill: #f3e8fd;
-  background: #f3e8fd;
-  stroke: #a142f4;
-}
-.spatial-room-both text {
-  fill: #7627bb;
-}
-.spatial-room-non-teaching polygon,
-.spatial-swatch.spatial-room-non-teaching {
-  fill: #e8eaed;
-  background: #e8eaed;
-  stroke: #9aa0a6;
-}
-.spatial-room-non-teaching text {
-  fill: #5f6368;
-}
 .dark .spatial-room-free polygon,
 .dark .spatial-swatch.spatial-room-free {
   fill: #183153;
@@ -162,18 +144,6 @@
   fill: #493a14;
   background: #493a14;
   stroke: #f6c453;
-}
-.dark .spatial-room-both polygon,
-.dark .spatial-swatch.spatial-room-both {
-  fill: #39214d;
-  background: #39214d;
-  stroke: #c58af9;
-}
-.dark .spatial-room-non-teaching polygon,
-.dark .spatial-swatch.spatial-room-non-teaching {
-  fill: #303134;
-  background: #303134;
-  stroke: #5f6368;
 }
 .spatial-legend {
   display: flex;
@@ -310,19 +280,6 @@
   color: #5f6368;
 }
 .dark .space-detail-body dt {
-  color: #bdc1c6;
-}
-.space-detail-caveat {
-  margin-top: 24px;
-  border-radius: 12px;
-  background: #f1f3f4;
-  padding: 13px;
-  color: #5f6368;
-  font-size: 12px;
-  line-height: 1.7;
-}
-.dark .space-detail-caveat {
-  background: #292a2d;
   color: #bdc1c6;
 }
 @media (max-width: 767px) {

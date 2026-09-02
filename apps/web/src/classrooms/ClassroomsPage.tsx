@@ -2,7 +2,6 @@ import {
   ArrowRight,
   BookOpen,
   Building2,
-  CalendarDays,
   GraduationCap,
   Layers3,
   MapPin,
@@ -12,6 +11,7 @@ import type {
   ClassroomAvailability,
   ClassroomAvailabilityClient,
   ClassroomIndex,
+  ClassroomRoomDaySchedule,
 } from "./model/ClassroomAvailabilityClient";
 import {
   SpatialViewport,
@@ -36,19 +36,14 @@ interface ClassroomsPageProps {
 const natural = (left: string, right: string) =>
   left.localeCompare(right, "zh-CN", { numeric: true, sensitivity: "base" });
 const STATE_LABEL: Record<SpatialRoomState, string> = {
-  free: "未发现占用",
-  teaching: "课程占用",
-  exam: "考试占用",
-  both: "课程与考试占用",
-  "non-teaching": "其他房间",
+  free: "空闲",
+  teaching: "上课",
+  exam: "考试",
 };
 const STATE_BADGE_CLASS: Record<SpatialRoomState, string> = {
   free: "bg-[#e8f0fe] text-[#174ea6] dark:bg-[#183153] dark:text-[#aecbfa]",
   teaching: "bg-[#e6f4ea] text-[#137333] dark:bg-[#173b27] dark:text-[#81c995]",
   exam: "bg-[#fef7e0] text-[#8d5b00] dark:bg-[#493a14] dark:text-[#fdd663]",
-  both: "bg-[#f3e8fd] text-[#7627bb] dark:bg-[#39214d] dark:text-[#d7aefb]",
-  "non-teaching":
-    "bg-[#e8eaed] text-[#5f6368] dark:bg-[#303134] dark:text-[#bdc1c6]",
 };
 
 export function ClassroomsPage({
@@ -67,9 +62,16 @@ export function ClassroomsPage({
   const [index, setIndex] = useState<ClassroomIndex | null>(null);
   const [indexError, setIndexError] = useState<string | null>(null);
   const requestKey = `${date ?? ""}:${week ?? ""}:${weekday ?? ""}:${period}:${campus ?? ""}:${building ?? ""}:${floor ?? ""}`;
+  const viewContextKey = `${date ?? ""}:${week ?? ""}:${weekday ?? ""}:${campus ?? ""}:${building ?? ""}:${floor ?? ""}`;
   const [loadState, setLoadState] = useState<{
     key: string;
+    contextKey: string;
     result: ClassroomAvailability | null;
+    error: string | null;
+  }>({ key: "", contextKey: "", result: null, error: null });
+  const [roomDayState, setRoomDayState] = useState<{
+    key: string;
+    result: ClassroomRoomDaySchedule | null;
     error: string | null;
   }>({ key: "", result: null, error: null });
 
@@ -120,12 +122,13 @@ export function ClassroomsPage({
         controller.signal,
       )
       .then((nextResult) => {
-        setLoadState({ key: requestKey, result: nextResult, error: null });
+        setLoadState({ key: requestKey, contextKey: viewContextKey, result: nextResult, error: null });
       })
       .catch((reason) => {
         if (controller.signal.aborted) return;
         setLoadState({
           key: requestKey,
+          contextKey: viewContextKey,
           result: null,
           error:
             reason instanceof Error ? reason.message : "教室占用数据加载失败",
@@ -143,13 +146,41 @@ export function ClassroomsPage({
     requestKey,
     week,
     weekday,
+    viewContextKey,
   ]);
 
-  const result = loadState.key === requestKey ? loadState.result : null;
+  const result = loadState.contextKey === viewContextKey ? loadState.result : null;
   const error =
     indexError ?? (loadState.key === requestKey ? loadState.error : null);
   const effectiveWeek = result?.week ?? week ?? 1;
   const effectiveWeekday = result?.weekday ?? weekday ?? 1;
+  const resolvedDate = result?.date ?? null;
+  const roomDayKey = `${resolvedDate ?? date ?? `${effectiveWeek}-${effectiveWeekday}`}:${activeFloor?.floor_id ?? ""}:${room ?? ""}`;
+  useEffect(() => {
+    if (!resolvedDate || !activeFloor || !room) return;
+    const controller = new AbortController();
+    client
+      .queryRoomDay(
+        { date: resolvedDate },
+        room,
+        activeFloor.floor_id,
+        controller.signal,
+      )
+      .then((nextResult) => {
+        setRoomDayState({ key: roomDayKey, result: nextResult, error: null });
+      })
+      .catch((reason) => {
+        if (controller.signal.aborted) return;
+        setRoomDayState({
+          key: roomDayKey,
+          result: null,
+          error: reason instanceof Error ? reason.message : "教室全天安排加载失败",
+        });
+      });
+    return () => controller.abort();
+  }, [activeFloor, client, resolvedDate, room, roomDayKey]);
+  const roomDay = roomDayState.key === roomDayKey ? roomDayState.result : null;
+  const roomDayError = roomDayState.key === roomDayKey ? roomDayState.error : null;
   const update = (next: Record<string, string | null>) =>
     onChange({
       date,
@@ -196,17 +227,36 @@ export function ClassroomsPage({
     const family = floorFamilies.find(
       (item) => item.family.space_family_id === familyId,
     );
-    if (!family) return "non-teaching";
-    if (family.family.availability_eligible === "ineligible")
-      return "non-teaching";
+    if (!family) return "free";
     const sources = result?.occupied.get(familyId);
     if (!sources) return "free";
-    if (sources.teaching.length && sources.exams.length) return "both";
-    return sources.teaching.length ? "teaching" : "exam";
+    if (sources.exams.length) return "exam";
+    return "teaching";
   };
   const freeCount = floorFamilies.filter(
     (item) => roomState(item.family.space_family_id) === "free",
   ).length;
+  const examOccupiesPeriod = (startTimestamp: string, endTimestamp: string, periodNumber: number) => {
+    if (!roomDay || !index) return false;
+    const periodItem = index.manifest.periods.find((item) => item.period === periodNumber);
+    if (!periodItem) return false;
+    const start = `${roomDay.date}T${periodItem.start_time}:00+08:00`;
+    const end = `${roomDay.date}T${periodItem.end_time}:00+08:00`;
+    return startTimestamp < end && endTimestamp > start;
+  };
+  const roomDayPeriodState = (periodNumber: number): SpatialRoomState => {
+    if (!roomDay) return "free";
+    const teaching = roomDay.teaching.some(
+      (item) => item.start_period <= periodNumber && item.end_period >= periodNumber,
+    );
+    const exam = roomDay.exams.some((item) =>
+      examOccupiesPeriod(item.start_timestamp, item.end_timestamp, periodNumber),
+    );
+    if (exam) return "exam";
+    if (teaching) return "teaching";
+    return "free";
+  };
+  const formatTimestampTime = (value: string) => value.slice(11, 16);
 
   return (
     <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-7">
@@ -350,7 +400,7 @@ export function ClassroomsPage({
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </span>
                   <small className="mt-1 block text-[#5f6368] dark:text-[#bdc1c6]">
-                    {roomCount} 个房间
+                    {roomCount} 间教室
                     {item.geometry_path ? "" : " · 暂无平面图"}
                   </small>
                 </button>
@@ -433,9 +483,17 @@ export function ClassroomsPage({
                 onChange={(event) => update({ period: event.target.value })}
                 aria-label="选择节次"
               />
-              <div className="mt-1 grid grid-cols-12 text-center text-[10px] text-[#5f6368] dark:text-[#bdc1c6]">
+              <div className="mt-2 grid grid-cols-12 gap-1 text-center text-[10px] text-[#5f6368] dark:text-[#bdc1c6]">
                 {Array.from({ length: 12 }, (_, indexValue) => (
-                  <span key={indexValue}>{indexValue + 1}</span>
+                  <button
+                    key={indexValue}
+                    type="button"
+                    onClick={() => update({ period: String(indexValue + 1) })}
+                    className={`mx-auto flex h-6 w-6 items-center justify-center rounded-full transition ${room ? STATE_BADGE_CLASS[roomDayPeriodState(indexValue + 1)] : ""} ${period === indexValue + 1 ? "ring-2 ring-[#1a73e8] ring-offset-1 dark:ring-offset-[#292a2d]" : ""}`}
+                    aria-label={`第 ${indexValue + 1} 节${roomDay ? `，${STATE_LABEL[roomDayPeriodState(indexValue + 1)]}` : ""}`}
+                  >
+                    {indexValue + 1}
+                  </button>
                 ))}
               </div>
             </div>
@@ -459,39 +517,66 @@ export function ClassroomsPage({
                   onSelectedFamilyChange={(nextRoom) =>
                     update({ room: nextRoom })
                   }
-                  detail={(roomView) => {
-                    const sources = result.occupied.get(
-                      roomView.family.space_family_id,
-                    );
-                    return sources ? (
-                      <section className="mt-6">
-                        <h3 className="font-semibold">占用详情</h3>
-                        {sources.teaching.map((item) => (
-                          <p
-                            key={item.meeting_id}
-                            className="mt-2 flex items-start gap-2 text-sm"
-                          >
-                            <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-[#1967d2]" />
-                            课程：{item.course_name} ·{" "}
-                            {item.class_ids.join("、")}
+                  detail={(roomView) => (
+                    <section className="mt-6">
+                      <div className="flex items-end justify-between gap-3">
+                        <div>
+                          <h3 className="font-semibold">当天完整安排</h3>
+                          <p className="mt-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">
+                            {result.date} · 当前查看第 {period} 节
                           </p>
-                        ))}
-                        {sources.exams.map((item) => (
-                          <p
-                            key={item.exam_id}
-                            className="mt-2 flex items-start gap-2 text-sm"
-                          >
-                            <GraduationCap className="mt-0.5 h-4 w-4 shrink-0 text-[#8d5b00]" />
-                            考试：{item.course_name} · {item.class_name}
-                          </p>
-                        ))}
-                      </section>
-                    ) : (
-                      <p className="mt-6 text-sm">
-                        该时段没有发现课程或考试占用。
-                      </p>
-                    );
-                  }}
+                        </div>
+                        <span className={`rounded-full px-2.5 py-1 text-xs ${STATE_BADGE_CLASS[roomState(roomView.family.space_family_id)]}`}>
+                          {STATE_LABEL[roomState(roomView.family.space_family_id)]}
+                        </span>
+                      </div>
+                      {!roomDay && !roomDayError ? (
+                        <div className="mt-4 h-24 animate-pulse rounded-xl bg-[#f1f3f4] dark:bg-[#292a2d]" />
+                      ) : null}
+                      {roomDayError ? (
+                        <p className="mt-4 rounded-xl bg-[#fce8e6] p-3 text-sm text-[#8c1d18] dark:bg-[#3c2020] dark:text-[#f2b8b5]">{roomDayError}</p>
+                      ) : null}
+                      {roomDay ? (
+                        <div className="mt-4 grid gap-3">
+                          {roomDay.teaching.map((item) => {
+                            const startTime = index?.manifest.periods.find((entry) => entry.period === item.start_period)?.start_time;
+                            const endTime = index?.manifest.periods.find((entry) => entry.period === item.end_period)?.end_time;
+                            const active = item.start_period <= period && item.end_period >= period;
+                            return (
+                              <article key={item.meeting_id} className={`rounded-xl border p-3 ${active ? "border-[#34a853] bg-[#e6f4ea] dark:border-[#5bb974] dark:bg-[#173b27]" : "border-[#dadce0] dark:border-[#3c4043]"}`}>
+                                <p className="flex items-start gap-2 text-sm font-medium">
+                                  <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-[#137333] dark:text-[#81c995]" />
+                                  {item.course_name}
+                                </p>
+                                <p className="mt-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">
+                                  第 {item.start_period}–{item.end_period} 节{startTime && endTime ? ` · ${startTime}–${endTime}` : ""}
+                                  {item.teacher ? ` · ${item.teacher}` : ""}
+                                </p>
+                                {item.class_ids.length ? <p className="mt-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">{item.class_ids.join("、")}</p> : null}
+                              </article>
+                            );
+                          })}
+                          {roomDay.exams.map((item) => {
+                            const active = examOccupiesPeriod(item.start_timestamp, item.end_timestamp, period);
+                            return (
+                              <article key={item.exam_id} className={`rounded-xl border p-3 ${active ? "border-[#f9ab00] bg-[#fef7e0] dark:border-[#f6c453] dark:bg-[#493a14]" : "border-[#dadce0] dark:border-[#3c4043]"}`}>
+                                <p className="flex items-start gap-2 text-sm font-medium">
+                                  <GraduationCap className="mt-0.5 h-4 w-4 shrink-0 text-[#8d5b00] dark:text-[#fdd663]" />
+                                  {item.course_name}
+                                </p>
+                                <p className="mt-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">
+                                  {formatTimestampTime(item.start_timestamp)}–{formatTimestampTime(item.end_timestamp)} · {item.class_name}
+                                </p>
+                              </article>
+                            );
+                          })}
+                          {!roomDay.teaching.length && !roomDay.exams.length ? (
+                            <p className="rounded-xl bg-[#f1f3f4] p-4 text-sm dark:bg-[#292a2d]">当天空闲。</p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </section>
+                  )}
                 />
               </div>
               <section className="mt-8" aria-labelledby="floor-rooms-heading">
@@ -500,10 +585,10 @@ export function ClassroomsPage({
                     id="floor-rooms-heading"
                     className="text-xl font-semibold"
                   >
-                    本层房间
+                    本层教室
                   </h2>
                   <p className="text-sm font-medium text-[#1967d2] dark:text-[#8ab4f8]">
-                    {freeCount} 个未发现占用 · 共 {floorFamilies.length} 个房间
+                    {freeCount} 间空闲 · 共 {floorFamilies.length} 间教室
                   </p>
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -538,15 +623,6 @@ export function ClassroomsPage({
                   })}
                 </div>
               </section>
-              <aside className="mt-8 flex gap-3 rounded-xl bg-[#f1f3f4] p-4 text-xs leading-6 text-[#5f6368] dark:bg-[#292a2d] dark:text-[#bdc1c6]">
-                <CalendarDays
-                  className="mt-0.5 h-4 w-4 shrink-0"
-                  aria-hidden="true"
-                />
-                <p>
-                  “未发现占用”只表示已发布的课程和考试数据中没有记录；不包含临时借用、调课、补课、活动、维修、封闭或尚未同步的变化。
-                </p>
-              </aside>
             </>
           ) : null}
         </>

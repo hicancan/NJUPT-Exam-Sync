@@ -10,6 +10,26 @@ import {
 
 const SAVED_CLASS_KEY = 'SAVED_CLASS';
 const SAVED_TIMETABLE_CLASS_KEY = 'SAVED_TIMETABLE_CLASS';
+const SAVED_CLASSROOM_QUERY_KEY = 'SAVED_CLASSROOM_QUERY';
+
+const CLASSROOM_QUERY_KEYS = ['date', 'week', 'weekday', 'period', 'campus', 'building', 'floor', 'room'] as const;
+export type SavedClassroomQuery = Partial<Record<(typeof CLASSROOM_QUERY_KEYS)[number], string>>;
+
+export const parseSavedClassroomQuery = (raw: string | null): SavedClassroomQuery | null => {
+    if (!raw) return null;
+    try {
+        const value = JSON.parse(raw) as unknown;
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+        const record = value as Record<string, unknown>;
+        if (Object.keys(record).some(key => !CLASSROOM_QUERY_KEYS.includes(key as (typeof CLASSROOM_QUERY_KEYS)[number]))) return null;
+        const result = Object.fromEntries(
+            CLASSROOM_QUERY_KEYS.flatMap(key => typeof record[key] === 'string' && record[key] ? [[key, record[key]]] : []),
+        ) as SavedClassroomQuery;
+        return result.campus ? result : null;
+    } catch {
+        return null;
+    }
+};
 
 export function useAppRouter() {
     const url = useUrlState();
@@ -41,6 +61,7 @@ export function useAppRouter() {
     }, [routeInput]);
     const savedClass = parseSavedClass(localStorage.getItem(SAVED_CLASS_KEY));
     const savedTimetableClass = parseSavedClass(localStorage.getItem(SAVED_TIMETABLE_CLASS_KEY));
+    const savedClassroomQuery = parseSavedClassroomQuery(localStorage.getItem(SAVED_CLASSROOM_QUERY_KEY));
 
     const submit = useCallback((value: string) => {
         const destination = route === 'home' ? resolveSubmission(value) : resolveRouteSubmission(route, value);
@@ -65,6 +86,12 @@ export function useAppRouter() {
         navigate({ route: 'timetable', params }, replace);
     }, [navigate]);
     const navigateClassrooms = useCallback((params: Record<string, string | null>, replace = false) => {
+        if (params.campus) {
+            const saved = Object.fromEntries(
+                CLASSROOM_QUERY_KEYS.flatMap(key => typeof params[key] === 'string' && params[key] ? [[key, params[key]]] : []),
+            );
+            localStorage.setItem(SAVED_CLASSROOM_QUERY_KEY, JSON.stringify(saved));
+        }
         navigate({ route: 'classrooms', params }, replace);
     }, [navigate]);
     const navigateSearchScope = useCallback((nextRoute: 'search' | 'community' | 'materials') => {
@@ -97,6 +124,7 @@ export function useAppRouter() {
             building: buildingParam,
             floor: floorParam,
             room: roomParam,
+            savedQuery: savedClassroomQuery,
         },
         navigateTimetable,
         navigateClassrooms,

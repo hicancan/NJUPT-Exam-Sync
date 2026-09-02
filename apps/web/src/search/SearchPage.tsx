@@ -18,9 +18,10 @@ interface SearchPageProps {
     client: SearchClient;
     scope: SearchScope;
     onScopeChange: (route: SearchScope['route']) => void;
+    onSearch: (query: string) => void;
 }
 
-export function SearchPage({ query, client, scope, onScopeChange }: SearchPageProps) {
+export function SearchPage({ query, client, scope, onScopeChange, onSearch }: SearchPageProps) {
     const trimmedQuery = query.trim();
     const enabled = trimmedQuery.length >= 2;
     const [sortMode, setSortMode] = useState<SortMode>('relevance');
@@ -57,7 +58,7 @@ export function SearchPage({ query, client, scope, onScopeChange }: SearchPagePr
         limit,
     );
 
-    if (!enabled) return <SearchLanding scope={scope} />;
+    if (!enabled) return <SearchLanding scope={scope} onSearch={onSearch} />;
 
     if (indexLoading) {
         return (

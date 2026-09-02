@@ -2,6 +2,7 @@ import { CalendarDays } from 'lucide-react';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import type { ExamSnapshotClient } from './model/ExamSnapshotClient';
 import type { ExamHistoryClient } from './model/ExamHistoryClient';
+import { ProductLandingCard } from '@/shared/ui/ProductLandingCard';
 
 const ExamHistoryLanding = lazy(() => import('./ExamHistoryLanding').then(module => ({
     default: module.ExamHistoryLanding,
@@ -27,14 +28,11 @@ export function ExamLanding({ savedClass, onSubmit, onOpenClass, client, history
     return (
         <main className="mx-auto flex-1 w-full max-w-6xl px-4 pb-6 pt-2 sm:pt-3">
             <section className="mt-4 sm:mt-8">
-                <div className="mx-auto max-w-[692px] rounded-xl border border-[#dadce0] bg-[#f8fafc] px-5 py-6 text-center shadow-sm dark:border-[#3c4043] dark:bg-[#2d2e30] sm:p-8">
-                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#e8f0fe] dark:bg-[#3b4043] sm:mb-4 sm:h-16 sm:w-16">
-                        <CalendarDays className="h-6 w-6 text-[#1a73e8] dark:text-[#8ab4f8] sm:h-8 sm:w-8" aria-hidden="true" />
-                    </div>
-                    <h1 className="mb-2 text-[23px] font-semibold leading-tight text-[#202124] dark:text-[#e8eaed] sm:text-2xl">查询考试安排</h1>
-                    <p className="text-[14px] leading-6 text-[#4d5156] dark:text-[#bdc1c6] sm:text-[15px]">
-                        输入班级号，查看考试时间、地点和考场。
-                    </p>
+                <ProductLandingCard
+                    icon={<CalendarDays className="h-7 w-7" aria-hidden="true" />}
+                    title="查询考试安排"
+                    description="输入班级号，查看考试时间、地点和考场。"
+                >
                     <form
                         className="mx-auto mt-5 grid max-w-[440px] grid-cols-[minmax(0,1fr)_88px] gap-2 sm:mt-6 sm:grid-cols-[minmax(0,1fr)_96px] sm:gap-3"
                         onSubmit={(event) => {
@@ -64,7 +62,7 @@ export function ExamLanding({ savedClass, onSubmit, onOpenClass, client, history
                             onClick={() => onSubmit('B240402')}
                             className="inline-flex h-9 items-center rounded-full px-3 text-[#5f6368] hover:bg-white dark:text-[#bdc1c6] dark:hover:bg-[#202124]"
                         >
-                            试试&nbsp;<span className="font-mono text-[#1a73e8] dark:text-[#8ab4f8]">B240402</span>
+                            试一试&nbsp;<span className="font-mono text-[#1a73e8] dark:text-[#8ab4f8]">B240402</span>
                         </button>
                         {savedClass ? (
                             <button
@@ -76,7 +74,7 @@ export function ExamLanding({ savedClass, onSubmit, onOpenClass, client, history
                             </button>
                         ) : null}
                     </div>
-                </div>
+                </ProductLandingCard>
                 {historyClient ? (
                     <Suspense fallback={null}>
                         <ExamHistoryLanding client={historyClient} />

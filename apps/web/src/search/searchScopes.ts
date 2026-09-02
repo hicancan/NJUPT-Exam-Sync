@@ -11,6 +11,7 @@ export interface SearchScope {
     sourceUrl?: string;
     excludedSourceIds?: readonly string[];
     supportsDates: boolean;
+    quickQueries: readonly string[];
 }
 
 export const SEARCH_SCOPE_OPTIONS: readonly Pick<SearchScope, 'route' | 'title'>[] = [
@@ -33,6 +34,7 @@ export const SEARCH_SCOPES: Record<SearchScope['route'], SearchScope> = {
         ariaLabel: '搜索学校通知、附件和办事信息',
         excludedSourceIds: REPOSITORY_SEARCH_SOURCE_IDS,
         supportsDates: true,
+        quickQueries: ['转专业', '奖学金', '校园卡', '计算机等级'],
     },
     community: {
         route: 'community',
@@ -44,6 +46,7 @@ export const SEARCH_SCOPES: Record<SearchScope['route'], SearchScope> = {
         sourceName: '南邮生存手册',
         sourceUrl: 'https://github.com/NJUPT-NAVI/NJUPT-Survival-Guide',
         supportsDates: false,
+        quickQueries: ['校园网', '宿舍', '选课', '开发环境'],
     },
     materials: {
         route: 'materials',
@@ -55,6 +58,7 @@ export const SEARCH_SCOPES: Record<SearchScope['route'], SearchScope> = {
         sourceName: '南邮历年资料',
         sourceUrl: 'https://github.com/NJUPTFreeExams/NJUPT-General-Free-Exams',
         supportsDates: false,
+        quickQueries: ['高等数学', '大学物理', '数据结构', '概率论'],
     },
 };
 

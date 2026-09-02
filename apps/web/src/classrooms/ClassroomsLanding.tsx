@@ -10,11 +10,13 @@ import {
   weekdayInShanghai,
 } from "../timetable/model/calendar";
 import { collapsedCampusBuilding } from "./model/spaceHierarchy";
+import type { SavedClassroomQuery } from "@/app/routing/useAppRouter";
 
 interface ClassroomsLandingProps {
   client: ClassroomAvailabilityClient;
   onChange: (params: Record<string, string | null>) => void;
   query?: string;
+  recentQuery?: SavedClassroomQuery | null;
 }
 
 const natural = (left: string, right: string) =>
@@ -24,6 +26,7 @@ export function ClassroomsLanding({
   client,
   onChange,
   query = "",
+  recentQuery = null,
 }: ClassroomsLandingProps) {
   const [index, setIndex] = useState<ClassroomIndex | null>(null);
   const [matches, setMatches] = useState<SpaceFamilyView[]>([]);
@@ -97,6 +100,29 @@ export function ClassroomsLanding({
       floor: null,
     };
   };
+  const sampleQuery = useMemo(() => {
+    if (!index) return null;
+    const campus = campuses.find((item) => item.name === "仙林") ?? campuses[0];
+    if (!campus) return null;
+    const campusBuildings = index.space.buildings
+      .filter((item) => item.campus_id === campus.campus_id)
+      .sort((left, right) => natural(left.name, right.name));
+    const building = campusBuildings.find((item) => item.name === "教4") ?? campusBuildings[0];
+    if (!building) return { campus: campus.name };
+    const buildingFloors = index.space.floors
+      .filter((item) => item.building_id === building.building_id)
+      .sort((left, right) => natural(left.level, right.level));
+    const floor = buildingFloors.find((item) => item.level === "6") ?? buildingFloors[0];
+    return {
+      campus: campus.name,
+      building: building.name,
+      ...(floor ? { floor: floor.level } : {}),
+    };
+  }, [campuses, index]);
+  const queryLabel = (params: SavedClassroomQuery | Record<string, string>) =>
+    [params.campus, params.building, params.floor ? `${params.floor}楼` : null]
+      .filter(Boolean)
+      .join(" · ");
   const matchingCampuses = useMemo(
     () =>
       campuses.filter((item) =>
@@ -140,6 +166,30 @@ export function ClassroomsLanding({
         </p>
         <h1 className="mt-2 text-4xl font-semibold tracking-tight">教室</h1>
       </header>
+
+      {recentQuery || sampleQuery ? (
+        <section className="mt-6 flex flex-wrap items-center gap-2" aria-label="教室快捷入口">
+          {recentQuery ? (
+            <button
+              type="button"
+              onClick={() => enter(recentQuery)}
+              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#d2e3fc] bg-[#e8f0fe] px-4 text-sm font-medium text-[#174ea6] transition hover:bg-[#d2e3fc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a73e8] dark:border-[#405985] dark:bg-[#23334d] dark:text-[#aecbfa]"
+            >
+              继续查看 {queryLabel(recentQuery)}
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+          ) : null}
+          {sampleQuery ? (
+            <button
+              type="button"
+              onClick={() => enter(sampleQuery)}
+              className="inline-flex min-h-10 items-center rounded-full px-4 text-sm text-[#5f6368] transition hover:bg-[#f1f3f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a73e8] dark:text-[#bdc1c6] dark:hover:bg-[#292a2d]"
+            >
+              试一试&nbsp;<span className="font-medium text-[#1967d2] dark:text-[#8ab4f8]">{queryLabel(sampleQuery)}</span>
+            </button>
+          ) : null}
+        </section>
+      ) : null}
 
       {error ? (
         <div className="mt-6 rounded-xl border border-[#f2b8b5] bg-[#fce8e6] p-4 text-sm text-[#8c1d18] dark:border-[#8c1d18] dark:bg-[#3c2020] dark:text-[#f2b8b5]">
@@ -209,7 +259,7 @@ export function ClassroomsLanding({
               <Search className="h-5 w-5" aria-hidden="true" />“{query.trim()}”
             </h2>
             <span className="text-sm text-[#5f6368] dark:text-[#bdc1c6]">
-              {matches.length} 个房间匹配
+              {matches.length} 间教室匹配
             </span>
           </div>
           {matchingCampuses.length ? (
@@ -272,7 +322,7 @@ export function ClassroomsLanding({
           {matches.length ? (
             <div className="mt-6">
               <h3 className="text-sm font-medium text-[#5f6368] dark:text-[#bdc1c6]">
-                房间
+                教室
               </h3>
               <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                 {matches.slice(0, 100).map((room) => (
@@ -302,7 +352,7 @@ export function ClassroomsLanding({
               </div>
               {matches.length > 100 ? (
                 <p className="mt-3 text-xs text-[#5f6368]">
-                  仅显示前 100 个房间，请输入更完整的楼栋或房间号。
+                  仅显示前 100 间教室，请输入更完整的楼栋或教室号。
                 </p>
               ) : null}
             </div>
@@ -311,7 +361,7 @@ export function ClassroomsLanding({
           !matchingBuildings.length &&
           !matches.length ? (
             <div className="mt-6 rounded-2xl bg-[#f8f9fa] p-8 text-center dark:bg-[#292a2d]">
-              <p className="font-medium">没有找到对应空间</p>
+              <p className="font-medium">没有找到对应教室</p>
               <p className="mt-2 text-sm text-[#5f6368] dark:text-[#bdc1c6]">
                 可搜索校区、楼栋或完整教室号。
               </p>

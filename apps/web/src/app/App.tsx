@@ -65,14 +65,20 @@ function App() {
     const spaceClient = useMemo(() => new SpaceClient(APP_CONFIG.DATA_URLS.SPACE), []);
     const teachingClient = useMemo(() => new TeachingScheduleClient(APP_CONFIG.DATA_URLS.TIMETABLE), []);
     const classroomClient = useMemo(() => new ClassroomAvailabilityClient(APP_CONFIG.DATA_URLS.CLASSROOMS, examOccupancyClient, spaceClient), [examOccupancyClient, spaceClient]);
-    useEffect(() => () => {
-        searchClient.dispose();
-        examClient.dispose();
-        historyClientRef.current?.dispose();
-        examOccupancyClient.dispose();
-        spaceClient.dispose();
-        teachingClient.dispose();
-        classroomClient.dispose();
+    const disposeTimerRef = useRef<number | null>(null);
+    useEffect(() => {
+        if (disposeTimerRef.current !== null) window.clearTimeout(disposeTimerRef.current);
+        return () => {
+            disposeTimerRef.current = window.setTimeout(() => {
+                searchClient.dispose();
+                examClient.dispose();
+                historyClientRef.current?.dispose();
+                examOccupancyClient.dispose();
+                spaceClient.dispose();
+                teachingClient.dispose();
+                classroomClient.dispose();
+            }, 0);
+        };
     }, [classroomClient, examClient, examOccupancyClient, searchClient, spaceClient, teachingClient]);
     useEffect(() => {
         if (router.route !== 'exam') return;
@@ -151,6 +157,7 @@ function App() {
                         client={searchClient}
                         scope={searchScopeForRoute(router.route)}
                         onScopeChange={router.navigateSearchScope}
+                        onSearch={router.onSubmit}
                     />
                 ) : null}
 
@@ -194,7 +201,7 @@ function App() {
 
                 {router.route === 'classrooms' ? (
                     (!router.classrooms.date && (!router.classrooms.week || !router.classrooms.weekday)) || !router.classrooms.period ? (
-                        <ClassroomsLanding client={classroomClient} onChange={router.navigateClassrooms} query={router.classrooms.query} />
+                        <ClassroomsLanding client={classroomClient} onChange={router.navigateClassrooms} query={router.classrooms.query} recentQuery={router.classrooms.savedQuery} />
                     ) : (
                         <ClassroomsPage
                             date={router.classrooms.date}

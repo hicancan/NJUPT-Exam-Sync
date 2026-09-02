@@ -33,8 +33,9 @@ describe('product landing shells', () => {
     it('renders the timetable shell without downloading a class shard', () => {
         const html = renderToStaticMarkup(<TimetableLanding client={{ initialize: () => new Promise<never>(() => undefined) } as unknown as TeachingScheduleClient} savedClass="B240402" onOpenClass={() => undefined} />);
         expect(html).toContain('查询班级课表');
-        expect(html).toContain('placeholder="输入班级号，例如 B240402"');
+        expect(html).toContain('placeholder="输入班级号"');
         expect(html).toContain('继续查看 B240402');
+        expect(html).toContain('试一试');
     });
 
     it('renders the classroom hierarchy shell without waiting for occupancy data', () => {
@@ -51,8 +52,12 @@ describe('product landing shells', () => {
         expect(community).toContain('南邮社区搜索');
         expect(community).toContain('南邮生存手册');
         expect(community).toContain('NJUPT-NAVI/NJUPT-Survival-Guide');
+        expect(community).toContain('/community?q=%E6%A0%A1%E5%9B%AD%E7%BD%91');
+        expect(community).toContain('开发环境');
         expect(materials).toContain('南邮资料搜索');
         expect(materials).toContain('历年试卷');
         expect(materials).toContain('NJUPTFreeExams/NJUPT-General-Free-Exams');
+        expect(materials).toContain('/materials?q=%E9%AB%98%E7%AD%89%E6%95%B0%E5%AD%A6');
+        expect(materials).toContain('数据结构');
     });
 });

@@ -6,7 +6,7 @@ import { formatCampusBuildingLabel } from './model/spaceLabels';
 import './space.css';
 import './spacePlan.css';
 
-export type SpatialRoomState = 'free' | 'teaching' | 'exam' | 'both' | 'non-teaching';
+export type SpatialRoomState = 'free' | 'teaching' | 'exam';
 
 interface SpatialViewportProps {
     client: SpaceClient;
@@ -30,15 +30,9 @@ interface LoadedFloor {
 }
 
 const STATE_LABEL: Record<SpatialRoomState, string> = {
-    free: '未发现占用', teaching: '课程占用', exam: '考试占用', both: '课程与考试占用',
-    'non-teaching': '其他房间',
-};
-
-const EVIDENCE_LABEL: Record<string, string> = {
-    floor_plan_and_schedule: '平面图与教学或考试安排相互印证',
-    floor_plan_only: '平面图中可见，本期安排未使用',
-    schedule_only_geometry_missing: '安排中已使用，平面位置尚未采集',
-    unresolved: '仅保留来源记录',
+    free: '空闲',
+    teaching: '上课',
+    exam: '考试',
 };
 
 const points = (polygon: number[][], width: number, height: number): string => polygon.map(point => `${Number(point[0]) * width},${Number(point[1]) * height}`).join(' ');
@@ -122,9 +116,7 @@ export function SpatialViewport({
         onSelectedFamilyChange?.(null);
         window.setTimeout(() => (restoreFocus.current ?? selectedTrigger.current)?.focus(), 0);
     };
-    const stateFor = (family: SpaceFamilyView): SpatialRoomState => family.family.availability_eligible === 'ineligible'
-        ? 'non-teaching'
-        : roomState(family.family.space_family_id);
+    const stateFor = (family: SpaceFamilyView): SpatialRoomState => roomState(family.family.space_family_id);
     const choose = (family: SpaceFamilyView, element: HTMLElement | SVGElement) => {
         selectedTrigger.current = element;
         restoreFocus.current = element;
@@ -151,7 +143,7 @@ export function SpatialViewport({
                             viewBox={`0 0 ${viewWidth} ${viewHeight}`}
                             preserveAspectRatio="xMidYMid meet"
                             role="img"
-                            aria-label={`${buildingName}${floorLevel}楼房间分布`}
+                            aria-label={`${buildingName}${floorLevel}楼教室分布`}
                             onPointerDown={event => { if ((event.target as Element).closest('.spatial-room')) return; event.currentTarget.setPointerCapture(event.pointerId); setDrag({ x: event.clientX, y: event.clientY, panX: pan.x, panY: pan.y }); }}
                             onPointerMove={event => { if (!drag) return; setPan({ x: drag.panX + (event.clientX - drag.x) / zoom, y: drag.panY + (event.clientY - drag.y) / zoom }); }}
                             onPointerUp={() => setDrag(null)}
@@ -189,15 +181,14 @@ export function SpatialViewport({
                     )}
                 </div>
             ) : null}
-            <footer className="spatial-legend">{(['free','teaching','exam','both','non-teaching'] as const).map(state => <span key={state}><i className={`spatial-swatch spatial-room-${state}`} />{STATE_LABEL[state]}</span>)}</footer>
+            <footer className="spatial-legend">{(['free','teaching','exam'] as const).map(state => <span key={state}><i className={`spatial-swatch spatial-room-${state}`} />{STATE_LABEL[state]}</span>)}</footer>
             {visibleSelected ? <div className="space-detail-overlay" onMouseDown={event => { if (event.target === event.currentTarget) close(); }}>
                 <aside ref={detailPanel} tabIndex={-1} className="space-detail-panel" role="dialog" aria-modal="true" aria-labelledby="space-detail-title">
                     <div className="space-detail-handle" aria-hidden="true" />
                     <header><div><p>{formatCampusBuildingLabel(visibleSelected.campus.name, visibleSelected.building.name)} · {visibleSelected.floor.level}楼</p><h2 id="space-detail-title">{visibleSelected.family.room_number}</h2></div><button type="button" onClick={close} aria-label="关闭空间详情"><X /></button></header>
                     <div className="space-detail-body">
-                        <dl><div><dt>当前状态</dt><dd>{STATE_LABEL[stateFor(visibleSelected)]}</dd></div><div><dt>收录依据</dt><dd>{EVIDENCE_LABEL[visibleSelected.family.evidence_status] ?? '来源记录'}</dd></div><div><dt>类型</dt><dd>{visibleSelected.family.availability_eligible === 'eligible' ? '教学空间' : '其他房间'}</dd></div>{visibleSelected.family.aliases.length ? <div><dt>其他名称</dt><dd>{visibleSelected.family.aliases.join('、')}</dd></div> : null}</dl>
+                        <dl><div><dt>状态</dt><dd>{STATE_LABEL[stateFor(visibleSelected)]}</dd></div>{visibleSelected.family.aliases.length ? <div><dt>其他名称</dt><dd>{visibleSelected.family.aliases.join('、')}</dd></div> : null}</dl>
                         {detail?.(visibleSelected)}
-                        <p className="space-detail-caveat">空间图用于理解楼层和已发布占用关系，不代表消防疏散图或工程测绘成果。</p>
                     </div>
                 </aside>
             </div> : null}

@@ -261,7 +261,16 @@ describe("product copy contract", () => {
 
     expect(viewport).not.toContain("onWheel=");
     expect(viewport).not.toContain("未确认空间");
+    expect(viewport).toContain("free: '空闲'");
+    expect(viewport).toContain("teaching: '上课'");
+    expect(viewport).toContain("exam: '考试'");
+    expect(viewport).not.toContain("收录依据");
+    expect(viewport).not.toContain("不代表消防疏散图");
+    expect(viewport).not.toContain("相互印证");
     expect(classrooms).not.toContain("第一层只展示校区");
     expect(classrooms).not.toContain("按校区、楼栋和楼层逐级浏览");
+    expect(classrooms).not.toContain("未发现占用");
+    expect(classrooms).not.toContain("非教室");
+    expect(classrooms).toContain("当天空闲。");
   });
 });
