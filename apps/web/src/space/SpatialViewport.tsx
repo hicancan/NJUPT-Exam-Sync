@@ -191,7 +191,7 @@ export function SpatialViewport({
             {visibleSelected ? <div className="space-detail-overlay" onMouseDown={event => { if (event.target === event.currentTarget) close(); }}>
                 <aside ref={detailPanel} tabIndex={-1} className="space-detail-panel" role="dialog" aria-modal="true" aria-labelledby="space-detail-title">
                     <div className="space-detail-handle" aria-hidden="true" />
-                    <header><div><p>{visibleSelected.campus.name} · {visibleSelected.building.name} · {visibleSelected.floor.level}楼</p><h2 id="space-detail-title">{visibleSelected.family.room_number}</h2></div><button autoFocus type="button" onClick={close} aria-label="关闭空间详情"><X /></button></header>
+                    <header><div><p>{visibleSelected.campus.name} · {visibleSelected.building.name} · {visibleSelected.floor.level}楼</p><h2 id="space-detail-title">{visibleSelected.family.room_number}</h2></div><button type="button" onClick={close} aria-label="关闭空间详情"><X /></button></header>
                     <div className="space-detail-body">
                         <dl><div><dt>当前状态</dt><dd>{STATE_LABEL[stateFor(visibleSelected)]}</dd></div><div><dt>收录依据</dt><dd>{EVIDENCE_LABEL[visibleSelected.family.evidence_status] ?? '尚未确认'}</dd></div><div><dt>类型</dt><dd>{visibleSelected.family.availability_eligible === 'eligible' ? '教学空间' : visibleSelected.family.availability_eligible === 'ineligible' ? '非教学空间' : '尚未确认'}</dd></div>{visibleSelected.family.aliases.length ? <div><dt>其他名称</dt><dd>{visibleSelected.family.aliases.join('、')}</dd></div> : null}</dl>
                         {detail?.(visibleSelected)}
