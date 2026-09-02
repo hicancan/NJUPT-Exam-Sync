@@ -4,7 +4,7 @@
 
 # njupt-search
 
-南京邮电大学校园信息搜索
+南京邮电大学网站搜索与教务查询
 
 [![在线使用](https://img.shields.io/badge/在线使用-njupt.hicancan.top-4f46e5?style=for-the-badge)](https://njupt.hicancan.top)
 [![CI](https://img.shields.io/github/actions/workflow/status/hicancan/njupt-search/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/hicancan/njupt-search/actions/workflows/ci.yml)

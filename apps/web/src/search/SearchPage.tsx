@@ -16,9 +16,10 @@ interface SearchPageProps {
     query: string;
     client: SearchClient;
     scope: SearchScope;
+    onScopeChange: (route: SearchScope['route']) => void;
 }
 
-export function SearchPage({ query, client, scope }: SearchPageProps) {
+export function SearchPage({ query, client, scope, onScopeChange }: SearchPageProps) {
     const trimmedQuery = query.trim();
     const enabled = trimmedQuery.length >= 2;
     const [sortMode, setSortMode] = useState<SortMode>('relevance');
@@ -102,9 +103,11 @@ export function SearchPage({ query, client, scope }: SearchPageProps) {
                 documentCount={scopedDocumentCount}
                 sortMode={sortMode}
                 filters={filters}
+                scope={scope}
                 datePreset={datePreset}
                 filterOptions={scopedFilterOptions}
                 fixedSourceId={scope.sourceId}
+                fixedSourceName={scope.sourceName}
                 supportsDates={scope.supportsDates}
                 canLoadMore={Boolean(
                     response
@@ -117,6 +120,7 @@ export function SearchPage({ query, client, scope }: SearchPageProps) {
                     ...patch,
                     ...scopeFilters(),
                 }))}
+                onScopeChange={onScopeChange}
                 onDatePresetChange={(preset) => {
                     setDatePreset(preset);
                     setFilters(previous => ({ ...previous, ...dateFilters(preset) }));

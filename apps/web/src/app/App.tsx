@@ -150,6 +150,7 @@ function App() {
                         query={router.search.query}
                         client={searchClient}
                         scope={searchScopeForRoute(router.route)}
+                        onScopeChange={router.navigateSearchScope}
                     />
                 ) : null}
 

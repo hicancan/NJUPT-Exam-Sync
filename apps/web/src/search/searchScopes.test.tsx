@@ -33,18 +33,23 @@ describe('route-owned search scopes', () => {
                 documentCount={1049}
                 sortMode="relevance"
                 filters={{ sourceId: SEARCH_SCOPES.materials.sourceId }}
+                scope={SEARCH_SCOPES.materials}
                 datePreset="all"
                 filterOptions={null}
                 fixedSourceId={SEARCH_SCOPES.materials.sourceId}
+                fixedSourceName={SEARCH_SCOPES.materials.sourceName}
                 supportsDates={false}
                 canLoadMore={false}
                 onSortModeChange={noop}
                 onFiltersChange={noop}
+                onScopeChange={noop}
                 onDatePresetChange={noop}
                 onLoadMore={noop}
             />,
         );
-        expect(html).not.toContain('aria-label="来源筛选"');
+        expect(html).toContain('aria-label="搜索范围"');
+        expect(html).toContain('aria-label="具体来源"');
+        expect(html).toContain('南邮历年资料');
         expect(html).not.toContain('aria-label="时间筛选"');
         expect(html).toContain('aria-label="类型筛选"');
         expect(html).not.toContain('筛选后');

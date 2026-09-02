@@ -67,6 +67,9 @@ export function useAppRouter() {
     const navigateClassrooms = useCallback((params: Record<string, string | null>, replace = false) => {
         navigate({ route: 'classrooms', params }, replace);
     }, [navigate]);
+    const navigateSearchScope = useCallback((nextRoute: 'search' | 'community' | 'materials') => {
+        navigate({ route: nextRoute, params: { q: qParam } });
+    }, [navigate, qParam]);
 
     return {
         route,
@@ -97,5 +100,6 @@ export function useAppRouter() {
         },
         navigateTimetable,
         navigateClassrooms,
+        navigateSearchScope,
     };
 }

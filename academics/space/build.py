@@ -61,8 +61,8 @@ def _read_review(path: Path) -> dict[str, Any]:
         raise SpaceSnapshotError(f"Reviewed floor geometry is invalid: {path}") from exc
     if not isinstance(payload, dict) or payload.get("format") != REVIEW_FORMAT or not isinstance(payload.get("floors"), list):
         raise SpaceSnapshotError("Reviewed floor geometry has an incompatible format")
-    if len(payload["floors"]) != 22:
-        raise SpaceSnapshotError("The current reviewed intake must contain all 22 floor plans")
+    if len(payload["floors"]) != 23:
+        raise SpaceSnapshotError("The current reviewed intake must contain all 23 floor plans")
     return payload
 
 
@@ -82,8 +82,8 @@ def _read_reconstruction(root: Path, review: dict[str, Any]) -> tuple[dict[str, 
         raise SpaceSnapshotError("Floor-plan reconstruction identity mismatch")
     if review.get("reconstruction_id") != manifest["reconstruction_id"]:
         raise SpaceSnapshotError("Reviewed geometry does not accept the supplied floor-plan reconstruction")
-    if manifest.get("floor_count") != 22 or not isinstance(manifest.get("floors"), list) or len(manifest["floors"]) != 22:
-        raise SpaceSnapshotError("Floor-plan reconstruction must contain exactly the reviewed 22 floors")
+    if manifest.get("floor_count") != 23 or not isinstance(manifest.get("floors"), list) or len(manifest["floors"]) != 23:
+        raise SpaceSnapshotError("Floor-plan reconstruction must contain exactly the reviewed 23 floors")
 
     records: dict[tuple[str, int], dict[str, Any]] = {}
     for entry in manifest["floors"]:
@@ -308,7 +308,7 @@ def _compile(
                 "aliases": [],
                 "space_unit_ids": [],
                 "evidence_status": "unresolved",
-                "availability_eligible": "unknown",
+                "availability_eligible": "ineligible",
             }
         return families[key]
 
@@ -328,8 +328,8 @@ def _compile(
                 "space_family_id": family["space_family_id"],
                 "canonical_label": canonical_label,
                 "raw_labels": _stable_sources(raw_labels),
-                "space_type": "unknown",
-                "availability_eligible": "unknown",
+                "space_type": "other_room",
+                "availability_eligible": "ineligible",
                 "geometry_confidence": "missing",
                 "identity_confidence": identity_confidence,
                 "evidence_refs": _stable_sources(evidence_refs),

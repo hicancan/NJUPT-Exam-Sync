@@ -16,7 +16,7 @@ const occurrences = (value, pattern) => value.match(pattern)?.length ?? 0;
 const pages = [
     {
         file: 'index.html',
-        title: 'njupt-search｜南邮校园信息搜索',
+        title: 'njupt-search｜南邮网站与教务查询',
         description: '搜索南邮校方信息、校园经验和课程资料，查询班级课表、考试安排与教室空间。',
         canonical: 'https://njupt.hicancan.top/',
         h1: 'njupt-search',
@@ -24,10 +24,10 @@ const pages = [
     },
     {
         file: 'search/index.html',
-        title: '南邮校园信息搜索｜njupt-search',
+        title: '南邮网站搜索｜njupt-search',
         description: '搜索南京邮电大学各网站的通知、附件和办事信息。',
         canonical: 'https://njupt.hicancan.top/search',
-        h1: '南邮校园信息搜索',
+        h1: '南邮网站搜索',
     },
     {
         file: 'exam/index.html',

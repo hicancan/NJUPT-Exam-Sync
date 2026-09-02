@@ -19,7 +19,7 @@ const QUICK_SEARCH_ICONS: Record<QuickSearchIcon, typeof CalendarDays> = {
 };
 
 const GROUP_ROUTES: Partial<Record<QuickSearchGroup, '/search' | '/community' | '/materials'>> = {
-    校园信息: '/search',
+    网站搜索: '/search',
     社区搜索: '/community',
     资料搜索: '/materials',
 };
@@ -63,7 +63,7 @@ export function HomePage({
                 </div>
 
                 <div className="mt-6 w-full space-y-4">
-                    {(['教务搜索', '校园信息', '社区搜索', '资料搜索'] as const).map(group => (
+                    {(['教务查询', '网站搜索', '社区搜索', '资料搜索'] as const).map(group => (
                         <section key={group} aria-labelledby={`home-group-${group}`}>
                             <h2 id={`home-group-${group}`} className="mb-2 text-center text-xs font-medium tracking-[0.12em] text-[#80868b] dark:text-[#9aa0a6]">
                                 {GROUP_ROUTES[group] ? (

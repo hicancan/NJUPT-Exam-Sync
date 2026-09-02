@@ -13,6 +13,12 @@ export interface SearchScope {
     supportsDates: boolean;
 }
 
+export const SEARCH_SCOPE_OPTIONS: readonly Pick<SearchScope, 'route' | 'title'>[] = [
+    { route: 'search', title: '网站搜索' },
+    { route: 'community', title: '社区搜索' },
+    { route: 'materials', title: '资料搜索' },
+] as const;
+
 export const REPOSITORY_SEARCH_SOURCE_IDS = [
     'njupt-survival-guide',
     'njupt-general-free-exams',
@@ -21,7 +27,7 @@ export const REPOSITORY_SEARCH_SOURCE_IDS = [
 export const SEARCH_SCOPES: Record<SearchScope['route'], SearchScope> = {
     search: {
         route: 'search',
-        title: '南邮校园信息搜索',
+        title: '南邮网站搜索',
         description: '输入关键词，搜索学校各网站的通知、附件和办事信息。',
         placeholder: '搜索通知、附件和办事信息',
         ariaLabel: '搜索学校通知、附件和办事信息',

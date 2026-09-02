@@ -283,8 +283,8 @@ Python 拥有 ExamSnapshot 和 RoomOccupancy 写出；每种 artifact 在 TypeSc
 
 首页快捷入口使用判别联合表达 `timetable`、`classrooms`、`exam`、
 `search`、`community` 或 `materials` 意图，而不是依靠按钮文字触发隐藏分支。
-教务产品统一归入“教务搜索”，考试安排仍保持自己的 `/exam` 路由；社区与资料
-各自拥有独立路由和固定来源。校园信息快捷入口只提供查询意图，随后仍由 SearchClient →
+教务产品统一归入“教务查询”，考试安排仍保持自己的 `/exam` 路由；网站、社区与资料
+各自拥有独立搜索范围和具体来源。网站搜索快捷入口只提供查询意图，随后仍由 SearchClient →
 Worker → WASM → Rust core 完成统一搜索；不存在热词结果、独立排名或 UI
 fallback。
 

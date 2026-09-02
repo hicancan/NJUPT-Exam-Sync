@@ -217,6 +217,11 @@ def load_space_snapshot(root: Path) -> SpaceSnapshot:
             raise SpaceSnapshotError("Space unit chunk identity mismatch")
         units.extend(document["space_units"])
 
+    if any(item.get("availability_eligible") not in {"eligible", "ineligible"} for item in families):
+        raise SpaceSnapshotError("SpaceFamily availability must have a terminal classification")
+    if any(item.get("availability_eligible") not in {"eligible", "ineligible"} for item in units):
+        raise SpaceSnapshotError("SpaceUnit availability must have a terminal classification")
+
     _validate_unique(campuses, "campus_id", "campus")
     _validate_unique(buildings, "building_id", "building")
     _validate_unique(floors, "floor_id", "floor")

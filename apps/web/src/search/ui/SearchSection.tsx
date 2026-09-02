@@ -15,6 +15,7 @@ import {
     resultSummary,
     type SearchDatePreset,
 } from './searchLabels';
+import type { SearchScope } from '../searchScopes';
 
 interface SearchSectionProps {
     query: string;
@@ -23,13 +24,16 @@ interface SearchSectionProps {
     documentCount: number;
     sortMode: SortMode;
     filters: SearchFilters;
+    scope: SearchScope;
     datePreset: SearchDatePreset;
     filterOptions: FilterOptions | null;
     fixedSourceId?: string;
+    fixedSourceName?: string;
     supportsDates?: boolean;
     canLoadMore: boolean;
     onSortModeChange: (sortMode: SortMode) => void;
     onFiltersChange: (patch: SearchFilters) => void;
+    onScopeChange: (route: SearchScope['route']) => void;
     onDatePresetChange: (preset: SearchDatePreset) => void;
     onLoadMore: () => void;
 }
@@ -53,13 +57,16 @@ export function SearchSection({
     documentCount,
     sortMode,
     filters,
+    scope,
     datePreset,
     filterOptions,
     fixedSourceId,
+    fixedSourceName,
     supportsDates = true,
     canLoadMore,
     onSortModeChange,
     onFiltersChange,
+    onScopeChange,
     onDatePresetChange,
     onLoadMore,
 }: SearchSectionProps) {
@@ -84,11 +91,14 @@ export function SearchSection({
                     facetOptions={facetOptions}
                     filterOptions={filterOptions}
                     filters={filters}
+                    scope={scope}
                     fixedSourceId={fixedSourceId}
+                    fixedSourceName={fixedSourceName}
                     supportsDates={supportsDates}
                     datePreset={datePreset}
                     sortMode={sortMode}
                     onFiltersChange={onFiltersChange}
+                    onScopeChange={onScopeChange}
                     onDatePresetChange={onDatePresetChange}
                     onSortModeChange={onSortModeChange}
                 />
