@@ -1,4 +1,5 @@
 import type { TeachingMeeting } from '@njupt-search/academics-timetable';
+import { courseIdentity } from './courseColors';
 
 export interface PositionedMeeting {
     meeting: TeachingMeeting;
@@ -12,6 +13,30 @@ export interface MeetingGroup {
     slotCount: number;
     positioned: PositionedMeeting[];
 }
+
+export interface MeetingOverlap {
+    count: number;
+    kind: 'parallel' | 'overlap';
+}
+
+const intersects = (left: TeachingMeeting, right: TeachingMeeting): boolean => (
+    left.weekday === right.weekday
+    && left.start_period <= right.end_period
+    && left.end_period >= right.start_period
+);
+
+export const describeMeetingOverlap = (
+    meeting: TeachingMeeting,
+    activeMeetings: TeachingMeeting[],
+): MeetingOverlap | null => {
+    const overlapping = activeMeetings.filter(other => intersects(meeting, other));
+    if (overlapping.length <= 1) return null;
+    const identity = courseIdentity(meeting);
+    return {
+        count: overlapping.length,
+        kind: overlapping.every(other => courseIdentity(other) === identity) ? 'parallel' : 'overlap',
+    };
+};
 
 export const groupOverlappingMeetings = (meetings: TeachingMeeting[]): MeetingGroup[] => {
     const groups: MeetingGroup[] = [];

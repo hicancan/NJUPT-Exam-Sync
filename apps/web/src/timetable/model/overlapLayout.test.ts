@@ -1,13 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import type { TeachingMeeting } from '@njupt-search/academics-timetable';
-import { groupOverlappingMeetings } from './conflictLayout';
+import { describeMeetingOverlap, groupOverlappingMeetings } from './overlapLayout';
 
-const meeting = (meetingId: string, weekday: number, startPeriod: number, endPeriod: number): TeachingMeeting => ({
+const meeting = (
+    meetingId: string,
+    weekday: number,
+    startPeriod: number,
+    endPeriod: number,
+    courseCode = meetingId,
+): TeachingMeeting => ({
     meeting_id: meetingId,
     teaching_class_id: null,
     teaching_class_name: null,
-    course_code: meetingId,
-    course_name: meetingId,
+    course_code: courseCode,
+    course_name: courseCode,
     course_category: null,
     course_nature: null,
     teacher: null,
@@ -56,7 +62,7 @@ describe('groupOverlappingMeetings', () => {
         ]);
     });
 
-    it('does not group adjacent or different-day schedules as conflicts', () => {
+    it('does not group adjacent or different-day schedules together', () => {
         const groups = groupOverlappingMeetings([
             meeting('one', 1, 1, 2),
             meeting('two', 1, 3, 4),
@@ -64,5 +70,24 @@ describe('groupOverlappingMeetings', () => {
         ]);
         expect(groups).toHaveLength(3);
         expect(groups.every(group => group.slotCount === 1)).toBe(true);
+    });
+});
+
+describe('describeMeetingOverlap', () => {
+    it('recognizes simultaneous arrangements of the same course as parallel', () => {
+        const first = meeting('lecture', 1, 6, 7, 'TX100011S');
+        const second = meeting('flipped', 1, 6, 7, 'TX100011S');
+        expect(describeMeetingOverlap(first, [first, second])).toEqual({ count: 2, kind: 'parallel' });
+    });
+
+    it('recognizes intersecting different courses as a time overlap', () => {
+        const first = meeting('network', 6, 6, 7, 'JS1111X0S');
+        const second = meeting('signals', 6, 6, 7, 'TX100011S');
+        expect(describeMeetingOverlap(first, [first, second])).toEqual({ count: 2, kind: 'overlap' });
+    });
+
+    it('returns no marker for an isolated arrangement', () => {
+        const only = meeting('only', 3, 1, 2);
+        expect(describeMeetingOverlap(only, [only])).toBeNull();
     });
 });

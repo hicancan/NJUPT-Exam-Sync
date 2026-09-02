@@ -169,7 +169,7 @@
 .timetable-course span,
 .timetable-course small { overflow: hidden; font-size: 11px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; opacity: .9; }
 .timetable-course em { margin-top: 2px; font-size: 10px; font-style: normal; font-weight: 700; }
-.timetable-course.has-conflict { border-style: dashed; }
+.timetable-course.has-overlap { border-style: dashed; }
 .timetable-course.is-inactive {
     --course-bg: #f1f3f4;
     --course-border: #bdc1c6;
@@ -184,25 +184,25 @@
 }
 .dark .timetable-course.is-inactive:hover { background: #3c4043; }
 
-.timetable-conflict-group {
+.timetable-overlap-group {
     z-index: 3;
     display: grid;
-    grid-template-columns: repeat(var(--conflict-columns), minmax(0, 1fr));
-    grid-template-rows: repeat(var(--conflict-rows), minmax(0, 1fr));
+    grid-template-columns: repeat(var(--overlap-columns), minmax(0, 1fr));
+    grid-template-rows: repeat(var(--overlap-rows), minmax(0, 1fr));
     gap: 3px;
     min-width: 0;
     margin: 0 3px;
 }
-.timetable-conflict-group .timetable-course {
+.timetable-overlap-group .timetable-course {
     min-height: 0;
     margin-block: var(--timetable-gap);
     margin-inline: 0;
     padding-inline: 3px;
 }
-.timetable-conflict-group .timetable-course strong { font-size: 11px; -webkit-line-clamp: 3; }
-.timetable-conflict-group .timetable-course span,
-.timetable-conflict-group .timetable-course small,
-.timetable-conflict-group .timetable-course em { font-size: 9px; }
+.timetable-overlap-group .timetable-course strong { font-size: 11px; -webkit-line-clamp: 3; }
+.timetable-overlap-group .timetable-course span,
+.timetable-overlap-group .timetable-course small,
+.timetable-overlap-group .timetable-course em { font-size: 9px; }
 
 .course-tone-0 { --course-bg:#e8f0fe;--course-border:#b7cdf6;--course-fg:#174ea6; }
 .course-tone-1 { --course-bg:#e0f7fa;--course-border:#a6e1e8;--course-fg:#006064; }
@@ -353,12 +353,12 @@
         -webkit-line-clamp: 2;
     }
     .timetable-course em { font-size: 8px; line-height: 1.2; }
-    .timetable-conflict-group { gap: 1px; margin-inline: 1px; }
-    .timetable-conflict-group .timetable-course { padding-inline: 1px; }
-    .timetable-conflict-group .timetable-course strong { font-size: 9px; }
-    .timetable-conflict-group .timetable-course span,
-    .timetable-conflict-group .timetable-course small,
-    .timetable-conflict-group .timetable-course em { font-size: 8px; }
+    .timetable-overlap-group { gap: 1px; margin-inline: 1px; }
+    .timetable-overlap-group .timetable-course { padding-inline: 1px; }
+    .timetable-overlap-group .timetable-course strong { font-size: 9px; }
+    .timetable-overlap-group .timetable-course span,
+    .timetable-overlap-group .timetable-course small,
+    .timetable-overlap-group .timetable-course em { font-size: 8px; }
     .timetable-day .timetable-grid { grid-template-columns: 50px minmax(0, 1fr); }
     .course-detail-overlay { align-items: flex-end; }
     .course-detail-panel { width: 100%; height: min(78dvh, 720px); border-top: 1px solid var(--course-border); border-left: 0; border-radius: 22px 22px 0 0; box-shadow: 0 -12px 28px rgb(32 33 36 / 18%); animation: course-sheet-in 180ms ease-out; }

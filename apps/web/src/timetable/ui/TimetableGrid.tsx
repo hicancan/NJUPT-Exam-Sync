@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import type { TeachingMeeting, TeachingPeriod, TeachingWeek } from '@njupt-search/academics-timetable';
 import { courseIdentity } from '../model/courseColors';
 import { meetingDate, todayInShanghai } from '../model/calendar';
-import { groupOverlappingMeetings } from '../model/conflictLayout';
+import { describeMeetingOverlap, groupOverlappingMeetings, type MeetingOverlap } from '../model/overlapLayout';
 import { alternatingWeekLabel, showAsInactiveAlternating } from '../model/weekPattern';
 
 interface TimetableGridProps {
@@ -22,27 +22,32 @@ const courseButton = (
     meeting: TeachingMeeting,
     tones: Map<string, number>,
     view: 'week' | 'day',
-    conflictCount: number,
+    overlap: MeetingOverlap | null,
     activeThisWeek: boolean,
     onOpen: TimetableGridProps['onOpen'],
     style?: CSSProperties,
 ) => {
     const tone = tones.get(courseIdentity(meeting)) ?? 0;
-    const conflict = activeThisWeek && conflictCount > 1;
     const alternating = alternatingWeekLabel(meeting);
+    const overlapLabel = overlap?.kind === 'parallel' ? `并行 ${overlap.count} 项` : overlap ? `重叠 ${overlap.count} 项` : null;
+    const overlapDescription = overlap?.kind === 'parallel'
+        ? `，同一课程共有${overlap.count}项并行安排`
+        : overlap
+            ? `，共有${overlap.count}项时间重叠安排`
+            : '';
     return (
         <button
             key={meeting.meeting_id}
             type="button"
-            className={`timetable-course course-tone-${tone} ${activeThisWeek ? '' : 'is-inactive'} ${conflict ? 'has-conflict' : ''}`}
+            className={`timetable-course course-tone-${tone} ${activeThisWeek ? '' : 'is-inactive'} ${overlap ? 'has-overlap' : ''}`}
             style={style}
             onClick={event => onOpen(meeting, event.currentTarget)}
-            aria-label={`${meeting.course_name}，${meeting.location ?? '地点未注明'}，第${meeting.start_period}至${meeting.end_period}节${activeThisWeek ? '' : `，${alternating ?? ''}课程，本周不上课`}${conflict ? `，共有${conflictCount}条时间冲突安排` : ''}`}
+            aria-label={`${meeting.course_name}，${meeting.location ?? '地点未注明'}，第${meeting.start_period}至${meeting.end_period}节${activeThisWeek ? overlapDescription : `，${alternating ?? ''}课程，本周不上课`}`}
         >
             <strong>{meeting.course_name}</strong>
             {meeting.location ? <span>{meeting.location}</span> : null}
             {view === 'day' && meeting.teacher ? <small>{meeting.teacher}</small> : null}
-            {!activeThisWeek ? <em>{alternating} · 本周不上课</em> : conflict ? <em>冲突 {conflictCount} 项</em> : null}
+            {!activeThisWeek ? <em>{alternating} · 本周不上课</em> : overlapLabel ? <em>{overlapLabel}</em> : null}
         </button>
     );
 };
@@ -55,9 +60,9 @@ export function TimetableGrid({ meetings, week, periods, tones, view, day, onOpe
     const today = todayInShanghai();
     const columns = view === 'day' ? 1 : 7;
     const groups = groupOverlappingMeetings(visible);
-    const conflictCount = (meeting: TeachingMeeting): number => activeIds.has(meeting.meeting_id)
-        ? active.filter(other => other.weekday === meeting.weekday && other.start_period <= meeting.end_period && other.end_period >= meeting.start_period).length
-        : 0;
+    const overlapFor = (meeting: TeachingMeeting): MeetingOverlap | null => activeIds.has(meeting.meeting_id)
+        ? describeMeetingOverlap(meeting, active)
+        : null;
     return (
         <div className={`timetable-scroll timetable-${view}`}>
             <div className="timetable-grid" style={{ '--day-count': columns } as CSSProperties}>
@@ -76,21 +81,21 @@ export function TimetableGrid({ meetings, week, periods, tones, view, day, onOpe
                     const column = view === 'day' ? 2 : group.weekday + 1;
                     if (group.positioned.length === 1) {
                         const meeting = group.positioned[0]?.meeting;
-                        return meeting ? courseButton(meeting, tones, view, conflictCount(meeting), activeIds.has(meeting.meeting_id), onOpen, { gridColumn: column, gridRow: `${meeting.start_period + 1} / ${meeting.end_period + 2}` }) : null;
+                        return meeting ? courseButton(meeting, tones, view, overlapFor(meeting), activeIds.has(meeting.meeting_id), onOpen, { gridColumn: column, gridRow: `${meeting.start_period + 1} / ${meeting.end_period + 2}` }) : null;
                     }
                     return (
                         <div
                             key={`${group.weekday}:${group.startPeriod}:${group.positioned.map(item => item.meeting.meeting_id).join(':')}`}
-                            className="timetable-conflict-group"
+                            className="timetable-overlap-group"
                             style={{
-                                '--conflict-columns': group.slotCount,
-                                '--conflict-rows': group.endPeriod - group.startPeriod + 1,
+                                '--overlap-columns': group.slotCount,
+                                '--overlap-rows': group.endPeriod - group.startPeriod + 1,
                                 gridColumn: column,
                                 gridRow: `${group.startPeriod + 1} / ${group.endPeriod + 2}`,
                             } as CSSProperties}
-                            aria-label={`${group.positioned.length}条时间冲突安排`}
+                            aria-label={`${group.positioned.length}项同时段安排`}
                         >
-                            {group.positioned.map(({ meeting, slot }) => courseButton(meeting, tones, view, conflictCount(meeting), activeIds.has(meeting.meeting_id), onOpen, {
+                            {group.positioned.map(({ meeting, slot }) => courseButton(meeting, tones, view, overlapFor(meeting), activeIds.has(meeting.meeting_id), onOpen, {
                                 gridColumn: slot + 1,
                                 gridRow: `${meeting.start_period - group.startPeriod + 1} / ${meeting.end_period - group.startPeriod + 2}`,
                             }))}
