@@ -197,9 +197,11 @@ export function ClassroomsPage({
       periods: [...nextPeriods].sort((left, right) => left - right),
     });
   const toggleDetailPeriod = (nextPeriod: number) => {
-    const next = detailPeriods.includes(nextPeriod)
-      ? detailPeriods.filter((item) => item !== nextPeriod)
-      : [...detailPeriods, nextPeriod];
+    const next = allDetailPeriods
+      ? [nextPeriod]
+      : detailPeriods.includes(nextPeriod)
+        ? detailPeriods.filter((item) => item !== nextPeriod)
+        : [...detailPeriods, nextPeriod];
     setDetailPeriods(next);
   };
   const update = (next: Record<string, string | null>) =>
