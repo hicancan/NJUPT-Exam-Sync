@@ -29,6 +29,16 @@ interface LoadedFloor {
     units: SpaceUnit[];
 }
 
+interface SpatialDrag {
+    pointerId: number;
+    clientX: number;
+    clientY: number;
+    panX: number;
+    panY: number;
+    screenScaleX: number;
+    screenScaleY: number;
+}
+
 const STATE_LABEL: Record<SpatialRoomState, string> = {
     free: '空闲',
     teaching: '上课',
@@ -47,7 +57,7 @@ export function SpatialViewport({
     const [selected, setSelected] = useState<SpaceFamilyView | null>(null);
     const [zoom, setZoom] = useState(1);
     const [pan, setPan] = useState({ x: 0, y: 0 });
-    const [drag, setDrag] = useState<{ x: number; y: number; panX: number; panY: number } | null>(null);
+    const drag = useRef<SpatialDrag | null>(null);
     const selectedTrigger = useRef<HTMLElement | SVGElement | null>(null);
     const restoreFocus = useRef<HTMLElement | SVGElement | null>(null);
     const detailPanel = useRef<HTMLElement | null>(null);
@@ -144,9 +154,34 @@ export function SpatialViewport({
                             preserveAspectRatio="xMidYMid meet"
                             role="img"
                             aria-label={`${buildingName} ${floorLevel}楼教室分布`}
-                            onPointerDown={event => { if ((event.target as Element).closest('.spatial-room')) return; event.currentTarget.setPointerCapture(event.pointerId); setDrag({ x: event.clientX, y: event.clientY, panX: pan.x, panY: pan.y }); }}
-                            onPointerMove={event => { if (!drag) return; setPan({ x: drag.panX + (event.clientX - drag.x) / zoom, y: drag.panY + (event.clientY - drag.y) / zoom }); }}
-                            onPointerUp={() => setDrag(null)}
+                            onPointerDown={event => {
+                                if ((event.target as Element).closest('.spatial-room')) return;
+                                const matrix = event.currentTarget.getScreenCTM();
+                                const screenScaleX = matrix ? Math.hypot(matrix.a, matrix.b) : 1;
+                                const screenScaleY = matrix ? Math.hypot(matrix.c, matrix.d) : 1;
+                                event.currentTarget.setPointerCapture(event.pointerId);
+                                drag.current = {
+                                    pointerId: event.pointerId,
+                                    clientX: event.clientX,
+                                    clientY: event.clientY,
+                                    panX: pan.x,
+                                    panY: pan.y,
+                                    screenScaleX: screenScaleX || 1,
+                                    screenScaleY: screenScaleY || 1,
+                                };
+                            }}
+                            onPointerMove={event => {
+                                const activeDrag = drag.current;
+                                if (!activeDrag || activeDrag.pointerId !== event.pointerId) return;
+                                event.preventDefault();
+                                setPan({
+                                    x: activeDrag.panX + (event.clientX - activeDrag.clientX) / activeDrag.screenScaleX,
+                                    y: activeDrag.panY + (event.clientY - activeDrag.clientY) / activeDrag.screenScaleY,
+                                });
+                            }}
+                            onPointerUp={event => { if (drag.current?.pointerId === event.pointerId) drag.current = null; }}
+                            onPointerCancel={event => { if (drag.current?.pointerId === event.pointerId) drag.current = null; }}
+                            onLostPointerCapture={event => { if (drag.current?.pointerId === event.pointerId) drag.current = null; }}
                         >
                             <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
                                 <image className="spatial-plan" href={current.planUrl} x="0" y="0" width={viewWidth} height={viewHeight} preserveAspectRatio="none" />
