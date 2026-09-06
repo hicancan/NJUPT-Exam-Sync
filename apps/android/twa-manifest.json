@@ -20,8 +20,8 @@
     "path": "android.keystore",
     "alias": "android"
   },
-  "appVersionName": "2.3.0",
-  "appVersionCode": 2,
+  "appVersionName": "2.4.0",
+  "appVersionCode": 4,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "fallbackType": "customtabs",
@@ -38,5 +38,5 @@
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
   "displayOverride": [],
-  "appVersion": "2.3.0"
+  "appVersion": "2.4.0"
 }
