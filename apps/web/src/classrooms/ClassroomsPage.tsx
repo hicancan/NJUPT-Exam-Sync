@@ -18,6 +18,12 @@ import {
   type SpatialRoomState,
 } from "@/space/SpatialViewport";
 import { collapsedCampusBuilding } from "./model/spaceHierarchy";
+import { PeriodPointSelector } from "./ui/PeriodPointSelector";
+import {
+  PERIOD_STATE_CLASS,
+  PERIOD_STATE_LABEL,
+  summarizePeriodStates,
+} from "./ui/periodPointModel";
 
 interface ClassroomsPageProps {
   date: string | null;
@@ -35,18 +41,6 @@ interface ClassroomsPageProps {
 
 const natural = (left: string, right: string) =>
   left.localeCompare(right, "zh-CN", { numeric: true, sensitivity: "base" });
-const STATE_LABEL: Record<SpatialRoomState, string> = {
-  free: "空闲",
-  teaching: "上课",
-  exam: "考试",
-};
-const STATE_BADGE_CLASS: Record<SpatialRoomState, string> = {
-  free: "bg-[#e8f0fe] text-[#174ea6] dark:bg-[#183153] dark:text-[#aecbfa]",
-  teaching: "bg-[#e6f4ea] text-[#137333] dark:bg-[#173b27] dark:text-[#81c995]",
-  exam: "bg-[#fef7e0] text-[#8d5b00] dark:bg-[#493a14] dark:text-[#fdd663]",
-};
-const ALL_PERIODS = Array.from({ length: 12 }, (_, indexValue) => indexValue + 1);
-
 export function ClassroomsPage({
   date,
   week,
@@ -78,7 +72,7 @@ export function ClassroomsPage({
   const [detailSelection, setDetailSelection] = useState<{
     key: string;
     periods: number[];
-  }>({ key: "", periods: ALL_PERIODS });
+  }>({ key: "", periods: [] });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -113,9 +107,9 @@ export function ClassroomsPage({
     null;
   const collapsedBuilding = Boolean(
     activeCampus &&
-    activeBuilding &&
-    collapsedCampusBuilding(activeCampus, index?.space.buildings ?? [])
-      ?.building_id === activeBuilding.building_id,
+      activeBuilding &&
+      collapsedCampusBuilding(activeCampus, index?.space.buildings ?? [])
+        ?.building_id === activeBuilding.building_id,
   );
 
   useEffect(() => {
@@ -127,7 +121,12 @@ export function ClassroomsPage({
         controller.signal,
       )
       .then((nextResult) => {
-        setLoadState({ key: requestKey, contextKey: viewContextKey, result: nextResult, error: null });
+        setLoadState({
+          key: requestKey,
+          contextKey: viewContextKey,
+          result: nextResult,
+          error: null,
+        });
       })
       .catch((reason) => {
         if (controller.signal.aborted) return;
@@ -154,7 +153,8 @@ export function ClassroomsPage({
     viewContextKey,
   ]);
 
-  const result = loadState.contextKey === viewContextKey ? loadState.result : null;
+  const result =
+    loadState.contextKey === viewContextKey ? loadState.result : null;
   const error =
     indexError ?? (loadState.key === requestKey ? loadState.error : null);
   const effectiveWeek = result?.week ?? week ?? 1;
@@ -185,25 +185,22 @@ export function ClassroomsPage({
     return () => controller.abort();
   }, [activeFloor, client, resolvedDate, room, roomDayKey]);
   const roomDay = roomDayState.key === roomDayKey ? roomDayState.result : null;
-  const roomDayError = roomDayState.key === roomDayKey ? roomDayState.error : null;
+  const roomDayError =
+    roomDayState.key === roomDayKey ? roomDayState.error : null;
+  const availablePeriods =
+    index?.manifest.periods.map((item) => item.period) ?? [];
   const detailPeriods =
     detailSelection.key === roomDayKey
       ? detailSelection.periods
-      : ALL_PERIODS;
-  const allDetailPeriods = detailPeriods.length === ALL_PERIODS.length;
+      : availablePeriods;
+  const allDetailPeriods =
+    availablePeriods.length > 0 &&
+    availablePeriods.every((item) => detailPeriods.includes(item));
   const setDetailPeriods = (nextPeriods: number[]) =>
     setDetailSelection({
       key: roomDayKey,
       periods: [...nextPeriods].sort((left, right) => left - right),
     });
-  const toggleDetailPeriod = (nextPeriod: number) => {
-    const next = allDetailPeriods
-      ? [nextPeriod]
-      : detailPeriods.includes(nextPeriod)
-        ? detailPeriods.filter((item) => item !== nextPeriod)
-        : [...detailPeriods, nextPeriod];
-    setDetailPeriods(next);
-  };
   const update = (next: Record<string, string | null>) =>
     onChange({
       date,
@@ -259,9 +256,15 @@ export function ClassroomsPage({
   const freeCount = floorFamilies.filter(
     (item) => roomState(item.family.space_family_id) === "free",
   ).length;
-  const examOccupiesPeriod = (startTimestamp: string, endTimestamp: string, periodNumber: number) => {
+  const examOccupiesPeriod = (
+    startTimestamp: string,
+    endTimestamp: string,
+    periodNumber: number,
+  ) => {
     if (!roomDay || !index) return false;
-    const periodItem = index.manifest.periods.find((item) => item.period === periodNumber);
+    const periodItem = index.manifest.periods.find(
+      (item) => item.period === periodNumber,
+    );
     if (!periodItem) return false;
     const start = `${roomDay.date}T${periodItem.start_time}:00+08:00`;
     const end = `${roomDay.date}T${periodItem.end_time}:00+08:00`;
@@ -270,15 +273,23 @@ export function ClassroomsPage({
   const roomDayPeriodState = (periodNumber: number): SpatialRoomState => {
     if (!roomDay) return "free";
     const teaching = roomDay.teaching.some(
-      (item) => item.start_period <= periodNumber && item.end_period >= periodNumber,
+      (item) =>
+        item.start_period <= periodNumber && item.end_period >= periodNumber,
     );
     const exam = roomDay.exams.some((item) =>
-      examOccupiesPeriod(item.start_timestamp, item.end_timestamp, periodNumber),
+      examOccupiesPeriod(
+        item.start_timestamp,
+        item.end_timestamp,
+        periodNumber,
+      ),
     );
     if (exam) return "exam";
     if (teaching) return "teaching";
     return "free";
   };
+  const selectedDetailState = summarizePeriodStates(
+    detailPeriods.map(roomDayPeriodState),
+  );
   const formatTimestampTime = (value: string) => value.slice(11, 16);
 
   return (
@@ -480,45 +491,23 @@ export function ClassroomsPage({
                 </select>
               </label>
               <div className="col-span-2 grid gap-1 text-xs text-[#5f6368] dark:text-[#bdc1c6] sm:col-span-1">
-                <span>当前时刻</span>
+                <span>当前时间</span>
                 <strong className="flex h-10 items-center text-sm text-[#202124] dark:text-[#e8eaed]">
                   第 {period} 节{result ? ` · ${result.date}` : ""}
                 </strong>
               </div>
             </div>
-            <div
-              className="mt-4 border-t border-[#dadce0] pt-3 dark:border-[#3c4043]"
-              aria-label="节次时间轴"
-            >
-              <div className="flex items-center justify-between text-xs text-[#5f6368] dark:text-[#bdc1c6]">
-                <span>上午</span>
-                <span>下午</span>
-                <span>晚间</span>
-              </div>
-              <input
-                className="mt-2 w-full accent-[#1a73e8]"
-                name="period"
-                type="range"
-                min="1"
-                max="12"
-                step="1"
-                value={period}
-                onChange={(event) => update({ period: event.target.value })}
-                aria-label="选择节次"
+            <div className="mt-4 border-t border-[#dadce0] pt-3 dark:border-[#3c4043]">
+              <PeriodPointSelector
+                label="选择时间"
+                mode="single"
+                periods={index?.manifest.periods ?? []}
+                selected={[period]}
+                onChange={(nextPeriods) =>
+                  update({ period: String(nextPeriods[0] ?? period) })
+                }
+                stateFor={roomDay ? roomDayPeriodState : undefined}
               />
-              <div className="mt-2 grid grid-cols-12 gap-1 text-center text-[10px] text-[#5f6368] dark:text-[#bdc1c6]">
-                {Array.from({ length: 12 }, (_, indexValue) => (
-                  <button
-                    key={indexValue}
-                    type="button"
-                    onClick={() => update({ period: String(indexValue + 1) })}
-                    className={`mx-auto flex h-6 w-6 items-center justify-center rounded-full transition ${room ? STATE_BADGE_CLASS[roomDayPeriodState(indexValue + 1)] : ""} ${period === indexValue + 1 ? "ring-2 ring-[#1a73e8] ring-offset-1 dark:ring-offset-[#292a2d]" : ""}`}
-                    aria-label={`第 ${indexValue + 1} 节${roomDay ? `，${STATE_LABEL[roomDayPeriodState(indexValue + 1)]}` : ""}`}
-                  >
-                    {indexValue + 1}
-                  </button>
-                ))}
-              </div>
             </div>
           </section>
           {!result && !error ? (
@@ -536,143 +525,148 @@ export function ClassroomsPage({
                   floorLevel={activeFloor.level}
                   families={floorFamilies}
                   roomState={roomState}
+                  detailRoomState={() => selectedDetailState}
                   selectedFamilyId={room}
                   onSelectedFamilyChange={(nextRoom) =>
                     update({ room: nextRoom })
                   }
-                  detail={(roomView) => {
+                  detail={() => {
                     const focusPeriod = detailPeriods.includes(period)
                       ? period
-                      : detailPeriods[0] ?? period;
+                      : (detailPeriods[0] ?? period);
                     const visibleTeaching = roomDay
-                      ? roomDay.teaching.filter(
-                          (item) =>
-                            detailPeriods.some(
-                              (selectedPeriod) =>
-                                item.start_period <= selectedPeriod &&
-                                item.end_period >= selectedPeriod,
-                            ),
+                      ? roomDay.teaching.filter((item) =>
+                          detailPeriods.some(
+                            (selectedPeriod) =>
+                              item.start_period <= selectedPeriod &&
+                              item.end_period >= selectedPeriod,
+                          ),
                         )
                       : [];
                     const visibleExams = roomDay
-                      ? roomDay.exams.filter(
-                          (item) =>
-                            detailPeriods.some((selectedPeriod) =>
-                              examOccupiesPeriod(
-                                item.start_timestamp,
-                                item.end_timestamp,
-                                selectedPeriod,
-                              ),
+                      ? roomDay.exams.filter((item) =>
+                          detailPeriods.some((selectedPeriod) =>
+                            examOccupiesPeriod(
+                              item.start_timestamp,
+                              item.end_timestamp,
+                              selectedPeriod,
                             ),
+                          ),
                         )
                       : [];
                     return (
-                    <section className="mt-6">
-                      <div className="flex items-end justify-between gap-3">
-                        <div>
-                          <h3 className="font-semibold">课程安排</h3>
-                          <p className="mt-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">
-                            {result.date} · {allDetailPeriods ? "全部时间" : detailPeriods.length ? `第 ${detailPeriods.join("、")} 节` : "未选择时间点"}
+                      <section className="mt-6">
+                        <div className="flex items-end justify-between gap-3">
+                          <div>
+                            <h3 className="font-semibold">课程安排</h3>
+                            <p className="mt-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">
+                              {result.date} ·{" "}
+                              {allDetailPeriods
+                                ? "全部时间"
+                                : detailPeriods.length
+                                  ? `第 ${detailPeriods.join("、")} 节`
+                                  : "未选择时间点"}
+                            </p>
+                          </div>
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs ${PERIOD_STATE_CLASS[selectedDetailState]}`}
+                          >
+                            {PERIOD_STATE_LABEL[selectedDetailState]}
+                          </span>
+                        </div>
+                        {!roomDay && !roomDayError ? (
+                          <div className="mt-4 h-24 animate-pulse rounded-xl bg-[#f1f3f4] dark:bg-[#292a2d]" />
+                        ) : null}
+                        {roomDayError ? (
+                          <p className="mt-4 rounded-xl bg-[#fce8e6] p-3 text-sm text-[#8c1d18] dark:bg-[#3c2020] dark:text-[#f2b8b5]">
+                            {roomDayError}
                           </p>
-                        </div>
-                        <span className={`rounded-full px-2.5 py-1 text-xs ${STATE_BADGE_CLASS[roomState(roomView.family.space_family_id)]}`}>
-                          {STATE_LABEL[roomState(roomView.family.space_family_id)]}
-                        </span>
-                      </div>
-                      {!roomDay && !roomDayError ? (
-                        <div className="mt-4 h-24 animate-pulse rounded-xl bg-[#f1f3f4] dark:bg-[#292a2d]" />
-                      ) : null}
-                      {roomDayError ? (
-                        <p className="mt-4 rounded-xl bg-[#fce8e6] p-3 text-sm text-[#8c1d18] dark:bg-[#3c2020] dark:text-[#f2b8b5]">{roomDayError}</p>
-                      ) : null}
-                      {roomDay ? (
-                        <>
-                        <div className="mt-4 rounded-xl border border-[#dadce0] p-3 dark:border-[#3c4043]" aria-label="详情时间轴">
-                          <div className="flex items-center justify-between text-xs text-[#5f6368] dark:text-[#bdc1c6]">
-                            <span>选择时间点</span>
-                            <span>{allDetailPeriods ? "全部时间" : detailPeriods.length ? `已选 ${detailPeriods.length} 个时间点` : "未选择时间点"}</span>
-                          </div>
-                          <div className="relative mt-3">
-                            <div className="pointer-events-none absolute left-[4%] right-[4%] top-[2.15rem] h-px bg-[#dadce0] dark:bg-[#5f6368]" />
-                            <div className="relative grid grid-cols-12 gap-1">
-                            {ALL_PERIODS.map((point) => {
-                              const periodMeta = index?.manifest.periods.find(
-                                (item) => item.period === point,
-                              );
-                              const state = roomDayPeriodState(point);
-                              const selected = detailPeriods.includes(point);
-                              return (
-                                <button
-                                  key={point}
-                                  type="button"
-                                  onClick={() => toggleDetailPeriod(point)}
-                                  className="group flex min-w-0 flex-col items-center text-center"
-                                  aria-pressed={selected}
-                                  aria-label={`第 ${point} 节，${periodMeta?.start_time ?? ""}${periodMeta?.end_time ? `–${periodMeta.end_time}` : ""}，${STATE_LABEL[state]}，${selected ? "已选择" : "未选择"}`}
-                                >
-                                  <span className="h-4 w-full truncate text-[9px] text-[#5f6368] dark:text-[#bdc1c6]">
-                                    {periodMeta?.start_time ?? ""}
-                                  </span>
-                                  <span
-                                    className={`relative z-10 mt-1 flex h-7 w-7 items-center justify-center rounded-full text-[10px] transition ${selected ? STATE_BADGE_CLASS[state] : "bg-white text-[#5f6368] ring-1 ring-inset ring-[#dadce0] dark:bg-[#292a2d] dark:text-[#bdc1c6] dark:ring-[#5f6368]"} ${selected ? "ring-2 ring-[#1a73e8] ring-offset-1 dark:ring-offset-[#292a2d]" : "group-hover:ring-2 group-hover:ring-[#8ab4f8]"}`}
-                                  >
-                                    {point}
-                                  </span>
-                                </button>
-                              );
-                            })}
+                        ) : null}
+                        {roomDay ? (
+                          <>
+                            <div className="mt-4" aria-label="详情时间轴">
+                              <PeriodPointSelector
+                                label="选择时间"
+                                mode="multiple"
+                                periods={index?.manifest.periods ?? []}
+                                selected={detailPeriods}
+                                onChange={setDetailPeriods}
+                                stateFor={roomDayPeriodState}
+                              />
                             </div>
-                          </div>
-                          <div className="mt-3 flex justify-end">
-                            <button
-                              type="button"
-                              onClick={() => setDetailPeriods(ALL_PERIODS)}
-                              className={`rounded-full px-2.5 py-1 text-xs transition ${allDetailPeriods ? "bg-[#1a73e8] text-white" : "bg-[#f1f3f4] text-[#3c4043] dark:bg-[#3c4043] dark:text-[#e8eaed]"}`}
-                            >
-                              全部时间点
-                            </button>
-                          </div>
-                        </div>
-                        <div className="mt-4 grid gap-3">
-                          {visibleTeaching.map((item) => {
-                            const startTime = index?.manifest.periods.find((entry) => entry.period === item.start_period)?.start_time;
-                            const endTime = index?.manifest.periods.find((entry) => entry.period === item.end_period)?.end_time;
-                            const active = item.start_period <= focusPeriod && item.end_period >= focusPeriod;
-                            return (
-                              <article key={item.meeting_id} className={`rounded-xl border p-3 ${active ? "border-[#34a853] bg-[#e6f4ea] dark:border-[#5bb974] dark:bg-[#173b27]" : "border-[#dadce0] dark:border-[#3c4043]"}`}>
-                                <p className="flex items-start gap-2 text-sm font-medium">
-                                  <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-[#137333] dark:text-[#81c995]" />
-                                  {item.course_name}
+                            <div className="mt-4 grid gap-3">
+                              {visibleTeaching.map((item) => {
+                                const startTime = index?.manifest.periods.find(
+                                  (entry) => entry.period === item.start_period,
+                                )?.start_time;
+                                const endTime = index?.manifest.periods.find(
+                                  (entry) => entry.period === item.end_period,
+                                )?.end_time;
+                                const active =
+                                  item.start_period <= focusPeriod &&
+                                  item.end_period >= focusPeriod;
+                                return (
+                                  <article
+                                    key={item.meeting_id}
+                                    className={`rounded-xl border p-3 ${active ? "border-[#34a853] bg-[#e6f4ea] dark:border-[#5bb974] dark:bg-[#173b27]" : "border-[#dadce0] dark:border-[#3c4043]"}`}
+                                  >
+                                    <p className="flex items-start gap-2 text-sm font-medium">
+                                      <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-[#137333] dark:text-[#81c995]" />
+                                      {item.course_name}
+                                    </p>
+                                    <p className="mt-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">
+                                      第 {item.start_period}–{item.end_period}{" "}
+                                      节
+                                      {startTime && endTime
+                                        ? ` · ${startTime}–${endTime}`
+                                        : ""}
+                                      {item.teacher ? ` · ${item.teacher}` : ""}
+                                    </p>
+                                    {item.class_ids.length ? (
+                                      <p className="mt-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">
+                                        {item.class_ids.join("、")}
+                                      </p>
+                                    ) : null}
+                                  </article>
+                                );
+                              })}
+                              {visibleExams.map((item) => {
+                                const active = examOccupiesPeriod(
+                                  item.start_timestamp,
+                                  item.end_timestamp,
+                                  focusPeriod,
+                                );
+                                return (
+                                  <article
+                                    key={item.exam_id}
+                                    className={`rounded-xl border p-3 ${active ? "border-[#f9ab00] bg-[#fef7e0] dark:border-[#f6c453] dark:bg-[#493a14]" : "border-[#dadce0] dark:border-[#3c4043]"}`}
+                                  >
+                                    <p className="flex items-start gap-2 text-sm font-medium">
+                                      <GraduationCap className="mt-0.5 h-4 w-4 shrink-0 text-[#8d5b00] dark:text-[#fdd663]" />
+                                      {item.course_name}
+                                    </p>
+                                    <p className="mt-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">
+                                      {formatTimestampTime(
+                                        item.start_timestamp,
+                                      )}
+                                      –{formatTimestampTime(item.end_timestamp)}{" "}
+                                      · {item.class_name}
+                                    </p>
+                                  </article>
+                                );
+                              })}
+                              {!visibleTeaching.length &&
+                              !visibleExams.length ? (
+                                <p className="rounded-xl bg-[#f1f3f4] p-4 text-sm dark:bg-[#292a2d]">
+                                  {detailPeriods.length
+                                    ? "所选时间点空闲。"
+                                    : "请选择至少一个时间点。"}
                                 </p>
-                                <p className="mt-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">
-                                  第 {item.start_period}–{item.end_period} 节{startTime && endTime ? ` · ${startTime}–${endTime}` : ""}
-                                  {item.teacher ? ` · ${item.teacher}` : ""}
-                                </p>
-                                {item.class_ids.length ? <p className="mt-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">{item.class_ids.join("、")}</p> : null}
-                              </article>
-                            );
-                          })}
-                          {visibleExams.map((item) => {
-                            const active = examOccupiesPeriod(item.start_timestamp, item.end_timestamp, focusPeriod);
-                            return (
-                              <article key={item.exam_id} className={`rounded-xl border p-3 ${active ? "border-[#f9ab00] bg-[#fef7e0] dark:border-[#f6c453] dark:bg-[#493a14]" : "border-[#dadce0] dark:border-[#3c4043]"}`}>
-                                <p className="flex items-start gap-2 text-sm font-medium">
-                                  <GraduationCap className="mt-0.5 h-4 w-4 shrink-0 text-[#8d5b00] dark:text-[#fdd663]" />
-                                  {item.course_name}
-                                </p>
-                                <p className="mt-1 text-xs text-[#5f6368] dark:text-[#bdc1c6]">
-                                  {formatTimestampTime(item.start_timestamp)}–{formatTimestampTime(item.end_timestamp)} · {item.class_name}
-                                </p>
-                              </article>
-                            );
-                          })}
-                          {!visibleTeaching.length && !visibleExams.length ? (
-                            <p className="rounded-xl bg-[#f1f3f4] p-4 text-sm dark:bg-[#292a2d]">{detailPeriods.length ? "所选时间点空闲。" : "请选择至少一个时间点。"}</p>
-                          ) : null}
-                        </div>
-                        </>
-                      ) : null}
-                    </section>
+                              ) : null}
+                            </div>
+                          </>
+                        ) : null}
+                      </section>
                     );
                   }}
                 />
@@ -700,7 +694,7 @@ export function ClassroomsPage({
                           update({ room: roomView.family.space_family_id })
                         }
                         className="rounded-xl border border-[#dadce0] bg-white p-4 text-left transition hover:border-[#8ab4f8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a73e8] dark:border-[#3c4043] dark:bg-[#292a2d]"
-                        aria-label={`${roomView.family.room_number}，${STATE_LABEL[state]}，打开详情`}
+                        aria-label={`${roomView.family.room_number}，${PERIOD_STATE_LABEL[state]}，打开详情`}
                       >
                         <span className="flex items-center justify-between gap-2">
                           <MapPin
@@ -708,9 +702,9 @@ export function ClassroomsPage({
                             aria-hidden="true"
                           />
                           <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] ${STATE_BADGE_CLASS[state]}`}
+                            className={`rounded-full px-2 py-0.5 text-[10px] ${PERIOD_STATE_CLASS[state]}`}
                           >
-                            {STATE_LABEL[state]}
+                            {PERIOD_STATE_LABEL[state]}
                           </span>
                         </span>
                         <strong className="mt-3 block text-lg">

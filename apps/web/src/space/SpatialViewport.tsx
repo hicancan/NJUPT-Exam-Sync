@@ -17,6 +17,7 @@ interface SpatialViewportProps {
     floorLevel: string;
     families: SpaceFamilyView[];
     roomState: (familyId: string) => SpatialRoomState;
+    detailRoomState?: (familyId: string) => SpatialRoomState;
     detail?: (family: SpaceFamilyView) => React.ReactNode;
     selectedFamilyId?: string | null;
     onSelectedFamilyChange?: (familyId: string | null) => void;
@@ -48,7 +49,7 @@ const STATE_LABEL: Record<SpatialRoomState, string> = {
 const points = (polygon: number[][], width: number, height: number): string => polygon.map(point => `${Number(point[0]) * width},${Number(point[1]) * height}`).join(' ');
 
 export function SpatialViewport({
-    client, campusName, buildingName, buildingId, floorId, floorLevel, families, roomState, detail,
+    client, campusName, buildingName, buildingId, floorId, floorLevel, families, roomState, detailRoomState, detail,
     selectedFamilyId, onSelectedFamilyChange,
 }: SpatialViewportProps) {
     const locationLabel = formatCampusBuildingLabel(campusName, buildingName);
@@ -127,6 +128,7 @@ export function SpatialViewport({
         window.setTimeout(() => (restoreFocus.current ?? selectedTrigger.current)?.focus(), 0);
     };
     const stateFor = (family: SpaceFamilyView): SpatialRoomState => roomState(family.family.space_family_id);
+    const detailStateFor = (family: SpaceFamilyView): SpatialRoomState => detailRoomState?.(family.family.space_family_id) ?? stateFor(family);
     const choose = (family: SpaceFamilyView, element: HTMLElement | SVGElement) => {
         selectedTrigger.current = element;
         restoreFocus.current = element;
@@ -222,7 +224,7 @@ export function SpatialViewport({
                     <div className="space-detail-handle" aria-hidden="true" />
                     <header><div><p>{formatCampusBuildingLabel(visibleSelected.campus.name, visibleSelected.building.name)} · {visibleSelected.floor.level}楼</p><h2 id="space-detail-title">{visibleSelected.family.room_number}</h2></div><button type="button" onClick={close} aria-label="关闭空间详情"><X /></button></header>
                     <div className="space-detail-body">
-                        <dl><div><dt>状态</dt><dd>{STATE_LABEL[stateFor(visibleSelected)]}</dd></div>{visibleSelected.family.aliases.length ? <div><dt>其他名称</dt><dd>{visibleSelected.family.aliases.join('、')}</dd></div> : null}</dl>
+                        <dl><div><dt>状态</dt><dd>{STATE_LABEL[detailStateFor(visibleSelected)]}</dd></div>{visibleSelected.family.aliases.length ? <div><dt>其他名称</dt><dd>{visibleSelected.family.aliases.join('、')}</dd></div> : null}</dl>
                         {detail?.(visibleSelected)}
                     </div>
                 </aside>
